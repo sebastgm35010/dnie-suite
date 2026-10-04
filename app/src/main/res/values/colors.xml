@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Institucional Estado Peruano -->
+    <color name="primary_navy">#0F3057</color>
+    <color name="primary_navy_dark">#001C38</color>
+    <color name="primary_navy_container">#D4E3FC</color>
+
+    <color name="secondary_teal">#00587A</color>
+    <color name="secondary_container">#CEE5FF</color>
+
+    <!-- Alertas y Acentos -->
+    <color name="crimson_accent">#B3261E</color>
+    <color name="crimson_container">#F9DEDC</color>
+    <color name="crimson_on_container">#410E0B</color>
+
+    <color name="success_green">#1E8E3E</color>
+    <color name="warning_amber">#E37400</color>
+
+    <!-- Fondos y Superficies -->
+    <color name="surface_light">#F8F9FA</color>
+    <color name="surface_dark">#121416</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+</resources>

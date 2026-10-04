@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Application Identification -->
+    <string name="app_name">DNIe Signer Perú</string>
+    <string name="app_description">Lectura NFC, inspección de certificados y firma digital PAdES con DNI electrónico peruano v2/v3</string>
+
+    <!-- Navigation Titles -->
+    <string name="nav_certificates">Certificados</string>
+    <string name="nav_pdf_signer">Firmador PDF</string>
+    <string name="nav_apdu_console">Consola APDU</string>
+
+    <!-- Certificate Inspector Screen -->
+    <string name="cert_inspector_title">Inspector de Certificados</string>
+    <string name="cert_tap_prompt">Acerque su DNIe al lector NFC para leer certificados</string>
+    <string name="cert_type_signature">Firma Digital (001D)</string>
+    <string name="cert_type_authentication">Autenticación (001C)</string>
+    <string name="cert_type_encryption">Cifrado (001B)</string>
+    <string name="cert_field_holder">Titular:</string>
+    <string name="cert_field_dni">DNI:</string>
+    <string name="cert_field_issuer">Emisor:</string>
+    <string name="cert_field_valid_from">Válido desde:</string>
+    <string name="cert_field_valid_to">Válido hasta:</string>
+    <string name="cert_field_serial">Número de Serie:</string>
+    <string name="cert_field_sha256">Huella Digital SHA-256:</string>
+    <string name="cert_status_valid">Certificado Vigente</string>
+    <string name="cert_status_expired">Certificado Expirado</string>
+    <string name="cert_export_der">Exportar DER (.cer)</string>
+    <string name="cert_export_pem">Exportar PEM (.pem)</string>
+    <string name="cert_export_success">Certificado exportado con éxito</string>
+
+    <!-- PDF Signer Screen -->
+    <string name="pdf_signer_title">Firmador Digital de Documentos PDF</string>
+    <string name="pdf_select_button">Seleccionar Documento PDF</string>
+    <string name="pdf_no_file_selected">Ningún archivo seleccionado</string>
+    <string name="pdf_reason_label">Motivo de Firma</string>
+    <string name="pdf_reason_default">Soy el autor del documento</string>
+    <string name="pdf_location_label">Lugar de Firma</string>
+    <string name="pdf_location_default">Lima, Perú</string>
+    <string name="pdf_visual_preset_label">Posición del Estampado Visual</string>
+    <string name="preset_bottom_right">Inferior Derecha (Padrón Estándar)</string>
+    <string name="preset_bottom_left">Inferior Izquierda</string>
+    <string name="preset_top_right">Superior Derecha</string>
+    <string name="preset_invisible">Invisible (Sin estampado visual)</string>
+    <string name="pdf_sign_button">Firmar Documento con DNIe</string>
+    <string name="pdf_sign_success">Documento firmado exitosamente</string>
+    <string name="pdf_share_signed">Compartir Documento Firmado</string>
+
+    <!-- 2-Step PIN Flow & Dialogs -->
+    <string name="pin_dialog_title">Ingrese PIN del DNIe</string>
+    <string name="pin_dialog_subtitle">Clave de 4 dígitos para autorización de firma digital</string>
+    <string name="pin_dialog_warning">ADVERTENCIA: Tres (3) intentos fallidos consecutivos bloquearán permanentemente el chip del DNIe (Error 69 83). El desbloqueo requiere acudir presencialmente a una oficina de RENIEC con su PUK.</string>
+    <string name="pin_input_label">PIN (4 dígitos)</string>
+    <string name="pin_confirm_button">Confirmar y Aproximar DNIe</string>
+    <string name="pin_cancel_button">Cancelar</string>
+    <string name="pin_length_error">El PIN debe contener exactamente 4 dígitos numéricos</string>
+    <string name="pin_incorrect_attempts">PIN incorrecto. Intentos restantes: %1$d</string>
+    <string name="pin_card_blocked">TARJETA BLOQUEADA (SW 69 83). Debe desbloquearla con PUK en RENIEC.</string>
+
+    <!-- NFC Prompts & Reader Mode -->
+    <string name="nfc_prompt_title">Acerque su DNIe al sensor NFC</string>
+    <string name="nfc_prompt_message">Mantenga el documento en contacto firme con la parte posterior de su dispositivo móvil sin moverlo hasta completar la operación.</string>
+    <string name="nfc_reading">Leyendo datos del chip...</string>
+    <string name="nfc_signing">Calculando firma RSA-2048 en tarjeta...</string>
+    <string name="nfc_tag_lost">Conexión perdida. Mantenga el DNIe firme contra el sensor.</string>
+    <string name="nfc_not_supported">Este dispositivo no cuenta con tecnología NFC.</string>
+    <string name="nfc_disabled">El sensor NFC está desactivado. Por favor, actívelo en Configuración.</string>
+
+    <!-- APDU Diagnostic Console -->
+    <string name="apdu_console_title">Consola Diagnóstica APDU</string>
+    <string name="apdu_clear_logs">Limpiar Registro</string>
+    <string name="apdu_export_logs">Exportar Trazas</string>
+    <string name="apdu_empty_logs">Sin actividad APDU registrada</string>
+    <string name="apdu_tx_prefix">TX &gt;&gt;</string>
+    <string name="apdu_rx_prefix">RX &lt;&lt;</string>
+</resources>
