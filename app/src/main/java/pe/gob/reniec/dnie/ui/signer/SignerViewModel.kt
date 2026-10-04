@@ -45,7 +45,8 @@ sealed interface SignerUiState {
         val pageCount: Int,
         val preset: SignaturePreset,
         val reason: String,
-        val location: String
+        val location: String,
+        val initialCan: String = ""
     ) : SignerUiState
 
     data class AwaitingCard(
@@ -56,7 +57,8 @@ sealed interface SignerUiState {
         val preset: SignaturePreset,
         val reason: String,
         val location: String,
-        val pin: String
+        val pin: String,
+        val can: String? = null
     ) : SignerUiState
 
     data class Signing(
@@ -79,7 +81,7 @@ sealed interface SignerUiState {
 }
 
 /**
- * ViewModel que orquesta el ciclo de firma digital PAdES con verificación de PIN en 2 pasos.
+ * ViewModel que orquesta el ciclo de firma digital PAdES con verificación de credenciales (CAN + PIN).
  */
 class SignerViewModel(
     private val signerEngine: PadesSignerEngineInterface = PadesSignerEngine.defaultInstance
@@ -87,6 +89,9 @@ class SignerViewModel(
 
     private val _uiState = MutableStateFlow<SignerUiState>(SignerUiState.NoDocument)
     val uiState: StateFlow<SignerUiState> = _uiState.asStateFlow()
+
+    var enteredCan: String? = null
+        private set
 
     fun onDocumentSelected(
         uri: Uri? = null,
@@ -124,7 +129,7 @@ class SignerViewModel(
     }
 
     /**
-     * Paso 1: Abre el diálogo de captura segura del PIN.
+     * Paso 1: Abre el diálogo de captura segura del CAN y PIN.
      */
     fun startPinEntry() {
         val current = _uiState.value as? SignerUiState.DocumentLoaded ?: return
@@ -135,7 +140,8 @@ class SignerViewModel(
             pageCount = current.pageCount,
             preset = current.preset,
             reason = current.reason,
-            location = current.location
+            location = current.location,
+            initialCan = enteredCan ?: ""
         )
     }
 
@@ -153,10 +159,11 @@ class SignerViewModel(
     }
 
     /**
-     * Paso 2: El PIN fue validado en pantalla y ahora se espera la aproximación del DNIe.
+     * Confirma tanto el CAN como el PIN antes de la lectura NFC.
      */
-    fun onPinConfirmed(pin: String) {
+    fun onCredentialsConfirmed(can: String, pin: String) {
         val current = _uiState.value as? SignerUiState.EnteringPin ?: return
+        enteredCan = can
         _uiState.value = SignerUiState.AwaitingCard(
             documentUri = current.documentUri,
             documentName = current.documentName,
@@ -165,8 +172,16 @@ class SignerViewModel(
             preset = current.preset,
             reason = current.reason,
             location = current.location,
-            pin = pin
+            pin = pin,
+            can = can
         )
+    }
+
+    /**
+     * Paso 2: Retrocompatibilidad cuando solo se provee PIN.
+     */
+    fun onPinConfirmed(pin: String) {
+        onCredentialsConfirmed(can = enteredCan ?: "", pin = pin)
     }
 
     fun cancelAwaitingCard() {
@@ -196,11 +211,20 @@ class SignerViewModel(
             return
         }
 
-        _uiState.value = SignerUiState.Signing("Verificando PIN en el chip del DNIe...")
+        _uiState.value = SignerUiState.Signing("Verificando credenciales en el chip del DNIe...")
+
+        if (transceiver is pe.gob.reniec.dnie.core.nfc.DnieTransceiver) {
+            if (transceiver.can.isNullOrBlank() && !awaiting.can.isNullOrBlank()) {
+                transceiver.can = awaiting.can
+            }
+            if (transceiver.pin.isNullOrBlank() && awaiting.pin.isNotBlank()) {
+                transceiver.pin = awaiting.pin
+            }
+        }
 
         viewModelScope.launch {
             try {
-                // 1. Seleccionar Applet PKI
+                // 1. Seleccionar Applet PKI / ICAO
                 transceiver.selectPkiApplet().getOrThrow()
 
                 // 2. Verificar PIN en tarjeta
@@ -281,7 +305,16 @@ class SignerViewModel(
         val outputFile = File(signedDir, "${sanitizedName}_firmado_${System.currentTimeMillis()}.pdf")
         val outputStream = FileOutputStream(outputFile)
 
-        _uiState.value = SignerUiState.Signing("Verificando PIN en el chip del DNIe...")
+        _uiState.value = SignerUiState.Signing("Verificando credenciales en el chip del DNIe...")
+
+        if (transceiver is pe.gob.reniec.dnie.core.nfc.DnieTransceiver) {
+            if (transceiver.can.isNullOrBlank() && !awaiting.can.isNullOrBlank()) {
+                transceiver.can = awaiting.can
+            }
+            if (transceiver.pin.isNullOrBlank() && awaiting.pin.isNotBlank()) {
+                transceiver.pin = awaiting.pin
+            }
+        }
 
         viewModelScope.launch {
             try {

@@ -136,7 +136,7 @@ class CommandApdu(
         }
 
         /**
-         * Crea un comando SELECT EF bajo el DF actual.
+         * Crea un comando SELECT EF bajo el DF actual (P1=0x02, P2=0x0C).
          */
         fun selectEf(fileId: ByteArray): CommandApdu {
             require(fileId.size == 2) { "EF File ID must be 2 bytes (got ${fileId.size})" }
@@ -146,6 +146,37 @@ class CommandApdu(
                 p1 = ApduConstants.P1_SELECT_EF_UNDER_DF,
                 p2 = ApduConstants.P2_SELECT_NO_FCI,
                 data = fileId
+            )
+        }
+
+        /**
+         * Crea un comando SELECT EF por identificador directo (P1=0x00, P2=0x0C).
+         */
+        fun selectEfDirect(fileId: ByteArray): CommandApdu {
+            require(fileId.size == 2) { "EF File ID must be 2 bytes (got ${fileId.size})" }
+            return CommandApdu(
+                cla = ApduConstants.CLA_ISO7816,
+                ins = ApduConstants.INS_SELECT,
+                p1 = 0x00.toByte(),
+                p2 = ApduConstants.P2_SELECT_NO_FCI,
+                data = fileId
+            )
+        }
+
+        /**
+         * Crea un comando READ BINARY estándar ISO 7816-4 (INS 0xB0) sin Data Object.
+         */
+        fun readBinary(offset: Int, le: Int = 0x00): CommandApdu {
+            require(offset in 0..0x7FFF) { "Offset must be between 0 and 32767 for standard READ BINARY (got $offset)" }
+            val offsetHi = ((offset shr 8) and 0x7F).toByte()
+            val offsetLo = (offset and 0xFF).toByte()
+            val leNormalized = if (le == 0) 256 else le
+            return CommandApdu(
+                cla = ApduConstants.CLA_ISO7816,
+                ins = ApduConstants.INS_READ_BINARY,
+                p1 = offsetHi,
+                p2 = offsetLo,
+                le = leNormalized
             )
         }
 

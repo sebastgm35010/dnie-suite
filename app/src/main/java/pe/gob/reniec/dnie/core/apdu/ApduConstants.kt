@@ -63,10 +63,10 @@ object ApduConstants {
      * Lista priorizada de AIDs candidatos para auto-detección de DNIe v2 y v3.
      */
     val CANDIDATE_AIDS: List<Pair<String, ByteArray>> = listOf(
+        Pair("DNIe v3 ICAO eMRTD", AID_ICAO_MRTD),
         Pair("DNIe v3 PKI (RENIEC IDEMIA)", AID_RENIEC_PKI_V3_IDEMIA),
         Pair("DNIe v3 IAS-ECC (IDEMIA Cosmo)", AID_IAS_ECC_IDEMIA),
         Pair("DNIe v3 IAS-ECC (Raíz)", AID_IAS_ECC_ROOT),
-        Pair("DNIe v3 ICAO eMRTD", AID_ICAO_MRTD),
         Pair("DNIe v2 PKI (PGeneric)", AID_RENIEC_PKI_V2),
         Pair("DNIe v2 RID (RENIEC)", AID_RENIEC_SHORT),
         Pair("eID PKCS#15 Genérico", AID_PKCS15)
@@ -80,13 +80,14 @@ object ApduConstants {
     const val INS_VERIFY: Byte = 0x20.toByte()
     const val INS_MSE: Byte = 0x22.toByte()
     const val INS_PSO: Byte = 0x2A.toByte()
+    const val INS_READ_BINARY: Byte = 0xB0.toByte()
     const val INS_READ_BINARY_DO: Byte = 0xB1.toByte()
 
     // Parámetros SELECT FILE
     const val P1_SELECT_DF_BY_NAME: Byte = 0x04.toByte()
     const val P2_SELECT_FIRST_RECORD: Byte = 0x00.toByte()
     const val P1_SELECT_EF_UNDER_DF: Byte = 0x02.toByte()
-    const val P2_SELECT_NO_FCI: Byte = 0x04.toByte()
+    const val P2_SELECT_NO_FCI: Byte = 0x0C.toByte()
 
     // Selectores de Archivos Elementales (EF File IDs)
     val EF_SIGNATURE: ByteArray = byteArrayOf(0x00, 0x1D)

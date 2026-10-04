@@ -97,9 +97,31 @@ class ApduCommandResponseTest {
         assertEquals(0x00.toByte(), cmd.cla)
         assertEquals(0xA4.toByte(), cmd.ins)
         assertEquals(0x02.toByte(), cmd.p1)
-        assertEquals(0x04.toByte(), cmd.p2)
+        assertEquals(0x0C.toByte(), cmd.p2)
         assertArrayEquals(byteArrayOf(0x00, 0x1D), cmd.data)
-        assertEquals("00 A4 02 04 02 00 1D", cmd.toHexString())
+        assertEquals("00 A4 02 0C 02 00 1D", cmd.toHexString())
+    }
+
+    @Test
+    fun testFactorySelectEfDirect() {
+        val cmd = CommandApdu.selectEfDirect(ApduConstants.EF_SIGNATURE)
+        assertEquals(0x00.toByte(), cmd.cla)
+        assertEquals(0xA4.toByte(), cmd.ins)
+        assertEquals(0x00.toByte(), cmd.p1)
+        assertEquals(0x0C.toByte(), cmd.p2)
+        assertArrayEquals(byteArrayOf(0x00, 0x1D), cmd.data)
+        assertEquals("00 A4 00 0C 02 00 1D", cmd.toHexString())
+    }
+
+    @Test
+    fun testFactoryReadBinaryStandard() {
+        val cmd = CommandApdu.readBinary(offset = 0x0120, le = 256)
+        assertEquals(0x00.toByte(), cmd.cla)
+        assertEquals(0xB0.toByte(), cmd.ins)
+        assertEquals(0x01.toByte(), cmd.p1)
+        assertEquals(0x20.toByte(), cmd.p2)
+        assertEquals(256, cmd.le)
+        assertEquals("00 B0 01 20 00", cmd.toHexString())
     }
 
     @Test

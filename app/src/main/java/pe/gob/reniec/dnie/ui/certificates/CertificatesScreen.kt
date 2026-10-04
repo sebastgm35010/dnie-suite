@@ -51,6 +51,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import pe.gob.reniec.dnie.domain.model.CertificateType
 import pe.gob.reniec.dnie.ui.components.CertificateCard
+import pe.gob.reniec.dnie.ui.components.CredentialsDialog
 import pe.gob.reniec.dnie.ui.components.NfcTapPromptSheet
 
 /**
@@ -103,7 +104,7 @@ fun CertificatesScreen(
                     actionIconContentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 actions = {
-                    IconButton(onClick = { viewModel.startReading() }) {
+                    IconButton(onClick = { viewModel.requestCanEntry() }) {
                         Icon(
                             imageVector = Icons.Default.Nfc,
                             contentDescription = "Leer DNIe con NFC"
@@ -120,15 +121,16 @@ fun CertificatesScreen(
                 .padding(innerPadding)
         ) {
             when (val state = uiState) {
-                is CertificatesUiState.Idle -> {
+                is CertificatesUiState.Idle,
+                is CertificatesUiState.EnteringCan -> {
                     EmptyCertificatesView(
-                        onScanClicked = { viewModel.startReading() }
+                        onScanClicked = { viewModel.requestCanEntry() }
                     )
                 }
 
                 is CertificatesUiState.ReadingCard -> {
                     EmptyCertificatesView(
-                        onScanClicked = { viewModel.startReading() }
+                        onScanClicked = { viewModel.requestCanEntry() }
                     )
                     NfcTapPromptSheet(
                         isShowing = true,
@@ -242,7 +244,7 @@ fun CertificatesScreen(
                                     textAlign = TextAlign.Center,
                                     color = MaterialTheme.colorScheme.onErrorContainer
                                 )
-                                Button(onClick = { viewModel.startReading() }) {
+                                Button(onClick = { viewModel.requestCanEntry() }) {
                                     Icon(imageVector = Icons.Default.Refresh, contentDescription = null)
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text("Reintentar Lectura")
@@ -254,6 +256,19 @@ fun CertificatesScreen(
             }
         }
     }
+
+    // Diálogo de solicitud previa de CAN (6 dígitos)
+    val enteringCanState = uiState as? CertificatesUiState.EnteringCan
+    CredentialsDialog(
+        show = enteringCanState != null,
+        title = "Lectura de DNIe 3.0",
+        subtitle = "Ingrese el código CAN (6 dígitos) ubicado en el frente inferior de su DNIe para habilitar la lectura de certificados por NFC.",
+        requireCan = true,
+        requirePin = false,
+        initialCan = enteringCanState?.initialCan ?: viewModel.enteredCan ?: "",
+        onConfirm = { can, _ -> viewModel.onCanConfirmed(can) },
+        onDismiss = { viewModel.cancelCanEntry() }
+    )
 }
 
 @Composable

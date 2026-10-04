@@ -64,6 +64,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import pe.gob.reniec.dnie.pdf.SignaturePreset
+import pe.gob.reniec.dnie.ui.components.CredentialsDialog
 import pe.gob.reniec.dnie.ui.components.NfcTapPromptSheet
 import pe.gob.reniec.dnie.ui.components.PinEntryDialog
 import java.text.SimpleDateFormat
@@ -410,10 +411,16 @@ fun SignerScreen(
         }
     }
 
-    // Paso 1: Diálogo de Pre-ingreso de PIN
-    PinEntryDialog(
-        show = uiState is SignerUiState.EnteringPin,
-        onConfirm = { pin -> viewModel.onPinConfirmed(pin) },
+    // Paso 1: Diálogo de Pre-ingreso de Credenciales (CAN de 6 dígitos + PIN de 6 dígitos)
+    val enteringPinState = uiState as? SignerUiState.EnteringPin
+    CredentialsDialog(
+        show = enteringPinState != null,
+        title = "Credenciales para Firma Digital",
+        subtitle = "Ingrese el código CAN (6 dígitos en el frente del DNIe) y su PIN de firma digital antes de aproximar el documento al lector NFC.",
+        requireCan = true,
+        requirePin = true,
+        initialCan = enteringPinState?.initialCan ?: viewModel.enteredCan ?: "",
+        onConfirm = { can, pin -> viewModel.onCredentialsConfirmed(can, pin) },
         onDismiss = { viewModel.cancelPinEntry() }
     )
 

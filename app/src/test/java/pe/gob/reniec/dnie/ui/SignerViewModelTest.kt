@@ -155,7 +155,7 @@ class SignerViewModelTest {
     fun testTwoStepPinFlowStateTransitions() {
         viewModel.onDocumentSelected(uri = null, name = "acta.pdf", sizeBytes = 10000L, pageCount = 1)
 
-        // Paso 1: Abrir ingreso de PIN
+        // Paso 1: Abrir ingreso de credenciales
         viewModel.startPinEntry()
         assertTrue(viewModel.uiState.value is SignerUiState.EnteringPin)
 
@@ -163,16 +163,25 @@ class SignerViewModelTest {
         viewModel.cancelPinEntry()
         assertTrue(viewModel.uiState.value is SignerUiState.DocumentLoaded)
 
-        // Reintentar y confirmar PIN
+        // Reintentar y confirmar con CAN y PIN
         viewModel.startPinEntry()
-        viewModel.onPinConfirmed("5678")
+        viewModel.onCredentialsConfirmed(can = "654321", pin = "5678")
         assertTrue(viewModel.uiState.value is SignerUiState.AwaitingCard)
         val awaiting = viewModel.uiState.value as SignerUiState.AwaitingCard
         assertEquals("5678", awaiting.pin)
+        assertEquals("654321", awaiting.can)
+        assertEquals("654321", viewModel.enteredCan)
 
         // Cancelar en espera de tarjeta regresa a DocumentLoaded
         viewModel.cancelAwaitingCard()
         assertTrue(viewModel.uiState.value is SignerUiState.DocumentLoaded)
+
+        // Probar también onPinConfirmed
+        viewModel.startPinEntry()
+        viewModel.onPinConfirmed("1234")
+        val awaiting2 = viewModel.uiState.value as SignerUiState.AwaitingCard
+        assertEquals("1234", awaiting2.pin)
+        assertEquals("654321", awaiting2.can)
     }
 
     @Test

@@ -11,6 +11,9 @@ import org.junit.Before
 import org.junit.Test
 import pe.gob.reniec.dnie.apdu.MockIsoDepCardChannel
 import pe.gob.reniec.dnie.core.apdu.ApduConstants
+import pe.gob.reniec.dnie.core.apdu.CommandApdu
+import pe.gob.reniec.dnie.core.apdu.ResponseApdu
+import pe.gob.reniec.dnie.core.apdu.StatusWord
 import pe.gob.reniec.dnie.core.logging.ApduDirection
 import pe.gob.reniec.dnie.core.logging.ApduLogger
 import pe.gob.reniec.dnie.core.nfc.AppletNotFoundException
@@ -144,6 +147,27 @@ class DnieTransceiverTest {
         assertTrue(certsMap.containsKey(CertificateType.SIGNATURE))
         assertTrue(certsMap.containsKey(CertificateType.AUTHENTICATION))
         assertFalse(certsMap.containsKey(CertificateType.ENCRYPTION))
+    }
+
+    @Test
+    fun testReadCertificate_FallbackToStandardReadBinary_Success() = runTest {
+        // Simular tarjeta ICAO eMRTD / DNIe 3.0 que no soporta INS 0xB1 (READ BINARY DO)
+        val icaoChannel = object : MockIsoDepCardChannel() {
+            override fun transceive(command: ByteArray): ByteArray {
+                val apdu = CommandApdu.fromBytes(command)
+                if (apdu.ins == ApduConstants.INS_READ_BINARY_DO) {
+                    return ResponseApdu.error(StatusWord.SW_INS_NOT_SUPPORTED).toByteArray()
+                }
+                return super.transceive(command)
+            }
+        }
+
+        val trans = DnieTransceiver(icaoChannel, logger, Dispatchers.Unconfined, can = "123456")
+        trans.selectPkiApplet().getOrThrow()
+
+        val certResult = trans.readCertificate(CertificateType.SIGNATURE)
+        assertTrue(certResult.isSuccess)
+        assertArrayEquals(icaoChannel.signatureCertDer, certResult.getOrThrow())
     }
 
     // --- 3. Verificación de PIN en Tarjeta ---

@@ -110,6 +110,25 @@ class CertificatesViewModelTest {
     }
 
     @Test
+    fun testCanEntryFlowTransitions() {
+        // 1. Solicitar CAN
+        viewModel.requestCanEntry()
+        assertTrue(viewModel.uiState.value is CertificatesUiState.EnteringCan)
+
+        // 2. Cancelar CAN
+        viewModel.cancelCanEntry()
+        assertTrue(viewModel.uiState.value is CertificatesUiState.Idle)
+
+        // 3. Confirmar CAN
+        viewModel.requestCanEntry()
+        viewModel.onCanConfirmed("123456")
+        assertEquals("123456", viewModel.enteredCan)
+        val readingState = viewModel.uiState.value
+        assertTrue(readingState is CertificatesUiState.ReadingCard)
+        assertEquals("123456", (readingState as CertificatesUiState.ReadingCard).can)
+    }
+
+    @Test
     fun testOnCardDetectedSuccessLoadsCertificates() = runTest(testDispatcher) {
         val mockTransceiver = object : DnieTransceiverInterface {
             override suspend fun selectPkiApplet(): Result<Unit> = Result.success(Unit)

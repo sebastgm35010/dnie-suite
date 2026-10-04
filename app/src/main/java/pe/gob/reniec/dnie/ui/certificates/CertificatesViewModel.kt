@@ -20,8 +20,13 @@ import java.io.OutputStream
 sealed interface CertificatesUiState {
     data object Idle : CertificatesUiState
 
+    data class EnteringCan(
+        val initialCan: String = ""
+    ) : CertificatesUiState
+
     data class ReadingCard(
-        val message: String = "Aproxime su DNIe al sensor NFC para leer los certificados..."
+        val message: String = "Aproxime su DNIe al sensor NFC para leer los certificados...",
+        val can: String? = null
     ) : CertificatesUiState
 
     data class Loaded(
@@ -42,11 +47,41 @@ class CertificatesViewModel : ViewModel() {
     private val _uiState = MutableStateFlow<CertificatesUiState>(CertificatesUiState.Idle)
     val uiState: StateFlow<CertificatesUiState> = _uiState.asStateFlow()
 
+    var enteredCan: String? = null
+        private set
+
     /**
-     * Inicia la solicitud de aproximación de tarjeta para lectura.
+     * Solicita en pantalla el ingreso del código CAN (6 dígitos) antes de activar NFC.
      */
-    fun startReading() {
-        _uiState.value = CertificatesUiState.ReadingCard()
+    fun requestCanEntry() {
+        _uiState.value = CertificatesUiState.EnteringCan(initialCan = enteredCan ?: "")
+    }
+
+    /**
+     * Cancela el ingreso del CAN y regresa al estado Idle.
+     */
+    fun cancelCanEntry() {
+        if (_uiState.value is CertificatesUiState.EnteringCan) {
+            _uiState.value = CertificatesUiState.Idle
+        }
+    }
+
+    /**
+     * Confirma el CAN ingresado y procede a la espera del DNIe en el lector NFC.
+     */
+    fun onCanConfirmed(can: String) {
+        enteredCan = can
+        _uiState.value = CertificatesUiState.ReadingCard(can = can)
+    }
+
+    /**
+     * Inicia directamente la solicitud de aproximación de tarjeta para lectura.
+     */
+    fun startReading(can: String? = null) {
+        if (can != null) {
+            enteredCan = can
+        }
+        _uiState.value = CertificatesUiState.ReadingCard(can = enteredCan)
     }
 
     /**
@@ -62,11 +97,15 @@ class CertificatesViewModel : ViewModel() {
      * Procesa la tarjeta detectada a través del transceptor APDU.
      */
     fun onCardDetected(transceiver: DnieTransceiverInterface) {
-        _uiState.value = CertificatesUiState.ReadingCard("Conectando con Applet PKI de RENIEC...")
+        if (transceiver is pe.gob.reniec.dnie.core.nfc.DnieTransceiver && transceiver.can.isNullOrBlank() && !enteredCan.isNullOrBlank()) {
+            transceiver.can = enteredCan
+        }
+
+        _uiState.value = CertificatesUiState.ReadingCard("Conectando con Applet del DNIe...")
 
         viewModelScope.launch {
             try {
-                // 1. Seleccionar Applet PKI de RENIEC
+                // 1. Seleccionar Applet PKI / ICAO de RENIEC
                 val selectResult = transceiver.selectPkiApplet()
                 selectResult.getOrThrow()
 

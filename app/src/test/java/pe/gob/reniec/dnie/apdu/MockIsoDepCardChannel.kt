@@ -112,6 +112,7 @@ open class MockIsoDepCardChannel(
 
         return when (apdu.ins) {
             ApduConstants.INS_SELECT -> handleSelect(apdu)
+            ApduConstants.INS_READ_BINARY -> handleStandardReadBinary(apdu)
             ApduConstants.INS_READ_BINARY_DO -> handleReadBinary(apdu)
             ApduConstants.INS_VERIFY -> handleVerify(apdu)
             ApduConstants.INS_MSE -> handleMse(apdu)
@@ -133,6 +134,28 @@ open class MockIsoDepCardChannel(
                     ResponseApdu.error(StatusWord.SW_FILE_NOT_FOUND).toByteArray()
                 }
             }
+            0x00.toByte() -> {
+                if (apdu.data.contentEquals(byteArrayOf(0x3F.toByte(), 0x00.toByte()))) {
+                    isPkiAppletSelected = true
+                    selectedEfId = null
+                    ResponseApdu.success().toByteArray()
+                } else if (apdu.data.size == 2) {
+                    // SELECT EF direct by File ID
+                    if (!isPkiAppletSelected) {
+                        return ResponseApdu.error(StatusWord.SW_SECURITY_STATUS_NOT_SATISFIED).toByteArray()
+                    }
+                    val efHex = apdu.data.joinToString("") { "%02X".format(it) }
+                    if (efFiles.containsKey(efHex)) {
+                        selectedEfId = efHex
+                        ResponseApdu.success().toByteArray()
+                    } else {
+                        selectedEfId = null
+                        ResponseApdu.error(StatusWord.SW_FILE_NOT_FOUND).toByteArray()
+                    }
+                } else {
+                    ResponseApdu.error(StatusWord.SW_INCORRECT_P1_P2).toByteArray()
+                }
+            }
             ApduConstants.P1_SELECT_EF_UNDER_DF -> {
                 if (!isPkiAppletSelected) {
                     return ResponseApdu.error(StatusWord.SW_SECURITY_STATUS_NOT_SATISFIED).toByteArray()
@@ -148,6 +171,32 @@ open class MockIsoDepCardChannel(
             }
             else -> ResponseApdu.error(StatusWord.SW_INCORRECT_P1_P2).toByteArray()
         }
+    }
+
+    private fun handleStandardReadBinary(apdu: CommandApdu): ByteArray {
+        val currentEf = selectedEfId ?: return ResponseApdu.error(StatusWord.SW_SECURITY_STATUS_NOT_SATISFIED).toByteArray()
+        val fileBytes = efFiles[currentEf] ?: return ResponseApdu.error(StatusWord.SW_FILE_NOT_FOUND).toByteArray()
+
+        val offsetHi = apdu.p1.toInt() and 0x7F
+        val offsetLo = apdu.p2.toInt() and 0xFF
+        val offset = (offsetHi shl 8) or offsetLo
+
+        if (offset >= fileBytes.size) {
+            return ResponseApdu.error(StatusWord.SW_WRONG_OFFSET).toByteArray()
+        }
+
+        val remaining = fileBytes.size - offset
+        val requestedLe = apdu.le ?: 256
+        val chunkSize = minOf(requestedLe, remaining)
+        val chunk = fileBytes.copyOfRange(offset, offset + chunkSize)
+
+        val sw = if (offset + chunkSize >= fileBytes.size) {
+            StatusWord.SW_EOF_REACHED
+        } else {
+            StatusWord.SW_SUCCESS
+        }
+
+        return ResponseApdu(chunk, (sw ushr 8) and 0xFF, sw and 0xFF).toByteArray()
     }
 
     private fun handleReadBinary(apdu: CommandApdu): ByteArray {

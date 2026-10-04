@@ -1,9 +1,14 @@
 package pe.gob.reniec.dnie
 
+import android.content.Context
 import android.content.Intent
 import android.nfc.NfcAdapter
 import android.nfc.Tag
+import android.os.Build
 import android.os.Bundle
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -78,19 +83,55 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * Despacha el tag NFC descubierto al ViewModel activo según la operación en curso.
+     * Emite una vibración háptica de 70 ms inmediatamente cuando la tarjeta entra en el campo NFC.
+     */
+    private fun triggerHapticFeedback() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
+                vibratorManager?.defaultVibrator?.vibrate(
+                    VibrationEffect.createOneShot(70, VibrationEffect.DEFAULT_AMPLITUDE)
+                )
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                @Suppress("DEPRECATION")
+                val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+                vibrator?.vibrate(
+                    VibrationEffect.createOneShot(70, VibrationEffect.DEFAULT_AMPLITUDE)
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+                @Suppress("DEPRECATION")
+                vibrator?.vibrate(70)
+            }
+        } catch (_: Exception) {}
+    }
+
+    /**
+     * Despacha el tag NFC descubierto al ViewModel activo según la operación en curso,
+     * propagando las credenciales (CAN y/o PIN) recolectadas previamente en pantalla.
      */
     private fun dispatchNfcTag(tag: Tag) {
+        triggerHapticFeedback()
         val channel = IsoDepCardChannel.fromTag(tag) ?: return
-        val transceiver = DnieTransceiver(channel)
 
         // Si el usuario activó el sondeo diagnóstico de AIDs
         if (consoleViewModel.isProbeActive) {
             consoleViewModel.onCardDetected(channel)
         } else if (signerViewModel.uiState.value is SignerUiState.AwaitingCard) {
+            val awaiting = signerViewModel.uiState.value as SignerUiState.AwaitingCard
+            val transceiver = DnieTransceiver(
+                channel = channel,
+                can = awaiting.can ?: signerViewModel.enteredCan,
+                pin = awaiting.pin
+            )
             signerViewModel.onCardDetected(transceiver, this)
         } else {
-            // Por defecto, procesar lectura en el inspector de certificados
+            // Por defecto, procesar lectura en el inspector de certificados con el CAN recolectado
+            val transceiver = DnieTransceiver(
+                channel = channel,
+                can = certificatesViewModel.enteredCan
+            )
             certificatesViewModel.onCardDetected(transceiver)
         }
     }
