@@ -8,6 +8,7 @@ import org.junit.Before
 import org.junit.Test
 import pe.gob.reniec.dnie.core.apdu.ApduConstants
 import pe.gob.reniec.dnie.core.crypto.PaceProtocol
+import pe.gob.reniec.dnie.core.crypto.PaceSecurityInfo
 import java.math.BigInteger
 import java.security.SecureRandom
 import javax.crypto.Cipher
@@ -182,5 +183,48 @@ class PaceProtocolTest {
         assertTrue(tokenData.size > 70)
         assertEquals(0x7F.toByte(), tokenData[0])
         assertEquals(0x49.toByte(), tokenData[1])
+    }
+
+    @Test
+    fun testComputeIntegratedMappedGenerator() {
+        val parameterId = 13 // BrainpoolP256r1
+        val nonce = ByteArray(32) { 0x07 }
+        val group = PaceProtocol.computeIntegratedMappedGenerator(nonce, parameterId)
+
+        assertNotNull(group)
+        assertNotNull(group.mappedGenerator)
+        assertTrue(group.mappedGenerator.isValid)
+    }
+
+    @Test
+    fun testDeriveSessionKeys_Aes256() {
+        val dummyKx = ByteArray(32) { 0x42 }
+        val keys = PaceProtocol.deriveSessionKeys(dummyKx, isAes256 = true)
+
+        assertEquals(32, keys.kEnc.size)
+        assertEquals(32, keys.kMac.size)
+    }
+
+    @Test
+    fun testPaceSecurityInfo_Flags() {
+        val gmInfo = PaceSecurityInfo(
+            oid = "0.4.0.127.0.7.2.2.4.2.2",
+            oidValueBytes = ApduConstants.OID_PACE_ECDH_GM_AES128,
+            version = 2,
+            parameterId = 13
+        )
+        assertTrue(gmInfo.isGenericMapping)
+        assertTrue(!gmInfo.isIntegratedMapping)
+        assertTrue(!gmInfo.isAes256)
+
+        val imInfo = PaceSecurityInfo(
+            oid = "0.4.0.127.0.7.2.2.4.4.4",
+            oidValueBytes = ApduConstants.OID_PACE_ECDH_IM_AES256,
+            version = 2,
+            parameterId = 13
+        )
+        assertTrue(!imInfo.isGenericMapping)
+        assertTrue(imInfo.isIntegratedMapping)
+        assertTrue(imInfo.isAes256)
     }
 }

@@ -3,6 +3,7 @@ package pe.gob.reniec.dnie.core.nfc
 import pe.gob.reniec.dnie.core.apdu.ApduConstants
 import pe.gob.reniec.dnie.core.apdu.CommandApdu
 import pe.gob.reniec.dnie.core.apdu.ResponseApdu
+import pe.gob.reniec.dnie.core.crypto.MappedGroup
 import pe.gob.reniec.dnie.core.crypto.PaceProtocol
 import pe.gob.reniec.dnie.core.crypto.PaceSecurityInfo
 import pe.gob.reniec.dnie.core.logging.ApduLogger
@@ -58,25 +59,44 @@ class PaceHandler(
             PaceProtocol.parseCardAccess(cardAccessBytes)
         } else null
 
-        val effectiveSecurityInfo = securityInfo ?: PaceSecurityInfo(
+        val paramId = securityInfo?.parameterId ?: 13 // 13 = BrainpoolP256r1
+        val version = securityInfo?.version ?: 2
+
+        // Prioridad 1: Proponer Generic Mapping (GM) con BrainpoolP256r1 (soporte universal ICAO / IDEMIA Cosmo)
+        val gmSecurityInfo = PaceSecurityInfo(
             oid = "0.4.0.127.0.7.2.2.4.2.2",
             oidValueBytes = ApduConstants.OID_PACE_ECDH_GM_AES128,
-            version = 2,
-            parameterId = 13 // BrainpoolP256r1
+            version = version,
+            parameterId = paramId
         )
-
-        logger.logInfo("Parámetros PACE: OID=${effectiveSecurityInfo.oid}, CurveID=${effectiveSecurityInfo.parameterId}, Versión=${effectiveSecurityInfo.version}")
 
         // Paso 1: Manage Security Environment (MSE: SET AT)
-        val mseCmd = CommandApdu.mseSetAtPace(
-            oidValueBytes = effectiveSecurityInfo.oidValueBytes,
-            parameterId = effectiveSecurityInfo.parameterId,
+        // Intentar primero con Generic Mapping (GM AES-128)
+        var selectedSecurityInfo = gmSecurityInfo
+        val mseGmCmd = CommandApdu.mseSetAtPace(
+            oidValueBytes = gmSecurityInfo.oidValueBytes,
+            parameterId = gmSecurityInfo.parameterId,
             passwordType = ApduConstants.PACE_PWD_CAN
         )
-        val mseResp = transceive(channel, mseCmd, "PACE Paso 1: MSE: SET AT (CAN)")
+        var mseResp = transceive(channel, mseGmCmd, "PACE Paso 1: MSE: SET AT (CAN - Generic Mapping GM)")
+
+        if (!mseResp.isSuccess && securityInfo != null && securityInfo.oid != gmSecurityInfo.oid) {
+            // Si la tarjeta rechaza GM, intentar con el OID nativo leído de EF.CardAccess (ej. IM)
+            logger.logInfo("GM no aceptado (${mseResp.statusWord.description}); intentando con OID nativo ${securityInfo.oid}...")
+            selectedSecurityInfo = securityInfo
+            val mseNativeCmd = CommandApdu.mseSetAtPace(
+                oidValueBytes = securityInfo.oidValueBytes,
+                parameterId = securityInfo.parameterId,
+                passwordType = ApduConstants.PACE_PWD_CAN
+            )
+            mseResp = transceive(channel, mseNativeCmd, "PACE Paso 1: MSE: SET AT (CAN - OID Nativo ${securityInfo.oid})")
+        }
+
         if (!mseResp.isSuccess) {
             throw PaceException("Fallo en MSE: SET AT: ${mseResp.statusWord.description}", mseResp.sw)
         }
+
+        logger.logInfo("Parámetros PACE acordados: OID=${selectedSecurityInfo.oid}, CurveID=${selectedSecurityInfo.parameterId}, Versión=${selectedSecurityInfo.version}, GM=${selectedSecurityInfo.isGenericMapping}, AES256=${selectedSecurityInfo.isAes256}")
 
         // Paso 2: GENERAL AUTHENTICATE - Obtención del Nonce cifrado
         // Comando: 10 86 00 00 02 7C 00 00
@@ -94,35 +114,47 @@ class PaceHandler(
             ?: throw PaceException("Respuesta de Nonce no contiene Tag 0x80")
 
         val decryptedNonce = try {
-            PaceProtocol.decryptNonce(can, encryptedNonce)
+            PaceProtocol.decryptNonce(can, encryptedNonce, isAes256 = selectedSecurityInfo.isAes256)
         } catch (e: Exception) {
             throw PaceException("Fallo al descifrar Nonce con CAN: ${e.message}")
         }
         logger.logInfo("Nonce descifrado exitosamente con CAN (${decryptedNonce.size} bytes).")
 
-        // Paso 3: GENERAL AUTHENTICATE - Mapeo del generador (Generic Mapping PACE-GM)
-        val mappingKey = PaceProtocol.generateMappingKey(effectiveSecurityInfo.parameterId)
-        val mapCmdData = buildDo7c(0x81, mappingKey.publicPointBytes)
-        val mapCmd = CommandApdu.generalAuthenticate(
-            data = mapCmdData,
-            isChained = true,
-            le = 256
-        )
-        val mapResp = transceive(channel, mapCmd, "PACE Paso 3: Mapeo de generador (Tag 0x81 -> 0x82)")
-        if (!mapResp.isSuccess) {
-            throw PaceException("Fallo en mapeo de generador: ${mapResp.statusWord.description}", mapResp.sw)
+        // Paso 3: Mapeo del generador
+        val mappedGroup: MappedGroup
+        if (selectedSecurityInfo.isGenericMapping) {
+            // Generic Mapping (PACE-GM): intercambio de Tag 0x81 (terminal) y Tag 0x82 (tarjeta)
+            val mappingKey = PaceProtocol.generateMappingKey(selectedSecurityInfo.parameterId)
+            val mapCmdData = buildDo7c(0x81, mappingKey.publicPointBytes)
+            val mapCmd = CommandApdu.generalAuthenticate(
+                data = mapCmdData,
+                isChained = true,
+                le = 256
+            )
+            val mapResp = transceive(channel, mapCmd, "PACE Paso 3: Mapeo de generador GM (Tag 0x81 -> 0x82)")
+            if (!mapResp.isSuccess) {
+                throw PaceException("Fallo en mapeo de generador GM: ${mapResp.statusWord.description}", mapResp.sw)
+            }
+
+            val cardMappingPub = extractTagDataFrom7c(mapResp.data, 0x82)
+                ?: throw PaceException("Respuesta de mapeo no contiene Tag 0x82")
+
+            mappedGroup = PaceProtocol.computeMappedGenerator(
+                mappingPair = mappingKey,
+                cardMappingPubBytes = cardMappingPub,
+                nonceBytes = decryptedNonce,
+                parameterId = selectedSecurityInfo.parameterId
+            )
+            logger.logInfo("Generador elíptico G' calculado exitosamente (Generic Mapping GM).")
+        } else {
+            // Integrated Mapping (PACE-IM): cálculo directo sin intercambio de Tag 0x81/0x82
+            logger.logInfo("Modo Integrated Mapping (IM): derivando generador elíptico G' directamente desde Nonce...")
+            mappedGroup = PaceProtocol.computeIntegratedMappedGenerator(
+                nonceBytes = decryptedNonce,
+                parameterId = selectedSecurityInfo.parameterId
+            )
+            logger.logInfo("Generador elíptico G' calculado exitosamente (Integrated Mapping IM).")
         }
-
-        val cardMappingPub = extractTagDataFrom7c(mapResp.data, 0x82)
-            ?: throw PaceException("Respuesta de mapeo no contiene Tag 0x82")
-
-        val mappedGroup = PaceProtocol.computeMappedGenerator(
-            mappingPair = mappingKey,
-            cardMappingPubBytes = cardMappingPub,
-            nonceBytes = decryptedNonce,
-            parameterId = effectiveSecurityInfo.parameterId
-        )
-        logger.logInfo("Generador elíptico G' calculado exitosamente.")
 
         // Paso 4: GENERAL AUTHENTICATE - Acuerdo de claves efímeras
         val ephemeralKey = PaceProtocol.generateEphemeralKey(mappedGroup)
@@ -145,13 +177,16 @@ class PaceHandler(
             cardEphemeralPubBytes = cardEphemeralPub,
             mappedGroup = mappedGroup
         )
-        val sessionKeys = PaceProtocol.deriveSessionKeys(sharedSecretX)
-        logger.logInfo("Claves de sesión K_Enc y K_Mac derivadas exitosamente.")
+        val sessionKeys = PaceProtocol.deriveSessionKeys(
+            sharedSecretX = sharedSecretX,
+            isAes256 = selectedSecurityInfo.isAes256
+        )
+        logger.logInfo("Claves de sesión K_Enc y K_Mac derivadas exitosamente (${if (selectedSecurityInfo.isAes256) "AES-256" else "AES-128"}).")
 
         // Paso 5: GENERAL AUTHENTICATE - Autenticación mutua (Token MAC)
         val terminalToken = PaceProtocol.computeAuthenticationToken(
             kMac = sessionKeys.kMac,
-            oidValueBytes = effectiveSecurityInfo.oidValueBytes,
+            oidValueBytes = selectedSecurityInfo.oidValueBytes,
             pubKeyBytes = cardEphemeralPub
         )
 
@@ -170,7 +205,7 @@ class PaceHandler(
         if (cardToken != null) {
             val expectedCardToken = PaceProtocol.computeAuthenticationToken(
                 kMac = sessionKeys.kMac,
-                oidValueBytes = effectiveSecurityInfo.oidValueBytes,
+                oidValueBytes = selectedSecurityInfo.oidValueBytes,
                 pubKeyBytes = ephemeralKey.publicPointBytes
             )
 
@@ -182,7 +217,7 @@ class PaceHandler(
             logger.logInfo("Tarjeta autenticada con éxito (SW 9000 recibido en autenticación mutua).")
         }
 
-        logger.logInfo("¡Autenticación mutua PACE exitosa! Canal Seguro AES-128 CBC/CMAC establecido.")
+        logger.logInfo("¡Autenticación mutua PACE exitosa! Canal Seguro ${if (selectedSecurityInfo.isAes256) "AES-256" else "AES-128"} CBC/CMAC establecido.")
 
         return PaceSecureChannel(
             baseChannel = channel,

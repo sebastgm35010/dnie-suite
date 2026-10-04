@@ -33,6 +33,18 @@ data class PaceSecurityInfo(
     val version: Int,
     val parameterId: Int
 ) {
+    val isGenericMapping: Boolean
+        get() = oid.endsWith(".2.2") || oid.endsWith(".2.4") ||
+                (oidValueBytes.size >= 10 && oidValueBytes[8] == 0x02.toByte())
+
+    val isIntegratedMapping: Boolean
+        get() = oid.endsWith(".4.2") || oid.endsWith(".4.4") ||
+                (oidValueBytes.size >= 10 && oidValueBytes[8] == 0x04.toByte())
+
+    val isAes256: Boolean
+        get() = oid.endsWith(".4") ||
+                (oidValueBytes.size >= 10 && oidValueBytes[9] == 0x04.toByte())
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is PaceSecurityInfo) return false
@@ -246,12 +258,13 @@ object PaceProtocol {
 
     /**
      * Deriva la clave simétrica K_pi a partir del CAN (o MRZ) según BSI TR-03110:
-     * K_pi = SHA-1(CAN || 0x00, 0x00, 0x00, 0x03)[0..15]
+     * K_pi = SHA-1(CAN || 0x00, 0x00, 0x00, 0x03)[0..15] para AES-128
+     * K_pi = SHA-256(CAN || 0x00, 0x00, 0x00, 0x03)[0..31] para AES-256
      */
     fun deriveKpi(password: String, keyLength: Int = 16): ByteArray {
         val pwdBytes = password.toByteArray(Charsets.US_ASCII)
         val counterBytes = byteArrayOf(0x00, 0x00, 0x00, 0x03)
-        val md = MessageDigest.getInstance("SHA-1")
+        val md = if (keyLength == 32) MessageDigest.getInstance("SHA-256") else MessageDigest.getInstance("SHA-1")
         md.update(pwdBytes)
         md.update(counterBytes)
         val hash = md.digest()
@@ -260,11 +273,12 @@ object PaceProtocol {
 
     /**
      * Descifra el Nonce aleatorio devuelto por la tarjeta en el paso 1 de PACE:
-     * Nonce = AES-128-CBC-Decrypt(K_pi, IV=0, EncryptedNonce)
+     * Nonce = AES-CBC-Decrypt(K_pi, IV=0, EncryptedNonce)
      */
-    fun decryptNonce(password: String, encryptedNonce: ByteArray): ByteArray {
-        val kPi = deriveKpi(password, 16)
-        val iv = ByteArray(16) // IV de 16 ceros
+    fun decryptNonce(password: String, encryptedNonce: ByteArray, isAes256: Boolean = false): ByteArray {
+        val keyLength = if (isAes256 || encryptedNonce.size > 16) 32 else 16
+        val kPi = deriveKpi(password, keyLength)
+        val iv = ByteArray(16) // IV de 16 ceros para AES-CBC
         val cipher = Cipher.getInstance("AES/CBC/NoPadding")
         cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(kPi, "AES"), IvParameterSpec(iv))
         return cipher.doFinal(encryptedNonce)
@@ -329,6 +343,33 @@ object PaceProtocol {
     }
 
     /**
+     * Calcula el nuevo generador G' en modo Integrated Mapping (PACE-IM)
+     * a partir del Nonce descifrado sin intercambio interactivo de Tag 81/82.
+     * G' = [s] G
+     */
+    fun computeIntegratedMappedGenerator(
+        nonceBytes: ByteArray,
+        parameterId: Int = 13
+    ): MappedGroup {
+        val params = getCurveParameters(parameterId)
+        val curve = params.curve
+        val g = params.g
+        val n = params.n
+        val h = params.h
+
+        val s = BigInteger(1, nonceBytes).mod(n)
+        val mappedG = g.multiply(s).normalize()
+
+        return MappedGroup(
+            curve = curve,
+            baseGenerator = g,
+            mappedGenerator = mappedG,
+            order = n,
+            cofactor = h
+        )
+    }
+
+    /**
      * Genera un par de claves efímeras sobre el nuevo generador mapeado G'.
      */
     fun generateEphemeralKey(mappedGroup: MappedGroup): PaceEphemeralKeyPair {
@@ -366,22 +407,27 @@ object PaceProtocol {
 
     /**
      * Deriva las claves de sesión K_Enc y K_Mac a partir del secreto compartido Kx:
-     * K_Enc = SHA-1(Kx || 0x00, 0x00, 0x00, 0x01)[0..15]
-     * K_Mac = SHA-1(Kx || 0x00, 0x00, 0x00, 0x02)[0..15]
+     * Para AES-128: SHA-1(Kx || counter)[0..15]
+     * Para AES-256: SHA-256(Kx || counter)[0..31]
      */
-    fun deriveSessionKeys(sharedSecretX: ByteArray, keyLength: Int = 16): PaceSessionKeys {
-        val md = MessageDigest.getInstance("SHA-1")
+    fun deriveSessionKeys(
+        sharedSecretX: ByteArray,
+        keyLength: Int = 16,
+        isAes256: Boolean = false
+    ): PaceSessionKeys {
+        val actualLen = if (isAes256) 32 else keyLength
+        val md = if (actualLen == 32) MessageDigest.getInstance("SHA-256") else MessageDigest.getInstance("SHA-1")
 
         // K_Enc (counter = 1)
         md.update(sharedSecretX)
         md.update(byteArrayOf(0x00, 0x00, 0x00, 0x01))
-        val kEnc = md.digest().copyOfRange(0, keyLength)
+        val kEnc = md.digest().copyOfRange(0, actualLen)
 
         // K_Mac (counter = 2)
         md.reset()
         md.update(sharedSecretX)
         md.update(byteArrayOf(0x00, 0x00, 0x00, 0x02))
-        val kMac = md.digest().copyOfRange(0, keyLength)
+        val kMac = md.digest().copyOfRange(0, actualLen)
 
         return PaceSessionKeys(kEnc = kEnc, kMac = kMac)
     }

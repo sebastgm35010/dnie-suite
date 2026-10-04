@@ -124,6 +124,14 @@ object ApduConstants {
         0x04.toByte(), 0x00.toByte(), 0x7F.toByte(), 0x00.toByte(), 0x07.toByte(),
         0x02.toByte(), 0x02.toByte(), 0x04.toByte(), 0x02.toByte(), 0x02.toByte()
     )
+    val OID_PACE_ECDH_GM_AES256: ByteArray = byteArrayOf(
+        0x04.toByte(), 0x00.toByte(), 0x7F.toByte(), 0x00.toByte(), 0x07.toByte(),
+        0x02.toByte(), 0x02.toByte(), 0x04.toByte(), 0x02.toByte(), 0x04.toByte()
+    )
+    val OID_PACE_ECDH_IM_AES256: ByteArray = byteArrayOf(
+        0x04.toByte(), 0x00.toByte(), 0x7F.toByte(), 0x00.toByte(), 0x07.toByte(),
+        0x02.toByte(), 0x02.toByte(), 0x04.toByte(), 0x04.toByte(), 0x04.toByte()
+    )
 
     // Tipos de PIN
     const val PIN_TYPE_SIGNATURE: Byte = 0x81.toByte()
