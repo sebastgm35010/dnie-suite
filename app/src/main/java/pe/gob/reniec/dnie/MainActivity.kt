@@ -84,8 +84,10 @@ class MainActivity : ComponentActivity() {
         val channel = IsoDepCardChannel.fromTag(tag) ?: return
         val transceiver = DnieTransceiver(channel)
 
-        // Si el usuario está en el flujo de firma esperando la tarjeta
-        if (signerViewModel.uiState.value is SignerUiState.AwaitingCard) {
+        // Si el usuario activó el sondeo diagnóstico de AIDs
+        if (consoleViewModel.isProbeActive) {
+            consoleViewModel.onCardDetected(channel)
+        } else if (signerViewModel.uiState.value is SignerUiState.AwaitingCard) {
             signerViewModel.onCardDetected(transceiver, this)
         } else {
             // Por defecto, procesar lectura en el inspector de certificados

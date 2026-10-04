@@ -116,10 +116,23 @@ class CommandApdu(
         }
 
         /**
-         * Crea un comando SELECT FILE para el Applet PKI de RENIEC.
+         * Crea un comando SELECT FILE para el Applet PKI de RENIEC (v2 clásico o personalizado).
          */
-        fun selectReniecPkiApplet(): CommandApdu {
-            return selectDfByName(ApduConstants.AID_RENIEC_PKI)
+        fun selectReniecPkiApplet(aid: ByteArray = ApduConstants.AID_RENIEC_PKI): CommandApdu {
+            return selectDfByName(aid)
+        }
+
+        /**
+         * Crea un comando SELECT FILE para el Master File (MF 3F 00).
+         */
+        fun selectMasterFile(): CommandApdu {
+            return CommandApdu(
+                cla = ApduConstants.CLA_ISO7816,
+                ins = ApduConstants.INS_SELECT,
+                p1 = 0x00.toByte(),
+                p2 = 0x0C.toByte(),
+                data = byteArrayOf(0x3F.toByte(), 0x00.toByte())
+            )
         }
 
         /**

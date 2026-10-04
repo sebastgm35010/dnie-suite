@@ -8,14 +8,68 @@ package pe.gob.reniec.dnie.core.apdu
 object ApduConstants {
 
     /**
-     * Application Identifier (AID) del Applet PKI de RENIEC:
-     * RID: E8 28 BD 08 0F (Perú)
-     * PIX: D2 50 47 65 6E 65 72 69 63 ("PGeneric")
+     * Application Identifiers (AIDs) conocidos para DNIe de Perú (v2 y v3):
      */
-    val AID_RENIEC_PKI: ByteArray = byteArrayOf(
+    // DNIe v3.0: Instancia PKI oficial RENIEC (Oberthur/IDEMIA CosmopolIC)
+    val AID_RENIEC_PKI_V3_IDEMIA: ByteArray = byteArrayOf(
+        0xA0.toByte(), 0x00.toByte(), 0x00.toByte(), 0x00.toByte(), 0x77.toByte(),
+        0x01.toByte(), 0x00.toByte(), 0x70.toByte(), 0x0A.toByte(), 0x10.toByte(),
+        0x00.toByte(), 0xF1.toByte(), 0x00.toByte(), 0x00.toByte(), 0x01.toByte(),
+        0x00.toByte()
+    )
+
+    // DNIe v3.0: IAS-ECC IDEMIA Cosmo estándar
+    val AID_IAS_ECC_IDEMIA: ByteArray = byteArrayOf(
+        0xA0.toByte(), 0x00.toByte(), 0x00.toByte(), 0x00.toByte(), 0x77.toByte(),
+        0x01.toByte(), 0x08.toByte(), 0x00.toByte(), 0x07.toByte(), 0x00.toByte(),
+        0x00.toByte(), 0xFE.toByte(), 0x00.toByte(), 0x00.toByte(), 0x01.toByte(),
+        0x00.toByte()
+    )
+
+    // DNIe v3.0: IAS-ECC Raíz
+    val AID_IAS_ECC_ROOT: ByteArray = byteArrayOf(
+        0xA0.toByte(), 0x00.toByte(), 0x00.toByte(), 0x00.toByte(), 0x77.toByte(),
+        0x01.toByte()
+    )
+
+    // DNIe v3.0: ICAO LDS1 eMRTD (Documento de Viaje / Datos Ciudadanos ICAO 9303)
+    val AID_ICAO_MRTD: ByteArray = byteArrayOf(
+        0xA0.toByte(), 0x00.toByte(), 0x00.toByte(), 0x02.toByte(), 0x47.toByte(),
+        0x10.toByte(), 0x01.toByte()
+    )
+
+    // DNIe v2.0: Applet PKI clásico de RENIEC ("PGeneric")
+    val AID_RENIEC_PKI_V2: ByteArray = byteArrayOf(
         0xE8.toByte(), 0x28.toByte(), 0xBD.toByte(), 0x08.toByte(), 0x0F.toByte(),
         0xD2.toByte(), 0x50.toByte(), 0x47.toByte(), 0x65.toByte(), 0x6E.toByte(),
         0x65.toByte(), 0x72.toByte(), 0x69.toByte(), 0x63.toByte()
+    )
+
+    // DNIe v2.0: RID RENIEC corto
+    val AID_RENIEC_SHORT: ByteArray = byteArrayOf(
+        0xE8.toByte(), 0x28.toByte(), 0xBD.toByte(), 0x08.toByte(), 0x0F.toByte()
+    )
+
+    // Estándar eID PKCS#15
+    val AID_PKCS15: ByteArray = byteArrayOf(
+        0xA0.toByte(), 0x00.toByte(), 0x00.toByte(), 0x00.toByte(), 0x18.toByte(),
+        0x00.toByte(), 0x00.toByte(), 0x01.toByte()
+    )
+
+    // Alias retrocompatible
+    val AID_RENIEC_PKI: ByteArray = AID_RENIEC_PKI_V2
+
+    /**
+     * Lista priorizada de AIDs candidatos para auto-detección de DNIe v2 y v3.
+     */
+    val CANDIDATE_AIDS: List<Pair<String, ByteArray>> = listOf(
+        Pair("DNIe v3 PKI (RENIEC IDEMIA)", AID_RENIEC_PKI_V3_IDEMIA),
+        Pair("DNIe v3 IAS-ECC (IDEMIA Cosmo)", AID_IAS_ECC_IDEMIA),
+        Pair("DNIe v3 IAS-ECC (Raíz)", AID_IAS_ECC_ROOT),
+        Pair("DNIe v3 ICAO eMRTD", AID_ICAO_MRTD),
+        Pair("DNIe v2 PKI (PGeneric)", AID_RENIEC_PKI_V2),
+        Pair("DNIe v2 RID (RENIEC)", AID_RENIEC_SHORT),
+        Pair("eID PKCS#15 Genérico", AID_PKCS15)
     )
 
     // Clases APDU (CLA)

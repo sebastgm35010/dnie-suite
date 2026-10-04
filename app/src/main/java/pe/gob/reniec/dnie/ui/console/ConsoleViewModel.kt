@@ -20,6 +20,8 @@ import kotlinx.coroutines.launch
 import pe.gob.reniec.dnie.core.logging.ApduDirection
 import pe.gob.reniec.dnie.core.logging.ApduLogEntry
 import pe.gob.reniec.dnie.core.logging.ApduLogger
+import pe.gob.reniec.dnie.core.nfc.DnieCardChannel
+import pe.gob.reniec.dnie.core.nfc.DnieTransceiver
 
 /**
  * Filtro de dirección para la consola de tramas APDU.
@@ -36,7 +38,8 @@ enum class ConsoleFilter {
 data class ConsoleUiState(
     val entries: List<ApduLogEntry> = emptyList(),
     val filter: ConsoleFilter = ConsoleFilter.ALL,
-    val autoScroll: Boolean = true
+    val autoScroll: Boolean = true,
+    val isProbing: Boolean = false
 ) {
     val filteredEntries: List<ApduLogEntry>
         get() = when (filter) {
@@ -211,5 +214,47 @@ class ConsoleViewModel(
         }
 
         return sb.toString().trimEnd()
+    }
+
+    /**
+     * Estado de sondeo activo esperando la tarjeta.
+     */
+    var isProbeActive: Boolean = false
+        private set
+
+    /**
+     * Inicia el modo de sondeo para analizar todos los AIDs de la tarjeta al aproximarla.
+     */
+    fun startCardProbe() {
+        isProbeActive = true
+        _uiState.update { it.copy(isProbing = true) }
+        apduLogger.logInfo("Modo Diagnóstico activado: Aproxime su DNIe al sensor NFC para probar todos los AIDs conocidos...")
+    }
+
+    /**
+     * Cancela el modo de sondeo.
+     */
+    fun cancelCardProbe() {
+        isProbeActive = false
+        _uiState.update { it.copy(isProbing = false) }
+    }
+
+    /**
+     * Ejecuta el sondeo completo de AIDs sobre el canal de tarjeta detectado.
+     */
+    fun onCardDetected(channel: DnieCardChannel) {
+        val transceiver = DnieTransceiver(channel, apduLogger)
+        viewModelScope.launch {
+            try {
+                feedbackDispatcher?.playSuccess()
+                transceiver.probeAllAids()
+            } catch (e: Exception) {
+                feedbackDispatcher?.playError()
+                apduLogger.logInfo("Error durante el sondeo: ${e.message}")
+            } finally {
+                isProbeActive = false
+                _uiState.update { it.copy(isProbing = false) }
+            }
+        }
     }
 }

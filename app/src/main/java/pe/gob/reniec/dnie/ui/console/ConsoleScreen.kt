@@ -154,6 +154,54 @@ fun ConsoleScreen(
                 )
             }
 
+            // Barra de acción para Diagnóstico / Sondeo de AIDs (DNIe v2 / v3)
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                color = if (uiState.isProbing) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                shape = MaterialTheme.shapes.small
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if (uiState.isProbing) "Modo Sondeo Activo: Aproxime su DNIe" else "Sondeo de AIDs (DNIe v2 / v3)",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (uiState.isProbing) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = if (uiState.isProbing) "Mantenga el DNIe pegado al teléfono para probar todos los AIDs" else "Envía ráfaga de prueba a todos los AIDs conocidos para identificar la tarjeta",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (uiState.isProbing) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    if (uiState.isProbing) {
+                        androidx.compose.material3.Button(
+                            onClick = { viewModel.cancelCardProbe() },
+                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error
+                            )
+                        ) {
+                            Text("Cancelar")
+                        }
+                    } else {
+                        androidx.compose.material3.Button(
+                            onClick = { viewModel.startCardProbe() }
+                        ) {
+                            Text("Escanear AIDs")
+                        }
+                    }
+                }
+            }
+
             if (uiState.filteredEntries.isEmpty()) {
                 Box(
                     modifier = Modifier

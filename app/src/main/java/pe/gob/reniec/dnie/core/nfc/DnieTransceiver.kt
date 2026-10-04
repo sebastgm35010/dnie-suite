@@ -50,46 +50,115 @@ class DnieTransceiver(
 
     override suspend fun selectPkiApplet(): Result<Unit> = withContext(ioDispatcher) {
         runCatching {
-            val cmd = CommandApdu.selectReniecPkiApplet()
-            val resp = transceiveWithLogging(cmd, "SELECT PKI Applet (RENIEC)")
+            var selectedName: String? = null
+            var lastResp: ResponseApdu? = null
 
-            when {
-                resp.isSuccess -> Unit
-                resp.sw == StatusWord.SW_FILE_NOT_FOUND -> {
-                    throw AppletNotFoundException(
-                        "Applet PKI de RENIEC no encontrado. Verifique que la tarjeta sea un DNIe peruano válido.",
-                        resp.sw
-                    )
-                }
-                else -> {
-                    throw CardProtocolException(
-                        "Fallo al seleccionar Applet PKI: ${resp.statusWord.description}",
-                        resp.sw
-                    )
+            // Intentar lista priorizada de AIDs candidatos para DNIe v3 (IDEMIA, ICAO) y v2 (PGeneric)
+            for ((name, aid) in ApduConstants.CANDIDATE_AIDS) {
+                val cmd = CommandApdu.selectDfByName(aid)
+                val resp = transceiveWithLogging(cmd, "SELECT Applet: $name")
+                lastResp = resp
+
+                if (resp.isSuccess || resp.sw1 == 0x61 || resp.sw1 == 0x90) {
+                    selectedName = name
+                    logger.logInfo("¡Applet compatible detectado exitosamente: $name (SW: ${resp.statusWordHex})!")
+                    break
                 }
             }
+
+            // Si ningún AID por nombre respondió OK, intentar Master File (MF 3F 00)
+            if (selectedName == null) {
+                val mfCmd = CommandApdu.selectMasterFile()
+                val mfResp = transceiveWithLogging(mfCmd, "SELECT Master File (3F 00)")
+                lastResp = mfResp
+                if (mfResp.isSuccess || mfResp.sw1 == 0x61 || mfResp.sw1 == 0x90) {
+                    selectedName = "Master File (3F 00)"
+                    logger.logInfo("Master File (3F 00) seleccionado exitosamente.")
+                }
+            }
+
+            if (selectedName == null) {
+                val sw = lastResp?.sw ?: StatusWord.SW_FILE_NOT_FOUND
+                throw AppletNotFoundException(
+                    "No se encontró un Applet PKI reconocido en la tarjeta (SW: %04X). Para DNIe 3.0, el chip puede requerir canal seguro PACE/CAN.".format(sw),
+                    sw
+                )
+            }
+        }
+    }
+
+    /**
+     * Realiza un sondeo diagnóstico exhaustivo de todos los AIDs conocidos en la tarjeta.
+     */
+    suspend fun probeAllAids(): List<Pair<String, ResponseApdu>> = withContext(ioDispatcher) {
+        val results = mutableListOf<Pair<String, ResponseApdu>>()
+        logger.logInfo("=== INICIANDO SONDEO DIAGNÓSTICO DE AIDs (DNIe v2 / v3) ===")
+        for ((name, aid) in ApduConstants.CANDIDATE_AIDS) {
+            val cmd = CommandApdu.selectDfByName(aid)
+            val resp = transceiveWithLogging(cmd, "SONDEO: SELECT $name")
+            results.add(Pair(name, resp))
+        }
+        val mfCmd = CommandApdu.selectMasterFile()
+        val mfResp = transceiveWithLogging(mfCmd, "SONDEO: SELECT Master File (3F 00)")
+        results.add(Pair("Master File (3F 00)", mfResp))
+        logger.logInfo("=== FIN DE SONDEO DIAGNÓSTICO ===")
+        results
+    }
+
+    private fun getAlternativeEfIds(type: CertificateType): List<ByteArray> {
+        return when (type) {
+            CertificateType.SIGNATURE -> listOf(
+                type.fileId, // 00 1D (v2)
+                byteArrayOf(0xC0.toByte(), 0x01.toByte()), // IAS-ECC (v3)
+                byteArrayOf(0x34.toByte(), 0x02.toByte()), // PKI DF (v3)
+                byteArrayOf(0x00.toByte(), 0x02.toByte())
+            )
+            CertificateType.AUTHENTICATION -> listOf(
+                type.fileId, // 00 1C (v2)
+                byteArrayOf(0xC0.toByte(), 0x02.toByte()), // IAS-ECC (v3)
+                byteArrayOf(0x34.toByte(), 0x01.toByte()), // PKI DF (v3)
+                byteArrayOf(0x00.toByte(), 0x01.toByte())
+            )
+            CertificateType.ENCRYPTION -> listOf(
+                type.fileId, // 00 1B (v2)
+                byteArrayOf(0xC0.toByte(), 0x03.toByte()),
+                byteArrayOf(0x34.toByte(), 0x03.toByte())
+            )
         }
     }
 
     override suspend fun readCertificate(type: CertificateType): Result<ByteArray> = withContext(ioDispatcher) {
         runCatching {
-            // Paso 1: Seleccionar el Archivo Elemental (EF) correspondiente
-            val selectCmd = CommandApdu.selectEf(type.fileId)
-            val selectResp = transceiveWithLogging(
-                selectCmd,
-                "SELECT EF ${type.displayName} (0x${type.fileIdHex})"
-            )
+            // Paso 1: Seleccionar el Archivo Elemental (EF) probando identificadores estándar y alternativos
+            val candidateEfs = getAlternativeEfIds(type)
+            var efSelected = false
+            var lastSelectResp: ResponseApdu? = null
 
-            if (!selectResp.isSuccess) {
-                if (selectResp.sw == StatusWord.SW_FILE_NOT_FOUND && !type.isMandatory) {
+            for (efId in candidateEfs) {
+                val efHex = efId.joinToString("") { "%02X".format(it) }
+                val selectCmd = CommandApdu.selectEf(efId)
+                val selectResp = transceiveWithLogging(
+                    selectCmd,
+                    "SELECT EF ${type.displayName} (0x$efHex)"
+                )
+                lastSelectResp = selectResp
+                if (selectResp.isSuccess) {
+                    efSelected = true
+                    break
+                }
+            }
+
+            if (!efSelected) {
+                val sw = lastSelectResp?.sw ?: StatusWord.SW_FILE_NOT_FOUND
+                if (sw == StatusWord.SW_FILE_NOT_FOUND && !type.isMandatory) {
                     throw CertificateReadException(
                         "Certificado opcional ${type.displayName} no está personalizado en este chip",
-                        selectResp.sw
+                        sw
                     )
                 }
                 throw CertificateReadException(
-                    "Error al seleccionar EF para ${type.displayName}: ${selectResp.statusWord.description}",
-                    selectResp.sw
+                    "Error al seleccionar EF para ${type.displayName}: ${lastSelectResp?.statusWord?.description ?: "No encontrado"}",
+                    sw
                 )
             }
 

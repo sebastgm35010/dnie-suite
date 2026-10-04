@@ -123,7 +123,7 @@ open class MockIsoDepCardChannel(
     private fun handleSelect(apdu: CommandApdu): ByteArray {
         return when (apdu.p1) {
             ApduConstants.P1_SELECT_DF_BY_NAME -> {
-                if (apdu.data.contentEquals(ApduConstants.AID_RENIEC_PKI)) {
+                if (ApduConstants.CANDIDATE_AIDS.any { it.second.contentEquals(apdu.data) }) {
                     isPkiAppletSelected = true
                     selectedEfId = null
                     ResponseApdu.success().toByteArray()
