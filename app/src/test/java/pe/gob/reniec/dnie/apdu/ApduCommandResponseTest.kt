@@ -177,6 +177,27 @@ class ApduCommandResponseTest {
         CommandApdu.psoComputeDigitalSignature(invalidHash)
     }
 
+    @Test
+    fun testCommandApduWithLeZeroNormalizesTo256() {
+        val cmd = CommandApdu(0x00.toByte(), 0xB0.toByte(), 0x00.toByte(), 0x00.toByte(), le = 0)
+        assertEquals(256, cmd.le)
+        val bytes = cmd.toByteArray()
+        assertEquals(5, bytes.size)
+        assertEquals(0x00.toByte(), bytes[4])
+    }
+
+    @Test
+    fun testGeneralAuthenticateWithDefaultLe() {
+        val cmd = CommandApdu.generalAuthenticate(byteArrayOf(0x7C, 0x00), isChained = true)
+        assertEquals(256, cmd.le)
+        assertEquals(0x10.toByte(), cmd.cla)
+        assertEquals(ApduConstants.INS_GENERAL_AUTHENTICATE, cmd.ins)
+        val bytes = cmd.toByteArray()
+        // CLA(1) + INS(1) + P1(1) + P2(1) + Lc(1) + Data(2) + Le(1) = 8 bytes
+        assertEquals(8, bytes.size)
+        assertEquals(0x00.toByte(), bytes[7]) // Le=256 -> 0x00
+    }
+
     // --- ResponseApdu Tests ---
 
     @Test

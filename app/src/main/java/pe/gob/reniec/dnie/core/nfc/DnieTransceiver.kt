@@ -176,8 +176,39 @@ class DnieTransceiver(
             logger.logInfo("CAN disponible (${can?.length} dígitos): ejecutando prueba diagnóstica de canal seguro PACE...")
             try {
                 val paceHandler = PaceHandler(logger)
-                paceHandler.performPace(channel, can!!, readCardAccessBytes)
-                logger.logInfo("¡Prueba diagnóstica de canal seguro PACE completada exitosamente!")
+                val secureChannel = paceHandler.performPace(channel, can!!, readCardAccessBytes)
+                logger.logInfo("¡Prueba diagnóstica de canal seguro PACE completada exitosamente! Canal SM activo.")
+
+                // Prueba de lectura bajo Secure Messaging: SELECT Applet ICAO LDS1 -> SELECT EF.SOD (01 1D)
+                try {
+                    val selIcao = CommandApdu.selectDfByName(ApduConstants.AID_ICAO_MRTD)
+                    logger.logTx(selIcao, "SM DIAG: SELECT Applet ICAO LDS1 eMRTD")
+                    val icaoRaw = secureChannel.transceive(selIcao.toByteArray())
+                    val icaoResp = ResponseApdu.fromBytes(icaoRaw)
+                    logger.logRx(icaoResp, 0, "SM DIAG: SELECT Applet ICAO LDS1 eMRTD")
+
+                    if (icaoResp.isSuccess) {
+                        val selSod = CommandApdu.selectEfDirect(ApduConstants.EF_SOD)
+                        logger.logTx(selSod, "SM DIAG: SELECT EF.SOD (01 1D)")
+                        val sodRaw = secureChannel.transceive(selSod.toByteArray())
+                        val sodResp = ResponseApdu.fromBytes(sodRaw)
+                        logger.logRx(sodResp, 0, "SM DIAG: SELECT EF.SOD (01 1D)")
+
+                        if (sodResp.isSuccess) {
+                            val readSod = CommandApdu.readBinary(0, le = 256)
+                            logger.logTx(readSod, "SM DIAG: READ BINARY EF.SOD [Offset 0x0000]")
+                            val readRaw = secureChannel.transceive(readSod.toByteArray())
+                            val readResp = ResponseApdu.fromBytes(readRaw)
+                            logger.logRx(readResp, 0, "SM DIAG: READ BINARY EF.SOD [Offset 0x0000]")
+                            if (readResp.isSuccess && readResp.data.isNotEmpty()) {
+                                val payload = extractPayloadFromTlv(readResp.data)
+                                logger.logInfo("SM DIAG: EF.SOD leído exitosamente bajo Secure Messaging (${payload.size} bytes útiles).")
+                            }
+                        }
+                    }
+                } catch (diagEx: Exception) {
+                    logger.logInfo("SM DIAG: Lectura post-PACE diagnóstica no completada: ${diagEx.message}")
+                }
             } catch (e: Exception) {
                 logger.logInfo("Prueba diagnóstica de PACE no completada: ${e.message}")
             }

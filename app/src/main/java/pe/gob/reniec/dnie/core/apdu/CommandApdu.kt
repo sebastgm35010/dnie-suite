@@ -18,12 +18,14 @@ class CommandApdu(
     val p1: Byte,
     val p2: Byte,
     val data: ByteArray = byteArrayOf(),
-    val le: Int? = null
+    le: Int? = null
 ) {
+    val le: Int? = if (le == 0) 256 else le
+
     init {
         require(data.size <= 255) { "Short APDU data length cannot exceed 255 bytes (got ${data.size})" }
-        if (le != null) {
-            require(le in 1..256) { "Short APDU Le must be between 1 and 256 (got $le)" }
+        if (this.le != null) {
+            require(this.le in 1..256) { "Short APDU Le must be between 1 and 256 (got ${this.le})" }
         }
     }
 
@@ -225,7 +227,7 @@ class CommandApdu(
         fun generalAuthenticate(
             data: ByteArray,
             isChained: Boolean = false,
-            le: Int? = 0x00
+            le: Int? = 256
         ): CommandApdu {
             val cla = if (isChained) 0x10.toByte() else ApduConstants.CLA_ISO7816
             return CommandApdu(
