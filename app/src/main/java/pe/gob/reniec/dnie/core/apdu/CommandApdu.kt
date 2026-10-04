@@ -136,6 +136,34 @@ class CommandApdu(
         }
 
         /**
+         * Crea un comando SELECT DF hijo bajo el DF actual (P1=0x01, P2=0x0C).
+         */
+        fun selectDf(dfId: ByteArray): CommandApdu {
+            require(dfId.size == 2) { "DF File ID must be 2 bytes (got ${dfId.size})" }
+            return CommandApdu(
+                cla = ApduConstants.CLA_ISO7816,
+                ins = ApduConstants.INS_SELECT,
+                p1 = ApduConstants.P1_SELECT_CHILD_DF,
+                p2 = ApduConstants.P2_SELECT_NO_FCI,
+                data = dfId
+            )
+        }
+
+        /**
+         * Crea un comando SELECT DF directo (P1=0x00, P2=0x0C).
+         */
+        fun selectDfDirect(dfId: ByteArray): CommandApdu {
+            require(dfId.size == 2) { "DF File ID must be 2 bytes (got ${dfId.size})" }
+            return CommandApdu(
+                cla = ApduConstants.CLA_ISO7816,
+                ins = ApduConstants.INS_SELECT,
+                p1 = ApduConstants.P1_SELECT_MF_OR_DF_DIRECT,
+                p2 = ApduConstants.P2_SELECT_NO_FCI,
+                data = dfId
+            )
+        }
+
+        /**
          * Crea un comando SELECT EF bajo el DF actual (P1=0x02, P2=0x0C).
          */
         fun selectEf(fileId: ByteArray): CommandApdu {
@@ -157,9 +185,56 @@ class CommandApdu(
             return CommandApdu(
                 cla = ApduConstants.CLA_ISO7816,
                 ins = ApduConstants.INS_SELECT,
-                p1 = 0x00.toByte(),
+                p1 = ApduConstants.P1_SELECT_MF_OR_DF_DIRECT,
                 p2 = ApduConstants.P2_SELECT_NO_FCI,
                 data = fileId
+            )
+        }
+
+        /**
+         * Crea un comando MSE: SET AT para inicializar el protocolo PACE con CAN/MRZ.
+         */
+        fun mseSetAtPace(
+            oidValueBytes: ByteArray,
+            parameterId: Int? = null,
+            passwordType: Byte = ApduConstants.PACE_PWD_CAN
+        ): CommandApdu {
+            // Tag 80: OID
+            val do80 = byteArrayOf(0x80.toByte(), oidValueBytes.size.toByte()) + oidValueBytes
+            // Tag 83: Password reference (0x02 = CAN)
+            val do83 = byteArrayOf(0x83.toByte(), 0x01.toByte(), passwordType)
+            // Tag 84: Parameter ID opcional
+            val do84 = if (parameterId != null) {
+                byteArrayOf(0x84.toByte(), 0x01.toByte(), parameterId.toByte())
+            } else {
+                byteArrayOf()
+            }
+            val payload = do80 + do83 + do84
+            return CommandApdu(
+                cla = ApduConstants.CLA_ISO7816,
+                ins = ApduConstants.INS_MSE,
+                p1 = ApduConstants.P1_MSE_SET_AT,
+                p2 = ApduConstants.P2_MSE_SET_AT,
+                data = payload
+            )
+        }
+
+        /**
+         * Crea un comando GENERAL AUTHENTICATE para las fases del protocolo PACE.
+         */
+        fun generalAuthenticate(
+            data: ByteArray,
+            isChained: Boolean = false,
+            le: Int? = 0x00
+        ): CommandApdu {
+            val cla = if (isChained) 0x10.toByte() else ApduConstants.CLA_ISO7816
+            return CommandApdu(
+                cla = cla,
+                ins = ApduConstants.INS_GENERAL_AUTHENTICATE,
+                p1 = 0x00.toByte(),
+                p2 = 0x00.toByte(),
+                data = data,
+                le = le
             )
         }
 

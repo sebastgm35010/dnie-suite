@@ -8,6 +8,7 @@ import pe.gob.reniec.dnie.core.apdu.CommandApdu
 import pe.gob.reniec.dnie.core.apdu.ResponseApdu
 import pe.gob.reniec.dnie.core.apdu.StatusWord
 import pe.gob.reniec.dnie.core.logging.ApduLogger
+import pe.gob.reniec.dnie.core.crypto.PaceProtocol
 import pe.gob.reniec.dnie.domain.model.CertificateType
 import pe.gob.reniec.dnie.domain.model.PinVerificationResult
 import java.io.ByteArrayOutputStream
@@ -115,6 +116,73 @@ class DnieTransceiver(
         val mfCmd = CommandApdu.selectMasterFile()
         val mfResp = transceiveWithLogging(mfCmd, "SONDEO: SELECT Master File (3F 00)")
         results.add(Pair("Master File (3F 00)", mfResp))
+
+        // Sondeo de Directorios Dedicados (DF) bajo Master File
+        for ((dfName, dfId) in ApduConstants.CANDIDATE_DFS) {
+            val dfCmd = CommandApdu.selectDf(dfId)
+            var dfResp = transceiveWithLogging(dfCmd, "SONDEO: SELECT DF $dfName (P1=01)")
+            if (!dfResp.isSuccess) {
+                val directCmd = CommandApdu.selectDfDirect(dfId)
+                dfResp = transceiveWithLogging(directCmd, "SONDEO: SELECT DF $dfName directo (P1=00)")
+            }
+            results.add(Pair("DF $dfName", dfResp))
+
+            if (dfResp.isSuccess) {
+                val testEfs = listOf(
+                    byteArrayOf(0x00, 0x1D),
+                    byteArrayOf(0x00, 0x1C),
+                    byteArrayOf(0xC0.toByte(), 0x01.toByte()),
+                    byteArrayOf(0x34.toByte(), 0x02.toByte()),
+                    byteArrayOf(0x34.toByte(), 0x01.toByte()),
+                    byteArrayOf(0x50.toByte(), 0x31.toByte()),
+                    byteArrayOf(0x50.toByte(), 0x32.toByte())
+                )
+                for (efId in testEfs) {
+                    val efHex = efId.joinToString("") { "%02X".format(it) }
+                    val efCmd = CommandApdu.selectEf(efId)
+                    val efResp = transceiveWithLogging(efCmd, "SONDEO: SELECT EF 0x$efHex bajo $dfName")
+                    results.add(Pair("EF 0x$efHex ($dfName)", efResp))
+                }
+            }
+        }
+
+        // Sondeo de EF.CardAccess (01 1C) bajo Master File
+        val selMf = CommandApdu.selectMasterFile()
+        transceiveWithLogging(selMf, "SONDEO: SELECT Master File (3F 00)")
+        val cardAccessCmd = CommandApdu.selectEfDirect(ApduConstants.EF_CARD_ACCESS)
+        val cardAccessResp = transceiveWithLogging(cardAccessCmd, "SONDEO: SELECT EF.CardAccess (01 1C)")
+        results.add(Pair("EF.CardAccess (01 1C)", cardAccessResp))
+
+        var readCardAccessBytes: ByteArray? = null
+        if (cardAccessResp.isSuccess) {
+            val readCmd = CommandApdu.readBinaryWithOffset(0, le = 0xFF)
+            var readResp = transceiveWithLogging(readCmd, "SONDEO: READ BINARY EF.CardAccess")
+            if (!readResp.isSuccess) {
+                val readStdCmd = CommandApdu.readBinary(0, le = 0x00)
+                readResp = transceiveWithLogging(readStdCmd, "SONDEO: READ BINARY estándar EF.CardAccess")
+            }
+            results.add(Pair("READ EF.CardAccess", readResp))
+            if (readResp.isSuccess && readResp.data.isNotEmpty()) {
+                readCardAccessBytes = extractPayloadFromTlv(readResp.data)
+                val secInfo = PaceProtocol.parseCardAccess(readCardAccessBytes)
+                if (secInfo != null) {
+                    logger.logInfo("PACE detectado en DNIe: OID=${secInfo.oid}, CurveID=${secInfo.parameterId} (brainpoolP256r1), Versión=${secInfo.version}")
+                }
+            }
+        }
+
+        // Si se dispone de CAN, probar handshake de PACE en modo diagnóstico
+        if (!can.isNullOrBlank()) {
+            logger.logInfo("CAN disponible (${can?.length} dígitos): ejecutando prueba diagnóstica de canal seguro PACE...")
+            try {
+                val paceHandler = PaceHandler(logger)
+                paceHandler.performPace(channel, can!!, readCardAccessBytes)
+                logger.logInfo("¡Prueba diagnóstica de canal seguro PACE completada exitosamente!")
+            } catch (e: Exception) {
+                logger.logInfo("Prueba diagnóstica de PACE no completada: ${e.message}")
+            }
+        }
+
         logger.logInfo("=== FIN DE SONDEO DIAGNÓSTICO ===")
         results
     }
@@ -181,12 +249,13 @@ class DnieTransceiver(
                 }
             }
 
-            // Fallback para ICAO: Si no se seleccionó bajo ICAO, intentar seleccionando Master File (3F 00)
-            if (!efSelected && isIcaoMode) {
-                logger.logInfo("EF no seleccionado bajo ICAO eMRTD; intentando bajo Master File (3F 00)...")
+            // Fallback: Si no se seleccionó en el applet activo, explorar bajo Master File (3F 00) y DFs dedicados
+            if (!efSelected) {
+                logger.logInfo("EF no seleccionado directamente; explorando bajo Master File (3F 00) y DFs...")
                 val mfCmd = CommandApdu.selectMasterFile()
                 val mfResp = transceiveWithLogging(mfCmd, "SELECT Master File (3F 00)")
                 if (mfResp.isSuccess) {
+                    // 1. Probar EFs directamente bajo MF
                     for (efId in candidateEfs) {
                         val efHex = efId.joinToString("") { "%02X".format(it) }
                         val selectCmd = CommandApdu.selectEf(efId)
@@ -209,6 +278,114 @@ class DnieTransceiver(
                             lastSelectResp = directResp
                             break
                         }
+                    }
+
+                    // 2. Probar bajo Dedicated Files (DF 70 01 y DF 50 15)
+                    if (!efSelected) {
+                        for ((dfName, dfId) in ApduConstants.CANDIDATE_DFS) {
+                            val dfCmd = CommandApdu.selectDf(dfId)
+                            var dfResp = transceiveWithLogging(dfCmd, "SELECT DF $dfName (P1=01)")
+                            if (!dfResp.isSuccess) {
+                                val directDfCmd = CommandApdu.selectDfDirect(dfId)
+                                dfResp = transceiveWithLogging(directDfCmd, "SELECT DF $dfName directo (P1=00)")
+                            }
+
+                            if (dfResp.isSuccess) {
+                                for (efId in candidateEfs) {
+                                    val efHex = efId.joinToString("") { "%02X".format(it) }
+                                    val selCmd = CommandApdu.selectEf(efId)
+                                    val selResp = transceiveWithLogging(
+                                        selCmd,
+                                        "SELECT EF bajo $dfName ${type.displayName} (0x$efHex)"
+                                    )
+                                    lastSelectResp = selResp
+                                    if (selResp.isSuccess) {
+                                        efSelected = true
+                                        break
+                                    }
+                                }
+                                if (efSelected) break
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Fallback con PACE: Si el acceso está protegido (SW 6982 o modo ICAO) y se cuenta con CAN
+            if (!efSelected && !can.isNullOrBlank() && (isIcaoMode || lastSelectResp?.sw == StatusWord.SW_SECURITY_STATUS_NOT_SATISFIED)) {
+                logger.logInfo("Acceso protegido detectado (SW: ${lastSelectResp?.statusWordHex ?: "6982"}). Iniciando establecimiento de canal seguro PACE con CAN...")
+                val paceHandler = PaceHandler(logger)
+                val secureChannel = paceHandler.performPace(channel, can!!)
+
+                // Con canal seguro PACE establecido, seleccionar applet ICAO LDS1
+                val icaoAppletCmd = CommandApdu.selectDfByName(ApduConstants.AID_ICAO_MRTD)
+                logger.logTx(icaoAppletCmd, "SM: SELECT Applet ICAO LDS1 eMRTD")
+                val appletRespRaw = secureChannel.transceive(icaoAppletCmd.toByteArray())
+                val appletResp = ResponseApdu.fromBytes(appletRespRaw)
+                logger.logRx(appletResp, 0, "SM: SELECT Applet ICAO LDS1 eMRTD")
+
+                val targetEf = when (type) {
+                    CertificateType.SIGNATURE -> ApduConstants.EF_SOD
+                    CertificateType.AUTHENTICATION -> ApduConstants.EF_SOD
+                    CertificateType.ENCRYPTION -> ApduConstants.EF_SOD
+                }
+
+                val selSodCmd = CommandApdu.selectEfDirect(targetEf)
+                logger.logTx(selSodCmd, "SM: SELECT EF.SOD (01 1D)")
+                val selSodRaw = secureChannel.transceive(selSodCmd.toByteArray())
+                val selSodResp = ResponseApdu.fromBytes(selSodRaw)
+                logger.logRx(selSodResp, 0, "SM: SELECT EF.SOD (01 1D)")
+
+                if (selSodResp.isSuccess) {
+                    val sodAccumulator = ByteArrayOutputStream()
+                    var offset = 0
+                    var expectedLen: Int? = null
+                    val blockSize = ApduConstants.DEFAULT_BLOCK_SIZE
+
+                    while (true) {
+                        val readCmd = CommandApdu.readBinary(offset, le = blockSize)
+                        logger.logTx(readCmd, "SM: READ BINARY EF.SOD [Offset 0x%04X]".format(offset))
+                        val readRaw = secureChannel.transceive(readCmd.toByteArray())
+                        val readResp = ResponseApdu.fromBytes(readRaw)
+                        logger.logRx(readResp, 0, "SM: READ BINARY EF.SOD [Offset 0x%04X]".format(offset))
+
+                        if (readResp.sw == StatusWord.SW_WRONG_OFFSET ||
+                            readResp.sw == StatusWord.SW_INCORRECT_PARAMETERS_IN_DATA_FIELD ||
+                            readResp.sw == StatusWord.SW_EOF_REACHED) {
+                            if (sodAccumulator.size() > 0) {
+                                break
+                            }
+                        }
+
+                        if (!readResp.isSuccess) {
+                            if (sodAccumulator.size() > 0) break
+                            throw CertificateReadException("Fallo al leer EF.SOD bajo Secure Messaging: ${readResp.statusWord.description}", readResp.sw)
+                        }
+
+                        val payload = extractPayloadFromTlv(readResp.data)
+                        if (payload.isEmpty()) break
+                        sodAccumulator.write(payload)
+
+                        if (offset == 0 && expectedLen == null) {
+                            expectedLen = parseDerSequenceLength(sodAccumulator.toByteArray())
+                        }
+
+                        if (expectedLen != null && sodAccumulator.size() >= expectedLen) {
+                            break
+                        }
+
+                        if (payload.size < blockSize) {
+                            break
+                        }
+
+                        offset += payload.size
+                    }
+
+                    val rawSod = sodAccumulator.toByteArray()
+                    if (rawSod.isNotEmpty()) {
+                        logger.logInfo("EF.SOD leído exitosamente con Secure Messaging (${rawSod.size} bytes). Extrayendo certificado X.509 DSC...")
+                        val cert = pe.gob.reniec.dnie.crypto.X509CertificateParser.toX509Certificate(rawSod)
+                        return@runCatching cert.encoded
                     }
                 }
             }
@@ -257,9 +434,13 @@ class DnieTransceiver(
                     )
                 }
 
-                // Condición 1: Offset fuera de límites del EF (6B 00) -> Fin de archivo
-                if (readResp.sw == StatusWord.SW_WRONG_OFFSET) {
-                    break
+                // Condición 1: Offset fuera de límites del EF (6B 00) o parámetros incorrectos en datos (6A 80) -> Fin de archivo
+                if (readResp.sw == StatusWord.SW_WRONG_OFFSET ||
+                    readResp.sw == StatusWord.SW_INCORRECT_PARAMETERS_IN_DATA_FIELD) {
+                    if (certAccumulator.size() > 0) {
+                        logger.logInfo("Fin de archivo detectado (SW: ${readResp.statusWordHex}, bytes acumulados: ${certAccumulator.size()})")
+                        break
+                    }
                 }
 
                 // Condición 2: Fin de archivo alcanzado (62 82)
@@ -287,6 +468,10 @@ class DnieTransceiver(
 
                 // Si ocurrió cualquier otro error
                 if (!readResp.isSuccess) {
+                    if (certAccumulator.size() > 0) {
+                        logger.logInfo("Lectura finalizada en offset 0x%04X por respuesta de tarjeta (SW: ${readResp.statusWordHex})".format(currentOffset))
+                        break
+                    }
                     throw CertificateReadException(
                         "Fallo de lectura en offset 0x%04X: %s".format(currentOffset, readResp.statusWord.description),
                         readResp.sw
@@ -309,6 +494,12 @@ class DnieTransceiver(
 
                 // Verificar si ya se leyó la totalidad de bytes del certificado DER
                 if (expectedDerLength != null && certAccumulator.size() >= expectedDerLength) {
+                    break
+                }
+
+                // Si el bloque devuelto es menor que el paso solicitado, se completó el archivo
+                if (blockPayload.size < stepSize) {
+                    logger.logInfo("Fin de lectura: bloque de tamaño parcial (${blockPayload.size} < $stepSize bytes).")
                     break
                 }
 
@@ -451,14 +642,36 @@ class DnieTransceiver(
 
         // Si la trama está encapsulada con el tag BER-TLV 0x53
         if (data[0] == ApduConstants.TAG_BER_TLV_DATA) {
-            if (data.size <= 3) return byteArrayOf()
+            if (data.size <= 2) return byteArrayOf()
             val firstLenByte = data[1].toInt() and 0xFF
-            val payloadStart = when (firstLenByte) {
-                0x82 -> 4 // Formato BER-TLV extendido: Tag 0x53, 0x82, Len_HI, Len_LO, Payload...
-                else -> 3 // Formato estándar DNIe: Tag 0x53, 2 bytes de longitud (Len_HI, Len_LO), Payload...
+            val (payloadStart, payloadLength) = when {
+                firstLenByte == 0x82 -> {
+                    if (data.size < 4) return byteArrayOf()
+                    val len = ((data[2].toInt() and 0xFF) shl 8) or (data[3].toInt() and 0xFF)
+                    Pair(4, len)
+                }
+                firstLenByte == 0x81 -> {
+                    if (data.size < 3) return byteArrayOf()
+                    val len = data[2].toInt() and 0xFF
+                    Pair(3, len)
+                }
+                firstLenByte in 0x01..0x7F -> {
+                    Pair(2, firstLenByte)
+                }
+                firstLenByte == 0x00 && data.size >= 3 -> {
+                    val len = data[2].toInt() and 0xFF
+                    Pair(3, len)
+                }
+                else -> {
+                    val len = if (data.size >= 3) {
+                        ((data[1].toInt() and 0xFF) shl 8) or (data[2].toInt() and 0xFF)
+                    } else data.size - 2
+                    Pair(3, len)
+                }
             }
-            return if (data.size > payloadStart) {
-                data.copyOfRange(payloadStart, data.size)
+            val end = minOf(data.size, payloadStart + payloadLength)
+            return if (data.size >= payloadStart) {
+                data.copyOfRange(payloadStart, end)
             } else {
                 byteArrayOf()
             }
@@ -469,20 +682,23 @@ class DnieTransceiver(
     }
 
     /**
-     * Determina la longitud exacta en bytes de la secuencia ASN.1 DER (0x30 ...) o estructura ICAO (Tag 0x77).
+     * Determina la longitud exacta en bytes de la secuencia ASN.1 DER (0x30 ...),
+     * SET (0x31 ...), estructura ICAO (Tag 0x77) o Data Group (Tag 0x61).
      */
     private fun parseDerSequenceLength(derBytes: ByteArray): Int? {
-        if (derBytes.size < 4) return null
+        if (derBytes.size < 3) return null
         val first = derBytes[0].toInt() and 0xFF
-        if (first != 0x30 && first != 0x77) return null
+        if (first != 0x30 && first != 0x31 && first != 0x77 && first != 0x61) return null
 
         val secondByte = derBytes[1].toInt() and 0xFF
         return when {
             secondByte == 0x82 -> {
+                if (derBytes.size < 4) return null
                 val len = ((derBytes[2].toInt() and 0xFF) shl 8) or (derBytes[3].toInt() and 0xFF)
                 len + 4 // Tag 1b + Indicador 1b + 2b longitud + len
             }
             secondByte == 0x81 -> {
+                if (derBytes.size < 3) return null
                 val len = derBytes[2].toInt() and 0xFF
                 len + 3 // Tag 1b + Indicador 1b + 1b longitud + len
             }

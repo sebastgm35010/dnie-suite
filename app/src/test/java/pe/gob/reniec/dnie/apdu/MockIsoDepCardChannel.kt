@@ -74,7 +74,16 @@ open class MockIsoDepCardChannel(
     // Archivos EF en la memoria de la tarjeta (incluyen posible padding EEPROM)
     private val efFiles: MutableMap<String, ByteArray> = mutableMapOf(
         "001D" to appendEepromPadding(signatureCertDer, paddingBytesCount),
-        "001C" to appendEepromPadding(authCertDer, paddingBytesCount)
+        "001C" to appendEepromPadding(authCertDer, paddingBytesCount),
+        "011D" to appendEepromPadding(signatureCertDer, paddingBytesCount),
+        "011C" to byteArrayOf(
+            0x31.toByte(), 0x16.toByte(), 0x30.toByte(), 0x14.toByte(),
+            0x06.toByte(), 0x0A.toByte(), 0x04.toByte(), 0x00.toByte(),
+            0x7F.toByte(), 0x00.toByte(), 0x07.toByte(), 0x02.toByte(),
+            0x02.toByte(), 0x04.toByte(), 0x02.toByte(), 0x02.toByte(),
+            0x02.toByte(), 0x01.toByte(), 0x02.toByte(),
+            0x02.toByte(), 0x01.toByte(), 0x0D.toByte()
+        )
     )
 
     init {
@@ -139,6 +148,10 @@ open class MockIsoDepCardChannel(
                     isPkiAppletSelected = true
                     selectedEfId = null
                     ResponseApdu.success().toByteArray()
+                } else if (ApduConstants.CANDIDATE_DFS.any { it.second.contentEquals(apdu.data) }) {
+                    isPkiAppletSelected = true
+                    selectedEfId = null
+                    ResponseApdu.success().toByteArray()
                 } else if (apdu.data.size == 2) {
                     // SELECT EF direct by File ID
                     if (!isPkiAppletSelected) {
@@ -154,6 +167,15 @@ open class MockIsoDepCardChannel(
                     }
                 } else {
                     ResponseApdu.error(StatusWord.SW_INCORRECT_P1_P2).toByteArray()
+                }
+            }
+            ApduConstants.P1_SELECT_CHILD_DF -> {
+                if (ApduConstants.CANDIDATE_DFS.any { it.second.contentEquals(apdu.data) }) {
+                    isPkiAppletSelected = true
+                    selectedEfId = null
+                    ResponseApdu.success().toByteArray()
+                } else {
+                    ResponseApdu.error(StatusWord.SW_FILE_NOT_FOUND).toByteArray()
                 }
             }
             ApduConstants.P1_SELECT_EF_UNDER_DF -> {
@@ -213,7 +235,7 @@ open class MockIsoDepCardChannel(
         val offset = (offsetHi shl 8) or offsetLo
 
         if (offset >= fileBytes.size) {
-            return ResponseApdu.error(StatusWord.SW_WRONG_OFFSET).toByteArray()
+            return ResponseApdu.error(StatusWord.SW_INCORRECT_PARAMETERS_IN_DATA_FIELD).toByteArray()
         }
 
         val remaining = fileBytes.size - offset

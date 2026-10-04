@@ -54,6 +54,12 @@ sealed class StatusWord(
         "Condiciones de uso no satisfechas (Conditions of use not satisfied)"
     )
 
+    /** 0x6A80: Parámetros incorrectos en el campo de datos / Datos no válidos */
+    object IncorrectParametersInDataField : StatusWord(
+        SW_INCORRECT_PARAMETERS_IN_DATA_FIELD,
+        "Parámetros incorrectos en el campo de datos / Offset excede EF (Wrong parameters in data field)"
+    )
+
     /** 0x6A82: Archivo o Applet no encontrado */
     object FileNotFound : StatusWord(
         SW_FILE_NOT_FOUND,
@@ -104,6 +110,7 @@ sealed class StatusWord(
         const val SW_SECURITY_STATUS_NOT_SATISFIED = 0x6982
         const val SW_AUTHENTICATION_BLOCKED = 0x6983
         const val SW_CONDITIONS_NOT_SATISFIED = 0x6985
+        const val SW_INCORRECT_PARAMETERS_IN_DATA_FIELD = 0x6A80
         const val SW_FILE_NOT_FOUND = 0x6A82
         const val SW_INCORRECT_P1_P2 = 0x6A86
         const val SW_REFERENCED_DATA_NOT_FOUND = 0x6A88
@@ -127,6 +134,7 @@ sealed class StatusWord(
                 normalizedSw == SW_SECURITY_STATUS_NOT_SATISFIED -> SecurityStatusNotSatisfied
                 normalizedSw == SW_AUTHENTICATION_BLOCKED -> AuthenticationBlocked
                 normalizedSw == SW_CONDITIONS_NOT_SATISFIED -> ConditionsOfUseNotSatisfied
+                normalizedSw == SW_INCORRECT_PARAMETERS_IN_DATA_FIELD -> IncorrectParametersInDataField
                 normalizedSw == SW_FILE_NOT_FOUND -> FileNotFound
                 normalizedSw == SW_INCORRECT_P1_P2 -> IncorrectParametersP1P2
                 normalizedSw == SW_REFERENCED_DATA_NOT_FOUND -> ReferencedDataNotFound

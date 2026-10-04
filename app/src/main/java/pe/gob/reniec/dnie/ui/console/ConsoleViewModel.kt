@@ -240,10 +240,16 @@ class ConsoleViewModel(
     }
 
     /**
+     * Proveedor dinámico opcional del código CAN guardado para pruebas PACE.
+     */
+    var canProvider: (() -> String?)? = null
+
+    /**
      * Ejecuta el sondeo completo de AIDs sobre el canal de tarjeta detectado.
      */
     fun onCardDetected(channel: DnieCardChannel) {
-        val transceiver = DnieTransceiver(channel, apduLogger)
+        val can = canProvider?.invoke()
+        val transceiver = DnieTransceiver(channel, apduLogger, can = can)
         viewModelScope.launch {
             try {
                 feedbackDispatcher?.playSuccess()

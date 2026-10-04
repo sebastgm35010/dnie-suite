@@ -82,22 +82,48 @@ object ApduConstants {
     const val INS_PSO: Byte = 0x2A.toByte()
     const val INS_READ_BINARY: Byte = 0xB0.toByte()
     const val INS_READ_BINARY_DO: Byte = 0xB1.toByte()
+    const val INS_GENERAL_AUTHENTICATE: Byte = 0x86.toByte()
 
     // Parámetros SELECT FILE
+    const val P1_SELECT_MF_OR_DF_DIRECT: Byte = 0x00.toByte()
+    const val P1_SELECT_CHILD_DF: Byte = 0x01.toByte()
     const val P1_SELECT_DF_BY_NAME: Byte = 0x04.toByte()
     const val P2_SELECT_FIRST_RECORD: Byte = 0x00.toByte()
     const val P1_SELECT_EF_UNDER_DF: Byte = 0x02.toByte()
     const val P2_SELECT_NO_FCI: Byte = 0x0C.toByte()
 
+    // Directorios Dedicados (DF) conocidos bajo Master File (3F 00)
+    val DF_IDEMIA_PKI: ByteArray = byteArrayOf(0x70.toByte(), 0x01.toByte())
+    val DF_PKCS15: ByteArray = byteArrayOf(0x50.toByte(), 0x15.toByte())
+
+    val CANDIDATE_DFS: List<Pair<String, ByteArray>> = listOf(
+        Pair("IDEMIA PKI (70 01)", DF_IDEMIA_PKI),
+        Pair("PKCS#15 (50 15)", DF_PKCS15)
+    )
+
     // Selectores de Archivos Elementales (EF File IDs)
     val EF_SIGNATURE: ByteArray = byteArrayOf(0x00, 0x1D)
     val EF_AUTHENTICATION: ByteArray = byteArrayOf(0x00, 0x1C)
     val EF_ENCRYPTION: ByteArray = byteArrayOf(0x00, 0x1B)
+    val EF_CARD_ACCESS: ByteArray = byteArrayOf(0x01.toByte(), 0x1C.toByte())
+    val EF_SOD: ByteArray = byteArrayOf(0x01.toByte(), 0x1D.toByte())
+    val EF_DG1: ByteArray = byteArrayOf(0x01.toByte(), 0x01.toByte())
 
     // Parámetros READ BINARY con Data Object (DO)
     const val TAG_OFFSET_DO: Byte = 0x54.toByte()
     const val TAG_BER_TLV_DATA: Byte = 0x53.toByte()
     const val DEFAULT_BLOCK_SIZE: Int = 0x00E4 // 228 bytes
+
+    // PACE Constants (ICAO Doc 9303 Part 11 / BSI TR-03110)
+    const val P1_MSE_SET_AT: Byte = 0xC1.toByte()
+    const val P2_MSE_SET_AT: Byte = 0xA4.toByte()
+    const val PACE_PWD_MRZ: Byte = 0x01.toByte()
+    const val PACE_PWD_CAN: Byte = 0x02.toByte()
+    const val PACE_PWD_PIN: Byte = 0x03.toByte()
+    val OID_PACE_ECDH_GM_AES128: ByteArray = byteArrayOf(
+        0x04.toByte(), 0x00.toByte(), 0x7F.toByte(), 0x00.toByte(), 0x07.toByte(),
+        0x02.toByte(), 0x02.toByte(), 0x04.toByte(), 0x02.toByte(), 0x02.toByte()
+    )
 
     // Tipos de PIN
     const val PIN_TYPE_SIGNATURE: Byte = 0x81.toByte()

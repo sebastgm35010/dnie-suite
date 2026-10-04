@@ -43,6 +43,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        consoleViewModel.canProvider = {
+            pe.gob.reniec.dnie.ui.components.CanStorage.getSavedCan(this).ifBlank { null }
+        }
+
         // Escucha reactiva de tags NFC descubiertos
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.RESUMED) {
