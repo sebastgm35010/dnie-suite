@@ -75,6 +75,8 @@ open class MockIsoDepCardChannel(
     private val efFiles: MutableMap<String, ByteArray> = mutableMapOf(
         "001D" to appendEepromPadding(signatureCertDer, paddingBytesCount),
         "001C" to appendEepromPadding(authCertDer, paddingBytesCount),
+        "2001" to appendEepromPadding(signatureCertDer, paddingBytesCount),
+        "2000" to appendEepromPadding(authCertDer, paddingBytesCount),
         "011D" to appendEepromPadding(signatureCertDer, paddingBytesCount),
         "011C" to byteArrayOf(
             0x31.toByte(), 0x16.toByte(), 0x30.toByte(), 0x14.toByte(),

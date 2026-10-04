@@ -157,20 +157,29 @@ class PaceHandler(
         }
 
         // Paso 4: GENERAL AUTHENTICATE - Acuerdo de claves efímeras
+        // En Generic Mapping (GM) se utiliza Tag 0x83 (terminal) -> Tag 0x84 (tarjeta)
+        // En Integrated Mapping (IM), al no haber intercambio previo de mapeo, se utiliza Tag 0x81 (terminal) -> Tag 0x82 (tarjeta)
+        val sendTag = if (selectedSecurityInfo.isGenericMapping) 0x83 else 0x81
+        val recvTag = if (selectedSecurityInfo.isGenericMapping) 0x84 else 0x82
+
         val ephemeralKey = PaceProtocol.generateEphemeralKey(mappedGroup)
-        val agreeCmdData = buildDo7c(0x83, ephemeralKey.publicPointBytes)
+        val agreeCmdData = buildDo7c(sendTag, ephemeralKey.publicPointBytes)
         val agreeCmd = CommandApdu.generalAuthenticate(
             data = agreeCmdData,
             isChained = true,
             le = 256
         )
-        val agreeResp = transceive(channel, agreeCmd, "PACE Paso 4: Acuerdo de claves (Tag 0x83 -> 0x84)")
+        val agreeResp = transceive(
+            channel,
+            agreeCmd,
+            "PACE Paso 4: Acuerdo de claves (Tag 0x%02X -> 0x%02X)".format(sendTag, recvTag)
+        )
         if (!agreeResp.isSuccess) {
             throw PaceException("Fallo en acuerdo de claves: ${agreeResp.statusWord.description}", agreeResp.sw)
         }
 
-        val cardEphemeralPub = extractTagDataFrom7c(agreeResp.data, 0x84)
-            ?: throw PaceException("Respuesta de acuerdo de claves no contiene Tag 0x84")
+        val cardEphemeralPub = extractTagDataFrom7c(agreeResp.data, recvTag)
+            ?: throw PaceException("Respuesta de acuerdo de claves no contiene Tag 0x%02X".format(recvTag))
 
         val sharedSecretX = PaceProtocol.computeSharedSecretX(
             ephemeralPair = ephemeralKey,

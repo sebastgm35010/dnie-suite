@@ -221,24 +221,26 @@ class DnieTransceiver(
     private fun getAlternativeEfIds(type: CertificateType): List<ByteArray> {
         return when (type) {
             CertificateType.SIGNATURE -> listOf(
-                type.fileId, // 00 1D (v2 o EF.SOD en ICAO)
-                byteArrayOf(0x01.toByte(), 0x1C.toByte()), // 01 1C (EF.CardAccess en ICAO)
-                byteArrayOf(0x01.toByte(), 0x1D.toByte()), // 01 1D (EF.SOD alternativo)
-                byteArrayOf(0xC0.toByte(), 0x01.toByte()), // IAS-ECC (v3)
-                byteArrayOf(0x34.toByte(), 0x02.toByte()), // PKI DF (v3)
+                type.fileId, // 00 1D (DNIe v2)
+                ApduConstants.EF_COSMO_SIGNATURE, // 20 01 (IDEMIA Cosmo DF 5011 / PKCS#15)
+                ApduConstants.EF_IAS_ECC_341F,    // 34 1F (IAS-ECC v3)
+                byteArrayOf(0x34.toByte(), 0x02.toByte()), // 34 02 (PKI DF v3)
+                byteArrayOf(0xC0.toByte(), 0x01.toByte()), // C0 01 (IAS-ECC v3)
+                ApduConstants.EF_SOD,                      // 01 1D (EF.SOD bajo ICAO LDS1)
                 byteArrayOf(0x00.toByte(), 0x02.toByte())
             )
             CertificateType.AUTHENTICATION -> listOf(
-                type.fileId, // 00 1C (v2)
-                byteArrayOf(0x01.toByte(), 0x1C.toByte()), // 01 1C (EF.CardAccess)
-                byteArrayOf(0xC0.toByte(), 0x02.toByte()), // IAS-ECC (v3)
-                byteArrayOf(0x34.toByte(), 0x01.toByte()), // PKI DF (v3)
+                type.fileId, // 00 1C (DNIe v2)
+                ApduConstants.EF_COSMO_AUTHENTICATION, // 20 00 (IDEMIA Cosmo DF 5011 / PKCS#15)
+                ApduConstants.EF_IAS_ECC_3401,         // 34 01 (IAS-ECC v3)
+                byteArrayOf(0xC0.toByte(), 0x02.toByte()), // C0 02 (IAS-ECC v3)
                 byteArrayOf(0x00.toByte(), 0x01.toByte())
             )
             CertificateType.ENCRYPTION -> listOf(
-                type.fileId, // 00 1B (v2)
-                byteArrayOf(0xC0.toByte(), 0x03.toByte()),
-                byteArrayOf(0x34.toByte(), 0x03.toByte())
+                type.fileId, // 00 1B (DNIe v2)
+                byteArrayOf(0x20.toByte(), 0x02.toByte()), // 20 02 (IDEMIA Cosmo)
+                byteArrayOf(0x34.toByte(), 0x03.toByte()),
+                byteArrayOf(0xC0.toByte(), 0x03.toByte())
             )
         }
     }

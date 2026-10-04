@@ -93,10 +93,12 @@ object ApduConstants {
     const val P2_SELECT_NO_FCI: Byte = 0x0C.toByte()
 
     // Directorios Dedicados (DF) conocidos bajo Master File (3F 00)
+    val DF_IDEMIA_PKCS15_5011: ByteArray = byteArrayOf(0x50.toByte(), 0x11.toByte())
     val DF_IDEMIA_PKI: ByteArray = byteArrayOf(0x70.toByte(), 0x01.toByte())
     val DF_PKCS15: ByteArray = byteArrayOf(0x50.toByte(), 0x15.toByte())
 
     val CANDIDATE_DFS: List<Pair<String, ByteArray>> = listOf(
+        Pair("IDEMIA PKCS#15 (50 11)", DF_IDEMIA_PKCS15_5011),
         Pair("IDEMIA PKI (70 01)", DF_IDEMIA_PKI),
         Pair("PKCS#15 (50 15)", DF_PKCS15)
     )
@@ -105,6 +107,10 @@ object ApduConstants {
     val EF_SIGNATURE: ByteArray = byteArrayOf(0x00, 0x1D)
     val EF_AUTHENTICATION: ByteArray = byteArrayOf(0x00, 0x1C)
     val EF_ENCRYPTION: ByteArray = byteArrayOf(0x00, 0x1B)
+    val EF_COSMO_SIGNATURE: ByteArray = byteArrayOf(0x20.toByte(), 0x01.toByte())
+    val EF_COSMO_AUTHENTICATION: ByteArray = byteArrayOf(0x20.toByte(), 0x00.toByte())
+    val EF_IAS_ECC_341F: ByteArray = byteArrayOf(0x34.toByte(), 0x1F.toByte())
+    val EF_IAS_ECC_3401: ByteArray = byteArrayOf(0x34.toByte(), 0x01.toByte())
     val EF_CARD_ACCESS: ByteArray = byteArrayOf(0x01.toByte(), 0x1C.toByte())
     val EF_SOD: ByteArray = byteArrayOf(0x01.toByte(), 0x1D.toByte())
     val EF_DG1: ByteArray = byteArrayOf(0x01.toByte(), 0x01.toByte())
