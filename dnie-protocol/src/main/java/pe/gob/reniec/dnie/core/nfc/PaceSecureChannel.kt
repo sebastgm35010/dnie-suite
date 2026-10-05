@@ -154,8 +154,9 @@ class PaceSecureChannel(
         }
 
         var do97: ByteArray? = null
-        if (cmd.le != null) {
-            val leByte = if (cmd.le == 256) 0x00.toByte() else (cmd.le and 0xFF).toByte()
+        val responseLength = cmd.le
+        if (responseLength != null) {
+            val leByte = if (responseLength == 256) 0x00.toByte() else (responseLength and 0xFF).toByte()
             do97 = byteArrayOf(0x97.toByte(), 0x01.toByte(), leByte)
         }
 

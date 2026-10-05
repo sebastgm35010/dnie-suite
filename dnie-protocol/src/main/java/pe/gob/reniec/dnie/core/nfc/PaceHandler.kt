@@ -12,11 +12,6 @@ import java.security.MessageDigest
 import java.security.SecureRandom
 
 /**
- * Excepción lanzada cuando ocurre un error en la ejecución del protocolo PACE.
- */
-class PaceException(message: String, statusWord: Int? = null) : CardProtocolException(message, statusWord)
-
-/**
  * Coordinador de alto nivel del protocolo PACE (Password Authenticated Connection Establishment)
  * con código CAN para DNIe 3.0 conforme a ICAO Doc 9303 Parte 11 y BSI TR-03110.
  */

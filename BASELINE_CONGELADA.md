@@ -1,6 +1,6 @@
-# Base funcional 1.0.8 clausurada
+# Origen del fork: base funcional 1.0.8 clausurada
 
-Por instrucción del usuario, esta copia queda como referencia fija de lectura de certificados y firma DNIe v3 por NFC. No se introducirán aquí nuevas funcionalidades ni refactorizaciones.
+Este documento describe la copia de origen `G:\Mi unidad\BOT TRADER\DNI_CODEX\modest-bose`, que permanece clausurada. La carpeta actual `modest-bose-evolution` es el fork de desarrollo autorizado y sí admite nuevas funcionalidades y refactorizaciones.
 
 - Rama de referencia: `baseline/1.0.8`.
 - Tag: `dnie-v1.0.8-validated`.

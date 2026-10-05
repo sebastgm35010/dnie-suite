@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Application Identification -->
-    <string name="app_name">DNIe Modest Bose</string>
+    <string name="app_name">DNIe Evolucion</string>
     <string name="app_description">Lectura NFC, inspección de certificados y firma digital PAdES con DNI electrónico peruano v2/v3</string>
 
     <!-- Navigation Titles -->

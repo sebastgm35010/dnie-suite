@@ -1,5 +1,17 @@
 # E2E Test Infra: Peru DNIe v2/v3 Native Android App
 
+## Ejecución en el fork modular
+
+Las pruebas del núcleo/APDU/criptografía están en `dnie-core`; las de NFC abstracto y sesiones en `dnie-protocol`; las de PDF en `dnie-pdf`; las de ViewModels en `app`. Ejecutar todos los grupos:
+
+```powershell
+.\gradlew.bat :dnie-core:test :dnie-protocol:test :dnie-pdf:testDebugUnitTest :app:testDebugUnitTest :app:exportBranchApk --console=plain
+```
+
+La validación de tarjeta física de la 1.0.8 corresponde a la base clausurada. Este APK reorganizado requiere repetir la firma real antes de considerarlo validado en el DNI.
+
+El resto del documento conserva las notas de infraestructura originales; las rutas que mencionan solo `app/src/test` deben interpretarse según el módulo propietario indicado arriba.
+
 ## Test Philosophy
 - **Requirement-Driven & Opaque-Box**: Tests are derived strictly from `ORIGINAL_REQUEST.md` and `dnie_peru_android_spec.md`, without coupling to internal private methods.
 - **Hardware-Decoupled Verification**: Incorporates a high-fidelity `MockIsoDepCardChannel` capable of emulating the RENIEC PKI applet, sequential certificate TLV responses, PIN verification status words (`90 00`, `63 CX`, `69 83`), and RSA-2048 modular exponentiation signatures. This allows 100% deterministic local test execution and CI/CD validation.

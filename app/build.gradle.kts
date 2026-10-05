@@ -9,11 +9,11 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "pe.gob.reniec.dnie.modestbose"
+        applicationId = "pe.gob.reniec.dnie.evolution"
         minSdk = 24
         targetSdk = 34
-        versionCode = 9
-        versionName = "1.0.8"
+        versionCode = 10
+        versionName = "1.1.0-dev"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -23,10 +23,10 @@ android {
 
     // Separate development identity for this checkout; keep this keystore for future updates.
     signingConfigs {
-        create("modestBose") {
-            storeFile = rootProject.file("signing/modest-bose-development.jks")
+        create("evolution") {
+            storeFile = rootProject.file("signing/evolution-development.jks")
             storePassword = "android"
-            keyAlias = "modest-bose"
+            keyAlias = "evolution"
             keyPassword = "android"
         }
     }
@@ -39,12 +39,12 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("modestBose")
+            signingConfig = signingConfigs.getByName("evolution")
         }
         debug {
             applicationIdSuffix = ".debug"
             isDebuggable = true
-            signingConfig = signingConfigs.getByName("modestBose")
+            signingConfig = signingConfigs.getByName("evolution")
         }
     }
 
@@ -70,6 +70,8 @@ android {
         unitTests.isReturnDefaultValues = true
     }
 
+    sourceSets.getByName("test").resources.srcDir(rootProject.file("test-resources/pdfbox"))
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -86,12 +88,16 @@ tasks.register<Copy>("exportBranchApk") {
     dependsOn("assembleDebug")
     from(layout.buildDirectory.dir("outputs/apk/debug")) {
         include("app-debug.apk")
-        rename("app-debug.apk", "dnie-modest-bose-debug.apk")
+        rename("app-debug.apk", "dnie-evolution-debug.apk")
     }
-    into(layout.buildDirectory.dir("outputs/apk/modest-bose"))
+    into(layout.buildDirectory.dir("outputs/apk/evolution"))
 }
 
 dependencies {
+    implementation(project(":dnie-core"))
+    implementation(project(":dnie-protocol"))
+    implementation(project(":dnie-nfc"))
+    implementation(project(":dnie-pdf"))
     // AndroidX & Lifecycle
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.5")
@@ -115,15 +121,6 @@ dependencies {
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
-
-    // Criptografía: BouncyCastle para certificados X.509, CMS/PKCS#7 y DER encoding
-    implementation("org.bouncycastle:bcprov-jdk18on:1.78.1")
-    implementation("org.bouncycastle:bcpkix-jdk18on:1.78.1")
-
-    // Motor de PDF: PDFBox Android (fork optimizado sin dependencias java.awt)
-    implementation("com.tom-roush:pdfbox-android:2.0.27.0") {
-        exclude(group = "org.bouncycastle")
-    }
 
     // Debugging & Preview
     debugImplementation("androidx.compose.ui:ui-tooling")

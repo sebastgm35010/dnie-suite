@@ -20,5 +20,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "DnieSignerPeru"
-include(":app")
+rootProject.name = "DnieSignerPeruEvolution"
+include(":app", ":dnie-core", ":dnie-protocol", ":dnie-nfc", ":dnie-pdf")

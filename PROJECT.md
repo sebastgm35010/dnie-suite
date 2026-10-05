@@ -1,5 +1,7 @@
 # Project: Peru DNIe v2/v3 Native Android App (IsoDep NFC & PAdES Digital Signer)
 
+> Fork de evolución: la arquitectura actual, las responsabilidades de los módulos y los comandos de compilación están en [ARQUITECTURA_FORK.md](ARQUITECTURA_FORK.md). Las secciones originales siguientes describen la base anterior a la modularización.
+
 ## Architecture
 - **Platform**: Android Native (Kotlin 2.0.20, AGP 8.5.2, Gradle 8.9 Wrapper, minSdk 24, compileSdk 34, targetSdk 34).
 - **Presentation**: Jetpack Compose BOM 2024.09.02 + Material 3, Navigation Compose, Lifecycle ViewModel Compose.

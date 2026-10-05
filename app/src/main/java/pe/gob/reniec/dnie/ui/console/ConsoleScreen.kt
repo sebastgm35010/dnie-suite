@@ -326,9 +326,10 @@ private fun ApduLogItem(entry: ApduLogEntry) {
             }
 
             // Status Word Badge
-            if (entry.statusWordHex != null) {
+            val statusWordHex = entry.statusWordHex
+            if (statusWordHex != null) {
                 Spacer(modifier = Modifier.height(4.dp))
-                val sw = entry.statusWordHex.uppercase()
+                val sw = statusWordHex.uppercase()
                 val (badgeBackground, badgeText, statusLabel) = when {
                     sw == "9000" || sw.startsWith("90 00") -> Triple(Color(0xFF2E7D32), "90 00", "OK")
                     sw.startsWith("63C") || sw.startsWith("63 C") -> Triple(Color(0xFFF57F17), sw, "PIN Inválido")
