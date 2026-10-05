@@ -47,33 +47,7 @@ object X509CertificateParser {
             return converter.getCertificate(holder)
         } catch (_: Exception) {}
 
-        // 2. Si es una estructura ICAO eMRTD EF.SOD (Tag 0x77 o CMS SignedData)
-        try {
-            val cmsBytes = if ((derBytes[0].toInt() and 0xFF) == 0x77 && derBytes.size > 2) {
-                // Desempaquetar Tag 0x77 (LDS Security Object)
-                val lenByte = derBytes[1].toInt() and 0xFF
-                val contentStart = when {
-                    lenByte == 0x82 -> 4
-                    lenByte == 0x81 -> 3
-                    lenByte < 0x80 -> 2
-                    else -> 2
-                }
-                derBytes.copyOfRange(contentStart, derBytes.size)
-            } else {
-                derBytes
-            }
-
-            val signedData = org.bouncycastle.cms.CMSSignedData(cmsBytes)
-            val certStore = signedData.certificates
-            val certs = certStore.getMatches(null)
-            val firstCertHolder = certs.firstOrNull() as? X509CertificateHolder
-            if (firstCertHolder != null) {
-                val converter = JcaX509CertificateConverter()
-                    .setProvider(CryptoProviderInitializer.provider)
-                return converter.getCertificate(firstCertHolder)
-            }
-        } catch (_: Exception) {}
-
+        // Personal certificates must be X.509, never the issuing authority's certificate from EF.SOD.
         // 3. Fallback mediante CertificateFactory estándar configurado con BouncyCastle
         val certFactory = CertificateFactory.getInstance("X.509", CryptoProviderInitializer.provider)
         return certFactory.generateCertificate(ByteArrayInputStream(derBytes)) as X509Certificate

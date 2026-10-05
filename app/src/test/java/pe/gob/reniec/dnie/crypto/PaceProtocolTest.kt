@@ -187,13 +187,36 @@ class PaceProtocolTest {
 
     @Test
     fun testComputeIntegratedMappedGenerator() {
-        val parameterId = 13 // BrainpoolP256r1
-        val nonce = ByteArray(32) { 0x07 }
-        val group = PaceProtocol.computeIntegratedMappedGenerator(nonce, parameterId)
+        // ICAO Doc 9303 Part 11 Appendix H.1, independent published IM vector.
+        fun hex(s: String) = s.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+        val nonce = hex("2923BE84E16CD6AE529049F1F1BBE9EB")
+        val terminalNonce = hex("5DD4CBFC96F5453B130D890A1CDBAE32")
+        val p = PaceProtocol.getCurveParameters(13).curve.field.characteristic
+        assertEquals(BigInteger("A2F8FF2DF50E52C6599F386ADCB595D229F6A167ADE2BE5F2C3296ADD5B7430E", 16),
+            PaceProtocol.integratedMappingFieldElement(nonce, terminalNonce, p))
+        val group = PaceProtocol.computeIntegratedMappedGenerator(nonce, terminalNonce, 13)
+        assertArrayEquals(hex("048E82D31559ED0FDE92A4D0498ADD3C23BABA94FB77691E31E90AEA77FB17D427" +
+            "4C1AE14BD0C3DBAC0C871B7F3608169364437CA30AC243A089D3F266C1E60FAD"),
+            group.mappedGenerator.getEncoded(false))
+    }
 
-        assertNotNull(group)
-        assertNotNull(group.mappedGenerator)
-        assertTrue(group.mappedGenerator.isValid)
+    @Test
+    fun testRealCardAccessAdvertisesImAes256() {
+        val bytes = "534431423012060A04007F0007020204040402010202010D3015060904007F000702020C01300302010130030301003015060904007F000702020C0230030201023003030100"
+            .chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+        val info = PaceProtocol.parseCardAccess(bytes)!!
+        assertEquals("0.4.0.127.0.7.2.2.4.4.4", info.oid)
+        assertTrue(info.isIntegratedMapping)
+        assertEquals(32, info.keyLength)
+        assertEquals(13, info.parameterId)
+    }
+
+    @Test
+    fun testDecryptLongNonceUsesNegotiatedAes128() {
+        val nonce = ByteArray(32) { it.toByte() }
+        val cipher = Cipher.getInstance("AES/CBC/NoPadding")
+        cipher.init(Cipher.ENCRYPT_MODE, SecretKeySpec(PaceProtocol.deriveKpi("123456"), "AES"), IvParameterSpec(ByteArray(16)))
+        assertArrayEquals(nonce, PaceProtocol.decryptNonce("123456", cipher.doFinal(nonce)))
     }
 
     @Test

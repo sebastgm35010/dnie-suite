@@ -9,15 +9,25 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "pe.gob.reniec.dnie"
+        applicationId = "pe.gob.reniec.dnie.modestbose"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 9
+        versionName = "1.0.8"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
+        }
+    }
+
+    // Separate development identity for this checkout; keep this keystore for future updates.
+    signingConfigs {
+        create("modestBose") {
+            storeFile = rootProject.file("signing/modest-bose-development.jks")
+            storePassword = "android"
+            keyAlias = "modest-bose"
+            keyPassword = "android"
         }
     }
 
@@ -29,11 +39,12 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("modestBose")
         }
         debug {
             applicationIdSuffix = ".debug"
             isDebuggable = true
+            signingConfig = signingConfigs.getByName("modestBose")
         }
     }
 
@@ -69,6 +80,15 @@ android {
             excludes += "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
         }
     }
+}
+
+tasks.register<Copy>("exportBranchApk") {
+    dependsOn("assembleDebug")
+    from(layout.buildDirectory.dir("outputs/apk/debug")) {
+        include("app-debug.apk")
+        rename("app-debug.apk", "dnie-modest-bose-debug.apk")
+    }
+    into(layout.buildDirectory.dir("outputs/apk/modest-bose"))
 }
 
 dependencies {

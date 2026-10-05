@@ -32,6 +32,40 @@ class DnieTransceiver(
     var pin: String? = null
 ) : DnieTransceiverInterface {
 
+    private var secureChannel: PaceSecureChannel? = null
+    private var isV3Pki = false
+
+    private fun openV3Pki(): Boolean {
+        if (isV3Pki) return true
+        // A secure ICAO session cannot be reused for IAS. Never send plain APDUs
+        // while that session is active; a fresh tag connection is required.
+        if (secureChannel != null) return false
+        val opened = V3PkiSession.open(can, ::transceiveWithLogging) { profile ->
+            logger.logInfo("V3: PACE en IAS/PKI con perfil NFC IM AES-256, curva 13; sin seleccionar ICAO ni MF.")
+            secureChannel = PaceHandler(logger).performPace(channel, can!!, profileSecurityInfo = profile)
+        }
+        if (opened) {
+            isV3Pki = true
+            activeAppletName = "DNIe v3 IAS/PKI"
+            logger.logInfo("V3: aplicación PKI seleccionada con PACE IAS autenticado.")
+        }
+        return opened
+    }
+
+    private fun establishPace(preloadedCardAccess: ByteArray? = null): PaceSecureChannel {
+        return secureChannel ?: PaceHandler(logger).performPace(
+            channel, can ?: throw PaceException("Ingrese el CAN para abrir el canal seguro"), preloadedCardAccess
+        ).also { secureChannel = it }
+    }
+
+    private fun requirePersonalPki() {
+        if (isIcaoMode) throw CardProtocolException(
+            "Canal ICAO detectado. No se encontró PKI personal entre los AIDs probados. " +
+                "EF.SOD contiene el certificado del emisor del documento, no el certificado de firma del titular. " +
+                "Use el diagnóstico de consola para explorar EF.DIR y los directorios después de PACE."
+        )
+    }
+
     var activeAppletName: String? = null
         private set
 
@@ -45,7 +79,7 @@ class DnieTransceiver(
         logger.logTx(command, description)
         val startTime = System.currentTimeMillis()
         val rawResponse = try {
-            channel.transceive(command.toByteArray())
+            (secureChannel ?: channel).transceive(command.toByteArray())
         } catch (e: Exception) {
             val duration = System.currentTimeMillis() - startTime
             logger.logInfo("Error de transporte en $description (${duration}ms): ${e.message}")
@@ -59,6 +93,7 @@ class DnieTransceiver(
 
     override suspend fun selectPkiApplet(): Result<Unit> = withContext(ioDispatcher) {
         runCatching {
+            if (openV3Pki()) return@runCatching
             var selectedName: String? = null
             var lastResp: ResponseApdu? = null
 
@@ -67,7 +102,9 @@ class DnieTransceiver(
             }
 
             // Intentar lista priorizada de AIDs candidatos para DNIe v3 (ICAO, IDEMIA) y v2 (PGeneric)
-            for ((name, aid) in ApduConstants.CANDIDATE_AIDS) {
+            // Prefer personal PKI; ICAO is a separate application, not a signing applet.
+            val candidates = ApduConstants.CANDIDATE_AIDS.sortedBy { it.second.contentEquals(ApduConstants.AID_ICAO_MRTD) }
+            for ((name, aid) in candidates) {
                 val cmd = CommandApdu.selectDfByName(aid)
                 val resp = transceiveWithLogging(cmd, "SELECT Applet: $name")
                 lastResp = resp
@@ -75,7 +112,7 @@ class DnieTransceiver(
                 if (resp.isSuccess || resp.sw1 == 0x61 || resp.sw1 == 0x90) {
                     selectedName = name
                     activeAppletName = name
-                    logger.logInfo("¡Applet compatible detectado exitosamente: $name (SW: ${resp.statusWordHex})!")
+                    logger.logInfo("Aplicación detectada: $name (SW: ${resp.statusWordHex})")
                     break
                 }
             }
@@ -99,6 +136,23 @@ class DnieTransceiver(
                     sw
                 )
             }
+
+            if (isIcaoMode && !can.isNullOrBlank()) {
+                establishPace()
+                // Some chips expose additional applications only after PACE.
+                for ((name, aid) in candidates.filterNot { it.second.contentEquals(ApduConstants.AID_ICAO_MRTD) }) {
+                    val resp = transceiveWithLogging(CommandApdu.selectDfByName(aid), "SM: SELECT PKI $name")
+                    if (resp.isSuccess) {
+                        activeAppletName = name
+                        break
+                    }
+                }
+                if (isIcaoMode) {
+                    val resp = transceiveWithLogging(CommandApdu.selectDfByName(ApduConstants.AID_ICAO_MRTD), "SM: SELECT ICAO")
+                    if (!resp.isSuccess) throw CardProtocolException("Fallo al seleccionar ICAO con canal seguro", resp.sw)
+                    logger.logInfo("PACE correcto. Aplicación ICAO disponible; PKI personal no encontrada por los AIDs probados.")
+                }
+            }
         }
     }
 
@@ -108,6 +162,37 @@ class DnieTransceiver(
     suspend fun probeAllAids(): List<Pair<String, ResponseApdu>> = withContext(ioDispatcher) {
         val results = mutableListOf<Pair<String, ResponseApdu>>()
         logger.logInfo("=== INICIANDO SONDEO DIAGNÓSTICO DE AIDs (DNIe v2 / v3) ===")
+        if (can.isNullOrBlank() && secureChannel == null) {
+            V3PkiProbe(::transceiveWithLogging, logger).explore("SIN CAN, SIN PACE")
+            logger.logInfo("Diagnóstico sin CAN terminado. Para probar los certificados con PACE, " +
+                "ingrese el CAN y vuelva a aproximar la tarjeta.")
+            return@withContext results
+        }
+        try {
+            if (openV3Pki()) {
+                V3PkiProbe(::transceiveWithLogging, logger).exploreSelectedPki("PACE IAS/PKI (SM)")
+                logger.logInfo("=== FIN DE SONDEO V3 IAS/PKI; sin verificar PIN ni firmar ===")
+                return@withContext results
+            }
+        } catch (e: Exception) {
+            logger.logInfo("Diagnóstico V3 IAS/PKI detenido: ${e.message}. " +
+                "Retire y vuelva a aproximar la tarjeta antes de otra sesión.")
+            return@withContext results
+        }
+        // With CAN, perform PACE before entering IAS. A prior plain IAS selection
+        // blocks MF/CardAccess on this card and must not poison PACE negotiation.
+        // IAS rejects SELECT by name with P2=00 (6A86 on the tested v3 card).
+        // Restore ICAO explicitly before reading CardAccess; MF alone cannot exit IAS.
+        val restoreIcao = transceiveWithLogging(
+            CommandApdu(0, 0xA4.toByte(), 4, 0x0C, ApduConstants.AID_ICAO_MRTD),
+            "SONDEO: SELECT ICAO antes de PACE (P2=0C)"
+        )
+        results.add(Pair("Restaurar ICAO después de IAS", restoreIcao))
+        if (!restoreIcao.isSuccess) {
+            logger.logInfo("Diagnóstico detenido: no se pudo restaurar ICAO después de IAS. " +
+                "Retire y vuelva a aproximar la tarjeta; no se intentará PACE con parámetros supuestos.")
+            return@withContext results
+        }
         for ((name, aid) in ApduConstants.CANDIDATE_AIDS) {
             val cmd = CommandApdu.selectDfByName(aid)
             val resp = transceiveWithLogging(cmd, "SONDEO: SELECT $name")
@@ -173,11 +258,20 @@ class DnieTransceiver(
 
         // Si se dispone de CAN, probar handshake de PACE en modo diagnóstico
         if (!can.isNullOrBlank()) {
+            if (secureChannel == null && readCardAccessBytes == null) {
+                logger.logInfo("Diagnóstico PACE detenido: EF.CardAccess no pudo leerse. " +
+                    "No se enviará MSE con una suite supuesta; retire y vuelva a aproximar la tarjeta.")
+                return@withContext results
+            }
             logger.logInfo("CAN disponible (${can?.length} dígitos): ejecutando prueba diagnóstica de canal seguro PACE...")
             try {
-                val paceHandler = PaceHandler(logger)
-                val secureChannel = paceHandler.performPace(channel, can!!, readCardAccessBytes)
+                val secureChannel = establishPace(readCardAccessBytes)
                 logger.logInfo("¡Prueba diagnóstica de canal seguro PACE completada exitosamente! Canal SM activo.")
+
+                V3PkiProbe(::transceiveWithLogging, logger).explore("DESPUÉS DE PACE (SM)")
+
+                // Every discovery APDU uses the retained authenticated session.
+                CardDirectoryProbe(::transceiveWithLogging, logger).explore()
 
                 // Prueba de lectura bajo Secure Messaging: SELECT Applet ICAO LDS1 -> SELECT EF.SOD (01 1D)
                 try {
@@ -195,7 +289,7 @@ class DnieTransceiver(
                         logger.logRx(sodResp, 0, "SM DIAG: SELECT EF.SOD (01 1D)")
 
                         if (sodResp.isSuccess) {
-                            val readSod = CommandApdu.readBinary(0, le = 256)
+                            val readSod = CommandApdu.readBinary(0, le = 223)
                             logger.logTx(readSod, "SM DIAG: READ BINARY EF.SOD [Offset 0x0000]")
                             val readRaw = secureChannel.transceive(readSod.toByteArray())
                             val readResp = ResponseApdu.fromBytes(readRaw)
@@ -226,7 +320,6 @@ class DnieTransceiver(
                 ApduConstants.EF_IAS_ECC_341F,    // 34 1F (IAS-ECC v3)
                 byteArrayOf(0x34.toByte(), 0x02.toByte()), // 34 02 (PKI DF v3)
                 byteArrayOf(0xC0.toByte(), 0x01.toByte()), // C0 01 (IAS-ECC v3)
-                ApduConstants.EF_SOD,                      // 01 1D (EF.SOD bajo ICAO LDS1)
                 byteArrayOf(0x00.toByte(), 0x02.toByte())
             )
             CertificateType.AUTHENTICATION -> listOf(
@@ -247,6 +340,17 @@ class DnieTransceiver(
 
     override suspend fun readCertificate(type: CertificateType): Result<ByteArray> = withContext(ioDispatcher) {
         runCatching {
+            requirePersonalPki()
+            if (isV3Pki) {
+                val file = when (type) {
+                    CertificateType.SIGNATURE -> "CE82"
+                    CertificateType.AUTHENTICATION -> "CE81"
+                    CertificateType.ENCRYPTION -> "CE83"
+                }
+                return@runCatching V3PkiProbe(::transceiveWithLogging, logger)
+                    .readFile(file, type.displayName, "V3 SM")
+                    ?: throw CertificateReadException("No se pudo leer el X.509 completo de $file (${type.displayName})")
+            }
             // Paso 1: Seleccionar el Archivo Elemental (EF) probando identificadores estándar y alternativos
             val candidateEfs = getAlternativeEfIds(type)
             var efSelected = false
@@ -344,83 +448,15 @@ class DnieTransceiver(
                 }
             }
 
-            // Fallback con PACE: Si el acceso está protegido (SW 6982 o modo ICAO) y se cuenta con CAN
-            if (!efSelected && !can.isNullOrBlank() && (isIcaoMode || lastSelectResp?.sw == StatusWord.SW_SECURITY_STATUS_NOT_SATISFIED)) {
-                logger.logInfo("Acceso protegido detectado (SW: ${lastSelectResp?.statusWordHex ?: "6982"}). Iniciando establecimiento de canal seguro PACE con CAN...")
-                val paceHandler = PaceHandler(logger)
-                val secureChannel = paceHandler.performPace(channel, can!!)
-
-                // Con canal seguro PACE establecido, seleccionar applet ICAO LDS1
-                val icaoAppletCmd = CommandApdu.selectDfByName(ApduConstants.AID_ICAO_MRTD)
-                logger.logTx(icaoAppletCmd, "SM: SELECT Applet ICAO LDS1 eMRTD")
-                val appletRespRaw = secureChannel.transceive(icaoAppletCmd.toByteArray())
-                val appletResp = ResponseApdu.fromBytes(appletRespRaw)
-                logger.logRx(appletResp, 0, "SM: SELECT Applet ICAO LDS1 eMRTD")
-
-                val targetEf = when (type) {
-                    CertificateType.SIGNATURE -> ApduConstants.EF_SOD
-                    CertificateType.AUTHENTICATION -> ApduConstants.EF_SOD
-                    CertificateType.ENCRYPTION -> ApduConstants.EF_SOD
-                }
-
-                val selSodCmd = CommandApdu.selectEfDirect(targetEf)
-                logger.logTx(selSodCmd, "SM: SELECT EF.SOD (01 1D)")
-                val selSodRaw = secureChannel.transceive(selSodCmd.toByteArray())
-                val selSodResp = ResponseApdu.fromBytes(selSodRaw)
-                logger.logRx(selSodResp, 0, "SM: SELECT EF.SOD (01 1D)")
-
-                if (selSodResp.isSuccess) {
-                    val sodAccumulator = ByteArrayOutputStream()
-                    var offset = 0
-                    var expectedLen: Int? = null
-                    val blockSize = ApduConstants.DEFAULT_BLOCK_SIZE
-
-                    while (true) {
-                        val readCmd = CommandApdu.readBinary(offset, le = blockSize)
-                        logger.logTx(readCmd, "SM: READ BINARY EF.SOD [Offset 0x%04X]".format(offset))
-                        val readRaw = secureChannel.transceive(readCmd.toByteArray())
-                        val readResp = ResponseApdu.fromBytes(readRaw)
-                        logger.logRx(readResp, 0, "SM: READ BINARY EF.SOD [Offset 0x%04X]".format(offset))
-
-                        if (readResp.sw == StatusWord.SW_WRONG_OFFSET ||
-                            readResp.sw == StatusWord.SW_INCORRECT_PARAMETERS_IN_DATA_FIELD ||
-                            readResp.sw == StatusWord.SW_EOF_REACHED) {
-                            if (sodAccumulator.size() > 0) {
-                                break
-                            }
-                        }
-
-                        if (!readResp.isSuccess) {
-                            if (sodAccumulator.size() > 0) break
-                            throw CertificateReadException("Fallo al leer EF.SOD bajo Secure Messaging: ${readResp.statusWord.description}", readResp.sw)
-                        }
-
-                        val payload = extractPayloadFromTlv(readResp.data)
-                        if (payload.isEmpty()) break
-                        sodAccumulator.write(payload)
-
-                        if (offset == 0 && expectedLen == null) {
-                            expectedLen = parseDerSequenceLength(sodAccumulator.toByteArray())
-                        }
-
-                        if (expectedLen != null && sodAccumulator.size() >= expectedLen) {
-                            break
-                        }
-
-                        if (payload.size < blockSize) {
-                            break
-                        }
-
-                        offset += payload.size
-                    }
-
-                    val rawSod = sodAccumulator.toByteArray()
-                    if (rawSod.isNotEmpty()) {
-                        logger.logInfo("EF.SOD leído exitosamente con Secure Messaging (${rawSod.size} bytes). Extrayendo certificado X.509 DSC...")
-                        val cert = pe.gob.reniec.dnie.crypto.X509CertificateParser.toX509Certificate(rawSod)
-                        return@runCatching cert.encoded
-                    }
-                }
+            // Retry the same personal PKI application over the retained secure channel.
+            if (!efSelected && secureChannel == null && !can.isNullOrBlank() &&
+                lastSelectResp?.sw == StatusWord.SW_SECURITY_STATUS_NOT_SATISFIED) {
+                val applet = ApduConstants.CANDIDATE_AIDS.firstOrNull { it.first == activeAppletName }
+                    ?: throw CertificateReadException("No se conoce el AID de la aplicación PKI activa")
+                establishPace()
+                val selected = transceiveWithLogging(CommandApdu.selectDfByName(applet.second), "SM: SELECT PKI personal")
+                if (!selected.isSuccess) throw CertificateReadException("Aplicación PKI no accesible tras PACE", selected.sw)
+                return@runCatching readCertificate(type).getOrThrow()
             }
 
             if (!efSelected) {
@@ -441,8 +477,9 @@ class DnieTransceiver(
             val certAccumulator = ByteArrayOutputStream()
             var currentOffset = 0
             var expectedDerLength: Int? = null
-            val stepSize = ApduConstants.DEFAULT_BLOCK_SIZE // 0x00E4 (228 bytes)
-            var useStandardReadBinary = false
+            // Reserve room for padding and response DO87/DO99/DO8E within short Le=256.
+            val stepSize = if (secureChannel != null) 223 else ApduConstants.DEFAULT_BLOCK_SIZE
+            var useStandardReadBinary = secureChannel != null
 
             while (true) {
                 val readCmd = if (useStandardReadBinary) {
@@ -536,7 +573,7 @@ class DnieTransceiver(
                     break
                 }
 
-                currentOffset += if (useStandardReadBinary) blockPayload.size else stepSize
+                currentOffset += blockPayload.size
             }
 
             val rawAccumulated = certAccumulator.toByteArray()
@@ -587,14 +624,15 @@ class DnieTransceiver(
         pinType: Byte = ApduConstants.PIN_TYPE_SIGNATURE
     ): Result<PinVerificationResult> = withContext(ioDispatcher) {
         runCatching {
+            requirePersonalPki()
             // Validación sintáctica previa antes de impactar el chip físico
             if (!pin.all { it.isDigit() } || pin.length !in 4..8) {
                 throw IllegalArgumentException("El PIN debe tener entre 4 y 8 dígitos numéricos")
             }
 
             val typeDesc = if (pinType == ApduConstants.PIN_TYPE_SIGNATURE) "Firma" else "Autenticación"
-            val cmd = CommandApdu.verifyPin(pin, pinType)
-            val resp = transceiveWithLogging(cmd, "VERIFY PIN $typeDesc (0x%02X)".format(pinType))
+            val cmd = if (isV3Pki) V3PkiSession.verifyPin(pin) else CommandApdu.verifyPin(pin, pinType)
+            val resp = transceiveWithLogging(cmd, "VERIFY PIN $typeDesc (0x%02X)".format(cmd.p2))
 
             when {
                 resp.isSuccess -> {
@@ -629,12 +667,13 @@ class DnieTransceiver(
 
     override suspend fun signSha256Hash(hash32Bytes: ByteArray): Result<ByteArray> = withContext(ioDispatcher) {
         runCatching {
+            requirePersonalPki()
             require(hash32Bytes.size == ApduConstants.SHA256_HASH_SIZE) {
                 "El hash SHA-256 debe tener exactamente 32 bytes (recibido ${hash32Bytes.size})"
             }
 
             // Etapa 1: Manage Security Environment (MSE: SET DST)
-            val mseCmd = CommandApdu.mseSetDst()
+            val mseCmd = if (isV3Pki) V3PkiSession.signatureEnvironment() else CommandApdu.mseSetDst()
             val mseResp = transceiveWithLogging(mseCmd, "MSE: SET DST (RSA-2048 SHA-256)")
 
             if (!mseResp.isSuccess) {
@@ -645,7 +684,7 @@ class DnieTransceiver(
             }
 
             // Etapa 2: Perform Security Operation - Compute Digital Signature (PSO: CDS)
-            val psoCmd = CommandApdu.psoComputeDigitalSignature(hash32Bytes)
+            val psoCmd = if (isV3Pki) V3PkiSession.sign(hash32Bytes) else CommandApdu.psoComputeDigitalSignature(hash32Bytes)
             val psoResp = transceiveWithLogging(psoCmd, "PSO: Compute Digital Signature (CDS)")
 
             if (!psoResp.isSuccess) {

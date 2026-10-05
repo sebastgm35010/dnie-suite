@@ -40,7 +40,10 @@ class ApduLogger(
     fun logTx(command: CommandApdu, description: String) {
         val entry = ApduLogEntry(
             direction = ApduDirection.TX,
-            apduHex = command.toHexString(),
+            apduHex = if (command.ins == 0x20.toByte()) {
+                byteArrayOf(command.cla, command.ins, command.p1, command.p2)
+                    .joinToString(" ") { "%02X".format(it) } + " [PIN OCULTO]"
+            } else command.toHexString(),
             description = description,
             isSuccess = true
         )

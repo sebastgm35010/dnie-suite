@@ -1,8 +1,11 @@
 package pe.gob.reniec.dnie.core.nfc
 
 import pe.gob.reniec.dnie.core.apdu.CommandApdu
+import pe.gob.reniec.dnie.core.apdu.ResponseApdu
 import pe.gob.reniec.dnie.core.crypto.PaceProtocol
+import pe.gob.reniec.dnie.core.logging.ApduLogger
 import java.io.ByteArrayOutputStream
+import java.security.MessageDigest
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
@@ -19,16 +22,60 @@ import javax.crypto.spec.SecretKeySpec
 class PaceSecureChannel(
     private val baseChannel: DnieCardChannel,
     private val kEnc: ByteArray,
-    private val kMac: ByteArray
+    private val kMac: ByteArray,
+    private val logger: ApduLogger = ApduLogger.default
 ) : DnieCardChannel {
 
     private val ssc = ByteArray(16) // Inicializado a 16 ceros en PACE
+    private var valid = true
 
+    @Synchronized
     override fun transceive(command: ByteArray): ByteArray {
-        val cmd = CommandApdu.fromBytes(command)
-        val wrappedApdu = wrapCommand(cmd)
-        val rawResponse = baseChannel.transceive(wrappedApdu)
-        return unwrapResponse(rawResponse)
+        check(valid) { "Sesión segura invalidada; retire y vuelva a aproximar el DNIe" }
+        try {
+            val cmd = CommandApdu.fromBytes(command)
+            val wrappedApdu = wrapCommand(cmd)
+            logger.logTx(CommandApdu.fromBytes(wrappedApdu), "SM WIRE: comando protegido")
+            val rawResponse = collectPhysicalResponse(wrappedApdu)
+            return unwrapResponse(rawResponse)
+        } catch (e: Exception) {
+            valid = false
+            throw e
+        }
+    }
+
+    /** A short physical response can split a single SM envelope (RSA-2048: 291 bytes).
+     * Retrieve transport fragments before parsing or authenticating DO87/DO99/DO8E.
+     * GET RESPONSE is plain transport, as observed in the v3 NFC implementation;
+     * it does not wrap another command or advance the secure session counter.
+     */
+    private fun collectPhysicalResponse(command: ByteArray): ByteArray {
+        fun exchange(bytes: ByteArray): ResponseApdu {
+            val start = System.currentTimeMillis()
+            val raw = baseChannel.transceive(bytes)
+            if (raw.size < 2) throw CardProtocolException("Fragmento de respuesta física truncado")
+            return ResponseApdu.fromBytes(raw).also {
+                logger.logRx(it, System.currentTimeMillis() - start,
+                    "SM WIRE: respuesta protegida (estado externo)")
+            }
+        }
+        var response = exchange(command)
+        if (response.sw1 != 0x61) return response.toByteArray()
+        val output = ByteArrayOutputStream()
+        var continuations = 0
+        while (response.sw1 == 0x61) {
+            output.write(response.data)
+            if (output.size() > 16384 || ++continuations > 64)
+                throw CardProtocolException("Continuación de respuesta segura excedió el límite")
+            val getResponse = CommandApdu(0, 0xC0.toByte(), 0, 0,
+                le = if (response.sw2 == 0) 256 else response.sw2)
+            logger.logTx(getResponse, "SM WIRE: GET RESPONSE físico (sin incrementar SSC)")
+            response = exchange(getResponse.toByteArray())
+        }
+        output.write(response.data)
+        if (output.size() > 16384) throw CardProtocolException("Respuesta segura excedió el límite")
+        logger.logInfo("SM: respuesta reunida en ${continuations + 1} fragmentos; validación MAC pendiente.")
+        return output.toByteArray() + byteArrayOf(response.sw1.toByte(), response.sw2.toByte())
     }
 
     override fun isConnected(): Boolean = baseChannel.isConnected()
@@ -80,7 +127,7 @@ class PaceSecureChannel(
                 break
             }
         }
-        return data
+        throw CardProtocolException("Padding inválido en respuesta segura")
     }
 
     /**
@@ -129,6 +176,7 @@ class PaceSecureChannel(
         smDataStream.write(do8e)
 
         val smData = smDataStream.toByteArray()
+        require(smData.size <= 255) { "Datos demasiado largos para una APDU segura corta" }
 
         // Armar trama APDU de salida: CLA INS P1 P2 Lc Data 00
         val out = ByteArray(4 + 1 + smData.size + 1)
@@ -147,11 +195,12 @@ class PaceSecureChannel(
      * Desencapsula y valida una respuesta APDU protegida con Mensajería Segura (SM).
      */
     fun unwrapResponse(rawSmResponse: ByteArray): ByteArray {
-        if (rawSmResponse.size < 2) return rawSmResponse
+        if (rawSmResponse.size < 2) throw CardProtocolException("Respuesta segura truncada")
 
         // Si la respuesta solo tiene 2 bytes (SW de error puro, ej. 69 82, 6A 82, etc.)
         if (rawSmResponse.size == 2) {
-            return rawSmResponse
+            throw CardProtocolException("Respuesta sin protección en canal seguro",
+                ((rawSmResponse[0].toInt() and 255) shl 8) or (rawSmResponse[1].toInt() and 255))
         }
 
         incrementSsc()
@@ -162,9 +211,16 @@ class PaceSecureChannel(
         val do87 = tlvMap[0x87]
         val do99 = tlvMap[0x99]
         val do8e = tlvMap[0x8E]
+        if (do99 == null || do99.size != 2 || do8e == null || do8e.size != 8) {
+            throw CardProtocolException("Respuesta segura sin DO99/DO8E válidos")
+        }
+        if (tlvMap.keys.any { it !in setOf(0x87, 0x99, 0x8E) } || tlvMap.keys.toList() !=
+            (if (do87 != null) listOf(0x87, 0x99, 0x8E) else listOf(0x99, 0x8E))) {
+            throw CardProtocolException("Objetos de respuesta segura inesperados o fuera de orden")
+        }
 
-        // Validar integridad MAC si DO8E y DO99 están presentes
-        if (do8e != null && do99 != null) {
+        // Every protected response must authenticate its status and ciphertext.
+        run {
             val macStream = ByteArrayOutputStream()
             macStream.write(ssc)
             if (do87 != null) {
@@ -173,19 +229,31 @@ class PaceSecureChannel(
             macStream.write(buildTlv(0x99, do99))
 
             val expectedMac = PaceProtocol.computeCmac(kMac, padIso7816(macStream.toByteArray()))
-            if (!expectedMac.contentEquals(do8e)) {
+            if (!MessageDigest.isEqual(expectedMac, do8e)) {
                 throw CardProtocolException("Fallo de integridad criptográfica: MAC de Secure Messaging no coincide")
             }
         }
 
+        // Some cards repeat an authenticated application error outside DO99 instead of 9000.
+        // Accept this only AFTER MAC verification and only when both statuses agree.
+        val outerSw = ((rawSmResponse[rawSmResponse.size - 2].toInt() and 255) shl 8) or
+            (rawSmResponse.last().toInt() and 255)
+        val authenticatedSw = ((do99[0].toInt() and 255) shl 8) or (do99[1].toInt() and 255)
+        if (outerSw != 0x9000 && outerSw != authenticatedSw) {
+            throw CardProtocolException(
+                "Estados de respuesta segura inconsistentes: externo=%04X, DO99 autenticado=%04X".format(outerSw, authenticatedSw), outerSw)
+        }
+        if (outerSw != 0x9000) {
+            logger.logInfo("SM: estado externo %04X coincide con DO99; MAC verificado.".format(outerSw))
+        }
+
         // Descifrar datos si DO87 está presente
         var plainData = byteArrayOf()
-        if (do87 != null && do87.isNotEmpty()) {
-            val ciphertext = if (do87[0] == 0x01.toByte()) {
-                do87.copyOfRange(1, do87.size)
-            } else {
-                do87
+        if (do87 != null) {
+            if (do87.size < 17 || do87[0] != 0x01.toByte() || (do87.size - 1) % 16 != 0) {
+                throw CardProtocolException("DO87 inválido")
             }
+            val ciphertext = do87.copyOfRange(1, do87.size)
             val iv = computeIv()
             val cipher = Cipher.getInstance("AES/CBC/NoPadding")
             cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(kEnc, "AES"), IvParameterSpec(iv))
@@ -193,11 +261,7 @@ class PaceSecureChannel(
             plainData = unpadIso7816(decryptedPadded)
         }
 
-        // El Status Word final proviene de DO99 (o de los últimos 2 bytes de la APDU)
-        val sw1 = if (do99 != null && do99.size >= 2) do99[0] else rawSmResponse[rawSmResponse.size - 2]
-        val sw2 = if (do99 != null && do99.size >= 2) do99[1] else rawSmResponse[rawSmResponse.size - 1]
-
-        return plainData + byteArrayOf(sw1, sw2)
+        return plainData + do99
     }
 
     private fun buildTlv(tag: Int, value: ByteArray): ByteArray {
@@ -216,26 +280,28 @@ class PaceSecureChannel(
         var offset = 0
         while (offset < data.size) {
             val tag = data[offset++].toInt() and 0xFF
-            if (offset >= data.size) break
+            if (offset >= data.size) throw CardProtocolException("TLV seguro truncado")
 
             val firstLen = data[offset++].toInt() and 0xFF
             val length = when {
                 firstLen == 0x82 -> {
-                    if (offset + 1 >= data.size) break
+                    if (offset + 1 >= data.size) throw CardProtocolException("Longitud TLV truncada")
                     val l = ((data[offset].toInt() and 0xFF) shl 8) or (data[offset + 1].toInt() and 0xFF)
                     offset += 2
                     l
                 }
                 firstLen == 0x81 -> {
-                    if (offset >= data.size) break
+                    if (offset >= data.size) throw CardProtocolException("Longitud TLV truncada")
                     val l = data[offset].toInt() and 0xFF
                     offset += 1
                     l
                 }
-                else -> firstLen
+                firstLen in 0..0x7F -> firstLen
+                else -> throw CardProtocolException("Longitud TLV no soportada")
             }
 
-            val end = minOf(data.size, offset + length)
+            if (length > data.size - offset || map.containsKey(tag)) throw CardProtocolException("TLV truncado o duplicado")
+            val end = offset + length
             map[tag] = data.copyOfRange(offset, end)
             offset = end
         }

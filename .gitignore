@@ -1,5 +1,7 @@
 *.iml
 .gradle
+.kotlin/
+/signing/*.jks
 /local.properties
 /.idea/
 .DS_Store

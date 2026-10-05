@@ -34,12 +34,18 @@ data class PaceSecurityInfo(
     val parameterId: Int
 ) {
     val isGenericMapping: Boolean
-        get() = oid.endsWith(".2.2") || oid.endsWith(".2.4") ||
-                (oidValueBytes.size >= 10 && oidValueBytes[8] == 0x02.toByte())
+        get() = oid.substringBeforeLast('.').endsWith(".4.2")
 
     val isIntegratedMapping: Boolean
-        get() = oid.endsWith(".4.2") || oid.endsWith(".4.4") ||
-                (oidValueBytes.size >= 10 && oidValueBytes[8] == 0x04.toByte())
+        get() = oid.substringBeforeLast('.').endsWith(".4.4")
+
+    val keyLength: Int
+        get() = when (oid.substringAfterLast('.')) {
+            "2" -> 16
+            "3" -> 24
+            "4" -> 32
+            else -> throw IllegalArgumentException("Cifrado PACE no soportado: $oid")
+        }
 
     val isAes256: Boolean
         get() = oid.endsWith(".4") ||
@@ -114,7 +120,7 @@ data class PaceSessionKeys(
  * Motor criptográfico para el protocolo PACE (Password Authenticated Connection Establishment)
  * conforme a ICAO Doc 9303 Parte 11 y BSI TR-03110 v2.
  *
- * Implementa el protocolo PACE-ECDH-GM-AES-CBC-CMAC-128 con curvas Brainpool / NIST.
+ * Implementa PACE-ECDH-GM/IM-AES-CBC-CMAC con curvas Brainpool / NIST.
  */
 object PaceProtocol {
 
@@ -207,7 +213,7 @@ object PaceProtocol {
                 }
             }
             return PaceSecurityInfo(
-                oid = "0.4.0.127.0.7.2.2.4.2.2",
+                oid = ASN1ObjectIdentifier.getInstance(byteArrayOf(0x06, 0x0A) + oidValue).id,
                 oidValueBytes = oidValue,
                 version = 2,
                 parameterId = paramId
@@ -248,7 +254,7 @@ object PaceProtocol {
             16 -> "brainpoolP384r1"
             17 -> "secp521r1"
             18 -> "brainpoolP512r1"
-            else -> "brainpoolP256r1"
+            else -> throw IllegalArgumentException("Parameter ID PACE no soportado: $parameterId")
         }
 
         return TeleTrusTNamedCurves.getByName(curveName)
@@ -262,9 +268,10 @@ object PaceProtocol {
      * K_pi = SHA-256(CAN || 0x00, 0x00, 0x00, 0x03)[0..31] para AES-256
      */
     fun deriveKpi(password: String, keyLength: Int = 16): ByteArray {
+        require(keyLength in listOf(16, 24, 32))
         val pwdBytes = password.toByteArray(Charsets.US_ASCII)
         val counterBytes = byteArrayOf(0x00, 0x00, 0x00, 0x03)
-        val md = if (keyLength == 32) MessageDigest.getInstance("SHA-256") else MessageDigest.getInstance("SHA-1")
+        val md = if (keyLength > 16) MessageDigest.getInstance("SHA-256") else MessageDigest.getInstance("SHA-1")
         md.update(pwdBytes)
         md.update(counterBytes)
         val hash = md.digest()
@@ -275,8 +282,9 @@ object PaceProtocol {
      * Descifra el Nonce aleatorio devuelto por la tarjeta en el paso 1 de PACE:
      * Nonce = AES-CBC-Decrypt(K_pi, IV=0, EncryptedNonce)
      */
-    fun decryptNonce(password: String, encryptedNonce: ByteArray, isAes256: Boolean = false): ByteArray {
-        val keyLength = if (isAes256 || encryptedNonce.size > 16) 32 else 16
+    fun decryptNonce(password: String, encryptedNonce: ByteArray, isAes256: Boolean = false,
+                     keyLength: Int = if (isAes256) 32 else 16): ByteArray {
+        require(encryptedNonce.isNotEmpty() && encryptedNonce.size % 16 == 0)
         val kPi = deriveKpi(password, keyLength)
         val iv = ByteArray(16) // IV de 16 ceros para AES-CBC
         val cipher = Cipher.getInstance("AES/CBC/NoPadding")
@@ -343,12 +351,12 @@ object PaceProtocol {
     }
 
     /**
-     * Calcula el nuevo generador G' en modo Integrated Mapping (PACE-IM)
-     * a partir del Nonce descifrado sin intercambio interactivo de Tag 81/82.
-     * G' = [s] G
+     * ICAO 9303-11 §4.4.3.3.2 and Appendix B.2: G' = fG(Rp(s,t)).
+     * terminalNonce is sent to the chip in mapping DO81 before key agreement.
      */
     fun computeIntegratedMappedGenerator(
         nonceBytes: ByteArray,
+        terminalNonce: ByteArray,
         parameterId: Int = 13
     ): MappedGroup {
         val params = getCurveParameters(parameterId)
@@ -357,8 +365,29 @@ object PaceProtocol {
         val n = params.n
         val h = params.h
 
-        val s = BigInteger(1, nonceBytes).mod(n)
-        val mappedG = g.multiply(s).normalize()
+        val p = curve.field.characteristic
+        require(p.mod(BigInteger.valueOf(4)) == BigInteger.valueOf(3)) {
+            "PACE-IM requiere un campo primo p = 3 mod 4"
+        }
+        val t = integratedMappingFieldElement(nonceBytes, terminalNonce, p)
+        require(t.signum() > 0) { "PACE-IM produjo un elemento de campo nulo" }
+        val a = curve.a.toBigInteger()
+        val b = curve.b.toBigInteger()
+        val alpha = t.multiply(t).negate().mod(p)
+        val denominator = alpha.add(alpha.multiply(alpha)).mod(p)
+        require(denominator.signum() != 0 && a.signum() != 0) { "Entrada singular para PACE-IM" }
+        val x2 = b.negate().multiply(a.modInverse(p))
+            .multiply(BigInteger.ONE.add(denominator.modInverse(p))).mod(p)
+        val x3 = alpha.multiply(x2).mod(p)
+        val h2 = x2.modPow(BigInteger.valueOf(3), p).add(a.multiply(x2)).add(b).mod(p)
+        val u = t.modPow(BigInteger.valueOf(3), p).multiply(h2).mod(p)
+        val exponent = p.subtract(BigInteger.ONE).subtract(p.add(BigInteger.ONE).divide(BigInteger.valueOf(4)))
+        val aa = h2.modPow(exponent, p)
+        val useX2 = aa.multiply(aa).multiply(h2).mod(p) == BigInteger.ONE
+        val x = if (useX2) x2 else x3
+        val y = aa.multiply(if (useX2) h2 else u).mod(p)
+        val mappedG = curve.validatePoint(x, y).multiply(h).normalize()
+        require(!mappedG.isInfinity && mappedG.isValid && mappedG.multiply(n).isInfinity)
 
         return MappedGroup(
             curve = curve,
@@ -367,6 +396,30 @@ object PaceProtocol {
             order = n,
             cofactor = h
         )
+    }
+
+    /** Pseudo-random number mapping, ICAO 9303-11 Figure 2 (fresh zero IV per CBC call). */
+    fun integratedMappingFieldElement(s: ByteArray, t: ByteArray, p: BigInteger): BigInteger {
+        require(t.size in listOf(16, 24, 32))
+        require(s.size == if (t.size == 16) 16 else 32)
+        fun hex(value: String) = value.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+        val c0 = hex(if (s.size == 16) "a668892a7c41e3ca739f40b057d85904"
+            else "d463d65234124ef7897054986dca0a174e28df758cbaa03f240616414d5a1676")
+        val c1 = hex(if (s.size == 16) "a4e136ac725f738b01c1f60217c188ad"
+            else "54bd7255f0aaf831bec3423fcf39d69b6cbf066677d0faae5aadd99df8e53517")
+        fun encrypt(key: ByteArray, data: ByteArray): ByteArray {
+            val cipher = Cipher.getInstance("AES/CBC/NoPadding")
+            cipher.init(Cipher.ENCRYPT_MODE, SecretKeySpec(key, "AES"), IvParameterSpec(ByteArray(16)))
+            return cipher.doFinal(data)
+        }
+        var key = encrypt(t, s).copyOf(t.size)
+        val output = ByteArrayOutputStream()
+        val iterations = (p.bitLength() + 64 + s.size * 8 - 1) / (s.size * 8)
+        repeat(iterations) {
+            output.write(encrypt(key, c1))
+            key = encrypt(key, c0).copyOf(t.size)
+        }
+        return BigInteger(1, output.toByteArray()).mod(p)
     }
 
     /**
@@ -398,6 +451,8 @@ object PaceProtocol {
         mappedGroup: MappedGroup
     ): ByteArray {
         val y4 = mappedGroup.curve.decodePoint(cardEphemeralPubBytes)
+        require(!y4.isInfinity && y4.isValid && y4.multiply(mappedGroup.order).isInfinity)
+        require(!y4.normalize().equals(ephemeralPair.publicPoint.normalize())) { "Claves PACE reflejadas" }
         val sharedK = y4.multiply(ephemeralPair.privateScalar).normalize()
         val kx = sharedK.affineXCoord.toBigInteger()
 
@@ -416,7 +471,8 @@ object PaceProtocol {
         isAes256: Boolean = false
     ): PaceSessionKeys {
         val actualLen = if (isAes256) 32 else keyLength
-        val md = if (actualLen == 32) MessageDigest.getInstance("SHA-256") else MessageDigest.getInstance("SHA-1")
+        require(actualLen in listOf(16, 24, 32))
+        val md = if (actualLen > 16) MessageDigest.getInstance("SHA-256") else MessageDigest.getInstance("SHA-1")
 
         // K_Enc (counter = 1)
         md.update(sharedSecretX)
@@ -469,7 +525,7 @@ object PaceProtocol {
      * Calcula AES-CMAC sobre los datos provistos y trunca el resultado a 8 bytes según ICAO Doc 9303.
      */
     fun computeCmac(key: ByteArray, data: ByteArray): ByteArray {
-        val mac = CMac(AESEngine())
+        val mac = CMac(AESEngine.newInstance())
         mac.init(KeyParameter(key))
         mac.update(data, 0, data.size)
         val fullMac = ByteArray(mac.macSize)

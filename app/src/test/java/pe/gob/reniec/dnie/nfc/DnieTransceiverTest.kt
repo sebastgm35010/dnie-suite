@@ -55,6 +55,117 @@ class DnieTransceiverTest {
     // --- 1. Selección de Applet PKI ---
 
     @Test
+    fun testV3StartsPaceInPkiAndDoesNotFallBackAfterFailedAuthentication() = runTest {
+        val sent = mutableListOf<CommandApdu>()
+        val card = object : pe.gob.reniec.dnie.core.nfc.DnieCardChannel {
+            override fun transceive(command: ByteArray): ByteArray {
+                sent.add(CommandApdu.fromBytes(command))
+                return if (sent.size <= 2) byteArrayOf(0x90.toByte(), 0)
+                    else byteArrayOf(0x69, 0x85.toByte())
+            }
+            override fun isConnected() = true
+            override fun setTimeout(timeoutMs: Int) {}
+            override fun close() {}
+        }
+        val reader = DnieTransceiver(card, logger, Dispatchers.Unconfined, can = "123456")
+        assertTrue(reader.selectPkiApplet().isFailure)
+        assertEquals(listOf("00A4040C10A000000077030C60000000FE00000500",
+            "00A4040C0EE828BD080FD25047656E65726963",
+            "0022C1A412800A04007F0007020204040483010284010D"), sent.map { it.toHexString("") })
+        assertFalse(sent.any { it.ins == 0x20.toByte() })
+        assertFalse(sent.any { it.data.contentEquals(ApduConstants.AID_ICAO_MRTD) })
+    }
+
+    @Test
+    fun testDiagnosticRestoresIcaoWithP2NoFciBeforeSelectingMasterFile() = runTest {
+        val sent = mutableListOf<CommandApdu>()
+        var inIas = true // simulate the applet context left by a previous operation
+        val card = object : pe.gob.reniec.dnie.core.nfc.DnieCardChannel {
+            override fun transceive(command: ByteArray): ByteArray {
+                val cmd = CommandApdu.fromBytes(command)
+                sent.add(cmd)
+                if (cmd.data.contentEquals(pe.gob.reniec.dnie.core.nfc.V3PkiProbe.IAS_AID)) {
+                    return byteArrayOf(0x6A, 0x82.toByte()) // legacy card, no v3 IAS
+                }
+                if (cmd.data.contentEquals(ApduConstants.AID_ICAO_MRTD) && cmd.p2 == 12.toByte()) {
+                    inIas = false
+                    return byteArrayOf(0x90.toByte(), 0)
+                }
+                if (cmd.data.contentEquals(pe.gob.reniec.dnie.core.nfc.V3PkiProbe.PKI_AID) && inIas)
+                    return byteArrayOf(0x90.toByte(), 0)
+                if (cmd.data.contentEquals(byteArrayOf(0x3F, 0))) assertFalse("MF cannot restore IAS context", inIas)
+                return byteArrayOf(0x6A, 0x82.toByte())
+            }
+            override fun isConnected() = true
+            override fun setTimeout(timeoutMs: Int) {}
+            override fun close() {}
+        }
+        DnieTransceiver(card, logger, Dispatchers.Unconfined, can = "123456").probeAllAids()
+        val restore = sent.indexOfFirst { it.data.contentEquals(ApduConstants.AID_ICAO_MRTD) && it.p2 == 12.toByte() }
+        assertEquals(1, restore) // v3 detection precedes the legacy ICAO route
+        assertFalse(sent.any { it.ins == 0x22.toByte() }) // no guessed PACE when CardAccess is unavailable
+    }
+
+    @Test
+    fun testDiagnosticStopsWhenIcaoCannotBeRestoredAfterIas() = runTest {
+        val sent = mutableListOf<CommandApdu>()
+        val card = object : pe.gob.reniec.dnie.core.nfc.DnieCardChannel {
+            override fun transceive(command: ByteArray): ByteArray {
+                sent.add(CommandApdu.fromBytes(command))
+                return if (sent.size == 1) byteArrayOf(0x6A, 0x82.toByte())
+                    else byteArrayOf(0x69, 0x85.toByte())
+            }
+            override fun isConnected() = true
+            override fun setTimeout(timeoutMs: Int) {}
+            override fun close() {}
+        }
+        DnieTransceiver(card, logger, Dispatchers.Unconfined, can = "123456").probeAllAids()
+        assertEquals(2, sent.size)
+        assertArrayEquals(ApduConstants.AID_ICAO_MRTD, sent.last().data)
+        assertEquals(12.toByte(), sent.last().p2)
+        assertFalse(sent.any { it.ins == 0x22.toByte() })
+    }
+
+    @Test
+    fun testIcaoOnlyDoesNotExposePersonalCertificatesOrVerifyPin() = runTest {
+        val sent = mutableListOf<CommandApdu>()
+        val card = object : pe.gob.reniec.dnie.core.nfc.DnieCardChannel {
+            override fun transceive(command: ByteArray): ByteArray {
+                val cmd = CommandApdu.fromBytes(command)
+                sent.add(cmd)
+                return if (cmd.data.contentEquals(ApduConstants.AID_ICAO_MRTD))
+                    byteArrayOf(0x90.toByte(), 0) else byteArrayOf(0x6A, 0x82.toByte())
+            }
+            override fun isConnected() = true
+            override fun setTimeout(timeoutMs: Int) {}
+            override fun close() {}
+        }
+        val reader = DnieTransceiver(card, ApduLogger(), Dispatchers.Unconfined)
+        reader.selectPkiApplet().getOrThrow()
+        assertTrue(reader.isIcaoMode)
+        val count = sent.size
+        assertTrue(reader.readCertificate(CertificateType.SIGNATURE).isFailure)
+        assertTrue(reader.verifyPin("123456").isFailure)
+        assertTrue(reader.signSha256Hash(ByteArray(32)).isFailure)
+        assertEquals(count, sent.size)
+    }
+
+    @Test
+    fun testPersonalPkiHasPriorityOverIcao() = runTest {
+        transceiver.selectPkiApplet().getOrThrow()
+        assertFalse(transceiver.isIcaoMode)
+    }
+
+    @Test
+    fun testPinIsNotStoredInApduLog() = runTest {
+        transceiver.selectPkiApplet().getOrThrow()
+        transceiver.verifyPin("123456").getOrThrow()
+        val entry = logger.getHistory().first { it.description.startsWith("VERIFY PIN") }
+        assertFalse(entry.apduHex.contains("31 32 33 34 35 36"))
+        assertTrue(entry.apduHex.contains("PIN OCULTO"))
+    }
+
+    @Test
     fun testSelectPkiApplet_Success() = runTest {
         val result = transceiver.selectPkiApplet()
 
@@ -66,7 +177,7 @@ class DnieTransceiverTest {
         assertTrue(history.size >= 2)
         assertEquals(ApduDirection.TX, history[0].direction)
         assertEquals(ApduDirection.RX, history[1].direction)
-        assertEquals("9000", history[1].statusWordHex)
+        assertTrue(history.any { it.direction == ApduDirection.RX && it.statusWordHex == "9000" })
     }
 
     @Test
