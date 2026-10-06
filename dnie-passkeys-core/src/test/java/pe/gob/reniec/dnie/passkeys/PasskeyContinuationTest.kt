@@ -64,4 +64,3 @@ class PasskeyContinuationTest {
         first.destroy(); second.destroy()
     }
 }
-

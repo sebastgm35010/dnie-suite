@@ -12,4 +12,3 @@ internal val VaultColors = darkColorScheme(
     surfaceVariant = VaultSurface, onSurface = Color(0xFFF0F5F3),
     onSurfaceVariant = Color(0xFFB8C6C3), outline = Color(0xFF647771)
 )
-

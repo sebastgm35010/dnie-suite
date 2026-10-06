@@ -28,4 +28,3 @@ data class ConsoleUiState(
             ConsoleFilter.RX -> entries.filter { it.direction == ApduDirection.RX }
         }
 }
-

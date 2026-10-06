@@ -14,3 +14,11 @@
 local.properties
 .agents/
 **/__pycache__/
+
+# Private runtime artifacts and signing material stay outside version control.
+*.apk
+*.pfx
+*.p12
+*.keystore
+*.etl
+*.jsonl

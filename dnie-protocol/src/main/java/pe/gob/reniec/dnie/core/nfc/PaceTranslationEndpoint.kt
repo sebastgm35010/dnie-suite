@@ -22,7 +22,7 @@ class PaceTranslationEndpoint(can: String, private val logical: (ByteArray) -> B
     private var peer = byteArrayOf()
     private var keys: PaceSessionKeys? = null
     private var secure: TerminalSecureMessaging? = null
-    private var continuation = byteArrayOf()
+    private val responseFragments = PcResponseFragments()
     private val certificateReads = PlainCertificateReadRoute()
     private val endpointId = java.util.UUID.randomUUID().toString()
     private var generation = 0
@@ -32,10 +32,7 @@ class PaceTranslationEndpoint(can: String, private val logical: (ByteArray) -> B
     @Synchronized fun transmit(bytes: ByteArray): ByteArray {
         check(!closed)
         val c = CommandApdu.fromBytes(bytes)
-        if (continuation.isNotEmpty()) {
-            require(c.cla == 0.toByte() && c.ins == 0xc0.toByte() && c.p1 == 0.toByte() && c.p2 == 0.toByte() && c.data.isEmpty())
-            return fragment(continuation, c.le ?: 256)
-        }
+        if (responseFragments.pending) return responseFragments.read(c)
         if ((c.cla.toInt() and 12) == 12) {
             val session = secure ?: error("Terminal SM before authentication")
             val clear = try { session.decode(bytes) } catch (failure: Exception) { close(); throw failure }
@@ -47,7 +44,7 @@ class PaceTranslationEndpoint(can: String, private val logical: (ByteArray) -> B
                 val paceRekey = parsed.ins == 0x86.toByte() ||
                     (parsed.ins == 0x22.toByte() && parsed.p1 == 0xc1.toByte() && parsed.p2 == 0xa4.toByte())
                 val response = if (paceRekey) status(0x6a80) else logical(clear)
-                try { return fragment(session.encode(response), c.le ?: 256) } finally { response.fill(0) }
+                try { return responseFragments.begin(session.encode(response), c.le ?: 256) } finally { response.fill(0) }
             } catch (failure: Exception) { close(); throw failure }
             finally { clear.fill(0) }
         }
@@ -129,22 +126,10 @@ class PaceTranslationEndpoint(can: String, private val logical: (ByteArray) -> B
     }
     private fun reply(tag: Int, value: ByteArray) = SmTlv.encode(0x7c, SmTlv.encode(tag,value)) + status(0x9000)
     private fun status(sw: Int) = byteArrayOf((sw shr 8).toByte(), sw.toByte())
-    /** Split one authenticated response; plain GET RESPONSE neither advances SSC nor reaches DNI. */
-    private fun fragment(response: ByteArray, le: Int): ByteArray {
-        if (response.size - 2 <= le) {
-            val result = response.copyOf()
-            continuation.fill(0); continuation = byteArrayOf(); response.fill(0)
-            return result
-        }
-        val result = response.copyOfRange(0, le) + status(0x6100 or minOf(255, response.size - 2 - le))
-        val rest = response.copyOfRange(le,response.size)
-        continuation.fill(0); continuation = rest; response.fill(0)
-        return result
-    }
     private fun retire() {
         certificateReads.reset()
         secure?.close(); secure = null; nonce.fill(0); peer.fill(0)
-        continuation.fill(0); continuation = byteArrayOf()
+        responseFragments.clear()
         keys?.let { it.kEnc.fill(0); it.kMac.fill(0) }; keys = null
         ephemeral = null; group = null; stage = 0
     }
