@@ -12,6 +12,7 @@
         android:name="android.hardware.nfc"
         android:required="true" />
 
+    <queries><package android:name="com.google.android.gms" /></queries>
     <application
         android:name=".DnieApplication"
         android:allowBackup="false"
@@ -20,6 +21,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.DnieSigner">
+        <meta-data android:name="com.google.mlkit.vision.DEPENDENCIES" android:value="barcode_ui" />
 
         <activity
             android:name=".MainActivity"
@@ -33,12 +35,30 @@
 
             <!-- Fallback para lectura de tarjeta por aproximación si no se usa ReaderMode -->
             <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+
+            <!-- Fallback para lectura de tarjeta por aproximación si no se usa ReaderMode -->
+            <intent-filter>
                 <action android:name="android.nfc.action.TECH_DISCOVERED" />
             </intent-filter>
             <meta-data
                 android:name="android.nfc.action.TECH_DISCOVERED"
                 android:resource="@xml/nfc_tech_filter" />
         </activity>
+
+        <activity android:name=".ui.vault.VaultPreviewActivity" android:exported="false"
+            android:excludeFromRecents="true" android:theme="@style/Theme.DnieSigner" />
+
+        <activity android:name=".ui.bridge.BridgeActivity" android:exported="false" android:excludeFromRecents="true" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".ui.passkeys.PasskeySettingsActivity" android:exported="false" />
+        <activity android:name=".ui.passkeys.PasskeyToolsActivity" android:exported="false" android:excludeFromRecents="true" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".ui.diagnostics.DiagnosticsActivity" android:exported="false" android:excludeFromRecents="true" />
+        <activity android:name=".ui.passkeys.PasskeyCeremonyActivity" android:exported="false"
+            android:excludeFromRecents="true" android:windowSoftInputMode="adjustResize" />
 
         <!-- FileProvider para compartir PDFs firmados y certificados exportados (.cer/.pem) vía SAF/Intent -->
         <provider

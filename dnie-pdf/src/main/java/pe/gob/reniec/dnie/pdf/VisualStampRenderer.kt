@@ -18,6 +18,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import com.tom_roush.pdfbox.util.Matrix
 
 /**
  * Motor de renderizado del estampado visual de firma digital PAdES conforme a la
@@ -126,7 +127,8 @@ object VisualStampRenderer {
         signerDni: String,
         reason: String,
         location: String,
-        date: Date = Date()
+        date: Date = Date(),
+        appearance: SignatureAppearance? = null
     ): InputStream {
         val templateDoc = PDDocument()
         try {
@@ -153,6 +155,17 @@ object VisualStampRenderer {
             widget.appearance = apDict
 
             PDPageContentStream(templateDoc, apStream).use { cs ->
+                if (appearance != null) {
+                    val rotation = ((targetPage.rotation % 360) + 360) % 360
+                    val visualWidth = if (rotation == 90 || rotation == 270) rect.height else rect.width
+                    val visualHeight = if (rotation == 90 || rotation == 270) rect.width else rect.height
+                    when (rotation) {
+                        90 -> cs.transform(Matrix(0f, 1f, -1f, 0f, rect.width, 0f))
+                        180 -> cs.transform(Matrix(-1f, 0f, 0f, -1f, rect.width, rect.height))
+                        270 -> cs.transform(Matrix(0f, -1f, 1f, 0f, 0f, rect.height))
+                    }
+                    ModernStampRenderer.draw(templateDoc, cs, visualWidth, visualHeight, signerName, signerDni, reason, location, date, appearance)
+                } else {
                 renderStampContent(
                     contentStream = cs,
                     width = rect.width,
@@ -163,6 +176,7 @@ object VisualStampRenderer {
                     location = location,
                     date = date
                 )
+                }
             }
 
             val baos = ByteArrayOutputStream()
@@ -170,6 +184,39 @@ object VisualStampRenderer {
             return ByteArrayInputStream(baos.toByteArray())
         } finally {
             templateDoc.close()
+        }
+    }
+
+    /** Correct visual top-left mapping for crop offsets and all orthogonal PDF rotations. */
+    fun normalizedBoundingBox(page: PDPage, placement: NormalizedStampPlacement): PDRectangle {
+        val crop = page.cropBox
+        val rotation = ((page.rotation % 360) + 360) % 360
+        require(rotation in setOf(0, 90, 180, 270)) { "Rotación PDF no compatible" }
+        val visualW = if (rotation == 90 || rotation == 270) crop.height else crop.width
+        val visualH = if (rotation == 90 || rotation == 270) crop.width else crop.height
+        val x = placement.left * visualW
+        val y = placement.top * visualH
+        val w = placement.width * visualW
+        val h = placement.height * visualH
+        val native = when (rotation) {
+            90 -> PDRectangle(y, x, h, w)
+            180 -> PDRectangle(crop.width - x - w, y, w, h)
+            270 -> PDRectangle(crop.width - y - h, crop.height - x - w, h, w)
+            else -> PDRectangle(x, crop.height - y - h, w, h)
+        }
+        native.lowerLeftX += crop.lowerLeftX; native.upperRightX += crop.lowerLeftX
+        native.lowerLeftY += crop.lowerLeftY; native.upperRightY += crop.lowerLeftY
+        return native
+    }
+
+    fun previewPdf(width: Float, height: Float, name: String, dni: String,
+                   options: PdfSigningOptions, date: Date = Date()): ByteArray {
+        return PDDocument().use { doc ->
+            val page = PDPage(PDRectangle(width, height)); doc.addPage(page)
+            PDPageContentStream(doc, page).use { cs ->
+                ModernStampRenderer.draw(doc, cs, width, height, name, dni, options.reason, options.location, date, options.appearance)
+            }
+            ByteArrayOutputStream().also { doc.save(it) }.toByteArray()
         }
     }
 

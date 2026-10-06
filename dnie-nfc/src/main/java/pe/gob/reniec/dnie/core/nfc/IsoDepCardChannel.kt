@@ -15,22 +15,35 @@ class IsoDepCardChannel(
     private val isoDep: IsoDep,
     defaultTimeoutMs: Int = DEFAULT_TIMEOUT_MS
 ) : DnieCardChannel {
+    @Volatile private var closed = false
+    private var timeoutConfigured = false
+    override val extendedLengthSupported: Boolean get() = isoDep.isExtendedLengthApduSupported
+    override val maxCommandLength: Int get() = isoDep.maxTransceiveLength
 
-    init {
-        try {
-            if (!isoDep.isConnected) {
-                isoDep.connect()
-            }
-            isoDep.timeout = defaultTimeoutMs
-        } catch (e: Exception) {
-            // Se propaga o se intentará en transceive
-        }
-    }
+    // Construction happens in Activity; defer blocking connect until transceive on IO.
+    private var connectionTimeoutMs = defaultTimeoutMs
 
     override fun transceive(command: ByteArray): ByteArray {
+        if (closed) throw CardDisconnectedException("La sesión NFC ya está cerrada")
         return try {
             if (!isoDep.isConnected) {
                 isoDep.connect()
+                timeoutConfigured = false
+            }
+            if (closed) {
+                // Cancellation can race a blocking connect. Retire a connection opened late.
+                try { isoDep.close() } catch (_: IOException) { }
+                throw CardDisconnectedException("La sesión NFC ya está cerrada")
+            }
+            if (!timeoutConfigured) {
+                isoDep.timeout = connectionTimeoutMs
+                timeoutConfigured = true
+            }
+            if (command.size > isoDep.maxTransceiveLength) {
+                throw CardProtocolException("El lector NFC no admite este comando (${command.size} bytes; máximo ${isoDep.maxTransceiveLength})")
+            }
+            if (command.size > 5 && command[4] == 0.toByte() && !isoDep.isExtendedLengthApduSupported) {
+                throw CardProtocolException("El lector NFC no admite APDU extendidas")
             }
             isoDep.transceive(command)
         } catch (e: TagLostException) {
@@ -41,14 +54,16 @@ class IsoDepCardChannel(
     }
 
     override fun isConnected(): Boolean {
-        return isoDep.isConnected
+        return !closed && isoDep.isConnected
     }
 
     override fun setTimeout(timeoutMs: Int) {
-        isoDep.timeout = timeoutMs
+        connectionTimeoutMs = timeoutMs
+        timeoutConfigured = false
     }
 
     override fun close() {
+        closed = true
         try {
             if (isoDep.isConnected) {
                 isoDep.close()

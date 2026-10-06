@@ -24,6 +24,10 @@ import java.util.TimeZone
  * Contrato de motor de firma digital de documentos PDF según el estándar PAdES.
  */
 interface PadesSignerEngineInterface {
+    suspend fun signConfiguredPdf(
+        input: InputStream, output: OutputStream, certificate: ByteArray,
+        cardSigner: suspend (ByteArray) -> Result<ByteArray>, options: PdfSigningOptions
+    ): Result<PdfSignResult>
     suspend fun signPdf(
         pdfInputStream: InputStream,
         pdfOutputStream: OutputStream,
@@ -46,6 +50,13 @@ interface PadesSignerEngineInterface {
  * 5. Gestiona archivos temporales seguros para evitar colisiones de E/S en Android.
  */
 class PadesSignerEngine : PadesSignerEngineInterface {
+    override suspend fun signConfiguredPdf(input: InputStream, output: OutputStream, certificate: ByteArray,
+        cardSigner: suspend (ByteArray) -> Result<ByteArray>, options: PdfSigningOptions): Result<PdfSignResult> = signPdf(
+        pdfInputStream = input, pdfOutputStream = output, signingCertificateDer = certificate,
+        cardSigner = cardSigner, preset = if (options.visible) SignaturePreset.CUSTOM else SignaturePreset.INVISIBLE,
+        reason = if (options.appearance.showReason) options.reason else "",
+        location = if (options.appearance.showLocation) options.location else "",
+        pageNumber = options.pageNumber, modernOptions = options)
 
     companion object {
         const val PREFERRED_SIGNATURE_SIZE = 32768 // 32 KB
@@ -97,7 +108,8 @@ class PadesSignerEngine : PadesSignerEngineInterface {
         customX: Float = 0f,
         customY: Float = 0f,
         customWidth: Float = VisualStampRenderer.DEFAULT_STAMP_WIDTH,
-        customHeight: Float = VisualStampRenderer.DEFAULT_STAMP_HEIGHT
+        customHeight: Float = VisualStampRenderer.DEFAULT_STAMP_HEIGHT,
+        modernOptions: PdfSigningOptions? = null
     ): Result<PdfSignResult> = withContext(Dispatchers.IO) {
         runCatching {
             val signerCert = X509CertificateParser.toX509Certificate(signingCertificateDer)
@@ -116,7 +128,18 @@ class PadesSignerEngine : PadesSignerEngineInterface {
                     pdfInputStream.copyTo(out)
                 }
 
-                val document = PDDocument.load(tempSourceFile)
+                PDDocument.load(tempSourceFile, com.tom_roush.pdfbox.io.MemoryUsageSetting.setupMixed(32L * 1024 * 1024)).use { document ->
+                require(document.numberOfPages > 0) { "El PDF no tiene páginas" }
+                require(pageNumber in 1..document.numberOfPages) { "La página seleccionada ya no existe" }
+                require(!document.isEncrypted) { "El PDF está protegido; desbloquéelo antes de firmar" }
+                val certification = document.documentCatalog.cosObject.getCOSDictionary(COSName.PERMS)?.getCOSDictionary(COSName.DOCMDP)
+                val references = certification?.getCOSArray(COSName.REFERENCE)
+                if (references != null) for (i in 0 until references.size()) {
+                    val reference = references.getObject(i) as? com.tom_roush.pdfbox.cos.COSDictionary ?: continue
+                    if (reference.getNameAsString(COSName.TRANSFORM_METHOD) == "DocMDP") {
+                        require(reference.getCOSDictionary(COSName.TRANSFORM_PARAMS)?.getInt(COSName.P, 2) != 1) { "El PDF certificado no permite añadir firmas" }
+                    }
+                }
 
                 // 1. Configurar diccionario PDSignature
                 val pdSignature = PDSignature().apply {
@@ -131,7 +154,8 @@ class PadesSignerEngine : PadesSignerEngineInterface {
                 }
 
                 // 2. Configurar opciones de firma y buffer de 32 KB
-                val signatureOptions = SignatureOptions().apply {
+                SignatureOptions().use { signatureOptions ->
+                signatureOptions.apply {
                     preferredSignatureSize = PREFERRED_SIGNATURE_SIZE
                 }
 
@@ -139,7 +163,8 @@ class PadesSignerEngine : PadesSignerEngineInterface {
                 val actualPageNumber = if (preset != SignaturePreset.INVISIBLE) {
                     val clampedPage = pageNumber.coerceIn(1, maxOf(1, document.numberOfPages))
                     val targetPage = document.getPage(clampedPage - 1)
-                    val rect = VisualStampRenderer.calculateBoundingBox(
+                    val rect = if (modernOptions != null) VisualStampRenderer.normalizedBoundingBox(targetPage, modernOptions.placement)
+                    else VisualStampRenderer.calculateBoundingBox(
                         page = targetPage,
                         preset = preset,
                         customX = customX,
@@ -155,10 +180,12 @@ class PadesSignerEngine : PadesSignerEngineInterface {
                         signerName = citizenData.fullName,
                         signerDni = citizenData.dniNumber,
                         reason = reason,
-                        location = location
+                        location = location,
+                        date = java.util.Date(signingTimestamp),
+                        appearance = modernOptions?.appearance
                     )
                     signatureOptions.setVisualSignature(visualTemplate)
-                    signatureOptions.page = clampedPage
+                    signatureOptions.page = clampedPage - 1
                     clampedPage
                 } else {
                     0 // 0 indica firma invisible
@@ -172,7 +199,7 @@ class PadesSignerEngine : PadesSignerEngineInterface {
                         caCertificates = caCertificates,
                         cardSigner = { hash: ByteArray ->
                             runBlocking {
-                                cardSigner(hash).getOrThrow()
+                                pe.gob.reniec.dnie.crypto.CardSignatureVerifier.verify(signerCert, hash, cardSigner(hash).getOrThrow())
                             }
                         }
                     )
@@ -186,7 +213,6 @@ class PadesSignerEngine : PadesSignerEngineInterface {
                 FileOutputStream(tempSignedFile).use { fos ->
                     document.saveIncremental(fos)
                 }
-                document.close()
 
                 // Copiar el resultado al flujo de salida final
                 tempSignedFile.inputStream().use { fis ->
@@ -203,6 +229,8 @@ class PadesSignerEngine : PadesSignerEngineInterface {
                     signatureSize = signatureSize,
                     pageNumber = actualPageNumber
                 )
+                }
+                }
             } finally {
                 tempSourceFile.delete()
                 tempSignedFile.delete()

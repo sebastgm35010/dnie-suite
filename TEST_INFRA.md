@@ -5,7 +5,7 @@
 Las pruebas del núcleo/APDU/criptografía están en `dnie-core`; las de NFC abstracto y sesiones en `dnie-protocol`; las de PDF en `dnie-pdf`; las de ViewModels en `app`. Ejecutar todos los grupos:
 
 ```powershell
-.\gradlew.bat :dnie-core:test :dnie-protocol:test :dnie-pdf:testDebugUnitTest :app:testDebugUnitTest :app:exportBranchApk --console=plain
+.\gradlew.bat :dnie-core:test :dnie-protocol:test :dnie-vault-core:test :dnie-icao:test :dnie-pdf:testDebugUnitTest :app:testDebugUnitTest :app:exportBranchApk --console=plain
 ```
 
 La validación de tarjeta física de la 1.0.8 corresponde a la base clausurada. Este APK reorganizado requiere repetir la firma real antes de considerarlo validado en el DNI.

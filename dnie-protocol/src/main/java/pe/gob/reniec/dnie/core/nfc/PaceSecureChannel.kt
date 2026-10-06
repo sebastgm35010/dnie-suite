@@ -28,6 +28,8 @@ class PaceSecureChannel(
 
     private val ssc = ByteArray(16) // Inicializado a 16 ceros en PACE
     private var valid = true
+    override val extendedLengthSupported: Boolean get() = baseChannel.extendedLengthSupported
+    override val maxCommandLength: Int get() = baseChannel.maxCommandLength
 
     @Synchronized
     override fun transceive(command: ByteArray): ByteArray {
@@ -149,15 +151,17 @@ class PaceSecureChannel(
             val ciphertext = cipher.doFinal(paddedData)
 
             // Tag 87: 0x87 <len+1> 0x01 <ciphertext> (0x01 = padding content indicator)
-            val content = byteArrayOf(0x01.toByte()) + ciphertext
-            do87 = buildTlv(0x87, content)
+            val oddInstruction = (cmd.ins.toInt() and 1) != 0
+            val content = if (oddInstruction) ciphertext else byteArrayOf(0x01.toByte()) + ciphertext
+            do87 = buildTlv(if (oddInstruction) 0x85 else 0x87, content)
         }
 
         var do97: ByteArray? = null
         val responseLength = cmd.le
         if (responseLength != null) {
-            val leByte = if (responseLength == 256) 0x00.toByte() else (responseLength and 0xFF).toByte()
-            do97 = byteArrayOf(0x97.toByte(), 0x01.toByte(), leByte)
+            do97 = if (cmd.isExtended) byteArrayOf(0x97.toByte(), 2,
+                (responseLength shr 8).toByte(), responseLength.toByte())
+            else byteArrayOf(0x97.toByte(), 1, responseLength.toByte())
         }
 
         // Cómputo del MAC: M = SSC || paddedHeader || DO87? || DO97?
@@ -177,19 +181,9 @@ class PaceSecureChannel(
         smDataStream.write(do8e)
 
         val smData = smDataStream.toByteArray()
-        require(smData.size <= 255) { "Datos demasiado largos para una APDU segura corta" }
-
-        // Armar trama APDU de salida: CLA INS P1 P2 Lc Data 00
-        val out = ByteArray(4 + 1 + smData.size + 1)
-        out[0] = maskedCla
-        out[1] = cmd.ins
-        out[2] = cmd.p1
-        out[3] = cmd.p2
-        out[4] = smData.size.toByte()
-        System.arraycopy(smData, 0, out, 5, smData.size)
-        out[out.size - 1] = 0x00.toByte() // Le = 0x00
-
-        return out
+        val extendedWire = cmd.isExtended || smData.size > 255
+        return CommandApdu(maskedCla, cmd.ins, cmd.p1, cmd.p2, smData,
+            le = if (extendedWire) 65536 else 256, extended = extendedWire).toByteArray()
     }
 
     /**
@@ -210,13 +204,16 @@ class PaceSecureChannel(
         val tlvMap = parseTlvObjects(smPayload)
 
         val do87 = tlvMap[0x87]
+        val do85 = tlvMap[0x85]
+        val encryptedObject = do85 ?: do87
+        val encryptedTag = if (do85 != null) 0x85 else 0x87
         val do99 = tlvMap[0x99]
         val do8e = tlvMap[0x8E]
         if (do99 == null || do99.size != 2 || do8e == null || do8e.size != 8) {
             throw CardProtocolException("Respuesta segura sin DO99/DO8E válidos")
         }
-        if (tlvMap.keys.any { it !in setOf(0x87, 0x99, 0x8E) } || tlvMap.keys.toList() !=
-            (if (do87 != null) listOf(0x87, 0x99, 0x8E) else listOf(0x99, 0x8E))) {
+        if (tlvMap.keys.any { it !in setOf(0x85, 0x87, 0x99, 0x8E) } || (do85 != null && do87 != null) || tlvMap.keys.toList() !=
+            (if (encryptedObject != null) listOf(encryptedTag, 0x99, 0x8E) else listOf(0x99, 0x8E))) {
             throw CardProtocolException("Objetos de respuesta segura inesperados o fuera de orden")
         }
 
@@ -224,8 +221,8 @@ class PaceSecureChannel(
         run {
             val macStream = ByteArrayOutputStream()
             macStream.write(ssc)
-            if (do87 != null) {
-                macStream.write(buildTlv(0x87, do87))
+            if (encryptedObject != null) {
+                macStream.write(buildTlv(encryptedTag, encryptedObject))
             }
             macStream.write(buildTlv(0x99, do99))
 
@@ -250,11 +247,12 @@ class PaceSecureChannel(
 
         // Descifrar datos si DO87 está presente
         var plainData = byteArrayOf()
-        if (do87 != null) {
-            if (do87.size < 17 || do87[0] != 0x01.toByte() || (do87.size - 1) % 16 != 0) {
-                throw CardProtocolException("DO87 inválido")
+        if (encryptedObject != null) {
+            val offset = if (do85 != null) 0 else 1
+            if (encryptedObject.size < 16 + offset || (offset == 1 && encryptedObject[0] != 0x01.toByte()) || (encryptedObject.size - offset) % 16 != 0) {
+                throw CardProtocolException("Objeto cifrado de respuesta inválido")
             }
-            val ciphertext = do87.copyOfRange(1, do87.size)
+            val ciphertext = encryptedObject.copyOfRange(offset, encryptedObject.size)
             val iv = computeIv()
             val cipher = Cipher.getInstance("AES/CBC/NoPadding")
             cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(kEnc, "AES"), IvParameterSpec(iv))

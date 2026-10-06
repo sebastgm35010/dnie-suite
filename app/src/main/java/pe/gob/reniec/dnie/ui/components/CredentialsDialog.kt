@@ -1,5 +1,7 @@
 package pe.gob.reniec.dnie.ui.components
 
+import pe.gob.reniec.dnie.data.preferences.CanStorage
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

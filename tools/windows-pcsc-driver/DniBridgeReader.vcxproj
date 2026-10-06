@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release|x64"><Configuration>Release</Configuration><Platform>x64</Platform></ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64"><Configuration>Debug</Configuration><Platform>x64</Platform></ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{E28F2519-545F-497D-9184-C0EE244C29E4}</ProjectGuid>
+    <RootNamespace>DniBridgeReader</RootNamespace>
+    <UMDF_VERSION_MAJOR>2</UMDF_VERSION_MAJOR>
+    <WindowsTargetPlatformVersion Condition="'$(WindowsTargetPlatformVersion)'==''">10.0.26100.0</WindowsTargetPlatformVersion>
+    <WDKBuildFolder Condition="'$(WDKBuildFolder)'==''">$(WindowsTargetPlatformVersion)</WDKBuildFolder>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <DriverType>UMDF</DriverType>
+    <PlatformToolset>WindowsUserModeDriver10.0</PlatformToolset>
+    <TargetVersion>Windows10</TargetVersion>
+    <DriverTargetPlatform>Desktop</DriverTargetPlatform>
+    <UseDebugLibraries Condition="'$(Configuration)'=='Debug'">true</UseDebugLibraries>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <PropertyGroup>
+    <TargetName>DniBridgeReader</TargetName>
+    <OutDir>$(MSBuildThisFileDirectory)build\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(OutDir)obj\</IntDir>
+    <SignMode>Off</SignMode>
+    <EnableTestSign>false</EnableTestSign>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <Inf>
+      <SpecifyDriverVerDirectiveDate>false</SpecifyDriverVerDirectiveDate>
+      <SpecifyDriverVerDirectiveVersion>false</SpecifyDriverVerDirectiveVersion>
+    </Inf>
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <TreatWarningAsError>false</TreatWarningAsError>
+      <PreprocessorDefinitions>UNICODE;_UNICODE;UMDF_USING_NTSTATUS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <ExceptionHandling>false</ExceptionHandling>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+    </ClCompile>
+    <Link><AdditionalDependencies>ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies></Link>
+  </ItemDefinitionGroup>
+  <ItemGroup><ClCompile Include="DniBridgeReader.cpp" /><ClInclude Include="BridgeAbi.h" /><Inf Include="DniBridgeReader.inf" /><FilesToPackage Include="$(TargetPath)" /></ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <!-- Keep the reviewed INF byte-for-byte for the deployment gate and catalog. -->
+  <Target Name="RestoreReviewedInf" AfterTargets="StampInf" BeforeTargets="InfVerif">
+    <Copy SourceFiles="%(Inf.FullPath)" DestinationFiles="%(Inf.CopyOutput)" />
+    <Copy SourceFiles="%(Inf.FullPath)" DestinationFolder="$(OutDir)" />
+  </Target>
+  <!-- WDK 26100's managed verifier throws on this Desktop INF in Build Tools.
+       Run the installed verifier directly; nonzero validation still fails the build. -->
+  <Target Name="InfVerif" AfterTargets="StampInf" BeforeTargets="PreBuildEvent">
+    <Exec Command="&quot;$(WDKContentRoot)Tools\$(WDKBuildFolder)\x64\InfVerif.exe&quot; /w &quot;%(Inf.CopyOutput)&quot;" />
+  </Target>
+</Project>

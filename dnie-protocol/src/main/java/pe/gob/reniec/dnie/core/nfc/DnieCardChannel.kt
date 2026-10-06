@@ -8,6 +8,9 @@ import java.io.Closeable
  * facilitando pruebas unitarias de alta fidelidad e integración en cualquier entorno.
  */
 interface DnieCardChannel : Closeable {
+    /** Conservative defaults for transports that have not declared extended support. */
+    val extendedLengthSupported: Boolean get() = false
+    val maxCommandLength: Int get() = 261
     /**
      * Envía una trama de comando APDU a la tarjeta y retorna la trama de respuesta.
      * @param command Trama binaria del comando APDU.

@@ -15,15 +15,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.KeyboardDoubleArrowDown
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Terminal
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -36,18 +33,18 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import pe.gob.reniec.dnie.core.logging.ApduDirection
-import pe.gob.reniec.dnie.core.logging.ApduLogEntry
 
 /**
  * Pantalla de Consola Diagnóstica APDU ISO 7816-4 en tiempo real.
@@ -58,21 +55,32 @@ fun ConsoleScreen(
     viewModel: ConsoleViewModel,
     modifier: Modifier = Modifier
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val listState = rememberLazyListState()
+    // Filtering used to allocate a new list for each label, emptiness check,
+    // scrolling effect and item provider in the same composition.
+    val filteredEntries = remember(uiState.entries, uiState.filter) { uiState.filteredEntries }
+    val directionCounts = remember(uiState.entries) {
+        uiState.entries.count { it.direction == ApduDirection.TX } to
+            uiState.entries.count { it.direction == ApduDirection.RX }
+    }
 
     // Configurar dispatcher de audio/vibración si aún no está asignado
     LaunchedEffect(Unit) {
         if (viewModel.feedbackDispatcher == null) {
-            viewModel.feedbackDispatcher = AndroidFeedbackDispatcher(context)
+            viewModel.feedbackDispatcher = withContext(Dispatchers.IO) {
+                AndroidFeedbackDispatcher(context.applicationContext)
+            }
         }
     }
 
     // Auto-scroll automático cuando llegan nuevos registros
-    LaunchedEffect(uiState.entries.size, uiState.autoScroll) {
-        if (uiState.autoScroll && uiState.filteredEntries.isNotEmpty()) {
-            listState.animateScrollToItem(uiState.filteredEntries.size - 1)
+    LaunchedEffect(filteredEntries.lastOrNull(), uiState.autoScroll) {
+        if (uiState.autoScroll && filteredEntries.isNotEmpty()) {
+            // Jump to live traffic instead of composing intervening rows in a
+            // long animated trip through the history on every screen entry.
+            listState.scrollToItem(filteredEntries.size - 1)
         }
     }
 
@@ -96,6 +104,9 @@ fun ConsoleScreen(
                     }
 
                     // Copiar al Portapapeles
+                    IconButton(onClick = { context.startActivity(android.content.Intent(context, pe.gob.reniec.dnie.ui.diagnostics.DiagnosticsActivity::class.java)) }) {
+                        Icon(Icons.Default.Terminal, contentDescription = "Diagnóstico persistente de la app")
+                    }
                     IconButton(onClick = {
                         val copied = viewModel.copyLogsToClipboard(context)
                         if (copied) {
@@ -142,14 +153,14 @@ fun ConsoleScreen(
                     selected = uiState.filter == ConsoleFilter.TX,
                     onClick = { viewModel.setFilter(ConsoleFilter.TX) },
                     label = {
-                        Text("TX (${uiState.entries.count { it.direction == ApduDirection.TX }})")
+                        Text("TX (${directionCounts.first})")
                     }
                 )
                 FilterChip(
                     selected = uiState.filter == ConsoleFilter.RX,
                     onClick = { viewModel.setFilter(ConsoleFilter.RX) },
                     label = {
-                        Text("RX (${uiState.entries.count { it.direction == ApduDirection.RX }})")
+                        Text("RX (${directionCounts.second})")
                     }
                 )
             }
@@ -202,7 +213,7 @@ fun ConsoleScreen(
                 }
             }
 
-            if (uiState.filteredEntries.isEmpty()) {
+            if (filteredEntries.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -239,7 +250,7 @@ fun ConsoleScreen(
                         .padding(horizontal = 10.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    items(uiState.filteredEntries) { entry ->
+                    items(filteredEntries) { entry ->
                         ApduLogItem(entry = entry)
                     }
                     item {
@@ -254,111 +265,3 @@ fun ConsoleScreen(
 /**
  * Elemento de lista para cada comando o respuesta APDU individual.
  */
-@Composable
-private fun ApduLogItem(entry: ApduLogEntry) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = when {
-                !entry.isSuccess -> Color(0xFFFFEBEE) // Error suave
-                entry.direction == ApduDirection.TX -> Color(0xFFF0F4F8)
-                entry.direction == ApduDirection.RX -> Color(0xFFF7F5FA)
-                else -> Color(0xFFF5F5F5)
-            }
-        )
-    ) {
-        Column(modifier = Modifier.padding(10.dp)) {
-            // Encabezado del registro
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Badge de Dirección (TX / RX / INFO)
-                    val badgeColor = when (entry.direction) {
-                        ApduDirection.TX -> Color(0xFF1565C0) // Azul
-                        ApduDirection.RX -> Color(0xFF6A1B9A) // Púrpura
-                        ApduDirection.INFO -> Color(0xFF616161) // Gris
-                    }
-                    Surface(
-                        color = badgeColor,
-                        shape = MaterialTheme.shapes.extraSmall
-                    ) {
-                        Text(
-                            text = " ${entry.direction.name} ",
-                            color = Color.White,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    Text(
-                        text = entry.description,
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-
-                val durationText = if (entry.durationMs != null) " (${entry.durationMs}ms)" else ""
-                Text(
-                    text = "${entry.formattedTime}$durationText",
-                    style = MaterialTheme.typography.bodySmall,
-                    fontSize = 10.sp,
-                    color = MaterialTheme.colorScheme.outline
-                )
-            }
-
-            // Trama Hexadecimal
-            if (entry.apduHex.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                SelectionContainer {
-                    Text(
-                        text = entry.apduHex,
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 11.sp,
-                        color = if (entry.direction == ApduDirection.TX) Color(0xFF0D47A1) else Color(0xFF4A148C)
-                    )
-                }
-            }
-
-            // Status Word Badge
-            val statusWordHex = entry.statusWordHex
-            if (statusWordHex != null) {
-                Spacer(modifier = Modifier.height(4.dp))
-                val sw = statusWordHex.uppercase()
-                val (badgeBackground, badgeText, statusLabel) = when {
-                    sw == "9000" || sw.startsWith("90 00") -> Triple(Color(0xFF2E7D32), "90 00", "OK")
-                    sw.startsWith("63C") || sw.startsWith("63 C") -> Triple(Color(0xFFF57F17), sw, "PIN Inválido")
-                    sw.startsWith("6983") || sw.startsWith("69 83") -> Triple(Color(0xFFC62828), sw, "BLOQUEADO")
-                    sw.startsWith("6B00") || sw.startsWith("6B 00") -> Triple(Color(0xFF757575), sw, "Fin de archivo")
-                    sw.startsWith("6282") || sw.startsWith("62 82") -> Triple(Color(0xFF2E7D32), sw, "Fin de EF")
-                    else -> Triple(Color(0xFFC62828), sw, "Error")
-                }
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "Status Word: ",
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Surface(
-                        color = badgeBackground,
-                        shape = MaterialTheme.shapes.extraSmall
-                    ) {
-                        Text(
-                            text = " $badgeText ($statusLabel) ",
-                            color = Color.White,
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
-        }
-    }
-}

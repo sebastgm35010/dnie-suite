@@ -48,7 +48,7 @@ class ConsoleViewModelTest {
         apduLogger = ApduLogger(maxHistorySize = 100)
         successFeedbackCount = 0
         errorFeedbackCount = 0
-        viewModel = ConsoleViewModel(apduLogger = apduLogger, feedbackDispatcher = mockFeedback)
+        viewModel = ConsoleViewModel(apduLogger = apduLogger, feedbackDispatcher = mockFeedback, logDispatcher = testDispatcher)
     }
 
     @After
@@ -62,6 +62,17 @@ class ConsoleViewModelTest {
         assertTrue(state.entries.isEmpty())
         assertEquals(ConsoleFilter.ALL, state.filter)
         assertTrue(state.autoScroll)
+    }
+
+    @Test fun historyRemainsBoundedDuringLongSessions() = runTest(testDispatcher) {
+        repeat(25) { batch ->
+            repeat(50) { index -> apduLogger.logInfo("Synthetic ${batch * 50 + index}") }
+            testDispatcher.scheduler.runCurrent()
+        }
+        assertEquals(ApduLogger.DEFAULT_MAX_HISTORY, viewModel.uiState.value.entries.size)
+        assertEquals("Synthetic 1249", viewModel.uiState.value.entries.last().description)
+        assertEquals(0, successFeedbackCount)
+        assertEquals(0, errorFeedbackCount)
     }
 
     @Test
@@ -80,9 +91,9 @@ class ConsoleViewModelTest {
         assertEquals(3, state.entries.size)
         assertEquals(3, state.filteredEntries.size)
 
-        // Feedback tests
-        assertEquals(1, successFeedbackCount)
-        assertEquals(1, errorFeedbackCount)
+        // A background console must not vibrate/beep for another feature's APDUs.
+        assertEquals(0, successFeedbackCount)
+        assertEquals(0, errorFeedbackCount)
 
         // Filter TX
         viewModel.setFilter(ConsoleFilter.TX)

@@ -31,6 +31,24 @@ import java.security.cert.X509Certificate
 
 class DnieTransceiverTest {
 
+    @Test fun closedSessionCannotReconnectOrSendAnotherPrivateOperation() = runTest {
+        var commands = 0
+        var closed = false
+        val channel = object : pe.gob.reniec.dnie.core.nfc.DnieCardChannel {
+            override fun transceive(command: ByteArray): ByteArray { commands++; return byteArrayOf(0x90.toByte(), 0) }
+            override fun isConnected() = !closed
+            override fun setTimeout(timeoutMs: Int) {}
+            override fun close() { closed = true }
+        }
+        val client = DnieTransceiver(channel, ioDispatcher = Dispatchers.Unconfined, can = "123456", pin = "1234")
+        client.close()
+        assertTrue(client.selectPkiApplet().exceptionOrNull() is CardDisconnectedException)
+        assertTrue(client.verifyPin("1234").exceptionOrNull() is CardDisconnectedException)
+        assertTrue(client.readCertificate(CertificateType.SIGNATURE).exceptionOrNull() is CardDisconnectedException)
+        assertTrue(client.signSha256Hash(ByteArray(32)).exceptionOrNull() is CardDisconnectedException)
+        assertEquals(0, commands); assertTrue(closed); assertEquals(null, client.can); assertEquals(null, client.pin)
+    }
+
     private lateinit var mockChannel: MockIsoDepCardChannel
     private lateinit var logger: ApduLogger
     private lateinit var transceiver: DnieTransceiver

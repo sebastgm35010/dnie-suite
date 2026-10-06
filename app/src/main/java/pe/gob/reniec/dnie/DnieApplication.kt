@@ -27,6 +27,11 @@ class DnieApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
+        pe.gob.reniec.dnie.diagnostics.AppDiagnostics.initialize(this)
+        pe.gob.reniec.dnie.data.vault.VaultPreviewFiles(this).clear()
+        // Remove plaintext left by process death before any vault screen is opened.
+        java.io.File(cacheDir, "vault-private").listFiles()
+            ?.filter { it.isFile && it.name.endsWith(".plain") }?.forEach { it.delete() }
 
         try {
             // Inicializar cargador de recursos y fuentes de PDFBox Android

@@ -10,6 +10,44 @@ import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
 class PaceSecureChannelTest {
+    @Test fun extendedDecipherWireAuthenticatesLengthAndEncryptsEntireRsaBlock() {
+        val ciphertext = ByteArray(256) { it.toByte() }
+        val wire = PaceSecureChannel(base, key, key).wrapCommand(V3PkiSession.decipher(ciphertext))
+        val parsed = CommandApdu.fromBytes(wire)
+        assertEquals("0C2A8086000123", parsed.toHexString("").take(14))
+        assertEquals(65536, parsed.le)
+        assertTrue(parsed.isExtended)
+        val data = parsed.data
+        assertArrayEquals(byteArrayOf(0x87.toByte(), 0x82.toByte(), 1, 0x11, 1), data.copyOfRange(0, 5))
+        assertArrayEquals(byteArrayOf(0x97.toByte(), 2, 1, 0), data.copyOfRange(277, 281))
+        val counter = ByteArray(16).also { it[15] = 1 }
+        val ecb = Cipher.getInstance("AES/ECB/NoPadding")
+        ecb.init(Cipher.ENCRYPT_MODE, SecretKeySpec(key, "AES"))
+        val cbc = Cipher.getInstance("AES/CBC/NoPadding")
+        cbc.init(Cipher.DECRYPT_MODE, SecretKeySpec(key, "AES"), IvParameterSpec(ecb.doFinal(counter)))
+        assertArrayEquals(byteArrayOf(0x81.toByte()) + ciphertext + byteArrayOf(0x80.toByte()) + ByteArray(14),
+            cbc.doFinal(data.copyOfRange(5, 277)))
+        val header = byteArrayOf(0x0C, 0x2A, 0x80.toByte(), 0x86.toByte(), 0x80.toByte()) + ByteArray(11)
+        val macInput = counter + header + data.copyOfRange(0, 281) + byteArrayOf(0x80.toByte()) + ByteArray(6)
+        val cmac = org.bouncycastle.crypto.macs.CMac(org.bouncycastle.crypto.engines.AESEngine.newInstance())
+        cmac.init(org.bouncycastle.crypto.params.KeyParameter(key))
+        cmac.update(macInput, 0, macInput.size)
+        val independentMac = ByteArray(16).also { cmac.doFinal(it, 0) }
+        assertArrayEquals(independentMac.copyOf(8), data.copyOfRange(283, 291))
+    }
+
+    @Test fun extendedPrivateCommandStillAuthenticatesResponseAndRejectsBadMac() {
+        val card = object : DnieCardChannel by base {
+            override fun transceive(command: ByteArray) = protectedStatus(0x9000, tampered = true)
+        }
+        val secure = PaceSecureChannel(card, key, key)
+        assertThrows(CardProtocolException::class.java) {
+            secure.transceive(V3PkiSession.decipher(ByteArray(256)).toByteArray())
+        }
+        assertThrows(IllegalStateException::class.java) {
+            secure.transceive(V3PkiSession.sign(ByteArray(32)).toByteArray())
+        }
+    }
     private val key = ByteArray(32) { it.toByte() }
     private val base = object : DnieCardChannel {
         override fun transceive(command: ByteArray) = byteArrayOf(0x90.toByte(), 0)

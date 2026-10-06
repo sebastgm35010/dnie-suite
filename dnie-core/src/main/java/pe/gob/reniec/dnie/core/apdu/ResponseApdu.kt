@@ -37,14 +37,14 @@ class ResponseApdu(
      * Retorna la representación hexadecimal de toda la trama de respuesta.
      */
     fun toHexString(separator: String = " "): String {
-        return toByteArray().joinToString(separator) { "%02X".format(it) }
+        return encodeHex(toByteArray(), separator)
     }
 
     /**
      * Retorna la representación hexadecimal únicamente del campo de datos.
      */
     fun dataToHexString(separator: String = " "): String {
-        return data.joinToString(separator) { "%02X".format(it) }
+        return encodeHex(data, separator)
     }
 
     override fun equals(other: Any?): Boolean {

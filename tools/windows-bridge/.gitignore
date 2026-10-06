@@ -1,0 +1,5 @@
+**/bin/
+**/obj/
+**/*.pfx
+**/server-private.json
+**/android-provision.json

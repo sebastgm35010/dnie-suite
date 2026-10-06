@@ -21,185 +21,236 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.io.OutputStream
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.update
+import pe.gob.reniec.dnie.domain.signing.*
+import pe.gob.reniec.dnie.data.signing.DocumentImportService
+import pe.gob.reniec.dnie.pdf.PdfSigningOptions
+import pe.gob.reniec.dnie.core.nfc.DnieTransceiver
+import pe.gob.reniec.dnie.crypto.CertificateExporter
+import pe.gob.reniec.dnie.crypto.X509CertificateParser
 
-/**
- * Estados de la máquina de estados del Firmador PAdES en 2 pasos.
- */
-sealed interface SignerUiState {
-    data object NoDocument : SignerUiState
-
-    data class DocumentLoaded(
-        val documentUri: Uri? = null,
-        val documentName: String,
-        val documentSizeBytes: Long,
-        val pageCount: Int,
-        val preset: SignaturePreset = SignaturePreset.BOTTOM_RIGHT,
-        val reason: String = "Soy el autor del documento",
-        val location: String = "Lima, Perú"
-    ) : SignerUiState
-
-    data class EnteringPin(
-        val documentUri: Uri? = null,
-        val documentName: String,
-        val documentSizeBytes: Long,
-        val pageCount: Int,
-        val preset: SignaturePreset,
-        val reason: String,
-        val location: String,
-        val initialCan: String = ""
-    ) : SignerUiState
-
-    data class AwaitingCard(
-        val documentUri: Uri? = null,
-        val documentName: String,
-        val documentSizeBytes: Long,
-        val pageCount: Int,
-        val preset: SignaturePreset,
-        val reason: String,
-        val location: String,
-        val pin: String,
-        val can: String? = null
-    ) : SignerUiState
-
-    data class Signing(
-        val message: String = "Verificando PIN y generando firma PAdES..."
-    ) : SignerUiState
-
-    data class SignedSuccess(
-        val signedFileUri: Uri?,
-        val signedFilePath: String?,
-        val signerName: String,
-        val signerDni: String,
-        val timestamp: Long,
-        val signatureSize: Int
-    ) : SignerUiState
-
-    data class Error(
-        val message: String,
-        val canRetry: Boolean = true
-    ) : SignerUiState
-}
 
 /**
  * ViewModel que orquesta el ciclo de firma digital PAdES con verificación de credenciales (CAN + PIN).
  */
-class SignerViewModel(
-    private val signerEngine: PadesSignerEngineInterface = PadesSignerEngine.defaultInstance
-) : ViewModel() {
-
+class SignerViewModel(private val signerEngine: PadesSignerEngineInterface = PadesSignerEngine.defaultInstance) : ViewModel() {
     private val _uiState = MutableStateFlow<SignerUiState>(SignerUiState.NoDocument)
-    val uiState: StateFlow<SignerUiState> = _uiState.asStateFlow()
-
+    val uiState = _uiState.asStateFlow()
+    private val _workspace = MutableStateFlow(SigningWorkspace())
+    val workspace = _workspace.asStateFlow()
     var enteredCan: String? = null
         private set
+    private var editor: SignerUiState.DocumentLoaded? = null
+    private var approved = emptyList<SigningDocument>()
+    private var approvedMark: HandwrittenMark? = null
+    private var signingJob: Job? = null
+    private var importJob: Job? = null
+    private var activeCard: DnieTransceiverInterface? = null
+    private var operation = 0
+    private var importOperation = 0
+    val busy: Boolean get() = _uiState.value is SignerUiState.Signing || _uiState.value is SignerUiState.AwaitingCard || _uiState.value is SignerUiState.EnteringPin
 
-    fun onDocumentSelected(
-        uri: Uri? = null,
-        name: String,
-        sizeBytes: Long,
-        pageCount: Int = 1
-    ) {
-        _uiState.value = SignerUiState.DocumentLoaded(
-            documentUri = uri,
-            documentName = name,
-            documentSizeBytes = sizeBytes,
-            pageCount = pageCount
-        )
+    fun importDocuments(context: Context, uris: List<Uri>, singlePdf: Boolean = false) {
+        if (busy || _workspace.value.importing || _workspace.value.exporting || uris.isEmpty()) return
+        val token = ++importOperation
+        val app = context.applicationContext
+        _workspace.update { it.copy(importing = true, importErrors = emptyList()) }
+        importJob = viewModelScope.launch {
+            val imported = mutableListOf<SigningDocument>()
+            val errors = mutableListOf<String>()
+            try {
+                val result = ImportSigningDocuments().run(uris, _workspace.value.documents, singlePdf,
+                    import = { DocumentImportService.import(app, it) },
+                    discard = { DocumentImportService.discard(it) },
+                    failed = { pe.gob.reniec.dnie.diagnostics.DiagnosticLog.failure("signer", "import", it) })
+                imported += result.documents
+                errors += result.errors
+                if (token == importOperation) {
+                    val replacing = singlePdf && imported.isNotEmpty()
+                    val previous = if (replacing) _workspace.value else null
+                    if (replacing) editor = null
+                    _workspace.update { it.copy(documents = if (singlePdf && imported.isNotEmpty()) imported.toList() else it.documents + imported,
+                        artifacts = if (singlePdf && imported.isNotEmpty()) emptyList() else it.artifacts,
+                        importing = false, importErrors = errors,
+                        selectedId = if (singlePdf && imported.isNotEmpty()) imported.first().id else it.selectedId ?: imported.firstOrNull()?.id) }
+                    imported.clear() // Ownership transferred to the workspace before any suspension.
+                    selectDocument(_workspace.value.selectedId)
+                    if (previous != null) withContext(NonCancellable + Dispatchers.IO) {
+                        previous.documents.forEach { it.file.delete(); it.file.parentFile?.delete() }
+                        previous.artifacts.forEach { it.output?.delete(); it.output?.parentFile?.delete() }
+                    }
+                } else imported.forEach { DocumentImportService.discard(it) }
+            } catch (e: CancellationException) {
+                withContext(NonCancellable) { imported.forEach { DocumentImportService.discard(it) } }
+                throw e
+            }
+            finally { if (token == importOperation) _workspace.update { it.copy(importing = false) } }
+        }
     }
 
+    fun selectDocument(id: String?) {
+        if (busy) return
+        val doc = _workspace.value.documents.firstOrNull { it.id == id } ?: return
+        _workspace.update { it.copy(selectedId = doc.id) }
+        _uiState.value = SignerUiState.DocumentLoaded(Uri.fromFile(doc.file), doc.name, doc.size, doc.pages.size,
+            if (doc.options.visible) SignaturePreset.CUSTOM else SignaturePreset.INVISIBLE, doc.options.reason, doc.options.location)
+    }
+    fun removeDocument(id: String) {
+        if (busy || _workspace.value.importing || _workspace.value.exporting) return
+        val doc = _workspace.value.documents.firstOrNull { it.id == id } ?: return
+        _workspace.value.artifacts.filter { it.document.id == id }.forEach { it.output?.delete(); it.output?.parentFile?.delete() }
+        doc.file.delete(); doc.file.parentFile?.delete()
+        _workspace.update { w -> w.copy(documents = w.documents.filter { it.id != id }, artifacts = w.artifacts.filter { it.document.id != id },
+            selectedId = if (w.selectedId == id) w.documents.firstOrNull { it.id != id }?.id else w.selectedId) }
+        if (_workspace.value.documents.isEmpty()) _uiState.value = SignerUiState.NoDocument else selectDocument(_workspace.value.selectedId)
+    }
+    fun updateOptions(transform: (PdfSigningOptions) -> PdfSigningOptions) {
+        if (busy) return
+        val selected = _workspace.value.selected ?: return
+        if (_workspace.value.artifacts.any { it.document.id == selected.id && it.status == DocumentSignStatus.SIGNED }) return
+        _workspace.update { w -> w.copy(documents = w.documents.map { if (it.id == selected.id) it.copy(options = transform(it.options)) else it }) }
+        val options = _workspace.value.selected!!.options
+        (_uiState.value as? SignerUiState.DocumentLoaded)?.let { _uiState.value = it.copy(reason = options.reason, location = options.location) }
+    }
+    fun applyOptionsToAll() {
+        if (busy) return
+        val options = _workspace.value.selected?.options ?: return
+        val signed = _workspace.value.artifacts.filter { it.status == DocumentSignStatus.SIGNED }.map { it.document.id }.toSet()
+        _workspace.update { w -> w.copy(documents = w.documents.map { doc ->
+            if (!doc.isPdf || doc.id in signed) doc else doc.copy(options = options.copy(pageNumber = options.pageNumber.coerceIn(1, doc.pages.size)))
+        }) }
+    }
+    fun setDetached(value: Boolean) {
+        if (busy) return
+        val doc = _workspace.value.selected ?: return
+        if (_workspace.value.artifacts.any { it.document.id == doc.id && it.status == DocumentSignStatus.SIGNED }) return
+        _workspace.update { w -> w.copy(documents = w.documents.map { if (it.id == doc.id) it.copy(detached = value) else it }) }
+    }
+    fun setHandwrittenMark(mark: HandwrittenMark?, error: String? = null) {
+        _workspace.update { w -> if (w.mark?.png?.contentEquals(mark?.png ?: byteArrayOf()) == true && w.mark?.personalNumber == mark?.personalNumber && w.mark?.sourceName == mark?.sourceName && w.markError == error) w
+            else w.copy(mark = mark, markError = error, markConfirmed = false) }
+    }
+    fun confirmMark(value: Boolean) { if (!busy) _workspace.update { it.copy(markConfirmed = value) } }
+    fun setPublicCertificate(bytes: ByteArray?) {
+        if (bytes == null) return
+        val citizen = runCatching { X509CertificateParser.extractCitizenData(X509CertificateParser.toX509Certificate(bytes)) }.getOrNull() ?: return
+        _workspace.update { it.copy(certificate = bytes, previewName = citizen.fullName, previewDni = citizen.dniNumber) }
+    }
+
+    fun onDocumentSelected(uri: Uri? = null, name: String, sizeBytes: Long, pageCount: Int = 1) {
+        _uiState.value = SignerUiState.DocumentLoaded(documentUri = uri, documentName = name, documentSizeBytes = sizeBytes, pageCount = pageCount)
+    }
     fun onPresetSelected(preset: SignaturePreset) {
-        val current = _uiState.value
-        if (current is SignerUiState.DocumentLoaded) {
-            _uiState.value = current.copy(preset = preset)
-        }
+        (_uiState.value as? SignerUiState.DocumentLoaded)?.let { _uiState.value = it.copy(preset = preset) }
     }
-
     fun onReasonChanged(reason: String) {
-        val current = _uiState.value
-        if (current is SignerUiState.DocumentLoaded) {
-            _uiState.value = current.copy(reason = reason)
-        }
+        (_uiState.value as? SignerUiState.DocumentLoaded)?.let { _uiState.value = it.copy(reason = reason) }
+        updateOptions { it.copy(reason = reason.take(200)) }
     }
-
     fun onLocationChanged(location: String) {
-        val current = _uiState.value
-        if (current is SignerUiState.DocumentLoaded) {
-            _uiState.value = current.copy(location = location)
-        }
+        (_uiState.value as? SignerUiState.DocumentLoaded)?.let { _uiState.value = it.copy(location = location) }
+        updateOptions { it.copy(location = location.take(120)) }
     }
-
-    /**
-     * Paso 1: Abre el diálogo de captura segura del CAN y PIN.
-     */
     fun startPinEntry() {
+        if (_workspace.value.importing || _workspace.value.exporting) return
         val current = _uiState.value as? SignerUiState.DocumentLoaded ?: return
-        _uiState.value = SignerUiState.EnteringPin(
-            documentUri = current.documentUri,
-            documentName = current.documentName,
-            documentSizeBytes = current.documentSizeBytes,
-            pageCount = current.pageCount,
-            preset = current.preset,
-            reason = current.reason,
-            location = current.location,
-            initialCan = enteredCan ?: ""
-        )
+        approved = _workspace.value.pending.toList()
+        approvedMark = _workspace.value.mark
+        if (approved.any { it.isPdf && it.options.visible && it.options.appearance.requiresHandwritten } && (approvedMark == null || !_workspace.value.markConfirmed)) {
+            _workspace.update { it.copy(exportMessage = "Lea la imagen manuscrita y confirme que corresponde al titular.") }; return
+        }
+        editor = current
+        _uiState.value = SignerUiState.EnteringPin(current.documentUri, current.documentName, current.documentSizeBytes,
+            current.pageCount, current.preset, current.reason, current.location, enteredCan ?: "")
     }
-
-    fun cancelPinEntry() {
-        val current = _uiState.value as? SignerUiState.EnteringPin ?: return
-        _uiState.value = SignerUiState.DocumentLoaded(
-            documentUri = current.documentUri,
-            documentName = current.documentName,
-            documentSizeBytes = current.documentSizeBytes,
-            pageCount = current.pageCount,
-            preset = current.preset,
-            reason = current.reason,
-            location = current.location
-        )
-    }
-
-    /**
-     * Confirma tanto el CAN como el PIN antes de la lectura NFC.
-     */
+    fun cancelPinEntry() { if (_uiState.value is SignerUiState.EnteringPin) restoreEditor() }
     fun onCredentialsConfirmed(can: String, pin: String) {
         val current = _uiState.value as? SignerUiState.EnteringPin ?: return
         enteredCan = can
-        _uiState.value = SignerUiState.AwaitingCard(
-            documentUri = current.documentUri,
-            documentName = current.documentName,
-            documentSizeBytes = current.documentSizeBytes,
-            pageCount = current.pageCount,
-            preset = current.preset,
-            reason = current.reason,
-            location = current.location,
-            pin = pin,
-            can = can
-        )
+        _uiState.value = SignerUiState.AwaitingCard(current.documentUri, current.documentName, current.documentSizeBytes,
+            current.pageCount, current.preset, current.reason, current.location, pin, can)
+    }
+    fun onPinConfirmed(pin: String) = onCredentialsConfirmed(enteredCan ?: "", pin)
+    fun cancelAwaitingCard() { if (_uiState.value is SignerUiState.AwaitingCard) restoreEditor() }
+    fun restoreEditor() {
+        _uiState.value = editor ?: _workspace.value.selected?.let {
+            SignerUiState.DocumentLoaded(documentName = it.name, documentSizeBytes = it.size, pageCount = it.pages.size)
+        } ?: SignerUiState.NoDocument
     }
 
-    /**
-     * Paso 2: Retrocompatibilidad cuando solo se provee PIN.
-     */
-    fun onPinConfirmed(pin: String) {
-        onCredentialsConfirmed(can = enteredCan ?: "", pin = pin)
+    fun onCardDetected(transceiver: DnieTransceiverInterface, context: Context) {
+        val awaiting = _uiState.value as? SignerUiState.AwaitingCard ?: run { transceiver.close(); return }
+        if (approved.isEmpty()) { transceiver.close(); _uiState.value = SignerUiState.Error("No hay archivos preparados para firmar."); return }
+        val token = ++operation
+        val app = context.applicationContext
+        val documents = approved
+        val mark = approvedMark
+        if (transceiver is DnieTransceiver) { transceiver.can = awaiting.can; transceiver.pin = awaiting.pin }
+        activeCard = transceiver
+        _uiState.value = SignerUiState.Signing("Abriendo sesión y verificando PIN…", 0, documents.size)
+        signingJob = viewModelScope.launch {
+            try {
+                val ids = documents.map { it.id }.toSet()
+                val previous = _workspace.value.artifacts.filter { it.document.id !in ids }
+                val result = withContext(Dispatchers.IO) {
+                    BatchSigner(signerEngine).sign(documents, transceiver, awaiting.pin, File(app.cacheDir, "signed_docs"), mark) { count, name, artifacts, cert ->
+                        if (token == operation) {
+                            _uiState.value = SignerUiState.Signing("$count de ${documents.size} · $name", count, documents.size)
+                            _workspace.update { it.copy(artifacts = previous + artifacts) }
+                            if (cert != null) setPublicCertificate(cert)
+                        }
+                    }
+                }
+                if (token != operation) return@launch
+                _workspace.update { it.copy(artifacts = previous + result.artifacts) }
+                val success = result.artifacts.firstOrNull { it.status == DocumentSignStatus.SIGNED }
+                if (success == null) _uiState.value = SignerUiState.Error(result.sessionError ?: result.artifacts.firstOrNull()?.message ?: "No se firmó ningún archivo")
+                else {
+                    val output = requireNotNull(success.output)
+                    val uri = FileProvider.getUriForFile(app, "${app.packageName}.fileprovider", output)
+                    _uiState.value = SignerUiState.SignedSuccess(uri, output.absolutePath, success.signerName, success.signerDni, success.timestamp, success.signatureSize)
+                }
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) { pe.gob.reniec.dnie.diagnostics.DiagnosticLog.failure("signer", "sign_batch", e); if (token == operation) _uiState.value = SignerUiState.Error(e.message ?: "Error en el lote") }
+            finally { if (token == operation) { activeCard = null; enteredCan = null; approved = emptyList(); approvedMark = null } }
+        }
     }
-
-    fun cancelAwaitingCard() {
-        val current = _uiState.value as? SignerUiState.AwaitingCard ?: return
-        _uiState.value = SignerUiState.DocumentLoaded(
-            documentUri = current.documentUri,
-            documentName = current.documentName,
-            documentSizeBytes = current.documentSizeBytes,
-            pageCount = current.pageCount,
-            preset = current.preset,
-            reason = current.reason,
-            location = current.location
-        )
+    fun cancelSigning() {
+        ++operation; signingJob?.cancel(); activeCard?.close(); activeCard = null
+        enteredCan = null; approved = emptyList(); approvedMark = null
+        if (busy) restoreEditor()
     }
-
-    /**
-     * Ejecuta el proceso criptográfico de firma con streams explícitos (útil para pruebas unitarias).
-     */
+    fun export(context: Context, uri: Uri, artifact: SignedArtifact? = null, certificateAsPem: Boolean? = null) {
+        if (_workspace.value.exporting) return
+        val artifacts = _workspace.value.artifacts.toList()
+        val cert = _workspace.value.certificate
+        _workspace.update { it.copy(exporting = true, exportMessage = null) }
+        viewModelScope.launch {
+            val outcome = runCatching { withContext(Dispatchers.IO) {
+                requireNotNull(context.contentResolver.openOutputStream(uri)).use { out ->
+                    when {
+                        certificateAsPem != null -> {
+                            val bytes = requireNotNull(cert) { "Extraiga primero el certificado del DNI" }
+                            if (certificateAsPem) CertificateExporter.writePemToStream(bytes, out) else CertificateExporter.writeCerToStream(bytes, out)
+                        }
+                        artifact != null -> requireNotNull(artifact.output).inputStream().use { it.copyTo(out) }
+                        else -> SignedBatchExporter.write(artifacts, out)
+                    }
+                }
+            } }
+            _workspace.update { it.copy(exporting = false, exportMessage = if (outcome.isSuccess) "Archivo guardado" else outcome.exceptionOrNull()?.message ?: "No se pudo guardar") }
+        }
+    }
+    fun reset() {
+        if (_workspace.value.exporting) return
+        cancelSigning(); ++importOperation; importJob?.cancel()
+        _workspace.value.artifacts.forEach { it.output?.delete(); it.output?.parentFile?.delete() }
+        _workspace.value.documents.forEach { it.file.delete(); it.file.parentFile?.delete() }
+        val previous = _workspace.value
+        _workspace.value = SigningWorkspace(mark = previous.mark, certificate = previous.certificate, previewName = previous.previewName, previewDni = previous.previewDni)
+        editor = null; _uiState.value = SignerUiState.NoDocument
+    }
     fun onCardDetected(
         transceiver: DnieTransceiverInterface,
         inputStream: InputStream,
@@ -222,7 +273,8 @@ class SignerViewModel(
             }
         }
 
-        viewModelScope.launch {
+        activeCard = transceiver
+        signingJob = viewModelScope.launch {
             try {
                 // 1. Seleccionar Applet PKI / ICAO
                 transceiver.selectPkiApplet().getOrThrow()
@@ -269,123 +321,18 @@ class SignerViewModel(
                     timestamp = signResult.timestamp,
                     signatureSize = signResult.signatureSize
                 )
+            } catch (e: CancellationException) { throw e
             } catch (e: Exception) {
+                pe.gob.reniec.dnie.diagnostics.DiagnosticLog.failure("signer", "export", e)
                 _uiState.value = SignerUiState.Error(
                     message = e.message ?: "Error desconocido durante la firma del documento.",
                     canRetry = true
                 )
             }
+            finally { inputStream.close(); outputStream.close(); transceiver.close(); activeCard = null }
         }
     }
 
-    /**
-     * Ejecuta el proceso criptográfico de firma en entorno Android usando ContentResolver y archivos de caché.
-     */
-    fun onCardDetected(
-        transceiver: DnieTransceiverInterface,
-        context: Context
-    ) {
-        val awaiting = _uiState.value as? SignerUiState.AwaitingCard ?: return
-        val docUri = awaiting.documentUri
-        if (docUri == null) {
-            _uiState.value = SignerUiState.Error("No se ha especificado una URI válida para el documento.")
-            return
-        }
+    override fun onCleared() { cancelSigning(); importJob?.cancel() }
 
-        val contentResolver = context.contentResolver
-        val inputStream = contentResolver.openInputStream(docUri)
-        if (inputStream == null) {
-            _uiState.value = SignerUiState.Error("No se pudo abrir el documento fuente seleccionado.")
-            return
-        }
-
-        // Crear archivo de destino en la carpeta de caché protegida de la app
-        val signedDir = File(context.cacheDir, "signed_docs").apply { mkdirs() }
-        val sanitizedName = awaiting.documentName.removeSuffix(".pdf")
-        val outputFile = File(signedDir, "${sanitizedName}_firmado_${System.currentTimeMillis()}.pdf")
-        val outputStream = FileOutputStream(outputFile)
-
-        _uiState.value = SignerUiState.Signing("Verificando credenciales en el chip del DNIe...")
-
-        if (transceiver is pe.gob.reniec.dnie.core.nfc.DnieTransceiver) {
-            if (transceiver.can.isNullOrBlank() && !awaiting.can.isNullOrBlank()) {
-                transceiver.can = awaiting.can
-            }
-            if (transceiver.pin.isNullOrBlank() && awaiting.pin.isNotBlank()) {
-                transceiver.pin = awaiting.pin
-            }
-        }
-
-        viewModelScope.launch {
-            try {
-                transceiver.selectPkiApplet().getOrThrow()
-
-                val pinResult = transceiver.verifyPin(awaiting.pin).getOrThrow()
-                when (pinResult) {
-                    is PinVerificationResult.Success -> {
-                        // Continuar
-                    }
-                    is PinVerificationResult.InvalidPin -> {
-                        throw IllegalStateException(
-                            "PIN incorrecto. Le quedan ${pinResult.attemptsRemaining} intento(s) antes del bloqueo."
-                        )
-                    }
-                    is PinVerificationResult.CardBlocked -> {
-                        throw IllegalStateException(
-                            "El chip está bloqueado (error 69 83). Acuda a RENIEC con su PUK para desbloquearlo."
-                        )
-                    }
-                }
-
-                _uiState.value = SignerUiState.Signing("Leyendo certificado de firma...")
-                val certDer = transceiver.readCertificate(CertificateType.SIGNATURE).getOrThrow()
-
-                _uiState.value = SignerUiState.Signing("Calculando firma digital PAdES con DNIe...")
-                val signResult = signerEngine.signPdf(
-                    pdfInputStream = inputStream,
-                    pdfOutputStream = outputStream,
-                    signingCertificateDer = certDer,
-                    cardSigner = { hash -> transceiver.signSha256Hash(hash) },
-                    preset = awaiting.preset,
-                    reason = awaiting.reason,
-                    location = awaiting.location
-                ).getOrThrow()
-
-                val shareUri = try {
-                    FileProvider.getUriForFile(
-                        context,
-                        "${context.packageName}.fileprovider",
-                        outputFile
-                    )
-                } catch (_: Exception) {
-                    Uri.fromFile(outputFile)
-                }
-
-                _uiState.value = SignerUiState.SignedSuccess(
-                    signedFileUri = shareUri,
-                    signedFilePath = outputFile.absolutePath,
-                    signerName = signResult.signerName,
-                    signerDni = signResult.signerDni ?: "",
-                    timestamp = signResult.timestamp,
-                    signatureSize = signResult.signatureSize
-                )
-            } catch (e: Exception) {
-                outputFile.delete()
-                _uiState.value = SignerUiState.Error(
-                    message = e.message ?: "Error desconocido durante la firma del documento.",
-                    canRetry = true
-                )
-            } finally {
-                try { inputStream.close() } catch (_: Exception) {}
-                try { outputStream.close() } catch (_: Exception) {}
-            }
-        }
-    }
-
-    /**
-     * Reinicia el flujo al estado sin documento.
-     */
-    fun reset() {
-        _uiState.value = SignerUiState.NoDocument
-    }
 }

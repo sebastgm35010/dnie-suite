@@ -8,7 +8,8 @@ import pe.gob.reniec.dnie.domain.model.PinVerificationResult
  *
  * Conecta las capas de presentación / casos de uso con el protocolo criptográfico del chip.
  */
-interface DnieTransceiverInterface {
+interface DnieTransceiverInterface : AutoCloseable {
+    override fun close() {}
     /**
      * Selecciona el Applet PKI de RENIEC (AID: E8 28 BD 08 0F D2 50 47 65 6E 65 72 69 63).
      */

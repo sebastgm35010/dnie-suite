@@ -123,6 +123,13 @@ class SignerViewModelTest {
     fun testInitialStateIsNoDocument() {
         assertTrue(viewModel.uiState.value is SignerUiState.NoDocument)
     }
+    @Test fun handwrittenConfirmationIsClearedWhenTheSourceIdentityChanges() {
+        viewModel.setHandwrittenMark(pe.gob.reniec.dnie.domain.signing.HandwrittenMark(byteArrayOf(1, 2), "Titular uno"))
+        viewModel.confirmMark(true)
+        assertTrue(viewModel.workspace.value.markConfirmed)
+        viewModel.setHandwrittenMark(pe.gob.reniec.dnie.domain.signing.HandwrittenMark(byteArrayOf(1, 2), "Titular dos"))
+        assertTrue(!viewModel.workspace.value.markConfirmed)
+    }
 
     @Test
     fun testDocumentSelectionAndPresetConfiguration() {

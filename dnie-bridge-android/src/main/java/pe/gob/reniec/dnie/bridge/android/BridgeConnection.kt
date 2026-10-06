@@ -1,0 +1,48 @@
+package pe.gob.reniec.dnie.bridge.android
+
+import pe.gob.reniec.dnie.core.nfc.DnieCardChannel
+import pe.gob.reniec.dnie.bridge.BridgeCard
+import java.io.Closeable
+import java.util.concurrent.atomic.AtomicBoolean
+
+/** Owns a fresh NFC transport even while TLS or PACE is in progress. Run/close on IO. */
+class BridgeConnection(
+    pairing: BridgePairing,
+    private val decorate: (BridgeCard) -> BridgeCard = { it },
+    private val smDiagnostic: (String, String) -> Unit = { _, _ -> },
+    private val physicalFactory: () -> DnieCardChannel
+) : Closeable {
+    private val client = PinnedBridgeClient(pairing)
+    private val closed = AtomicBoolean()
+    @Volatile private var physical: DnieCardChannel? = null
+
+    fun run(can: String, atr: ByteArray, onEvent: (String) -> Unit = {}, windowsPace: Boolean = false, translatePace: Boolean = false, onPhase: (Phase) -> Unit) {
+        try {
+            check(!closed.get())
+            onPhase(Phase.AUTHENTICATING_PC)
+            client.run(onEvent, restricted = false) {
+                check(!closed.get())
+                if (!windowsPace) onPhase(Phase.OPENING_PACE)
+                val factory = {
+                    val next = physicalFactory()
+                    physical = next
+                    if (closed.get()) { next.close(); error("Session cancelled") }
+                    next
+                }
+                val base = if (windowsPace) TransparentNfcCard(atr, factory) else RestartablePaceCard.open(can, atr, factory, onEvent)
+                val card = if (translatePace && !windowsPace) TranslatedPaceCard(base, can, smDiagnostic) else base
+                if (closed.get()) { card.close(); error("Session cancelled") }
+                onPhase(if (windowsPace) Phase.RAW_ACTIVE else Phase.PACE_ACTIVE)
+                try { decorate(card) } catch (failure: Exception) { card.close(); throw failure }
+            }
+        } finally { close() }
+    }
+
+    override fun close() {
+        if (closed.compareAndSet(false, true)) {
+            try { client.close() } finally { physical?.close() }
+        }
+    }
+
+    enum class Phase { AUTHENTICATING_PC, OPENING_PACE, PACE_ACTIVE, RAW_ACTIVE }
+}

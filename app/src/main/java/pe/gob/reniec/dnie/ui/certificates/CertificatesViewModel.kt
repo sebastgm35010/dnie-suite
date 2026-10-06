@@ -7,6 +7,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.ensureActive
 import pe.gob.reniec.dnie.core.nfc.DnieTransceiverInterface
 import pe.gob.reniec.dnie.crypto.CertificateExporter
 import pe.gob.reniec.dnie.crypto.X509CertificateParser
@@ -42,7 +50,10 @@ sealed interface CertificatesUiState {
 /**
  * ViewModel para la lectura e inspección de certificados X.509 públicos del DNIe.
  */
-class CertificatesViewModel : ViewModel() {
+class CertificatesViewModel(private val closeDispatcher: CoroutineDispatcher = Dispatchers.IO) : ViewModel() {
+    private var readingJob: Job? = null
+    @Volatile private var activeReader: DnieTransceiverInterface? = null
+    val busy: Boolean get() = readingJob?.isActive == true || activeReader != null
 
     private val _uiState = MutableStateFlow<CertificatesUiState>(CertificatesUiState.Idle)
     val uiState: StateFlow<CertificatesUiState> = _uiState.asStateFlow()
@@ -88,6 +99,8 @@ class CertificatesViewModel : ViewModel() {
      * Cancela la espera de tarjeta y regresa a estado Idle o mantiene certificados si ya estaban cargados.
      */
     fun cancelReading() {
+        readingJob?.cancel()
+        activeReader?.let { reader -> viewModelScope.launch(closeDispatcher) { runCatching { reader.close() } } }
         if (_uiState.value is CertificatesUiState.ReadingCard) {
             _uiState.value = CertificatesUiState.Idle
         }
@@ -97,16 +110,22 @@ class CertificatesViewModel : ViewModel() {
      * Procesa la tarjeta detectada a través del transceptor APDU.
      */
     fun onCardDetected(transceiver: DnieTransceiverInterface) {
+        if (busy) {
+            viewModelScope.launch(closeDispatcher) { runCatching { transceiver.close() } }
+            return
+        }
+        activeReader = transceiver
         if (transceiver is pe.gob.reniec.dnie.core.nfc.DnieTransceiver && transceiver.can.isNullOrBlank() && !enteredCan.isNullOrBlank()) {
             transceiver.can = enteredCan
         }
 
         _uiState.value = CertificatesUiState.ReadingCard("Conectando con Applet del DNIe...")
 
-        viewModelScope.launch {
+        readingJob = viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
             try {
                 // 1. Seleccionar Applet PKI / ICAO de RENIEC
                 val selectResult = transceiver.selectPkiApplet()
+                kotlin.coroutines.coroutineContext.ensureActive()
                 selectResult.getOrThrow()
 
                 // 2. Extraer certificados secuencialmente
@@ -115,6 +134,7 @@ class CertificatesViewModel : ViewModel() {
                 for (type in CertificateType.entries) {
                     _uiState.value = CertificatesUiState.ReadingCard("Leyendo certificado de ${type.displayName}...")
                     val readResult = transceiver.readCertificate(type)
+                    kotlin.coroutines.coroutineContext.ensureActive()
 
                     readResult.onSuccess { bytes ->
                         val certInfo = X509CertificateParser.parse(bytes, type)
@@ -135,12 +155,27 @@ class CertificatesViewModel : ViewModel() {
                         selectedType = CertificateType.SIGNATURE
                     )
                 }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (e: Exception) {
+                if (!kotlin.coroutines.coroutineContext[kotlinx.coroutines.Job]!!.isActive) return@launch
+                pe.gob.reniec.dnie.diagnostics.DiagnosticLog.failure("certificates", "read", e)
                 _uiState.value = CertificatesUiState.Error(
                     e.message ?: "Error al leer certificados digitales del DNIe."
                 )
+            } finally {
+                try {
+                    withContext(NonCancellable + closeDispatcher) { runCatching { transceiver.close() } }
+                } finally {
+                    if (activeReader === transceiver) activeReader = null
+                }
             }
         }
+    }
+
+    override fun onCleared() {
+        activeReader?.let { reader -> Thread({ reader.close() }, "certificates-close").start() }
+        super.onCleared()
     }
 
     /**
@@ -174,6 +209,7 @@ class CertificatesViewModel : ViewModel() {
             }
             true
         } catch (e: Exception) {
+            pe.gob.reniec.dnie.diagnostics.DiagnosticLog.failure("certificates", "export", e)
             false
         }
     }

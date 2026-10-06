@@ -3,6 +3,7 @@ package pe.gob.reniec.dnie.core.apdu
 /**
  * Representa una unidad de datos de comando de protocolo de aplicación (Command APDU) según ISO/IEC 7816-4.
  *
+ * APDU corta por defecto; longitud extendida automática o explícita cuando corresponde.
  * Estructura de trama APDU corta (Short APDU):
  * - CLA (1 byte): Clase de instrucción
  * - INS (1 byte): Código de instrucción
@@ -18,14 +19,18 @@ class CommandApdu(
     val p1: Byte,
     val p2: Byte,
     val data: ByteArray = byteArrayOf(),
-    le: Int? = null
+    le: Int? = null,
+    extended: Boolean = false
 ) {
     val le: Int? = if (le == 0) 256 else le
+    /** Short encoding remains unchanged; explicit extended encoding survives parsing. */
+    val isExtended: Boolean = (data.isNotEmpty() || this.le != null) &&
+        (extended || data.size > 255 || (this.le ?: 0) > 256)
 
     init {
-        require(data.size <= 255) { "Short APDU data length cannot exceed 255 bytes (got ${data.size})" }
+        require(data.size <= 65535) { "APDU data length cannot exceed 65535 bytes" }
         if (this.le != null) {
-            require(this.le in 1..256) { "Short APDU Le must be between 1 and 256 (got ${this.le})" }
+            require(this.le in 1..65536) { "APDU Le must be between 1 and 65536" }
         }
     }
 
@@ -39,6 +44,20 @@ class CommandApdu(
      * Serializa el comando APDU a su representación binaria estándar ISO 7816-4.
      */
     fun toByteArray(): ByteArray {
+        if (isExtended && (data.isNotEmpty() || le != null)) {
+            val output = java.io.ByteArrayOutputStream()
+            output.write(byteArrayOf(cla, ins, p1, p2, 0))
+            fun writeLength(value: Int) {
+                output.write((value shr 8) and 255)
+                output.write(value and 255)
+            }
+            if (data.isNotEmpty()) {
+                writeLength(data.size)
+                output.write(data)
+            }
+            le?.let { writeLength(it) }
+            return output.toByteArray()
+        }
         val hasData = data.isNotEmpty()
         val hasLe = le != null
 
@@ -69,7 +88,7 @@ class CommandApdu(
      * Retorna la representación hexadecimal formateada del comando APDU.
      */
     fun toHexString(separator: String = " "): String {
-        return toByteArray().joinToString(separator) { "%02X".format(it) }
+        return encodeHex(toByteArray(), separator)
     }
 
     override fun equals(other: Any?): Boolean {
@@ -83,6 +102,7 @@ class CommandApdu(
         if (p2 != other.p2) return false
         if (!data.contentEquals(other.data)) return false
         if (le != other.le) return false
+        if (isExtended != other.isExtended) return false
 
         return true
     }
@@ -94,6 +114,7 @@ class CommandApdu(
         result = 31 * result + p2.toInt()
         result = 31 * result + data.contentHashCode()
         result = 31 * result + (le ?: 0)
+        result = 31 * result + isExtended.hashCode()
         return result
     }
 
@@ -356,20 +377,30 @@ class CommandApdu(
                 return CommandApdu(cla, ins, p1, p2, le = le)
             }
 
-            val lc = bytes[4].toInt() and 0xFF
-            require(bytes.size >= 5 + lc) {
-                "Malformed APDU: Lc=$lc requires at least ${5 + lc} bytes, but got ${bytes.size}"
+            val firstLength = bytes[4].toInt() and 255
+            if (firstLength == 0) {
+                require(bytes.size >= 7) { "Truncated extended APDU" }
+                fun word(offset: Int) = ((bytes[offset].toInt() and 255) shl 8) or
+                    (bytes[offset + 1].toInt() and 255)
+                val length = word(5)
+                if (bytes.size == 7) return CommandApdu(cla, ins, p1, p2,
+                    le = if (length == 0) 65536 else length, extended = true)
+                require(length > 0 && (bytes.size == 7 + length || bytes.size == 9 + length)) {
+                    "Malformed extended APDU length"
+                }
+                val responseLength = if (bytes.size == 9 + length) word(7 + length).let {
+                    if (it == 0) 65536 else it
+                } else null
+                return CommandApdu(cla, ins, p1, p2, bytes.copyOfRange(7, 7 + length),
+                    responseLength, extended = true)
             }
-
-            val data = bytes.copyOfRange(5, 5 + lc)
-            val le = if (bytes.size > 5 + lc) {
-                val leRaw = bytes[5 + lc].toInt() and 0xFF
-                if (leRaw == 0) 256 else leRaw
-            } else {
-                null
+            require(bytes.size == 5 + firstLength || bytes.size == 6 + firstLength) {
+                "Malformed short APDU length"
             }
-
-            return CommandApdu(cla, ins, p1, p2, data, le)
+            val responseLength = if (bytes.size == 6 + firstLength) {
+                (bytes.last().toInt() and 255).let { if (it == 0) 256 else it }
+            } else null
+            return CommandApdu(cla, ins, p1, p2, bytes.copyOfRange(5, 5 + firstLength), responseLength)
         }
     }
 }

@@ -1,6 +1,5 @@
 package pe.gob.reniec.dnie.ui.certificates
 
-import android.content.Context
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -8,20 +7,18 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Nfc
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -30,15 +27,14 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,7 +44,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pe.gob.reniec.dnie.domain.model.CertificateType
 import pe.gob.reniec.dnie.ui.components.CertificateCard
 import pe.gob.reniec.dnie.ui.components.CredentialsDialog
@@ -61,9 +59,11 @@ import pe.gob.reniec.dnie.ui.components.NfcTapPromptSheet
 @Composable
 fun CertificatesScreen(
     viewModel: CertificatesViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onOpenVault: () -> Unit = {},
+    onOpenBridge: () -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     // Variables para el tipo y formato de exportación actual
@@ -97,13 +97,23 @@ fun CertificatesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Certificados DNIe") },
+                title = { Text("Certificados DNIe", style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary,
                     actionIconContentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 actions = {
+                    TextButton(onClick = onOpenBridge, enabled = uiState !is CertificatesUiState.ReadingCard) {
+                        Text("PC", color = MaterialTheme.colorScheme.onPrimary)
+                    }
+                    TextButton(onClick = onOpenVault) {
+                        Icon(Icons.Default.Lock, contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Bóveda", color = MaterialTheme.colorScheme.onPrimary)
+                    }
                     IconButton(onClick = { viewModel.requestCanEntry() }) {
                         Icon(
                             imageVector = Icons.Default.Nfc,
@@ -269,45 +279,4 @@ fun CertificatesScreen(
         onConfirm = { can, _ -> viewModel.onCanConfirmed(can) },
         onDismiss = { viewModel.cancelCanEntry() }
     )
-}
-
-@Composable
-private fun EmptyCertificatesView(
-    onScanClicked: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.CreditCard,
-                contentDescription = null,
-                modifier = Modifier.size(80.dp),
-                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
-            )
-            Text(
-                text = "Sin Certificados Cargados",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "Aproxime su DNIe al sensor NFC para inspeccionar los certificados públicos de Firma, Autenticación y Cifrado.\n\nEsta operación no requiere PIN.",
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Button(onClick = onScanClicked) {
-                Icon(imageVector = Icons.Default.Nfc, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Escanear DNIe con NFC")
-            }
-        }
-    }
 }

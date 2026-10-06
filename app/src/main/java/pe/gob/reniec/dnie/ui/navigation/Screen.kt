@@ -4,6 +4,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.DriveFileRenameOutline
 import androidx.compose.material.icons.filled.Terminal
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.ui.graphics.vector.ImageVector
 
 /**
@@ -33,6 +36,10 @@ sealed class Screen(
     )
 
     companion object {
-        val items = listOf(Certificates, Signer, Console)
+        val items = listOf(Identity, Certificates, Signer, BatchSigner, Console)
     }
+
+    data object Identity : Screen("identity", "Identidad", Icons.Default.Person)
+    data object BatchSigner : Screen("batchSigner", "Lotes", Icons.AutoMirrored.Filled.LibraryBooks)
+    data object Vault : Screen("vault", "Bóveda", Icons.Default.Lock)
 }

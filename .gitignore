@@ -7,8 +7,10 @@
 .DS_Store
 /build
 **/build/
+**/node_modules/
 /captures
 .externalNativeBuild
 .cxx
 local.properties
 .agents/
+**/__pycache__/

@@ -7,6 +7,15 @@ import pe.gob.reniec.dnie.core.apdu.ResponseApdu
 import pe.gob.reniec.dnie.core.nfc.*
 
 class V3PkiSessionTest {
+    @Test fun decryptionCommandsMatchOfficialV3Profile() {
+        assertEquals("002241B8098401838004FF300100", V3PkiSession.decryptionEnvironment().toHexString(""))
+        val command = V3PkiSession.decipher(ByteArray(256) { it.toByte() })
+        assertEquals("002A808600010181", command.toHexString("").take(16))
+        assertEquals(266, command.toByteArray().size)
+        assertEquals(256, command.le)
+        assertTrue(command.isExtended)
+        assertThrows(IllegalArgumentException::class.java) { V3PkiSession.decipher(ByteArray(255)) }
+    }
     private fun ok(sw: Int = 0x9000) = ResponseApdu.fromBytes(byteArrayOf((sw shr 8).toByte(), sw.toByte()))
 
     @Test fun selectsIasThenPkiThenAuthenticatesThenSelectsPkiSecurely() {

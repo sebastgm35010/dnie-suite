@@ -1,559 +1,188 @@
 package pe.gob.reniec.dnie.ui.signer
 
 import android.content.Intent
-import android.net.Uri
-import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.DriveFileRenameOutline
-import androidx.compose.material.icons.filled.ErrorOutline
-import androidx.compose.material.icons.filled.FileOpen
-import androidx.compose.material.icons.filled.PictureAsPdf
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedCard
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import pe.gob.reniec.dnie.pdf.SignaturePreset
+import androidx.core.content.FileProvider
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import pe.gob.reniec.dnie.domain.signing.*
+import pe.gob.reniec.dnie.pdf.*
 import pe.gob.reniec.dnie.ui.components.CredentialsDialog
 import pe.gob.reniec.dnie.ui.components.NfcTapPromptSheet
-import pe.gob.reniec.dnie.ui.components.PinEntryDialog
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
-/**
- * Pantalla para la selección de documentos PDF y firma digital PAdES con DNIe.
- */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun SignerScreen(
-    viewModel: SignerViewModel,
-    modifier: Modifier = Modifier
-) {
-    val uiState by viewModel.uiState.collectAsState()
+fun SignerScreen(viewModel: SignerViewModel, batch: Boolean = false, onReadIdentity: () -> Unit = {}, onReadCertificates: () -> Unit = {}) {
     val context = LocalContext.current
-
-    // Selector SAF para abrir documento PDF
-    val openPdfLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri: Uri? ->
-        if (uri != null) {
-            var fileName = "documento.pdf"
-            var fileSize = 0L
-
-            context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
-                if (cursor.moveToFirst()) {
-                    if (nameIndex != -1) fileName = cursor.getString(nameIndex) ?: fileName
-                    if (sizeIndex != -1) fileSize = cursor.getLong(sizeIndex)
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val workspace by viewModel.workspace.collectAsStateWithLifecycle()
+    val busy = state is SignerUiState.EnteringPin || state is SignerUiState.AwaitingCard || state is SignerUiState.Signing
+    val editing = !busy && !workspace.importing && !workspace.exporting
+    var exportArtifact by remember { mutableStateOf<SignedArtifact?>(null) }
+    var exportPem by remember { mutableStateOf<Boolean?>(null) }
+    var showPlacement by remember { mutableStateOf(false) }
+    val save = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("*/*")) { uri ->
+        uri?.let { viewModel.export(context, it, exportArtifact, exportPem) }
+        exportArtifact = null; exportPem = null
+    }
+    val open = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris -> viewModel.importDocuments(context, uris) }
+    val openPdf = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let { viewModel.importDocuments(context, listOf(it), singlePdf = true) } }
+    Scaffold(topBar = { TopAppBar(title = { Text(if (batch) "Firma por lotes" else "Firma PDF") }) }) { padding ->
+        Column(Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(if (batch) "Varios documentos, una autorización" else "Tu firma, en el lugar que elijas", style = MaterialTheme.typography.titleLarge)
+                    Text(if (batch) "PDF con firma integrada y otros formatos con firma separada .p7s. La cola es independiente de Firmar PDF." else "Selecciona un PDF y coloca la firma en una vista previa a pantalla completa.")
+                    Button(enabled = editing, onClick = { if (batch) open.launch(arrayOf("*/*")) else openPdf.launch(arrayOf("application/pdf")) }) {
+                        Text(if (batch) "Añadir archivos" else if (workspace.documents.isEmpty()) "Seleccionar PDF" else "Cambiar PDF")
+                    }
+                    Text(if (batch) "Hasta 50 archivos · 256 MiB por archivo · 512 MiB por lote" else "Un PDF de hasta 256 MiB. Guarda el resultado antes de cambiar de documento.", style = MaterialTheme.typography.bodySmall)
+                    if (workspace.importing) LinearProgressIndicator(Modifier.fillMaxWidth())
+                    workspace.importErrors.forEach { Text(it, color = MaterialTheme.colorScheme.error) }
                 }
             }
-
-            viewModel.onDocumentSelected(
-                uri = uri,
-                name = fileName,
-                sizeBytes = fileSize,
-                pageCount = 1
-            )
-        }
-    }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Firmador PDF con DNIe") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            )
-        },
-        modifier = modifier
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Sección 1: Selector / Información del Documento
-            OutlinedCard(modifier = Modifier.fillMaxWidth()) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        text = "DOCUMENTO PDF",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    when (val state = uiState) {
-                        is SignerUiState.NoDocument -> {
-                            Button(
-                                onClick = { openPdfLauncher.launch(arrayOf("application/pdf")) },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Icon(imageVector = Icons.Default.FileOpen, contentDescription = null)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Seleccionar Documento PDF")
-                            }
-                        }
-
-                        is SignerUiState.DocumentLoaded,
-                        is SignerUiState.EnteringPin,
-                        is SignerUiState.AwaitingCard,
-                        is SignerUiState.Signing -> {
-                            val docName = when (state) {
-                                is SignerUiState.DocumentLoaded -> state.documentName
-                                is SignerUiState.EnteringPin -> state.documentName
-                                is SignerUiState.AwaitingCard -> state.documentName
-                                else -> "documento.pdf"
-                            }
-                            val docSize = when (state) {
-                                is SignerUiState.DocumentLoaded -> state.documentSizeBytes
-                                is SignerUiState.EnteringPin -> state.documentSizeBytes
-                                is SignerUiState.AwaitingCard -> state.documentSizeBytes
-                                else -> 0L
-                            }
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.PictureAsPdf,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.error,
-                                    modifier = Modifier.size(36.dp)
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = docName,
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        fontWeight = FontWeight.SemiBold,
-                                        maxLines = 1
-                                    )
-                                    Text(
-                                        text = "${docSize / 1024} KB",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+            if (workspace.documents.isNotEmpty()) {
+                Text(if (batch) "Documentos · " + workspace.documents.size else "Documento seleccionado", style = MaterialTheme.typography.titleMedium)
+                LazyColumn(Modifier.fillMaxWidth().heightIn(max = 320.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(workspace.documents, key = { it.id }) { doc ->
+                    val result = workspace.artifacts.firstOrNull { it.document.id == doc.id }
+                    OutlinedCard(onClick = { if (editing) viewModel.selectDocument(doc.id) }, modifier = Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text((if (doc.id == workspace.selectedId) "● " else "") + doc.name, style = MaterialTheme.typography.titleSmall)
+                            Text((if (doc.isPdf) "PDF · " + doc.pages.size + " páginas" else "Archivo · .p7s") + " · " + (doc.size / 1024) + " KiB", style = MaterialTheme.typography.bodySmall)
+                            if (result != null) Text(when (result.status) {
+                                DocumentSignStatus.SIGNED -> "Firmado ✓"
+                                DocumentSignStatus.FAILED -> "No firmado: " + result.message
+                                DocumentSignStatus.INTERRUPTED -> "Pendiente: " + result.message
+                            }, color = if (result.status == DocumentSignStatus.SIGNED) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error)
+                            Row {
+                                if (result?.status == DocumentSignStatus.SIGNED) {
+                                    TextButton(enabled = editing, onClick = { exportArtifact = result; exportPem = null; save.launch(requireNotNull(result.output).name) }) { Text("Guardar") }
+                                    TextButton(enabled = editing, onClick = {
+                                        val files = if (doc.isPdf) listOf(requireNotNull(result.output)) else listOf(doc.file, requireNotNull(result.output))
+                                        val uris = ArrayList(files.map { FileProvider.getUriForFile(context, context.packageName + ".fileprovider", it) })
+                                        val intent = Intent(if (files.size == 1) Intent.ACTION_SEND else Intent.ACTION_SEND_MULTIPLE).apply {
+                                            type = if (doc.isPdf) "application/pdf" else "*/*"
+                                            if (files.size == 1) putExtra(Intent.EXTRA_STREAM, uris[0]) else putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+                                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                            clipData = android.content.ClipData.newUri(context.contentResolver, "Firma", uris[0]).also { clip -> uris.drop(1).forEach { clip.addItem(android.content.ClipData.Item(it)) } }
+                                        }
+                                        runCatching { context.startActivity(Intent.createChooser(intent, "Compartir documento y firma")) }
+                                    }) { Text("Compartir") }
                                 }
-                                IconButton(onClick = { openPdfLauncher.launch(arrayOf("application/pdf")) }) {
-                                    Icon(imageVector = Icons.Default.Refresh, contentDescription = "Cambiar archivo")
-                                }
-                            }
-                        }
-
-                        else -> {
-                            Button(
-                                onClick = { openPdfLauncher.launch(arrayOf("application/pdf")) },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Icon(imageVector = Icons.Default.FileOpen, contentDescription = null)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Seleccionar Otro PDF")
+                                TextButton(enabled = editing, onClick = { viewModel.removeDocument(doc.id) }) { Text("Quitar") }
                             }
                         }
                     }
                 }
+                }
             }
-
-            // Sección 2: Parámetros de la Firma Digital (Visible cuando hay documento cargado)
-            val currentDoc = uiState as? SignerUiState.DocumentLoaded
-            if (currentDoc != null) {
-                OutlinedCard(modifier = Modifier.fillMaxWidth()) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Text(
-                            text = "PARÁMETROS DE LA FIRMA",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Bold
-                        )
-
-                        OutlinedTextField(
-                            value = currentDoc.reason,
-                            onValueChange = { viewModel.onReasonChanged(it) },
-                            label = { Text("Motivo de la firma") },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        OutlinedTextField(
-                            value = currentDoc.location,
-                            onValueChange = { viewModel.onLocationChanged(it) },
-                            label = { Text("Lugar (Ciudad, País)") },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        Text(
-                            text = "Posición del Estampado Visual:",
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.SemiBold
-                        )
-
-                        // Selector de Presets
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            SignaturePreset.entries.forEach { preset ->
-                                FilterChip(
-                                    selected = currentDoc.preset == preset,
-                                    onClick = { viewModel.onPresetSelected(preset) },
-                                    label = { Text(preset.displayName) }
-                                )
+            workspace.selected?.let { doc ->
+                val signed = workspace.artifacts.any { it.document.id == doc.id && it.status == DocumentSignStatus.SIGNED }
+                val enabled = editing && !signed
+                if (batch && doc.pages.isNotEmpty()) SwitchRow("Firmar este PDF como archivo separado (.p7s)", doc.detached, enabled, viewModel::setDetached)
+                if (doc.isPdf) {
+                    val config = doc.options
+                    val look = config.appearance
+                    Text("Sello · " + doc.name, style = MaterialTheme.typography.titleMedium)
+                    SwitchRow("Mostrar sello en el PDF", config.visible, enabled) { viewModel.updateOptions { c -> c.copy(visible = it) } }
+                    if (config.visible) {
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            StampStyle.entries.forEach { style ->
+                                FilterChip(selected = look.style == style, enabled = enabled, onClick = { viewModel.updateOptions { c -> c.copy(appearance = c.appearance.copy(style = style, showHandwritten = if (style == StampStyle.INK) true else c.appearance.showHandwritten)) } }, label = { Text(style.label) })
                             }
                         }
-
-                        // Vista previa gráfica del posicionamiento en la página
-                        SignaturePlacementPreviewBox(
-                            preset = currentDoc.preset,
-                            reason = currentDoc.reason,
-                            location = currentDoc.location
-                        )
+                        fun appearance(change: (SignatureAppearance) -> SignatureAppearance) { viewModel.updateOptions { it.copy(appearance = change(it.appearance)) } }
+                        if (look.style == StampStyle.HANDWRITTEN_ONLY) Text("Solo se verá la imagen manuscrita: sin texto, fondo añadido ni borde. La firma digital sigue incorporada en el PDF.", style = MaterialTheme.typography.bodySmall)
+                        else {
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilterChip(look.showDni, { appearance { it.copy(showDni = !it.showDni) } }, enabled = enabled, label = { Text("DNI") })
+                            FilterChip(look.showDate, { appearance { it.copy(showDate = !it.showDate) } }, enabled = enabled, label = { Text("Fecha") })
+                            FilterChip(look.showTime, { appearance { it.copy(showTime = !it.showTime) } }, enabled = enabled, label = { Text("Hora") })
+                            FilterChip(look.showReason, { appearance { it.copy(showReason = !it.showReason) } }, enabled = enabled, label = { Text("Motivo") })
+                            FilterChip(look.showLocation, { appearance { it.copy(showLocation = !it.showLocation) } }, enabled = enabled, label = { Text("Lugar") })
+                        }
+                        if (look.showReason) OutlinedTextField(config.reason, { text -> viewModel.updateOptions { it.copy(reason = text.take(160)) } }, enabled = enabled, label = { Text("Motivo") }, modifier = Modifier.fillMaxWidth())
+                        if (look.showLocation) OutlinedTextField(config.location, { text -> viewModel.updateOptions { it.copy(location = text.take(120)) } }, enabled = enabled, label = { Text("Lugar") }, modifier = Modifier.fillMaxWidth())
+                        SwitchRow("Incluir firma manuscrita del DNI", look.showHandwritten, enabled && (workspace.mark != null || look.showHandwritten)) { value -> appearance { it.copy(showHandwritten = value) } }
+                        }
+                        if (workspace.mark == null) {
+                            Text(workspace.markError ?: "Lee Identidad para obtener la imagen manuscrita (DG7), si está disponible.")
+                            OutlinedButton(enabled = editing, onClick = onReadIdentity) { Text("Leer firma manuscrita") }
+                        } else if (look.requiresHandwritten) {
+                            Text("Imagen ICAO: " + workspace.mark!!.sourceName + ". La imagen acompaña la firma digital realizada por el chip.", style = MaterialTheme.typography.bodySmall)
+                            SwitchRow("Confirmo que la imagen pertenece al titular que firmará", workspace.markConfirmed, enabled) { viewModel.confirmMark(it) }
+                        }
+                        Button(enabled = enabled && (!look.requiresHandwritten || workspace.mark != null), onClick = { showPlacement = true }, modifier = Modifier.fillMaxWidth()) { Text("Colocar sello · pantalla completa") }
+                        Text("Página " + config.pageNumber + " · Arrastrar, pellizcar y ajustar los bordes", style = MaterialTheme.typography.bodySmall)
+                        if (showPlacement && enabled) PdfPlacementEditor(doc, workspace.previewName, workspace.previewDni,
+                            config.copy(appearance = look.copy(handwrittenPng = if (look.requiresHandwritten) workspace.mark?.png else null)),
+                            onDismiss = { showPlacement = false }, onApply = { updated ->
+                                viewModel.updateOptions { updated.copy(appearance = updated.appearance.copy(handwrittenPng = null)) }
+                                showPlacement = false
+                            })
+                        if (batch) OutlinedButton(enabled = enabled, onClick = viewModel::applyOptionsToAll) { Text("Copiar configuración a los PDF pendientes") }
                     }
-                }
-
-                // Botón Principal: Firmar con DNIe (2 Pasos)
-                Button(
-                    onClick = { viewModel.startPinEntry() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
-                ) {
-                    Icon(imageVector = Icons.Default.DriveFileRenameOutline, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Firmar Documento con DNIe", fontSize = 16.sp)
-                }
+                } else Text("Este archivo se conservará intacto. Recibirás el original y su firma .p7s; no lleva sello visual.")
             }
-
-            // Sección 3: Banner de Éxito cuando se completó la firma
-            val successState = uiState as? SignerUiState.SignedSuccess
-            if (successState != null) {
-                val dateFormat = remember { SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault()) }
-
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color(0xFFE8F5E9)
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.CheckCircle,
-                                contentDescription = null,
-                                tint = Color(0xFF2E7D32),
-                                modifier = Modifier.size(28.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "¡Documento Firmado Exitosamente!",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF1B5E20)
-                            )
-                        }
-
-                        HorizontalDivider(color = Color(0xFFC8E6C9))
-
-                        DetailLine(label = "Firmante:", value = successState.signerName)
-                        DetailLine(label = "DNI:", value = successState.signerDni)
-                        DetailLine(label = "Fecha:", value = dateFormat.format(Date(successState.timestamp)))
-                        DetailLine(label = "Tamaño de Firma:", value = "${successState.signatureSize} bytes")
-                        if (successState.signedFilePath != null) {
-                            DetailLine(label = "Guardado en:", value = successState.signedFilePath)
-                        }
-
-                        // Botón de Compartir PDF Firmado
-                        if (successState.signedFileUri != null) {
-                            Button(
-                                onClick = {
-                                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                        type = "application/pdf"
-                                        putExtra(Intent.EXTRA_STREAM, successState.signedFileUri)
-                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                    }
-                                    context.startActivity(Intent.createChooser(shareIntent, "Compartir PDF Firmado"))
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFF2E7D32)
-                                )
-                            ) {
-                                Icon(imageVector = Icons.Default.Share, contentDescription = null)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Compartir Documento Firmado")
-                            }
-                        }
-
-                        OutlinedButton(
-                            onClick = { viewModel.reset() },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Firmar Otro Documento")
+            OutlinedCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Certificado público", style = MaterialTheme.typography.titleMedium)
+                    Text(if (workspace.certificate == null) "Lee los certificados para previsualizar el nombre real y exportarlos." else workspace.previewName)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(enabled = editing, onClick = onReadCertificates) { Text("Leer certificados") }
+                        if (workspace.certificate != null) {
+                            TextButton(enabled = editing, onClick = { exportPem = false; exportArtifact = null; save.launch("certificado_firma.cer") }) { Text("CER") }
+                            TextButton(enabled = editing, onClick = { exportPem = true; exportArtifact = null; save.launch("certificado_firma.pem") }) { Text("PEM") }
                         }
                     }
+                    Text("Se exporta el certificado público; la clave privada permanece en el DNI.", style = MaterialTheme.typography.bodySmall)
                 }
             }
-
-            // Sección 4: Banner de Error si falló la operación
-            val errorState = uiState as? SignerUiState.Error
-            if (errorState != null) {
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.ErrorOutline,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Error al firmar",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onErrorContainer
-                            )
-                        }
-                        Text(
-                            text = errorState.message,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onErrorContainer
-                        )
-                        Button(
-                            onClick = { viewModel.reset() },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.error
-                            )
-                        ) {
-                            Text("Aceptar y Volver")
-                        }
-                    }
-                }
+            if (state is SignerUiState.Signing) {
+                val progress = state as SignerUiState.Signing
+                Text(progress.message)
+                LinearProgressIndicator(Modifier.fillMaxWidth())
+                OutlinedButton(onClick = viewModel::cancelSigning) { Text(if (batch) "Cancelar; conservar firmados" else "Cancelar firma") }
             }
+            if (state is SignerUiState.Error) Text((state as SignerUiState.Error).message, color = MaterialTheme.colorScheme.error)
+            workspace.exportMessage?.let { Text(it) }
+            if (workspace.exporting) LinearProgressIndicator(Modifier.fillMaxWidth())
+            if (workspace.pending.isNotEmpty()) {
+                Text(if (batch) "Al continuar autorizas la firma de los " + workspace.pending.size + " archivos pendientes. Mantén el DNI sobre el sensor durante todo el lote." else "Autoriza la firma de este PDF y mantén el DNI inmóvil hasta terminar.", style = MaterialTheme.typography.bodySmall)
+                Button(enabled = editing, modifier = Modifier.fillMaxWidth(), onClick = { viewModel.restoreEditor(); viewModel.startPinEntry() }) { Text(if (batch) "Firmar " + workspace.pending.size + " archivo(s)" else "Firmar PDF") }
+            }
+            if (batch && workspace.artifacts.any { it.status == DocumentSignStatus.SIGNED }) {
+                Text(workspace.artifacts.count { it.status == DocumentSignStatus.SIGNED }.toString() + " firmados · " + workspace.pending.size + " pendientes", style = MaterialTheme.typography.titleMedium)
+                Button(enabled = editing, modifier = Modifier.fillMaxWidth(), onClick = { exportArtifact = null; exportPem = null; save.launch("documentos_firmados.zip") }) { Text("Guardar lote completo · ZIP") }
+            }
+            if (workspace.documents.isNotEmpty()) TextButton(enabled = editing, onClick = viewModel::reset) { Text(if (batch) "Vaciar lote" else "Quitar PDF") }
+            Spacer(Modifier.height(24.dp))
         }
     }
-
-    // Paso 1: Diálogo de Pre-ingreso de Credenciales (CAN de 6 dígitos + PIN de 6 dígitos)
-    val enteringPinState = uiState as? SignerUiState.EnteringPin
-    CredentialsDialog(
-        show = enteringPinState != null,
-        title = "Credenciales para Firma Digital",
-        subtitle = "Ingrese el código CAN (6 dígitos en el frente del DNIe) y su PIN de firma digital antes de aproximar el documento al lector NFC.",
-        requireCan = true,
-        requirePin = true,
-        initialCan = enteringPinState?.initialCan ?: viewModel.enteredCan ?: "",
-        onConfirm = { can, pin -> viewModel.onCredentialsConfirmed(can, pin) },
-        onDismiss = { viewModel.cancelPinEntry() }
-    )
-
-    // Paso 2: Bottom Sheet de Escaneo NFC
-    val isScanningOrSigning = uiState is SignerUiState.AwaitingCard || uiState is SignerUiState.Signing
-    val promptMessage = when (val state = uiState) {
-        is SignerUiState.AwaitingCard -> "Aproxime su DNIe para verificar PIN y generar firma digital..."
-        is SignerUiState.Signing -> state.message
-        else -> ""
-    }
-
-    NfcTapPromptSheet(
-        isShowing = isScanningOrSigning,
-        statusMessage = promptMessage,
-        onCancel = { viewModel.cancelAwaitingCard() }
-    )
-}
-
-/**
- * Previsualizador gráfico del posicionamiento del sello de firma en una página PDF simulada.
- */
-@Composable
-private fun SignaturePlacementPreviewBox(
-    preset: SignaturePreset,
-    reason: String,
-    location: String
-) {
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-        shape = MaterialTheme.shapes.small,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(
-                text = "Previsualización de Posicionamiento:",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.outline
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            if (preset == SignaturePreset.INVISIBLE) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(80.dp)
-                        .border(1.dp, MaterialTheme.colorScheme.outline, MaterialTheme.shapes.extraSmall)
-                        .background(Color.White),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Firma Digital Invisible (PAdES Detached sin estampado gráfico)",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline,
-                        textAlign = TextAlign.Center
-                    )
-                }
-            } else {
-                // Hoja simulada (aspect ratio de una página)
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(140.dp)
-                        .border(1.dp, MaterialTheme.colorScheme.outline, MaterialTheme.shapes.extraSmall)
-                        .background(Color.White)
-                        .padding(8.dp)
-                ) {
-                    val boxAlignment = when (preset) {
-                        SignaturePreset.BOTTOM_RIGHT -> Alignment.BottomEnd
-                        SignaturePreset.BOTTOM_LEFT -> Alignment.BottomStart
-                        SignaturePreset.TOP_RIGHT -> Alignment.TopEnd
-                        SignaturePreset.TOP_LEFT -> Alignment.TopStart
-                        SignaturePreset.CUSTOM -> Alignment.Center
-                        SignaturePreset.INVISIBLE -> Alignment.Center
-                    }
-
-                    // Sello simulado
-                    Box(
-                        modifier = Modifier
-                            .align(boxAlignment)
-                            .width(180.dp)
-                            .border(1.dp, MaterialTheme.colorScheme.primary, MaterialTheme.shapes.extraSmall)
-                            .background(Color(0xFFF0F4FF))
-                            .padding(6.dp)
-                    ) {
-                        Column {
-                            Text(
-                                text = "FIRMADO CON DNIe",
-                                fontSize = 8.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Text(
-                                text = "Titular: [DNIe Ciudadano]",
-                                fontSize = 7.sp,
-                                color = Color.DarkGray
-                            )
-                            Text(
-                                text = "Motivo: $reason",
-                                fontSize = 7.sp,
-                                maxLines = 1,
-                                color = Color.DarkGray
-                            )
-                            Text(
-                                text = "Lugar: $location",
-                                fontSize = 7.sp,
-                                maxLines = 1,
-                                color = Color.DarkGray
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
+    CredentialsDialog(show = state is SignerUiState.EnteringPin, title = if (batch) "Autorizar firma del lote" else "Autorizar firma PDF",
+        subtitle = if (batch) "Se firmarán " + workspace.pending.size + " archivos." else workspace.selected?.name, requireCan = true, requirePin = true,
+        initialCan = (state as? SignerUiState.EnteringPin)?.initialCan ?: "",
+        onConfirm = viewModel::onCredentialsConfirmed, onDismiss = viewModel::cancelPinEntry)
+    NfcTapPromptSheet(isShowing = state is SignerUiState.AwaitingCard,
+        statusMessage = if (batch) "Acerca el DNI y mantenlo inmóvil hasta terminar el lote." else "Acerca el DNI y mantenlo inmóvil hasta terminar la firma.", onCancel = viewModel::cancelAwaitingCard)
 }
 
 @Composable
-private fun DetailLine(label: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF1B5E20)
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodySmall,
-            color = Color(0xFF2E7D32),
-            maxLines = 1
-        )
+private fun SwitchRow(text: String, checked: Boolean, enabled: Boolean, change: (Boolean) -> Unit) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(text, modifier = Modifier.weight(1f).padding(top = 12.dp, end = 8.dp))
+        Switch(checked = checked, onCheckedChange = change, enabled = enabled)
     }
 }

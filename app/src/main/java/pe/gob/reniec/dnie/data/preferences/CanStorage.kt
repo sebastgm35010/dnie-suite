@@ -1,9 +1,9 @@
-package pe.gob.reniec.dnie.ui.components
+package pe.gob.reniec.dnie.data.preferences
 
 import android.content.Context
 
 /**
- * Gestor de persistencia segura local para el CAN (Card Access Number).
+ * Gestor de persistencia privada local para el CAN (Card Access Number).
  * Permite recordar el CAN del DNIe 3.0 en SharedPreferences para agilizar lecturas posteriores.
  */
 object CanStorage {

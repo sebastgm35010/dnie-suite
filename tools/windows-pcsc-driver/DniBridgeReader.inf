@@ -1,0 +1,54 @@
+[Version]
+Signature="$WINDOWS NT$"
+Class=SmartCardReader
+ClassGuid={50DD5230-BA8A-11D1-BF5D-0000F805F530}
+Provider=%Provider%
+DriverVer=10/05/2026,2.0.0.2
+CatalogFile=DniBridgeReader.cat
+PnpLockdown=1
+
+[Manufacturer]
+%Provider%=Models,NTamd64.10.0...17134
+
+[Models.NTamd64.10.0...17134]
+%Device%=Install,Root\DNIeBridgeReader
+
+[SourceDisksNames]
+1=%Disk%,,,
+[SourceDisksFiles]
+DniBridgeReader.dll=1
+[DestinationDirs]
+DriverCopy=13
+
+[Install.NT]
+Include=WUDFRD.inf
+Needs=WUDFRD.NT
+CopyFiles=DriverCopy
+[DriverCopy]
+DniBridgeReader.dll
+
+[Install.NT.HW]
+Include=WUDFRD.inf
+Needs=WUDFRD.NT.HW
+AddReg=Security
+[Security]
+; Backend: SYSTEM. PC/SC: only the built-in SCardSvr service SID, not all LocalService.
+HKR,,Security,,"D:P(A;;GA;;;SY)(A;;GRGW;;;S-1-5-80-1209419826-1829913269-3824447628-1153237837-3789837839)"
+
+[Install.NT.Services]
+Include=WUDFRD.inf
+Needs=WUDFRD.NT.Services
+
+[Install.NT.Wdf]
+UmdfService=DniBridgeReader,DriverService
+UmdfServiceOrder=DniBridgeReader
+UmdfKernelModeClientPolicy=AllowKernelModeClients
+UmdfFileObjectPolicy=AllowNullAndUnknownFileObjects
+[DriverService]
+UmdfLibraryVersion=2.15.0
+ServiceBinary=%13%\DniBridgeReader.dll
+
+[Strings]
+Provider="DNIe Bridge contributors"
+Device="DNIe Android NFC Private Smart Card Reader"
+Disk="DNIe Bridge development files"

@@ -1,0 +1,9 @@
+build/
+bin/
+obj/
+*.pfx
+*.cer
+*.cat
+*.dll
+*.pdb
+*.sys

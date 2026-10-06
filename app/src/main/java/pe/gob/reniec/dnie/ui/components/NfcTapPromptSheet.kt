@@ -35,7 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -101,9 +101,15 @@ fun NfcTapPromptSheet(
                 Box(
                     modifier = Modifier
                         .size(90.dp)
-                        .scale(waveScale)
+                        // Read animated values during drawing, rather than
+                        // recomposing the sheet and its text every frame.
+                        .graphicsLayer {
+                            scaleX = waveScale
+                            scaleY = waveScale
+                            alpha = waveAlpha
+                        }
                         .background(
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = waveAlpha),
+                            color = MaterialTheme.colorScheme.primary,
                             shape = CircleShape
                         )
                 )

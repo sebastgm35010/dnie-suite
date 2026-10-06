@@ -43,4 +43,15 @@ internal object V3PkiSession {
         require(hash.size == 32)
         return CommandApdu(0, 0x2A, 0x9E.toByte(), 0x9A.toByte(), hash, le = 256)
     }
+
+    /** RENIEC 2025_0014 section 3; experimental over PACE/NFC. */
+    fun decryptionEnvironment() = CommandApdu(0, 0x22, 0x41, 0xB8.toByte(),
+        byteArrayOf(0x84.toByte(), 1, 0x83.toByte(), 0x80.toByte(), 4,
+            0xFF.toByte(), 0x30, 1, 0))
+
+    fun decipher(ciphertext: ByteArray): CommandApdu {
+        require(ciphertext.size == 256) { "El perfil experimental requiere RSA-2048" }
+        return CommandApdu(0, 0x2A, 0x80.toByte(), 0x86.toByte(),
+            byteArrayOf(0x81.toByte()) + ciphertext, le = 256, extended = true)
+    }
 }

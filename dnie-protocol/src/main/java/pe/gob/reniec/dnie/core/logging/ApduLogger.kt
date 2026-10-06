@@ -15,7 +15,8 @@ import java.util.Collections
  * reactivo con replay para la UI de consola de diagnóstico (Milestone 4).
  */
 class ApduLogger(
-    private val maxHistorySize: Int = DEFAULT_MAX_HISTORY
+    private val maxHistorySize: Int = DEFAULT_MAX_HISTORY,
+    private val enabled: Boolean = true
 ) {
     private val _events = MutableSharedFlow<ApduLogEntry>(
         replay = 50,
@@ -28,6 +29,7 @@ class ApduLogger(
     private val historyList = Collections.synchronizedList(ArrayList<ApduLogEntry>())
 
     fun log(entry: ApduLogEntry) {
+        if (!enabled) return
         synchronized(historyList) {
             if (historyList.size >= maxHistorySize) {
                 historyList.removeAt(0)
@@ -38,6 +40,8 @@ class ApduLogger(
     }
 
     fun logTx(command: CommandApdu, description: String) {
+        pe.gob.reniec.dnie.diagnostics.DiagnosticLog.event("apdu", "tx", "header" to byteArrayOf(command.cla, command.ins, command.p1, command.p2).joinToString("") { "%02X".format(it) })
+        if (!enabled) return
         val entry = ApduLogEntry(
             direction = ApduDirection.TX,
             apduHex = if (command.ins == 0x20.toByte()) {
@@ -53,11 +57,14 @@ class ApduLogger(
     fun logRx(
         response: ResponseApdu,
         durationMs: Long? = null,
-        description: String = response.statusWord.description
+        description: String = response.statusWord.description,
+        redactData: Boolean = false
     ) {
+        pe.gob.reniec.dnie.diagnostics.DiagnosticLog.event("apdu", "rx", "status" to response.statusWordHex, "durationMs" to durationMs)
+        if (!enabled) return
         val entry = ApduLogEntry(
             direction = ApduDirection.RX,
-            apduHex = response.toHexString(),
+            apduHex = if (redactData) "[DATOS PRIVADOS OCULTOS] ${response.statusWordHex}" else response.toHexString(),
             statusWordHex = response.statusWordHex,
             description = description,
             durationMs = durationMs,
@@ -67,6 +74,7 @@ class ApduLogger(
     }
 
     fun logInfo(message: String) {
+        if (!enabled) return
         val entry = ApduLogEntry(
             direction = ApduDirection.INFO,
             apduHex = "",

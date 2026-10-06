@@ -4,12 +4,6 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
-import android.media.AudioManager
-import android.media.ToneGenerator
-import android.os.Build
-import android.os.VibrationEffect
-import android.os.Vibrator
-import android.os.VibratorManager
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,6 +11,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import pe.gob.reniec.dnie.core.logging.ApduDirection
 import pe.gob.reniec.dnie.core.logging.ApduLogEntry
 import pe.gob.reniec.dnie.core.logging.ApduLogger
@@ -24,107 +20,15 @@ import pe.gob.reniec.dnie.core.nfc.DnieCardChannel
 import pe.gob.reniec.dnie.core.nfc.DnieTransceiver
 
 /**
- * Filtro de dirección para la consola de tramas APDU.
- */
-enum class ConsoleFilter {
-    ALL,
-    TX,
-    RX
-}
-
-/**
- * Estado inmutable de la consola de diagnóstico APDU.
- */
-data class ConsoleUiState(
-    val entries: List<ApduLogEntry> = emptyList(),
-    val filter: ConsoleFilter = ConsoleFilter.ALL,
-    val autoScroll: Boolean = true,
-    val isProbing: Boolean = false
-) {
-    val filteredEntries: List<ApduLogEntry>
-        get() = when (filter) {
-            ConsoleFilter.ALL -> entries
-            ConsoleFilter.TX -> entries.filter { it.direction == ApduDirection.TX }
-            ConsoleFilter.RX -> entries.filter { it.direction == ApduDirection.RX }
-        }
-}
-
-/**
- * Contrato para feedback sonoro y háptico desacoplado.
- */
-interface FeedbackDispatcher {
-    fun playSuccess()
-    fun playError()
-}
-
-/**
- * Implementación de feedback háptico y sonoro para Android.
- */
-class AndroidFeedbackDispatcher(private val context: Context) : FeedbackDispatcher {
-    private var toneGen: ToneGenerator? = null
-
-    init {
-        try {
-            toneGen = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 80)
-        } catch (_: Exception) {}
-    }
-
-    override fun playSuccess() {
-        try {
-            toneGen?.startTone(ToneGenerator.TONE_PROP_ACK, 120)
-        } catch (_: Exception) {}
-
-        try {
-            val vibrator = getVibrator()
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator?.vibrate(VibrationEffect.createOneShot(80, VibrationEffect.DEFAULT_AMPLITUDE))
-            } else {
-                @Suppress("DEPRECATION")
-                vibrator?.vibrate(80)
-            }
-        } catch (_: Exception) {}
-    }
-
-    override fun playError() {
-        try {
-            toneGen?.startTone(ToneGenerator.TONE_PROP_NACK, 250)
-        } catch (_: Exception) {}
-
-        try {
-            val vibrator = getVibrator()
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator?.vibrate(
-                    VibrationEffect.createWaveform(
-                        longArrayOf(0, 100, 80, 150),
-                        intArrayOf(0, 255, 0, 255),
-                        -1
-                    )
-                )
-            } else {
-                @Suppress("DEPRECATION")
-                vibrator?.vibrate(longArrayOf(0, 100, 80, 150), -1)
-            }
-        } catch (_: Exception) {}
-    }
-
-    private fun getVibrator(): Vibrator? {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val vm = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
-            vm?.defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
-        }
-    }
-}
-
-/**
  * ViewModel reactivo para la consola de diagnóstico APDU ISO 7816-4.
  */
 class ConsoleViewModel(
     private val apduLogger: ApduLogger = ApduLogger.default,
-    var feedbackDispatcher: FeedbackDispatcher? = null
+    var feedbackDispatcher: FeedbackDispatcher? = null,
+    private val logDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) : ViewModel() {
+    private var probeJob: kotlinx.coroutines.Job? = null
+    val busy: Boolean get() = probeJob?.isActive == true
 
     private val _uiState = MutableStateFlow(
         ConsoleUiState(entries = apduLogger.getHistory())
@@ -132,20 +36,14 @@ class ConsoleViewModel(
     val uiState: StateFlow<ConsoleUiState> = _uiState.asStateFlow()
 
     init {
-        viewModelScope.launch {
+        viewModelScope.launch(logDispatcher) {
             apduLogger.logStream.collect { newEntry ->
                 _uiState.update { current ->
-                    current.copy(entries = current.entries + newEntry)
+                    current.copy(entries = (current.entries + newEntry).takeLast(ApduLogger.DEFAULT_MAX_HISTORY))
                 }
 
-                if (newEntry.direction == ApduDirection.RX) {
-                    val sw = newEntry.statusWordHex?.uppercase() ?: ""
-                    if (sw == "9000" || sw.startsWith("90 00") || newEntry.isSuccess) {
-                        feedbackDispatcher?.playSuccess()
-                    } else if (sw.startsWith("6983") || sw.startsWith("69 83") || sw.startsWith("63C") || sw.startsWith("63 C") || !newEntry.isSuccess) {
-                        feedbackDispatcher?.playError()
-                    }
-                }
+                // Logs from signing/vault also reach this bus. Feedback belongs to
+                // the complete foreground operation, never every physical/logical RX.
             }
         }
     }
@@ -248,16 +146,19 @@ class ConsoleViewModel(
      * Ejecuta el sondeo completo de AIDs sobre el canal de tarjeta detectado.
      */
     fun onCardDetected(channel: DnieCardChannel) {
+        if (busy) { viewModelScope.launch(Dispatchers.IO) { runCatching { channel.close() } }; return }
         val can = canProvider?.invoke()
         val transceiver = DnieTransceiver(channel, apduLogger, can = can)
-        viewModelScope.launch {
+        probeJob = viewModelScope.launch {
             try {
                 feedbackDispatcher?.playSuccess()
                 transceiver.probeAllAids()
+                feedbackDispatcher?.playSuccess()
             } catch (e: Exception) {
                 feedbackDispatcher?.playError()
                 apduLogger.logInfo("Error durante el sondeo: ${e.message}")
             } finally {
+                transceiver.close()
                 isProbeActive = false
                 _uiState.update { it.copy(isProbing = false) }
             }

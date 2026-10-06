@@ -12,8 +12,8 @@ android {
         applicationId = "pe.gob.reniec.dnie.evolution"
         minSdk = 24
         targetSdk = 34
-        versionCode = 10
-        versionName = "1.1.0-dev"
+        versionCode = 47
+        versionName = "1.8.14-reniec-pki"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -94,10 +94,18 @@ tasks.register<Copy>("exportBranchApk") {
 }
 
 dependencies {
+    implementation("androidx.biometric:biometric:1.1.0")
+    implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
     implementation(project(":dnie-core"))
     implementation(project(":dnie-protocol"))
     implementation(project(":dnie-nfc"))
+    implementation(project(":dnie-bridge-android"))
     implementation(project(":dnie-pdf"))
+    implementation(project(":dnie-icao"))
+    implementation(project(":dnie-vault-core"))
+    implementation(project(":dnie-passkeys-android"))
+    implementation("com.google.crypto.tink:tink-android:1.23.0")
+    implementation("com.github.Tgo1014:JP2ForAndroid:1.0.4")
     // AndroidX & Lifecycle
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.5")
@@ -128,6 +136,7 @@ dependencies {
 
     // Testing
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20240303")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")

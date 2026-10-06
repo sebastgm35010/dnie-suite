@@ -30,12 +30,26 @@ class DnieTransceiver(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     var can: String? = null,
     var pin: String? = null
-) : DnieTransceiverInterface {
+) : VaultProbeCard {
 
     private var secureChannel: PaceSecureChannel? = null
+    @Volatile private var closed = false
+
+    override fun close() {
+        closed = true
+        secureChannel = null
+        can = null
+        pin = null
+        isV3Pki = false
+        v3PinVerified = false
+        activeAppletName = null
+        channel.close()
+    }
     private var isV3Pki = false
+    private var v3PinVerified = false
 
     private fun openV3Pki(): Boolean {
+        requireOpen()
         if (isV3Pki) return true
         // A secure ICAO session cannot be reused for IAS. Never send plain APDUs
         // while that session is active; a fresh tag connection is required.
@@ -59,6 +73,7 @@ class DnieTransceiver(
     }
 
     private fun requirePersonalPki() {
+        requireOpen()
         if (isIcaoMode) throw CardProtocolException(
             "Canal ICAO detectado. No se encontró PKI personal entre los AIDs probados. " +
                 "EF.SOD contiene el certificado del emisor del documento, no el certificado de firma del titular. " +
@@ -69,6 +84,10 @@ class DnieTransceiver(
     var activeAppletName: String? = null
         private set
 
+    private fun requireOpen() {
+        if (closed) throw CardDisconnectedException("La sesión NFC ya está cerrada; acerque el DNI para una nueva conexión")
+    }
+
     val isIcaoMode: Boolean
         get() = activeAppletName?.contains("ICAO", ignoreCase = true) == true
 
@@ -76,6 +95,7 @@ class DnieTransceiver(
      * Envía un comando APDU por el canal físico, midiendo el tiempo de respuesta y registrando en el logger.
      */
     private fun transceiveWithLogging(command: CommandApdu, description: String): ResponseApdu {
+        requireOpen()
         logger.logTx(command, description)
         val startTime = System.currentTimeMillis()
         val rawResponse = try {
@@ -87,7 +107,9 @@ class DnieTransceiver(
         }
         val duration = System.currentTimeMillis() - startTime
         val response = ResponseApdu.fromBytes(rawResponse)
-        logger.logRx(response, duration, description)
+        val privateResponse = command.ins == 0x2A.toByte() && command.p1 == 0x80.toByte() && command.p2 == 0x86.toByte()
+        if (privateResponse) rawResponse.fill(0)
+        logger.logRx(response, duration, description, redactData = privateResponse)
         return response
     }
 
@@ -481,6 +503,7 @@ class DnieTransceiver(
         runCatching {
             requirePersonalPki()
             // Validación sintáctica previa antes de impactar el chip físico
+            v3PinVerified = false
             if (!pin.all { it.isDigit() } || pin.length !in 4..8) {
                 throw IllegalArgumentException("El PIN debe tener entre 4 y 8 dígitos numéricos")
             }
@@ -491,6 +514,7 @@ class DnieTransceiver(
 
             when {
                 resp.isSuccess -> {
+                    if (isV3Pki) v3PinVerified = true
                     PinVerificationResult.Success
                 }
                 (resp.sw and 0xFFF0) == StatusWord.SW_PIN_RETRY_BASE -> {
@@ -559,6 +583,40 @@ class DnieTransceiver(
 
             signature
         }
+    }
+
+    override fun requireVaultProbeSupport(): Result<Unit> = runCatching {
+        requirePersonalPki()
+        check(isV3Pki && secureChannel != null) { "Esta prueba requiere el perfil PKI del DNIe v3" }
+        check(channel.extendedLengthSupported && channel.maxCommandLength >= 300) {
+            "El lector NFC no admite el comando extendido de esta prueba (300 bytes)"
+        }
+    }
+
+    /** Probe uses a fresh synthetic envelope; file restoration uses the selected local
+     * container envelope. Both require explicit same-session PIN authorization.
+     * No padding fallback, command retry or plaintext response logging.
+     */
+    override suspend fun decipherTestSecret(ciphertext: ByteArray): Result<ByteArray> = unwrapVaultKey(ciphertext)
+
+    override suspend fun unwrapVaultKey(ciphertext: ByteArray): Result<ByteArray> = withContext(ioDispatcher) {
+        runCatching {
+            requirePersonalPki()
+            requireVaultProbeSupport().getOrThrow()
+            check(isV3Pki && secureChannel != null && v3PinVerified) {
+                "La prueba requiere DNIe v3, PACE y PIN verificado en esta sesión"
+            }
+            require(ciphertext.size == 256) { "La prueba requiere un bloque RSA-2048" }
+            v3PinVerified = false
+            val mse = transceiveWithLogging(V3PkiSession.decryptionEnvironment(), "Bóveda LAB: MSE descifrado v3 (clave 83)")
+            if (!mse.isSuccess) throw CryptoOperationException("No se pudo preparar el descifrado experimental", mse.sw)
+            val response = transceiveWithLogging(V3PkiSession.decipher(ciphertext), "Bóveda LAB: PSO DECIPHER extendido; respuesta privada oculta")
+            if (!response.isSuccess || response.data.size != 32) {
+                response.data.fill(0)
+                throw CryptoOperationException("No se pudo recuperar el secreto de prueba", response.sw)
+            }
+            response.data
+        }.onFailure { close() }
     }
 
     /**
