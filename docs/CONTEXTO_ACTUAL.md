@@ -8,6 +8,8 @@ Commit10089b4, tag checkpoint/firma-windows-1.8.14. APK1.8.14-reniec-pki(47) pre
 
 Android18: Java original RENIEC obtuvo identidad y certificados Fir/Aut mediante selector de lector por proceso. Android21: Firma Peru genero PDF con firma SHA256_RSA valida, cobertura completa e integridad verificada con pyHanko. 56/56 comandos respondidos, cierre manual. Ver [evidencia de firma](architecture/RESULTADO_ANDROID21_FIRMA_PERU_VALIDADA.md) y [checkpoint](architecture/CHECKPOINT_MOTOR_FIRMA_WINDOWS_1_8_14.md).
 
+Lectura/exportacion IDplug adicional: biblioteca PKCS11 propia confirmada; slot1 correcto, slot3 TOKEN_NOT_RECOGNIZED (mapeo lector no concluyente). Exportados3CA+3personales CIF/FIR/AUT;5.cer coincide con firmante del PDFAndroid21. Sin C_Login/C_Sign en esta ventana. Ver [resultado IDplug](architecture/RESULTADO_IDPLUG_EXPORTACION_CERTIFICADOS.md).
+
 ## Trabajo de limpieza
 
 Primera extraccion estructural: PcResponseFragments separa fragmentacion PC/GET RESPONSE del endpoint PACE. APK de desarrollo1.8.15-core-cleanup(48), distinto de la referencia probada. No cambia consultas PIN, reset, autenticacion ni permite SM obsoleto. 185 pruebas aprobadas,2 omitidas; arquitectura aprobada y APK compilado, no instalado ni probado con DNI aun. Detalles en [limpieza del motor](architecture/LIMPIEZA_MOTOR_ETAPA_1.md).
