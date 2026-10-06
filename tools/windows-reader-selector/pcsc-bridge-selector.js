@@ -1,6 +1,6 @@
 'use strict';
 
-// Temporary process-local test filter. Attach only to the RENIEC Java child.
+// Process-local reader filter. Attach only to the RENIEC Java child.
 // Preserve API failures and card responses; never read APDU or process arguments.
 const bridge = 'DNIe Bridge Android NFC Private Reader 0';
 const hooks = new Set();

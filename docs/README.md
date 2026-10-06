@@ -4,7 +4,10 @@ Los registros de entregas anteriores permanecen en su ubicación original para c
 
 ## Entrada al proyecto
 
-- [Contexto vigente 1.8.2](CONTEXTO_ACTUAL.md): capacidades, evidencia, QR del puente y pendientes actuales; empezar por aquí.
+- [Contexto vigente](CONTEXTO_ACTUAL.md): referencia fisica y candidata2.0; empezar por aqui.
+- [Consolidacion 2.0.0-rc1](architecture/CONSOLIDACION_2_0_RC1.md): cambios, pruebas y artefactos.
+- [Plan 2.0 y redisenio 3.0](architecture/PLAN_VERSIONES_2_Y_3.md).
+- [Motor y responsabilidades](architecture/MOTOR_FUNCIONAL.md).
 - [Cambios y validación del QR 1.8.1](architecture/EMPAREJAMIENTO_QR_1_8_1.md).
 - [Revisión del diagnóstico 6](architecture/DIAGNOSTICO_PUENTE_QR_6.md): prueba real, evidencia de autenticación/NFC y límites del registro.
 - [Sesión PC/SC 1.8.2](architecture/SESION_PCSC_1_8_2.md): backend integrado, pulsos, reset y prueba instalada por TLS.

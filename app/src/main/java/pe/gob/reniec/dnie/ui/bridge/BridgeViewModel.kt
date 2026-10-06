@@ -14,17 +14,21 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import pe.gob.reniec.dnie.bridge.android.BridgeConnection
 import pe.gob.reniec.dnie.bridge.android.BridgePairing
+import pe.gob.reniec.dnie.bridge.BridgeMode
 import pe.gob.reniec.dnie.data.bridge.BridgeAndroidAdapter
 import pe.gob.reniec.dnie.data.preferences.CanStorage
 import pe.gob.reniec.dnie.diagnostics.DiagnosticLog
 data class BridgeUiState(
     val peer: String = "", val fingerprint: String = "", val can: String = "",
     val armed: Boolean = false, val busy: Boolean = false,
-    val traceAvailable: Boolean = false, val windowsPace: Boolean = false, val translatePace: Boolean = false,
+    val traceAvailable: Boolean = false, val mode: BridgeMode = BridgeMode.TRANSLATED_ANDROID_PACE,
     val tailscale: Boolean = false,
     val tailnetHost: String = "sebas-laptop.tail2752e9.ts.net",
     val message: String = "Escanea el QR mostrado en la PC o importa el emparejamiento."
-)
+) {
+    val windowsPace get() = mode.windowsPace
+    val translatePace get() = mode.translatePace
+}
 /** Coordinates import and exclusive foreground sessions; secrets never enter Compose state. */
 class BridgeViewModel(application: Application) : AndroidViewModel(application) {
     private val mutable = MutableStateFlow(BridgeUiState(can = CanStorage.getSavedCan(application)))
@@ -35,8 +39,8 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
     private var task: Job? = null
     @Volatile private var connection: BridgeConnection? = null
     @Volatile private var generation = 0
-    fun translatePace(value: Boolean) { if (!mutable.value.busy && !mutable.value.armed && !mutable.value.windowsPace) mutable.update { it.copy(translatePace = value) } }
-    fun windowsPace(value: Boolean) { if (!mutable.value.busy && !mutable.value.armed) mutable.update { it.copy(windowsPace = value, translatePace = false) } }
+    fun translatePace(value: Boolean) { if (!mutable.value.busy && !mutable.value.armed && !mutable.value.windowsPace) mutable.update { it.copy(mode = if (value) BridgeMode.TRANSLATED_ANDROID_PACE else BridgeMode.LOGICAL_ANDROID_PACE) } }
+    fun windowsPace(value: Boolean) { if (!mutable.value.busy && !mutable.value.armed) mutable.update { it.copy(mode = if (value) BridgeMode.DIRECT_WINDOWS_PACE else BridgeMode.TRANSLATED_ANDROID_PACE) } }
     fun can(value: String) { if (!mutable.value.busy) mutable.update { it.copy(can = value.filter(Char::isDigit).take(6)) } }
     fun tailnetHost(value: String) { if (!mutable.value.busy && !mutable.value.armed) mutable.update { it.copy(tailnetHost = value.trim().take(253)) } }
     fun connectTailnet() {
@@ -47,7 +51,7 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
         pairing?.close(); pairing = next
         ++generation
         mutable.update { it.copy(peer = "${next.host}:${next.port}",fingerprint = "",tailscale = true,
-            windowsPace = false, translatePace = true, message = "Tailscale listo. Introduce el CAN y autoriza acercando el DNI.") }
+            mode = BridgeMode.TRANSLATED_ANDROID_PACE, message = "Tailscale listo. Introduce el CAN y autoriza acercando el DNI.") }
         if (mutable.value.can.length == 6) authorize()
     }
     fun exportTrace(uri: Uri) = viewModelScope.launch {
@@ -105,7 +109,7 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
         val current = mutable.value
         val p = pairing ?: return
         if (!current.armed || current.busy) return
-        val prepared = adapter.prepare(p, tag, current.windowsPace, current.translatePace)
+        val prepared = adapter.prepare(p, tag, current.mode)
         if (prepared == null) {
             mutable.update { it.copy(message = "Esta conexión NFC no ofrece los datos ISO 14443-A necesarios.") }; return
         }
@@ -118,12 +122,12 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
             var opened = false
             try {
                 withContext(Dispatchers.IO) {
-                    session.run(current.can, atr, windowsPace = current.windowsPace, translatePace = current.translatePace, onEvent = { event ->
+                    session.run(current.can, atr, mode = current.mode, onEvent = { event ->
                         DiagnosticLog.event("bridge", event)
                     }) { phase ->
                         if (phase == BridgeConnection.Phase.PACE_ACTIVE || phase == BridgeConnection.Phase.RAW_ACTIVE) opened = true
                         if (epoch == generation) mutable.update { it.copy(message = when (phase) {
-                            BridgeConnection.Phase.AUTHENTICATING_PC -> "Validando la PC por TLS…"
+                            BridgeConnection.Phase.AUTHENTICATING_PC -> if (current.tailscale) "Sincronizando con la PC por Tailscale…" else "Validando la PC por TLS…"
                             BridgeConnection.Phase.OPENING_PACE -> "Abriendo PACE con tu DNI…"
                             BridgeConnection.Phase.RAW_ACTIVE -> "Puente directo activo. Windows gestiona PACE; registro APDU activo."
                             BridgeConnection.Phase.PACE_ACTIVE -> if (current.translatePace) "Puente con traducción PACE activo. Sesiones PC y DNI independientes." else "Puente PACE activo. Instrucciones de la PC habilitadas; registro APDU activo."

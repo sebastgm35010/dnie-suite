@@ -4,7 +4,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardType
@@ -15,6 +15,7 @@ fun BridgeScreen(state: BridgeUiState, nfcEnabled: Boolean, onImport: () -> Unit
     onCan: (String) -> Unit, onAuthorize: () -> Unit, onStop: () -> Unit, onBack: () -> Unit,
     onExportTrace: () -> Unit, onClearTrace: () -> Unit, onWindowsPace: (Boolean) -> Unit, onTranslatePace: (Boolean) -> Unit,
     onTailnetHost: (String) -> Unit, onConnectTailnet: () -> Unit) {
+    var advanced by remember { mutableStateOf(false) }
     Scaffold { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -22,21 +23,26 @@ fun BridgeScreen(state: BridgeUiState, nfcEnabled: Boolean, onImport: () -> Unit
             OutlinedTextField(value = state.tailnetHost, onValueChange = onTailnetHost,
                 label = { Text("PC en Tailscale") },singleLine = true,modifier = Modifier.fillMaxWidth(), enabled = !state.busy && !state.armed)
             Button(onClick = onConnectTailnet, enabled = !state.busy && !state.armed) { Text("Conectar por Tailscale · sin JSON") }
-            Text(if (state.tailscale) "Tailscale directo · pruebas. Cifrado de la red Tailscale, sin TLS adicional." else "Elige quién gestiona PACE. La conexión con la PC conserva el cifrado TLS.")
+            Text(if (state.tailscale) "Conexión cifrada por Tailscale." else "Conexión cifrada con la PC mediante TLS.")
+            Text(if (state.translatePace) "Traducción PACE · modo recomendado" else if (state.windowsPace) "Modo directo · PACE gestionado por Windows" else "PACE en Android · instrucciones lógicas")
+            Text("El teléfono mantiene protegido el acceso NFC al DNI y lo presenta como tarjeta inteligente a la PC.")
+            TextButton(onClick = { advanced = !advanced }) { Text(if (advanced) "Ocultar opciones avanzadas" else "Opciones avanzadas") }
+            if (advanced) {
             Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 Switch(checked = state.windowsPace, onCheckedChange = onWindowsPace, enabled = !state.busy && !state.armed)
-                Text("PACE en Windows · comparación")
+                Text("PACE en Windows")
             }
             Text(if (state.windowsPace) "Android retransmite las APDU físicas. El middleware de Windows puede solicitar el CAN." else "Android abre PACE y recibe APDU lógicas de la PC.")
             if (!state.windowsPace) {
                 Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                     Switch(checked = state.translatePace, onCheckedChange = onTranslatePace, enabled = !state.busy && !state.armed)
-                    Text("Traducir PACE del middleware · experimental")
+                    Text("Traducir PACE del middleware")
                 }
-                if (state.translatePace) Text("Android mantiene dos sesiones seguras independientes. Perfil IM AES-256; compatibilidad en prueba.")
+                if (state.translatePace) Text("Android mantiene independientes las sesiones seguras del PC y del DNI.")
+            }
             }
             Text("Registro APDU activo: incluye comandos y respuestas lógicos completos. Los datos de PIN no se guardan. Exporta el registro al terminar.", style = MaterialTheme.typography.bodySmall)
-            Text(if (state.tailscale) "La PC sincroniza la sesión automáticamente al acercar el DNI. Compatibilidad RENIEC en diagnóstico." else "Compatibilidad con RENIEC en diagnóstico. Empareja la PC y compara su huella antes de autorizar.",
+            Text(if (state.tailscale) "La PC sincroniza la sesión automáticamente al acercar el DNI." else "Empareja la PC y compara su huella antes de autorizar.",
                 style = MaterialTheme.typography.bodySmall)
             Button(onClick = onScan, enabled = !state.busy && !state.armed) { Text("Escanear QR de la PC") }
             OutlinedButton(onClick = onImport, enabled = !state.busy && !state.armed) { Text("Importar archivo de emparejamiento") }

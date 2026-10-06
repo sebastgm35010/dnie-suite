@@ -63,7 +63,7 @@ def main():
             script.on('message', message)
             script.load()
             if args.select_bridge and role in ('reniec_java', 'reniec_java_child', 'synthetic_metadata'):
-                selector_source = pathlib.Path(__file__).with_name('pcsc-bridge-selector.js').read_text(encoding='utf-8')
+                selector_source = (pathlib.Path(__file__).parent.parent / 'windows-reader-selector/pcsc-bridge-selector.js').read_text(encoding='utf-8')
                 selector = session.create_script(selector_source)
                 selector.on('message', message)
                 selector.load()

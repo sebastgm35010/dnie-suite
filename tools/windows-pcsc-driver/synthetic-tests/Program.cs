@@ -93,11 +93,19 @@ try
     Ok(Native.SCardReconnect(card, 2, 2, 1, out protocol), "warm reset via backend");
     Ok(Native.SCardDisconnect(card, 2), "disconnect with power off"); card = IntPtr.Zero;
     stop.Cancel(); await worker.WaitAsync(TimeSpan.FromSeconds(5)); worker = null;
-    // Wait from the last observed present state, rather than accepting the manager's
-    // immediate cached snapshot before the asynchronous file-cleanup notification.
+    // Power-off can already have queued an intermediate present/unpowered change.
+    // Consume changes until actual absence, keeping the entire wait bounded.
     state[0].CurrentState = state[0].EventState & ~2u;
     backend.Dispose(); backend = null;
-    Ok(Native.SCardGetStatusChangeW(context, 3000, state, 1), "owner-close query");
+    long removalDeadline = Environment.TickCount64 + 3000;
+    do
+    {
+        uint remaining = (uint)Math.Max(0, removalDeadline - Environment.TickCount64);
+        Ok(Native.SCardGetStatusChangeW(context, remaining, state, 1), "owner-close query");
+        Console.WriteLine($"Synthetic owner-close state: 0x{state[0].EventState:X8}");
+        state[0].CurrentState = state[0].EventState & ~2u;
+        if ((state[0].EventState & 0x10) != 0) break;
+    } while (Environment.TickCount64 < removalDeadline);
     Check((state[0].EventState & 0x10) != 0, "owner close removes card");
     state[0].CurrentState = state[0].EventState & ~2u;
     var wait = Task.Run(() => Native.SCardGetStatusChangeW(context, 10000, state, 1));

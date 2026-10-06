@@ -1,10 +1,13 @@
-param([switch]$Stop)
+param([switch]$Stop,
+    [string]$HostName = 'sebas-laptop.tail2752e9.ts.net',
+    [string]$PeerName = 'sebas-poco.tail2752e9.ts.net')
 $ErrorActionPreference = 'Stop'
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
 $principal = New-Object Security.Principal.WindowsPrincipal($identity)
 if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { throw 'Ejecutar como administrador para el backend PC/SC.' }
-$hostName = 'sebas-laptop.tail2752e9.ts.net'
-$peerName = 'sebas-poco.tail2752e9.ts.net'
+foreach ($endpointName in @($HostName,$PeerName)) {
+    if ($endpointName -notmatch '^[A-Za-z0-9][A-Za-z0-9.-]{0,252}$') { throw 'Nombre Tailscale invalido.' }
+}
 $address = [Net.Dns]::GetHostAddresses($hostName) | Where-Object { $b=$_.GetAddressBytes(); $b.Length -eq 4 -and $b[0] -eq 100 -and $b[1] -ge 64 -and $b[1] -le 127 } | Select-Object -First 1
 if (-not $address) { throw 'Activa Tailscale en la laptop.' }
 $listeners = @(Get-NetTCPConnection -State Listen -LocalAddress $address.IPAddressToString -LocalPort 39443 -ErrorAction SilentlyContinue)

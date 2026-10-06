@@ -15,6 +15,7 @@ public static class PcscHostSession
         NamedPipeClientStream? backendPipe = null;
         IPcscDevice? device = null;
         Task? backend = null;
+        Exception? primaryFailure = null;
         try
         {
             await BridgeSession.RunAsync(phone, certificate, token, async ct =>
@@ -40,14 +41,19 @@ public static class PcscHostSession
                 catch { server.Dispose(); throw; }
             }, idle, lifetime.Token);
         }
-        catch (Exception failure) { log($"session_failed type={failure.GetType().Name}"); throw; }
+        catch (Exception failure) { primaryFailure = failure; PcscShutdown.LogFailure(log,"session_failed",failure); throw; }
         finally
         {
             lifetime.Cancel();
             backendPipe?.Dispose();
+            Exception? shutdownFailure = null;
             try { if (backend != null) await backend; }
-            catch (System.ComponentModel.Win32Exception failure) { log($"backend_shutdown_failed type=Win32Exception code={failure.NativeErrorCode}"); throw; }
-            finally { device?.Dispose(); }
+            catch (OperationCanceledException) when (lifetime.IsCancellationRequested) { }
+            catch (Exception failure) { shutdownFailure = failure; PcscShutdown.LogFailure(log,"backend_shutdown_failed",failure); }
+            try { device?.Dispose(); }
+            catch (Exception failure) { shutdownFailure ??= failure; PcscShutdown.LogFailure(log,"backend_dispose_failed",failure); }
+            if (primaryFailure == null && shutdownFailure != null)
+                System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(shutdownFailure).Throw();
         }
     }
 }

@@ -40,7 +40,11 @@ class PaceTranslationEndpoint(can: String, private val logical: (ByteArray) -> B
         }
         if (negotiation.inProgress) return status(0x6985)
         if (negotiation.secure != null) {
-            return try { certificateReads.transmit(command, bytes, logical) ?: status(0x6985) }
+            return try {
+                val pinStatus = PlainPinStatusQuery.transmit(bytes, logical)
+                if (pinStatus != null) { certificateReads.reset(); pinStatus }
+                else certificateReads.transmit(command, bytes, logical) ?: status(0x6985)
+            }
             catch (failure: Exception) { close(); throw failure }
         }
         return logical(bytes)

@@ -15,6 +15,23 @@ static class PcscBackendTests
             catch (InvalidDataException) { checks++; }
         }
         byte[] atr = [0x3B, 0x80, 0x80, 0x01, 0x01];
+        // EOF during a command must survive both completion and detach failures.
+        using (var cleanupDevice = new CleanupFailureDevice())
+        using (var cleanupStream = new ScriptedStream([0, 5, .. atr]))
+        {
+            var phases = new List<string>();
+            try { await PcscBackend.RunAsync(cleanupDevice,cleanupStream,CancellationToken.None,phases.Add); throw new Exception("Expected EOF"); }
+            catch (EndOfStreamException) { Check(cleanupDevice.DetachAttempted); }
+            Check(phases.Any(x => x.StartsWith("pcsc_completion_cleanup_failed")));
+            Check(phases.Any(x => x.StartsWith("pcsc_detach_cleanup_failed")));
+            Check(!phases.Contains("pcsc_card_removed"));
+        }
+        using (var rejectedOwner = new CleanupFailureDevice { RejectAttach = true })
+        using (var attachStream = new ScriptedStream([0, 5, .. atr]))
+        {
+            try { await PcscBackend.RunAsync(rejectedOwner,attachStream,CancellationToken.None); throw new Exception("Expected rejected owner"); }
+            catch (UnauthorizedAccessException) { Check(!rejectedOwner.DetachAttempted); }
+        }
         var attach = PcscAbi.EncodeAttach(atr, 2);
         Check(attach.Length == 21 && BinaryPrimitives.ReadUInt32LittleEndian(attach.AsSpan(8)) == 5 && attach.AsSpan(16).SequenceEqual(atr));
         Reject(() => PcscAbi.EncodeAttach([0x3B, 0x80, 0x80, 1, 0], 2));
@@ -86,11 +103,11 @@ static class PcscBackendTests
         catch (OperationCanceledException) { }
         Check(heartbeatStream.Written.ToArray().SequenceEqual(new byte[] { 0, 1, 4, 0, 1, 5 }) && heartbeatDevice.Detached);
 
-        // Malformed ATR must never mark a card present.
+        // Malformed ATR never establishes ownership; do not detach another owner.
         using var invalidDevice = new FakeDevice(new Queue<PcscRequest>());
         using var invalidStream = new ScriptedStream([0, 2, 0x3B, 0x8F]);
         try { await PcscBackend.RunAsync(invalidDevice, invalidStream, stop.Token); throw new Exception("Expected invalid ATR."); }
-        catch (InvalidDataException) { Check(invalidDevice.Atr == null && invalidDevice.Detached); }
+        catch (InvalidDataException) { Check(invalidDevice.Atr == null && !invalidDevice.Detached); }
 
         // EOF during an APDU completes its outstanding id as disconnected, then removes card.
         using var lostDevice = new FakeDevice(new Queue<PcscRequest>([new(42, PcscAbi.Transmit, 258, apdu.ToArray())]));
@@ -107,6 +124,15 @@ static class PcscBackendTests
     }
     private static async Task WriteFrame(Stream stream, byte[] bytes, CancellationToken ct)
     { await stream.WriteAsync(new byte[] { (byte)(bytes.Length >> 8), (byte)bytes.Length }, ct); await stream.WriteAsync(bytes, ct); }
+    private sealed class CleanupFailureDevice : IPcscDevice
+    {
+        public bool RejectAttach, DetachAttempted;
+        public void Attach(byte[] atr,uint protocol) { if (RejectAttach) throw new UnauthorizedAccessException(); }
+        public PcscRequest Poll() => new(1,PcscAbi.Transmit,258,[0,0xB0,0,0]);
+        public void Complete(ulong id,uint status,byte[] payload) => throw new System.ComponentModel.Win32Exception(5);
+        public void Detach() { DetachAttempted=true; throw new System.ComponentModel.Win32Exception(5); }
+        public void Dispose() { }
+    }
     private sealed class FakeDevice(Queue<PcscRequest> requests) : IPcscDevice
     {
         public byte[]? Atr; public bool Detached;

@@ -2,6 +2,7 @@ package pe.gob.reniec.dnie.bridge.android
 
 import pe.gob.reniec.dnie.core.nfc.DnieCardChannel
 import pe.gob.reniec.dnie.bridge.BridgeCard
+import pe.gob.reniec.dnie.bridge.BridgeMode
 import java.io.Closeable
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -15,6 +16,9 @@ class BridgeConnection(
     private val client = PinnedBridgeClient(pairing)
     private val closed = AtomicBoolean()
     @Volatile private var physical: DnieCardChannel? = null
+
+    fun run(can: String, atr: ByteArray, mode: BridgeMode, onEvent: (String) -> Unit = {}, onPhase: (Phase) -> Unit) =
+        run(can, atr, onEvent, mode.windowsPace, mode.translatePace, onPhase)
 
     fun run(can: String, atr: ByteArray, onEvent: (String) -> Unit = {}, windowsPace: Boolean = false, translatePace: Boolean = false, onPhase: (Phase) -> Unit) {
         try {

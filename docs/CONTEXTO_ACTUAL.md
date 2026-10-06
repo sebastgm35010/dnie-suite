@@ -12,21 +12,23 @@ Lectura/exportacion IDplug adicional: biblioteca PKCS11 propia confirmada; slot1
 
 ## Trabajo de limpieza
 
-Primera extraccion estructural: PcResponseFragments separa fragmentacion PC/GET RESPONSE del endpoint PACE. APK de desarrollo1.8.15-core-cleanup(48), distinto de la referencia probada. No cambia consultas PIN, reset, autenticacion ni permite SM obsoleto. 185 pruebas aprobadas,2 omitidas; arquitectura aprobada y APK compilado, no instalado ni probado con DNI aun. Detalles en [limpieza del motor](architecture/LIMPIEZA_MOTOR_ETAPA_1.md).
+Candidata2.0.0-rc1(49) compilada, no instalada: ADB sin dispositivos. PcPaceNegotiator, PcResponseFragments, PlainCertificateReadRoute y PlainPinStatusQuery separan responsabilidades. BridgeMode excluye combinaciones incompatibles; traduccion Android recomendada por defecto, comparacion en opciones avanzadas. Supervisor y panel Windows independientes de capturas.188pruebas Android/JVM aprobadas,2omitidas;98hostWindows y26lector instalado; selector/panel sinteticos correctos. Ver [entrega y validacion](architecture/CONSOLIDACION_2_0_RC1.md) y [plan2.0/3.0](architecture/PLAN_VERSIONES_2_Y_3.md).
 
 Motor y dependencias: [mapa del motor](architecture/MOTOR_FUNCIONAL.md). Compose sigue separado de protocolo, criptografia y transporte. PACE fisico y PC conservan claves/SSC independientes; GET RESPONSE fisico y PC separados.
 
 ## Pendientes reales
 
-1. Android20: SM del PC enviado tras reset sin nuevo PACE produce cierre. Implementar rechazo controlado con pruebas, sin reutilizar claves/SSC antiguos.
-2. Consulta PIN plana despues de PACE PC puede recibir6985 local; no confundir con bloqueo real. Firma Peru con sesion nueva ya funciono.
-3. Seleccion equivocada confirmada y superada en prueba real Android22: filtro temporal del Java38900/64760 fuerza lista al puente; ambos conectan correctamente. Ciudadano Digital muestra certificados ya instalados y avanza a autenticacion en opcion cambio PIN, segun usuario.104/104APDU, sin VERIFY/cambio PIN. Falta convertir el filtro experimental en integracion estable operativa. Ver [resultado Android22](architecture/RESULTADO_ANDROID22_CIUDADANO_DIGITAL.md) y [causa confirmada](architecture/RESULTADO_SELECTOR_JAVA_HELLO_CONFIRMADO.md).
+1. Repetir Ciudadano Digital y Firma Peru sobre APK/panel2.0rc1; referencia instalada preservada. No declarar2.0final antes de esas pruebas fisicas.
+2. Android20: cierre por SM obsoleto corregido con6985 y nueva autenticacion exitosa en pruebas cifradas. Consulta vaciaPIN corregida sin habilitar VERIFY con datos. Cambios requieren regresion fisica del candidato.
+3. Seleccion equivocada superada en prueba real Android22; ahora supervisor/panel operativos preparados. Autenticacion siguiente es facial con ID Peru; no se ejecutara descarga/programa de cambio PIN.104/104APDU de referencia. Ver [resultado Android22](architecture/RESULTADO_ANDROID22_CIUDADANO_DIGITAL.md) y [causa confirmada](architecture/RESULTADO_SELECTOR_JAVA_HELLO_CONFIRMADO.md).
 4. Convivencia de minidriver y clientes. Minidriver DNI aislado; preservar CertPropSvc y SCardSvr. Restore privado disponible bajo D:/DNIeToolchain/MinidriverBackups/.
 5. ReFirma pendiente en sesion independiente. Boveda/passkeys migraciones y QR no probados fisicamente donde los informes lo indican.
 
 ## Operacion y registros
 
 Servidor Tailscale reutilizable en100.104.106.125:39443, host privado D:/DNIeBridgePrivileged/tailnet-b840ed3a1a234354bba19c8b5abaa5f4/. Perfil Traducir PACE y sincronizacion sin JSON. Confirmar estado del proceso/puerto antes de otra prueba.
+
+ABRIR-PUENTE-PC.bat abre el panel nuevo. Host candidato preparado en D:/DNIeToolchain/PairingUi, con copia anterior preservada en D:/DNIeToolchain/Checkpoints/2.0.0-rc1/windows-host-before. El proceso actual conserva su version anterior hasta detener/iniciar desde el panel. Logs nuevos y APK privadosD, ninguna captura activa ni supervisor dejado en marcha tras los self-tests.
 
 Ultima captura Android22 finalizada: Java real eligio puente,104/104APDU coinciden movil/host,ETW cerrado,observador stopped confirmado. Filtro temporal retirado. No hay nuevo APK instalado. Ver [preparacion del filtro](architecture/PRUEBA_SELECTOR_JAVA_REAL.md). Monitor limitado no detiene por si solo la sesion NFC. PDF firmado y evidencia privadosD. No abrir consumidores de tarjeta paralelos para probar un cliente aislado.
 

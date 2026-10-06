@@ -6,6 +6,7 @@ import android.nfc.Tag
 import android.nfc.tech.IsoDep
 import pe.gob.reniec.dnie.bridge.ContactlessAtr
 import pe.gob.reniec.dnie.bridge.ContactlessReaderCard
+import pe.gob.reniec.dnie.bridge.BridgeMode
 import pe.gob.reniec.dnie.bridge.android.BridgeConnection
 import pe.gob.reniec.dnie.bridge.android.BridgePairing
 import pe.gob.reniec.dnie.bridge.android.BridgeProvision
@@ -40,6 +41,9 @@ class BridgeAndroidAdapter(private val context: Context) {
             IsoDepCardChannel(iso)
         }, atr)
     }
+
+    fun prepare(pairing: BridgePairing, tag: Tag, mode: BridgeMode): Prepared? =
+        prepare(pairing, tag, mode.windowsPace, mode.translatePace)
 
     class Prepared(val connection: BridgeConnection, val atr: ByteArray)
 }

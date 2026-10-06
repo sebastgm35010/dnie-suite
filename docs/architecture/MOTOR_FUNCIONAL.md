@@ -8,6 +8,8 @@ La referencia de comportamiento es checkpoint/firma-windows-1.8.14. Firma Window
 | Secuencia IAS/PKI y firma | dnie-protocol: V3PkiSession, DnieTransceiver |
 | PACE/SM fisico | dnie-protocol: PaceHandler, PaceSecureChannel, PaceBridgeChannel |
 | Traduccion PACE del PC | dnie-protocol: PaceTranslationEndpoint, TerminalSecureMessaging |
+| Negociacion y retiro de claves PC | dnie-protocol: PcPaceNegotiator |
+| Consulta vacia de estado PIN | dnie-protocol: PlainPinStatusQuery |
 | Fragmentos para PC | dnie-protocol: PcResponseFragments |
 | Ruta publica de certificados | dnie-protocol: PlainCertificateReadRoute |
 | NFC Android | dnie-nfc: IsoDepCardChannel |
@@ -16,6 +18,8 @@ La referencia de comportamiento es checkpoint/firma-windows-1.8.14. Firma Window
 | Host Windows | tools/windows-bridge: PcscHostSession, PcscBackend, WindowsPcscDevice |
 | Lector virtual | tools/windows-pcsc-driver |
 | Presentacion / coordinacion | app/ui/bridge: BridgeViewModel y pantallas |
+| Selector operativo RENIEC | tools/windows-reader-selector: selector_engine, selector_service, filtro PCSC |
+| Presentacion / adaptador desktop | tools/windows-desktop: BridgeDesktop y BridgeDesktopController |
 
 Los modulos JVM no importan Android/Compose ni UI/data de app. Adaptadores convierten APIs de plataforma en contratos; ViewModels coordinan sesiones y acciones. El dominio no usa ViewModels como servicios. Herramientas host-diagnostics recopilan evidencia, no son dependencia del motor.
 
@@ -23,7 +27,7 @@ Los modulos JVM no importan Android/Compose ni UI/data de app. Adaptadores convi
 
 Firma Peru → PC/SC → host Tailscale → BridgeCard → comandos logicos → PACE fisico Android → DNI. En Android21 el PC no abrio PACE propio; consultasPIN y firma recibieron respuestas reales de la tarjeta.
 
-Java RENIEC → selector exacto por proceso → PC/SC → PACE PC terminado en endpoint → comandos logicos → PACE fisico independiente. Android18 completo identidad y certificados; el lanzador aislado no esta integrado con ClickOnce.
+Java RENIEC → selector exacto por proceso → PC/SC → PACE PC terminado en endpoint → comandos logicos → PACE fisico independiente. Android18 completo identidad y certificados en lanzador aislado; Android22 completo validacion DNI del flujo oficial ClickOnce con filtro del Java real. El supervisor/panel nuevos de2.0rc1 aun requieren repetir validacion fisica.
 
 ## Orden de limpieza
 

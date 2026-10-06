@@ -92,10 +92,12 @@ public static class PcscBackend
         Action<string>? log = null, TimeSpan? heartbeatInterval = null)
     {
         ulong pending = 0;
+        bool attached = false;
+        Exception? primaryFailure = null;
         try
         {
             byte[] atr = await ExchangeAsync(card, [4], cancellation);
-            try { device.Attach(atr, 2); }
+            try { device.Attach(atr, 2); attached = true; }
             finally { CryptographicOperations.ZeroMemory(atr); }
             log?.Invoke("pcsc_card_present");
             long lastTraffic = Environment.TickCount64;
@@ -166,11 +168,24 @@ public static class PcscBackend
                 finally { CryptographicOperations.ZeroMemory(request.Payload); }
             }
         }
+        catch (Exception failure) { primaryFailure = failure; throw; }
         finally
         {
-            try { if (pending != 0) device.Complete(pending, PcscAbi.DeviceDisconnected, []); }
-            finally { device.Detach(); }
-            log?.Invoke("pcsc_card_removed");
+            Exception? cleanupFailure = null;
+            void Cleanup(Action action, string phase)
+            {
+                try { action(); }
+                catch (Exception failure)
+                {
+                    cleanupFailure ??= failure;
+                    PcscShutdown.LogFailure(log, phase, failure);
+                }
+            }
+            if (pending != 0) Cleanup(() => device.Complete(pending, PcscAbi.DeviceDisconnected, []), "pcsc_completion_cleanup_failed");
+            if (attached) Cleanup(device.Detach, "pcsc_detach_cleanup_failed");
+            if (attached && cleanupFailure == null) { try { log?.Invoke("pcsc_card_removed"); } catch { } }
+            if (primaryFailure == null && cleanupFailure != null)
+                System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(cleanupFailure).Throw();
         }
     }
 
