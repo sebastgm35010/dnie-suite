@@ -28,6 +28,6 @@ Motor y dependencias: [mapa del motor](architecture/MOTOR_FUNCIONAL.md). Compose
 
 Servidor Tailscale reutilizable en100.104.106.125:39443, host privado D:/DNIeBridgePrivileged/tailnet-b840ed3a1a234354bba19c8b5abaa5f4/. Perfil Traducir PACE y sincronizacion sin JSON. Confirmar estado del proceso/puerto antes de otra prueba.
 
-Ultima captura Firma Peru finalizada; recolectores detenidos. No hay otra prueba armada por este trabajo de limpieza. Monitor limitado no detiene por si solo la sesion NFC. PDF firmado y evidencia privadosD. No abrir consumidores de tarjeta paralelos para probar un cliente aislado.
+Ultima captura Firma Peru finalizada. Prueba de observacion de seleccion RENIEC real ahora armada en D:\DNIeToolchain\LiveCaptures\tailnet-reader-observation-d43a71a585d74b6386acebc1155fa2bb (Frida PID55624, ClickOnce listo,900s; ETW siguiente conexion300s). Usuario navega manualmente porque comando de navegacion/captura inmediata fue rechazado. Ver [preparacion y alcance](architecture/PRUEBA_OBSERVACION_RENIEC_REAL.md). Monitor limitado no detiene por si solo la sesion NFC. PDF firmado y evidencia privadosD. No abrir consumidores de tarjeta paralelos para probar un cliente aislado.
 
 La cronologia anterior se conserva en [archivo historico](archive/CONTEXTO_HISTORICO_HASTA_1_8_14.md); menciones antiguas de monitores armados no son estado operativo actual.
