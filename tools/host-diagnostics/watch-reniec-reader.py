@@ -21,6 +21,8 @@ def main():
     parser.add_argument('--seconds', type=int, default=900)
     parser.add_argument('--self-test', action='store_true')
     parser.add_argument('--self-test-child', action='store_true')
+    parser.add_argument('--select-bridge', action='store_true',
+                        help='Temporary reader-list filter in RENIEC Java only')
     args = parser.parse_args()
     if not 1 <= args.seconds <= 1800:
         parser.error('Invalid duration')
@@ -60,6 +62,11 @@ def main():
 
             script.on('message', message)
             script.load()
+            if args.select_bridge and role in ('reniec_java', 'reniec_java_child', 'synthetic_metadata'):
+                selector_source = pathlib.Path(__file__).with_name('pcsc-bridge-selector.js').read_text(encoding='utf-8')
+                selector = session.create_script(selector_source)
+                selector.on('message', message)
+                selector.load()
             if gate:
                 try:
                     session.enable_child_gating()
@@ -99,7 +106,7 @@ def main():
         threading.Thread(target=observe_child, args=(child,), daemon=True).start()
 
     device.on('child-added', child_added)
-    record('armed', limitSeconds=args.seconds, changesSelection=False)
+    record('armed', limitSeconds=args.seconds, changesSelection=args.select_bridge)
     probe = None
     try:
         if args.self_test or args.self_test_child:
@@ -120,12 +127,23 @@ def main():
             valid = any(row['observation'].get('event') == 'reader_list' and
                         row['observation'].get('fields', {}).get('readers') and
                         (not args.self_test_child or row['role'] == 'reniec_java_child') for row in observed)
+            if args.select_bridge:
+                valid = valid and any(row['observation'].get('event') == 'bridge_reader_list_filtered'
+                                      and row['observation'].get('fields', {}).get('bridgeVisible')
+                                      and (not args.self_test_child or row['role'] == 'reniec_java_child')
+                                      for row in observed)
+                valid = valid and any(row['observation'].get('event') == 'reader_presence'
+                                      and len(row['observation'].get('fields', {}).get('states', [])) == 1
+                                      and row['observation']['fields']['states'][0]['reader'] == 'DNIe Bridge Android NFC Private Reader 0'
+                                      and (not args.self_test_child or row['role'] == 'reniec_java_child')
+                                      for row in observed)
             record('self_test', passed=valid)
             if not valid:
                 raise RuntimeError('Reader observation self-test failed')
             return
         until = time.monotonic() + args.seconds
-        while time.monotonic() < until and not output.with_name('stop.txt').exists():
+        while (time.monotonic() < until and not output.with_name('stop.txt').exists()
+               and not output.with_name('result.json').exists()):
             for process in psutil.process_iter(['pid', 'name', 'exe', 'ppid']):
                 info = process.info
                 name = (info['name'] or '').lower()
