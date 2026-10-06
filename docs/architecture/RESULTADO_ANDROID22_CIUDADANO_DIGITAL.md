@@ -4,7 +4,7 @@
 
 ## Resultado observado
 
-El usuario obtuvo «El DNIe ya tiene certificados instalados» en descargar certificados, el resultado esperado para su documento. Tambien probo la opcion de cambio de PIN y observo el avance de validacion del DNIe a autenticacion. Estos resultados de interfaz son reportados por el usuario; no equivalen a una instalacion nueva de certificados ni a un cambio efectivo de PIN.
+El usuario obtuvo «El DNIe ya tiene certificados instalados» en descargar certificados, el resultado esperado para su documento. Tambien probo la opcion de cambio de PIN y observo el avance de validacion del DNIe a autenticacion. Aclaro que esta autenticacion es facial mediante camara e ID Peru, no una verificacion de PIN contra el DNI. Despues se descargaria un programa dedicado al cambio de PIN; ese tramo queda fuera del alcance y no se ejecutara. Se alcanzo el limite de estos flujos que requiere el puente. Los resultados de interfaz son reportados por el usuario; no equivalen a una instalacion nueva de certificados ni a un cambio efectivo de PIN.
 
 La captura PCSC confirma que Java38900 y Java64760 conectaron a DNIe Bridge Android NFC Private Reader 0 mediante SCardConnectA, con retorno0. El segundo es hijo observado del proceso.NET53348, que tambien conecto correctamente al puente mediante SCardConnectW. No hay conexiones Java a Windows Hello en esta captura. El filtro `bridge_reader_list_filtered` se aplico antes de cada conexion Java.
 
