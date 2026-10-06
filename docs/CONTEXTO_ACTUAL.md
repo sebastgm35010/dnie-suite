@@ -20,7 +20,7 @@ Motor y dependencias: [mapa del motor](architecture/MOTOR_FUNCIONAL.md). Compose
 
 1. Android20: SM del PC enviado tras reset sin nuevo PACE produce cierre. Implementar rechazo controlado con pruebas, sin reutilizar claves/SSC antiguos.
 2. Consulta PIN plana despues de PACE PC puede recibir6985 local; no confundir con bloqueo real. Firma Peru con sesion nueva ya funciono.
-3. Selector de lector real en ClickOnce/Ciudadano Digital pendiente; selector del lanzador Java aislado ya funciona.
+3. Selector real ClickOnce pendiente: .NET elige primer lector y puede emitir «no hay DNI» antes de lanzar Java; Java elige ultimo CARD_PRESENT, compatible con Hello. Selector aislado funciona. Ver [analisis de seleccion](architecture/SELECCION_LECTOR_DOTNET_JAVA_RENIEC.md).
 4. Convivencia de minidriver y clientes. Minidriver DNI aislado; preservar CertPropSvc y SCardSvr. Restore privado disponible bajo D:/DNIeToolchain/MinidriverBackups/.
 5. ReFirma pendiente en sesion independiente. Boveda/passkeys migraciones y QR no probados fisicamente donde los informes lo indican.
 
