@@ -20,7 +20,7 @@ Motor y dependencias: [mapa del motor](architecture/MOTOR_FUNCIONAL.md). Compose
 
 1. Android20: SM del PC enviado tras reset sin nuevo PACE produce cierre. Implementar rechazo controlado con pruebas, sin reutilizar claves/SSC antiguos.
 2. Consulta PIN plana despues de PACE PC puede recibir6985 local; no confundir con bloqueo real. Firma Peru con sesion nueva ya funciono.
-3. Selector real ClickOnce pendiente: .NET elige primer lector y puede emitir «no hay DNI» antes de lanzar Java; Java elige ultimo CARD_PRESENT, compatible con Hello. Selector aislado funciona. Ver [analisis de seleccion](architecture/SELECCION_LECTOR_DOTNET_JAVA_RENIEC.md).
+3. Seleccion equivocada CONFIRMADA en proceso real: .NET37840 conecta puente y detectav3; su Java65936 enumera puente/Hello presentes y SCardConnectA eligeHello. No es inferencia. Integracion del selector con ClickOnce pendiente; aislado funciona. Ver [evidencia real](architecture/RESULTADO_SELECTOR_JAVA_HELLO_CONFIRMADO.md).
 4. Convivencia de minidriver y clientes. Minidriver DNI aislado; preservar CertPropSvc y SCardSvr. Restore privado disponible bajo D:/DNIeToolchain/MinidriverBackups/.
 5. ReFirma pendiente en sesion independiente. Boveda/passkeys migraciones y QR no probados fisicamente donde los informes lo indican.
 
@@ -28,6 +28,6 @@ Motor y dependencias: [mapa del motor](architecture/MOTOR_FUNCIONAL.md). Compose
 
 Servidor Tailscale reutilizable en100.104.106.125:39443, host privado D:/DNIeBridgePrivileged/tailnet-b840ed3a1a234354bba19c8b5abaa5f4/. Perfil Traducir PACE y sincronizacion sin JSON. Confirmar estado del proceso/puerto antes de otra prueba.
 
-Ultima captura Firma Peru finalizada. Prueba de observacion de seleccion RENIEC real ahora armada en D:\DNIeToolchain\LiveCaptures\tailnet-reader-observation-d43a71a585d74b6386acebc1155fa2bb (Frida PID55624, ClickOnce listo,900s; ETW siguiente conexion300s). Usuario navega manualmente porque comando de navegacion/captura inmediata fue rechazado. Ver [preparacion y alcance](architecture/PRUEBA_OBSERVACION_RENIEC_REAL.md). Monitor limitado no detiene por si solo la sesion NFC. PDF firmado y evidencia privadosD. No abrir consumidores de tarjeta paralelos para probar un cliente aislado.
+Ultima captura Firma Peru finalizada. Prueba de observacion real finalizada: Hello elegido por Java confirmado,22/22APDU puente,ETW cerrado. Stop de observador/navegador solicitado; verificar stopped antes de otra prueba. Ver [preparacion y alcance](architecture/PRUEBA_OBSERVACION_RENIEC_REAL.md). Monitor limitado no detiene por si solo la sesion NFC. PDF firmado y evidencia privadosD. No abrir consumidores de tarjeta paralelos para probar un cliente aislado.
 
 La cronologia anterior se conserva en [archivo historico](archive/CONTEXTO_HISTORICO_HASTA_1_8_14.md); menciones antiguas de monitores armados no son estado operativo actual.
