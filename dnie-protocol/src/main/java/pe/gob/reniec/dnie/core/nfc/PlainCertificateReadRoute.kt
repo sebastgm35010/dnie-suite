@@ -14,6 +14,13 @@ internal class PlainCertificateReadRoute {
 
     fun transmit(command: CommandApdu, bytes: ByteArray, logical: (ByteArray) -> ByteArray): ByteArray? {
         if (command.cla != 0.toByte()) { reset(); return null }
+        // Observed IDplug status query: no PIN data, no retry is consumed by VERIFY.
+        // Reject other references/encodings; do not turn this into a plain PIN route.
+        if (command.ins == 0x20.toByte() && command.p1 == 0.toByte() && command.p2 == 3.toByte() &&
+            command.data.isEmpty() && command.le == null) {
+            reset()
+            return logical(bytes).also { require(it.size >= 2) }
+        }
         val select = command.ins == 0xa4.toByte() && command.p2 in byteArrayOf(4, 12)
         val next = when {
             select && command.p1 == 4.toByte() && command.data.contentEquals(ias) -> Selection.IAS

@@ -46,8 +46,26 @@ class TranslatedPaceCardTest {
             val pc=authenticate(translated)
             translated.reset()
             val stale=pc.wrapCommand(CommandApdu(0,0xb0.toByte(),0,0,le=16))
-            assertThrows(IllegalStateException::class.java){translated.transmit(stale)}
+            assertArrayEquals(byteArrayOf(0x69,0x85.toByte()),translated.transmit(stale))
             assertEquals(0,physical.commands)
+            val fresh = authenticate(translated)
+            assertArrayEquals(byteArrayOf(0x90.toByte(),0),fresh.transceive(CommandApdu(0,0xb0.toByte(),0,0,le=16).toByteArray()))
+            assertEquals(1,physical.commands)
+        }
+    }
+    @Test fun staleCommandAfterPowerOffIsRejectedThenNewPaceSucceeds() {
+        val physical = Card()
+        TranslatedPaceCard(physical,"123456").use { translated ->
+            val old = authenticate(translated)
+            translated.powerOff()
+            val stale = old.wrapCommand(CommandApdu(0,0x20,0,3,byteArrayOf(1,2,3)))
+            assertArrayEquals(byteArrayOf(0x69,0x85.toByte()),translated.transmit(stale))
+            assertEquals(0,physical.commands)
+            assertEquals(1,physical.resets)
+            val fresh = authenticate(translated)
+            assertArrayEquals(byteArrayOf(0x90.toByte(),0),fresh.transceive(CommandApdu(0,0xb0.toByte(),0,0,le=16).toByteArray()))
+            assertEquals(1,physical.commands)
+            assertEquals(1,physical.resets)
         }
     }
 }

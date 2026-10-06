@@ -17,7 +17,9 @@ class PaceTranslationEndpoint(can: String, private val logical: (ByteArray) -> B
         val command = CommandApdu.fromBytes(bytes)
         if (responseFragments.pending) return responseFragments.read(command)
         if ((command.cla.toInt() and 12) == 12) {
-            val session = negotiation.secure ?: error("Terminal SM before authentication")
+            // A reset retires PC keys. Ask the client to authenticate again without
+            // forwarding stale ciphertext or closing a healthy physical session.
+            val session = negotiation.secure ?: return status(0x6985)
             val clear = try { session.decode(bytes) } catch (failure: Exception) { close(); throw failure }
             certificateReads.reset()
             try {

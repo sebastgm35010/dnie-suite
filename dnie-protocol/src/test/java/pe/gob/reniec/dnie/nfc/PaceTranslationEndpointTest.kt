@@ -14,6 +14,32 @@ class PaceTranslationEndpointTest {
     private val plainCertificate = decode("00A4020402CE82")
     private val plainRead = decode("00B00000FF")
     private val profile = PaceSecurityInfo("0.4.0.127.0.7.2.2.4.4.4", byteArrayOf(4,0,0x7f,0,7,2,2,4,4,4),2,13)
+    @Test fun protectedCommandBeforePcPaceDoesNotReachCardAndFreshPaceStillWorks() {
+        Fixture().use { f ->
+            val protected = decode("0C2000030D87090100000000000000008E00")
+            assertArrayEquals(byteArrayOf(0x69,0x85.toByte()), f.endpoint.transmit(protected))
+            assertTrue(f.forwarded.isEmpty())
+            val pc = f.authenticate()
+            assertArrayEquals(f.result, pc.transceive(plainRead))
+            assertEquals(1, f.forwarded.size)
+        }
+    }
+    @Test fun plainPinStatusQueryPreservesRealRetryStatusWithoutChangingPcCounters() {
+        Fixture().use { f ->
+            val pc = f.authenticate()
+            val query = decode("00200003")
+            f.result = byteArrayOf(0x63,0xc5.toByte())
+            assertArrayEquals(f.result,f.endpoint.transmit(query))
+            assertArrayEquals(query,f.forwarded.single())
+            listOf(decode("0020000303010203"), decode("0020000300"), decode("00200004"), decode("00200103")).forEach {
+                assertArrayEquals(byteArrayOf(0x69,0x85.toByte()),f.endpoint.transmit(it))
+            }
+            assertEquals(1,f.forwarded.size)
+            f.result = byteArrayOf(0x90.toByte(),0)
+            assertArrayEquals(f.result,pc.transceive(plainRead))
+            assertEquals(2,f.forwarded.size)
+        }
+    }
     private inner class Fixture : AutoCloseable {
         val forwarded = mutableListOf<ByteArray>()
         var result = byteArrayOf(0x90.toByte(),0)
