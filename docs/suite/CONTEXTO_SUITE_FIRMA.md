@@ -1,5 +1,7 @@
 # Contexto vigente de la suite propia de firma
 
+2026-10-07 · H6 Android: perfil PAdES explícito sin signingTime CMS, DER y /M UTC; CMS .p7s y Windows conservan perfil previo. 189 pruebas finales pasan, APK 58 compilado y pendiente de instalar (ADB sin dispositivo). Checkpoint previo de código/APK 57 en D:. Siguiente: PDF físico firmado en Android y clasificación Baseline B en validador antes de portar a Windows. [Detalle y evidencia](ANDROID_PADES_BASELINE_H6.md).
+
 2026-10-07 · H5: GUI aislada `dnie-signing-ui`, preview/selector y firma privada sin consola; APK 57 implementa escaneo combinado certificados→ICAO con sesiones independientes y cancelación que conserva completos. 265 pruebas pasan. GUI inspeccionada sin DNI; firma GUI pendiente. APK 57 instalado por ADB y versión verificada el 2026-10-07; usuario confirma que funciona el escaneo unificado, sin desglose de bloques ni prueba de cancelación. DNI Bridge/inspección pública Windows son próximos adaptadores, no funciones ya integradas. [Contexto, rutas y límites](INTERFAZ_AISLADA_Y_ESCANEO_UNIFICADO_H5.md).
 
 2026-10-07 · H4 físico validado: trabajo `b9b8c2f6-18c2-4a86-bab4-3e9dc173eb65`, PDF visible 1/1, verificado .NET/certificado DNI y render legible. Posición fija tapa contenido original; siguiente prioridad selector/preview y presentación del nombre del certificado. [Detalle](PDF_VISIBLE_H4.md).

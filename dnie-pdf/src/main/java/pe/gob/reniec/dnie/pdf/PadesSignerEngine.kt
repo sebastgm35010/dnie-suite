@@ -127,7 +127,7 @@ class PadesSignerEngine : PadesSignerEngineInterface {
                     setFilter(PDSignature.FILTER_ADOBE_PPKLITE)
                     setSubFilter(COSName.getPDFName(subFilter))
                     name = citizenData.fullName
-                    signDate = Calendar.getInstance(TimeZone.getTimeZone("America/Lima")).apply {
+                    signDate = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
                         timeInMillis = signingTimestamp
                     }
                     this.reason = reason
@@ -178,6 +178,9 @@ class PadesSignerEngine : PadesSignerEngineInterface {
                         inputStream = contentStream,
                         signerCertificate = signerCert,
                         caCertificates = caCertificates,
+                        profile = if (subFilter == SUBFILTER_ETSI_CADES_DETACHED)
+                            pe.gob.reniec.dnie.crypto.CmsSignatureProfile.PADES_BASELINE_B
+                        else pe.gob.reniec.dnie.crypto.CmsSignatureProfile.CMS_DETACHED,
                         cardSigner = { hash: ByteArray ->
                             runBlocking {
                                 pe.gob.reniec.dnie.crypto.CardSignatureVerifier.verify(signerCert, hash, cardSigner(hash).getOrThrow())

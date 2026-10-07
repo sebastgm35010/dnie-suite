@@ -1,5 +1,6 @@
 package pe.gob.reniec.dnie.crypto
 
+import org.bouncycastle.asn1.ASN1Encoding
 import org.bouncycastle.asn1.ASN1ObjectIdentifier
 import org.bouncycastle.asn1.DEROctetString
 import org.bouncycastle.asn1.DERSet
@@ -34,14 +35,13 @@ import java.security.cert.X509Certificate
 import java.util.Date
 import java.util.Hashtable
 
+/** Explicit document profiles; PAdES puts claimed time in PDF /M, not CMS signingTime. */
+enum class CmsSignatureProfile { CMS_DETACHED, PADES_BASELINE_B }
+
 /**
- * Constructor de contenedores criptográficos CMS / PKCS#7 (RFC 5652) en modo detached
- * conforme al estándar PAdES Baseline (ETSI EN 319 142-1) y la Ley de Firmas Digitales del Perú.
- *
- * Características:
- * 1. Incorpora SignedAttributes: `id-contentType`, `id-signingTime`, `id-messageDigest` y RFC 5035 `id-aa-signingCertificateV2`.
- * 2. Embebe el certificado del titular (DNIe) y la cadena de confianza intermedia / raíz de RENIEC en el `CertificateSet`.
- * 3. Delega el cómputo de la firma RSA al [DnieContentSigner].
+ * Builds detached CMS with certificate binding and card-backed RSA.
+ * PAdES mode emits DER without signingTime; PDF structure and trust validation belong to adapters.
+ * Includes the signer and supplied CA certificates; does not establish trust or legal accreditation.
  */
 object CmsSignatureBuilder {
 
@@ -56,13 +56,14 @@ object CmsSignatureBuilder {
      * @param signerCertificate Certificado X.509 del ciudadano extraído del chip DNIe (EF 00 1D).
      * @param caCertificates Cadena opcional de certificados de Autoridades Certificadoras (Sub-CA y Root CA).
      * @param contentSigner Instancia de [ContentSigner] (habitualmente [DnieContentSigner]).
-     * @return Arreglo binario DER con la estructura ASN.1 del contenedor CMS SignedData.
+     * @return CMS detached; DER when the PAdES profile is selected.
      */
     fun buildDetachedSignature(
         documentHash: ByteArray,
         signerCertificate: X509Certificate,
         caCertificates: List<X509Certificate> = emptyList(),
-        contentSigner: ContentSigner
+        contentSigner: ContentSigner,
+        profile: CmsSignatureProfile = CmsSignatureProfile.CMS_DETACHED
     ): ByteArray {
         require(documentHash.size == 32) {
             "El hash del documento debe tener exactamente 32 bytes (recibido ${documentHash.size})"
@@ -90,8 +91,10 @@ object CmsSignatureBuilder {
                 DERSet(CMSObjectIdentifiers.data)
             )
 
-            // 2. id-signingTime
-            if (!tableMap.containsKey(CMSAttributes.signingTime)) {
+            // PAdES explicitly excludes even the default generator's signingTime.
+            if (profile == CmsSignatureProfile.PADES_BASELINE_B) {
+                tableMap.remove(CMSAttributes.signingTime)
+            } else if (!tableMap.containsKey(CMSAttributes.signingTime)) {
                 tableMap[CMSAttributes.signingTime] = Attribute(
                     CMSAttributes.signingTime,
                     DERSet(Time(Date()))
@@ -148,7 +151,9 @@ object CmsSignatureBuilder {
         // Generar en modo detached (encapsulate = false)
         val msg = CMSProcessableByteArray(documentHash)
         val signedData: CMSSignedData = cmsGenerator.generate(msg, false)
-        return signedData.encoded
+        return if (profile == CmsSignatureProfile.PADES_BASELINE_B)
+            signedData.toASN1Structure().getEncoded(ASN1Encoding.DER)
+        else signedData.encoded
     }
 
     /**
@@ -158,7 +163,8 @@ object CmsSignatureBuilder {
         inputStream: InputStream,
         signerCertificate: X509Certificate,
         caCertificates: List<X509Certificate> = emptyList(),
-        contentSigner: ContentSigner
+        contentSigner: ContentSigner,
+        profile: CmsSignatureProfile = CmsSignatureProfile.CMS_DETACHED
     ): ByteArray {
         val digest = MessageDigest.getInstance("SHA-256")
         val buffer = ByteArray(8192)
@@ -167,7 +173,7 @@ object CmsSignatureBuilder {
             digest.update(buffer, 0, bytesRead)
         }
         val documentHash = digest.digest()
-        return buildDetachedSignature(documentHash, signerCertificate, caCertificates, contentSigner)
+        return buildDetachedSignature(documentHash, signerCertificate, caCertificates, contentSigner, profile)
     }
 
     /**
@@ -177,10 +183,11 @@ object CmsSignatureBuilder {
         inputStream: InputStream,
         signerCertificate: X509Certificate,
         caCertificates: List<X509Certificate> = emptyList(),
+        profile: CmsSignatureProfile = CmsSignatureProfile.CMS_DETACHED,
         cardSigner: (sha256Digest: ByteArray) -> ByteArray
     ): ByteArray {
         val contentSigner = DnieContentSigner(cardSigner)
-        return buildDetachedSignatureFromStream(inputStream, signerCertificate, caCertificates, contentSigner)
+        return buildDetachedSignatureFromStream(inputStream, signerCertificate, caCertificates, contentSigner, profile)
     }
 
     /**
@@ -190,9 +197,10 @@ object CmsSignatureBuilder {
         documentHash: ByteArray,
         signerCertificate: X509Certificate,
         caCertificates: List<X509Certificate> = emptyList(),
+        profile: CmsSignatureProfile = CmsSignatureProfile.CMS_DETACHED,
         cardSigner: (sha256Digest: ByteArray) -> ByteArray
     ): ByteArray {
         val contentSigner = DnieContentSigner(cardSigner)
-        return buildDetachedSignature(documentHash, signerCertificate, caCertificates, contentSigner)
+        return buildDetachedSignature(documentHash, signerCertificate, caCertificates, contentSigner, profile)
     }
 }

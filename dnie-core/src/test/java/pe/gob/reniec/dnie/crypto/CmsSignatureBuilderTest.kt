@@ -148,4 +148,29 @@ class CmsSignatureBuilderTest {
         val isSignatureValid = signerInfo.verify(verifier)
         assertTrue("La firma CMS debe ser criptográficamente válida contra la clave pública del firmante", isSignatureValid)
     }
+    @Test
+    fun padesProfileUsesDerAndCertificateBindingWithoutCmsTime() {
+        val bytes = "Synthetic PAdES profile test".toByteArray()
+        val hash = MessageDigest.getInstance("SHA-256").digest(bytes)
+        val encoded = CmsSignatureBuilder.buildDetachedSignature(
+            hash, signerCert, listOf(rootCert), profile = CmsSignatureProfile.PADES_BASELINE_B,
+            cardSigner = { simulateDnieCardSigning(it) })
+        val asn1 = org.bouncycastle.asn1.ASN1Primitive.fromByteArray(encoded)
+        assertArrayEquals(asn1.getEncoded(org.bouncycastle.asn1.ASN1Encoding.DER), encoded)
+        val cms = CMSSignedData(org.bouncycastle.cms.CMSProcessableByteArray(bytes), encoded)
+        val signer = cms.signerInfos.signers.single()
+        org.junit.Assert.assertNull(signer.signedAttributes.get(CMSAttributes.signingTime))
+        val ess = org.bouncycastle.asn1.ess.SigningCertificateV2.getInstance(
+            signer.signedAttributes.get(PKCSObjectIdentifiers.id_aa_signingCertificateV2).attrValues.getObjectAt(0))
+        assertArrayEquals(MessageDigest.getInstance("SHA-256").digest(signerCert.encoded), ess.certs.single().certHash)
+        assertEquals(2, cms.certificates.getMatches(null).size)
+        val verifier = JcaSimpleSignerInfoVerifierBuilder().setProvider(CryptoProviderInitializer.provider).build(signerCert)
+        assertTrue(signer.verify(verifier))
+        val altered = bytes.clone().apply { this[0] = (this[0].toInt() xor 1).toByte() }
+        try {
+            val changed = CMSSignedData(org.bouncycastle.cms.CMSProcessableByteArray(altered), encoded)
+            org.junit.Assert.assertFalse(changed.signerInfos.signers.single().verify(verifier))
+        } catch (expected: org.bouncycastle.cms.CMSSignerDigestMismatchException) { }
+    }
+
 }

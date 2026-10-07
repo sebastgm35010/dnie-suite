@@ -132,6 +132,7 @@ class PadesSignerEngineTest {
         assertEquals("Debe existir exactamente 1 diccionario de firma", 1, sigDicts.size)
 
         val sig = sigDicts.first()
+        assertPadesStructureAndIntegrity(sig, result.outputBytes!!)
         assertEquals(PDSignature.FILTER_ADOBE_PPKLITE.name, sig.filter)
         assertEquals("ETSI.CAdES.detached", sig.subFilter)
         assertEquals("QUISPE MAMANI, CARLOS ENRIQUE", sig.name)
@@ -165,6 +166,7 @@ class PadesSignerEngineTest {
         assertEquals(1, sigDicts.size)
 
         val sig = sigDicts.first()
+        assertPadesStructureAndIntegrity(sig, result.outputBytes!!)
         assertEquals("QUISPE MAMANI, CARLOS ENRIQUE", sig.name)
         assertEquals("Doy fe de la autenticidad", sig.reason)
         assertEquals("Arequipa, Peru", sig.location)
@@ -201,9 +203,40 @@ class PadesSignerEngineTest {
         val sigDicts = doublySignedDoc.signatureDictionaries
         assertEquals("Deben coexistir exactamente 2 firmas digitales", 2, sigDicts.size)
 
+        sigDicts.forEach { assertPadesStructureAndIntegrity(it, secondSignResult.outputBytes!!) }
         assertEquals("Firma del Autor", sigDicts[0].reason)
         assertEquals("Firma del Revisor", sigDicts[1].reason)
 
         doublySignedDoc.close()
     }
+    private fun assertPadesStructureAndIntegrity(sig: PDSignature, pdf: ByteArray) {
+        assertEquals("ETSI.CAdES.detached", sig.subFilter)
+        assertEquals(0, sig.byteRange[0])
+        val end = sig.byteRange[2] + sig.byteRange[3]
+        assertTrue(end <= pdf.size)
+        assertNotNull(sig.signDate)
+        assertEquals(0, sig.signDate.timeZone.rawOffset)
+        val contents = sig.getContents(pdf)
+        val canonical = org.bouncycastle.asn1.ASN1InputStream(contents).use {
+            it.readObject().getEncoded(org.bouncycastle.asn1.ASN1Encoding.DER)
+        }
+        org.junit.Assert.assertArrayEquals(canonical, contents.copyOf(canonical.size))
+        val cms = org.bouncycastle.cms.CMSSignedData(
+            org.bouncycastle.cms.CMSProcessableByteArray(sig.getSignedContent(pdf)), canonical)
+        val signer = cms.signerInfos.signers.single()
+        org.junit.Assert.assertNull(signer.signedAttributes.get(org.bouncycastle.asn1.cms.CMSAttributes.signingTime))
+        val ess = org.bouncycastle.asn1.ess.SigningCertificateV2.getInstance(signer.signedAttributes.get(
+            org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers.id_aa_signingCertificateV2).attrValues.getObjectAt(0))
+        org.junit.Assert.assertArrayEquals(java.security.MessageDigest.getInstance("SHA-256").digest(testCert.encoded), ess.certs.single().certHash)
+        assertTrue(signer.verify(org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoVerifierBuilder()
+            .setProvider(CryptoProviderInitializer.provider).build(testCert)))
+        val changed = pdf.clone().apply { this[10] = (this[10].toInt() xor 1).toByte() }
+        try {
+            val invalid = org.bouncycastle.cms.CMSSignedData(
+                org.bouncycastle.cms.CMSProcessableByteArray(sig.getSignedContent(changed)), canonical)
+            org.junit.Assert.assertFalse(invalid.signerInfos.signers.single().verify(
+                org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoVerifierBuilder().build(testCert)))
+        } catch (expected: org.bouncycastle.cms.CMSSignerDigestMismatchException) { }
+    }
+
 }
