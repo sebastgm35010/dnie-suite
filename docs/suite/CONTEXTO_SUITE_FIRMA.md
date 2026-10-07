@@ -1,5 +1,7 @@
 # Contexto vigente de la suite propia de firma
 
+2026-10-07 · Investigación previa TSA: LLAMA.PE figura en TSL y anuncia sellado gratuito web en Watana (PDF hasta50MB). API documentada exige cuenta/token y sellar_pdf solo producción; gratuidad de endpoint RFC3161 integrable no demostrada. Se informa hallazgo antes de modificar Android, conforme a la condición solicitada. APK62 preservado. [Fuentes y alcance](TSA_PROVEEDORES_GRATUITOS_PERU.md).
+
 2026-10-07 · H10 externo superado: Firma Perú reconoce ambos PDF sintéticos como PAdES_BASELINE_T e íntegros; raíz TSA RENIEC en TSL Sí, FreeTSA No. Resultado global indeterminado con error de cadena del firmante sintético, como corresponde a esta prueba. Pendientes módulo TSA Android, confianza/revocación local ROOT5, disponibilidad/condiciones y PDF con DNI real. APK62 sin cambios. [Evidencia y límites](TSA_EXPERIMENTO_REAL_H10.md).
 
 2026-10-07 · H10 experimental: PDF sintético con TSA real FreeTSA y RENIEC generados/verificados localmente, ruta HTTPS RENIEC /service responde sin credenciales desde esta PC. Integridad/token comprobados; clasificación externa, confianza/revocación TSA y condiciones de distribución pendientes. APK62 sin cambios. [Archivos, fuentes y límites](TSA_EXPERIMENTO_REAL_H10.md).
