@@ -15,7 +15,7 @@ import org.bouncycastle.cms.*
 import org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoVerifierBuilder
 import pe.gob.reniec.dnie.pdf.*
 
-class JvmInvisiblePdfSignerTest {
+class JvmPdfSignerTest {
     @get:Rule val folder = TemporaryFolder()
     private val identity = TestSigningIdentity()
     private fun source(config: (PDDocument) -> Unit = {}): ByteArray = ByteArrayOutputStream().also { out ->
@@ -23,7 +23,7 @@ class JvmInvisiblePdfSignerTest {
     }.toByteArray()
     private suspend fun sign(bytes: ByteArray): ByteArray {
         val out = ByteArrayOutputStream()
-        val result = JvmInvisiblePdfSigner(folder.root.toPath()).signConfiguredPdf(bytes.inputStream(), out,
+        val result = JvmPdfSigner(folder.root.toPath()).signConfiguredPdf(bytes.inputStream(), out,
             identity.certificate.encoded, { Result.success(identity.sign(it)) }, PdfSigningOptions(visible = false)).getOrThrow()
         assertEquals(0, result.pageNumber)
         assertTrue(folder.root.listFiles()!!.isEmpty())
@@ -74,7 +74,7 @@ class JvmInvisiblePdfSignerTest {
         }
         listOf("invalid PDF".toByteArray(), encrypted, noChanges).forEach { bytes ->
             val out = ByteArrayOutputStream()
-            val result = JvmInvisiblePdfSigner(folder.root.toPath()).signConfiguredPdf(bytes.inputStream(), out,
+            val result = JvmPdfSigner(folder.root.toPath()).signConfiguredPdf(bytes.inputStream(), out,
                 identity.certificate.encoded, { Result.success(identity.sign(it)) }, PdfSigningOptions(visible=false))
             assertTrue(result.isFailure); assertEquals(0, out.size()); assertEquals(0, identity.operations)
             assertTrue(folder.root.listFiles()!!.isEmpty())
@@ -82,7 +82,7 @@ class JvmInvisiblePdfSignerTest {
     }
     @Test fun corruptCardResponseNeverPublishesPdf() = runBlocking<Unit> {
         val out = ByteArrayOutputStream()
-        val result = JvmInvisiblePdfSigner(folder.root.toPath()).signConfiguredPdf(source().inputStream(), out,
+        val result = JvmPdfSigner(folder.root.toPath()).signConfiguredPdf(source().inputStream(), out,
             identity.certificate.encoded, { Result.success(ByteArray(256)) }, PdfSigningOptions(visible=false))
         assertTrue(result.isFailure); assertEquals(0, out.size()); assertTrue(folder.root.listFiles()!!.isEmpty())
     }

@@ -3,8 +3,9 @@ package pe.gob.reniec.dnie.desktop.model
 import java.nio.file.Path
 import pe.gob.reniec.dnie.domain.signing.DocumentSignStatus
 
-enum class DesktopPdfMode { INVISIBLE, DETACHED }
-data class DesktopSigningRequest(val inputs: List<Path>, val workspaceRoot: Path, val pdfMode: DesktopPdfMode = DesktopPdfMode.INVISIBLE)
+enum class DesktopPdfMode { INVISIBLE, VISIBLE, DETACHED }
+data class DesktopSigningRequest(val inputs: List<Path>, val workspaceRoot: Path, val pdfMode: DesktopPdfMode = DesktopPdfMode.INVISIBLE,
+    val pdfOptions: pe.gob.reniec.dnie.pdf.PdfSigningOptions = pe.gob.reniec.dnie.pdf.PdfSigningOptions(visible=false, reason="", location=""))
 enum class SigningBackend { SIMULATED, PRIVATE_ANDROID }
 data class DesktopDocumentResult(val id: String, val name: String, val status: DocumentSignStatus,
     val original: Path, val signature: Path?, val error: String?)

@@ -15,7 +15,9 @@ fun runCli(args: Array<String>, output: PrintStream = System.out, errors: PrintS
         output.println("demo --workspace <carpeta> --input <archivo> [--input <otro>]")
         output.println("remote --pc <IP privada PC> --phone <IP teléfono> --workspace <carpeta> --input <archivo> [--input <otro>]")
         output.println("suite --pc <IP PC> --phone <IP telefono> --workspace <carpeta> --identity <archivo DPAPI> (terminal interactiva)")
-        output.println("PDF: integrado invisible por defecto; --pdf-mode detached conserva salida .p7s (demo, remote y suite).")
+        output.println("PDF: invisible por defecto; --pdf-mode visible agrega sello; detached produce .p7s.")
+        output.println("Sello: --pdf-page N --pdf-box left,top,width,height (fracciones) --pdf-style card|minimal")
+        output.println("Campos: --pdf-fields dni,date,time,reason,location --pdf-reason texto --pdf-location texto")
         output.println("SIMULACION: certificado y clave temporales; no utiliza el DNI ni PC/SC.")
         return 0
     }

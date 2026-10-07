@@ -1,6 +1,8 @@
 # Estado vigente · corrección USB tras reinicio
 
-2026-10-07 · H3 físico validado: trabajo `ed878567-300a-4a38-aeba-e56cd47eb640` 3/3 (dos PDF integrados y un CMS DOCX), verificados .NET con certificado DNI coincidente y rechazo de alteración. Cierre posterior de CLI sin causa identificable; pendiente diagnóstico de cierre por fase y dos lotes consecutivos en mismo TLS. [Evidencia y límites](suite/PDF_INVISIBLE_H3.md).
+2026-10-07 · H4: sello visible de escritorio modular implementado, page/box/fields/style por argumentos y apariencia del campo firmada incrementalmente. Pruebas sintéticas de giros/recortes, firmas sucesivas y render pasan; falta sello físico con DNI. H3 cierre confirmado manual Ctrl+C. [Uso y límites](suite/PDF_VISIBLE_H4.md).
+
+2026-10-07 · H3 físico validado: trabajo `ed878567-300a-4a38-aeba-e56cd47eb640` 3/3 (dos PDF integrados y un CMS DOCX), verificados .NET con certificado DNI coincidente y rechazo de alteración. Cierre posterior confirmado manual por Ctrl+C; no es incidente de conexión. Sigue pendiente prueba específica de dos lotes consecutivos en mismo TLS. [Evidencia y límites](suite/PDF_INVISIBLE_H3.md).
 
 2026-10-07 · H3: PDF integrado invisible de escritorio implementado en módulo JVM `dnie-pdf-desktop` (PDFBox 3.0.8). Por defecto PDF → `_firmado.pdf`, otros → `.p7s`; `--pdf-mode detached` conserva el modo anterior. Simulación del ejecutable verificada independientemente .NET; prueba física con DNI pendiente. APK instalado 56 y transporte/motor NFC sin cambios funcionales. [Arquitectura, límites y procedimiento](suite/PDF_INVISIBLE_H3.md).
 

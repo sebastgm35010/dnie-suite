@@ -72,7 +72,7 @@ foreach ($item in $manifest.documents | Where-Object { $_.status -eq 'SIGNED' })
     $format = 'CMS_DETACHED'
     if ($item.signature.EndsWith('_firmado.pdf', [StringComparison]::OrdinalIgnoreCase)) {
         $parsed = Read-SuitePdfSignature $encoded $original
-        $original = $parsed.Content; $encoded = $parsed.Cms; $format = 'PDF_INVISIBLE'
+        $original = $parsed.Content; $encoded = $parsed.Cms; $format = 'PDF_INTEGRATED'
     }
     $cms = [Security.Cryptography.Pkcs.SignedCms]::new([Security.Cryptography.Pkcs.ContentInfo]::new($original), $true)
     $cms.Decode($encoded)

@@ -14,11 +14,11 @@ import pe.gob.reniec.dnie.signing.link.*
 /** Interactive adapter only; PIN uses Console.readPassword, never argv, echo or persisted queue. */
 object ContinuousSuiteCommand {
     fun execute(args: Array<String>, output: PrintStream): Int {
-        require(args.size in listOf(9,11) && args[0] == "suite" && args[1] == "--pc" && args[3] == "--phone" &&
+        require(args.size >= 9 && (args.size-9)%2==0 && args[0] == "suite" && args[1] == "--pc" && args[3] == "--phone" &&
             args[5] == "--workspace" && args[7] == "--identity")
-        val pdfMode = if (args.size == 11) {
-            require(args[9] == "--pdf-mode"); pe.gob.reniec.dnie.desktop.cli.CliOptions.parsePdfMode(args[10])
-        } else DesktopPdfMode.INVISIBLE
+        val pdf = pe.gob.reniec.dnie.desktop.cli.DesktopPdfOptions()
+        for(i in 9 until args.size step 2) pdf.accept(args[i],args[i+1])
+        val pdfMode=pdf.mode; val pdfOptions=pdf.build()
         val pc = args[2]; val phone = args[4]
         require(SigningProvision.privateAddress(pc) && SigningProvision.privateAddress(phone))
         require(java.net.NetworkInterface.getByInetAddress(java.net.InetAddress.getByName(pc)) != null)
@@ -47,7 +47,7 @@ object ContinuousSuiteCommand {
                     client.use {
                         Files.deleteIfExists(export)
                         Files.deleteIfExists(export.resolveSibling("suite-emparejamiento.png"))
-                        output.println(if (pdfMode == DesktopPdfMode.INVISIBLE) "PDF: firma integrada invisible (_firmado.pdf). Otros archivos: CMS separado (.p7s)." else "PDF: CMS separado (.p7s).")
+                        output.println(if (pdfMode == DesktopPdfMode.VISIBLE) "PDF: firma integrada con sello visible (_firmado.pdf). Otros archivos: CMS separado (.p7s)." else if (pdfMode == DesktopPdfMode.INVISIBLE) "PDF: firma integrada invisible (_firmado.pdf). Otros archivos: CMS separado (.p7s)." else "PDF: CMS separado (.p7s).")
                         output.println("Suite conectada. Un archivo por linea; linea vacia completa lote; salir termina conexion.")
                         while (true) {
                             val paths = mutableListOf<Path>()
@@ -59,7 +59,7 @@ object ContinuousSuiteCommand {
                                 paths.add(Path.of(line.trim().removeSurrounding("\"")))
                             }
                             if (paths.isEmpty()) continue
-                            val request = DesktopSigningRequest(paths, workspace, pdfMode)
+                            val request = DesktopSigningRequest(paths, workspace, pdfMode, pdfOptions)
                             try { DesktopWorkspace.validate(request) } catch (_: Exception) { output.println("Archivos no validos. Lote no enviado."); continue }
                             val pin = console.readPassword("PIN de firma para %d archivo(s): ", paths.size) ?: return 0
                             try {

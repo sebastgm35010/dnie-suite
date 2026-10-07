@@ -46,4 +46,17 @@ class DesktopPdfSigningTest {
         assertEquals(listOf(DocumentSignStatus.FAILED, DocumentSignStatus.SIGNED), result.documents.map { it.status })
         assertNull(result.documents[0].signature); assertEquals(1, card.signatures)
     }
+    @Test fun visibleModeCreatesARealSignatureWidgetInDesktopBatch() = runBlocking<Unit> {
+        val pdf=folder.root.toPath().resolve("visible.pdf")
+        PDDocument().use { doc -> doc.addPage(PDPage()); doc.save(pdf.toFile()) }
+        val result=DesktopSigningService().execute(DesktopSigningRequest(listOf(pdf),folder.root.toPath().resolve("jobs"),
+            DesktopPdfMode.VISIBLE, pe.gob.reniec.dnie.pdf.PdfSigningOptions(visible=true)),
+            SimulatedSigningCard(),"0000",SigningBackend.SIMULATED)
+        assertTrue(result.complete)
+        Loader.loadPDF(result.documents.single().signature!!.toFile()).use { doc ->
+            val field=doc.documentCatalog.acroForm.fields.single()
+            assertTrue(field.widgets.single().rectangle.width>0f)
+            assertNotNull(field.widgets.single().appearance.normalAppearance.appearanceStream)
+        }
+    }
 }

@@ -46,6 +46,6 @@ Siguiente orden: prueba física del PDF invisible, corpus documental y después 
 
 `verify-job.ps1` verificó independientemente con .NET las tres firmas, coincidencia del certificado del trabajo y rechazo del contenido alterado. Los PDF conservan el original como prefijo y su ByteRange final cubre la revisión completa salvo Contents. Certificado coincidente con el DNI previamente validado y presente en CurrentUser/My. No se comprobó revocación ni confianza completa. Evidencia privada fuera de Git: `D:/DNIeToolchain/SuiteContinuousJobs/ed878567-300a-4a38-aeba-e56cd47eb640/independent-verification.json`.
 
-Después de informar 3/3 aparece el mensaje genérico «Suite continua finalizada o solicitud invalida» y el prompt de cierre BAT. `result.json` declara `complete:true`, `sessionError:null`. Las firmas están completas, pero el motivo del cierre posterior no consta: el catch exterior de CLI omite tipo/fase. No atribuirlo sin evidencia a NFC, TLS, PIN o Ctrl+C. Pendiente diagnóstico de cierre por fase sin secretos y prueba de dos lotes consecutivos exitosos en la misma sesión.
+Después de informar 3/3, el usuario confirmó que finalizó manualmente con Ctrl+C. El mensaje genérico de cierre no constituye evidencia de fallo de conexión. Se retira ese incidente de pendientes; sigue pendiente la prueba específica de dos lotes exitosos seguidos en el mismo TLS.
 
 Próximo hito documental: apariencia visible mediante contrato del motor PDF; visor/editor después.

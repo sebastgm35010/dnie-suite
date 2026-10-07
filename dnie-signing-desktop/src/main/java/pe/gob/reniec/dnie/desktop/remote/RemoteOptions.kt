@@ -18,7 +18,7 @@ data class RemoteOptions(val request: DesktopSigningRequest, val pc: String, val
                 when (flag) {
                     "--pc" -> { require(pc == null); pc = value }
                     "--phone" -> { require(phone == null); phone = value }
-                    "--input", "--workspace", "--pdf-mode" -> { documents.add(flag); documents.add(value) }
+                    "--input", "--workspace", in pe.gob.reniec.dnie.desktop.cli.DesktopPdfOptions.FLAGS -> { documents.add(flag); documents.add(value) }
                     else -> error("Unsupported option")
                 }
             }

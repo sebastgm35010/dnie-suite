@@ -7,6 +7,7 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
 }
 tasks.test {
+    providers.gradleProperty("visibleEvidence").orNull?.let { systemProperty("dnie.pdf.visibleEvidence",it) }
     val temp = layout.buildDirectory.dir("test-tmp")
     doFirst { temp.get().asFile.mkdirs() }
     systemProperty("java.io.tmpdir", temp.get().asFile.absolutePath)

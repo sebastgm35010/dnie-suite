@@ -17,7 +17,7 @@ import pe.gob.reniec.dnie.crypto.*
 import pe.gob.reniec.dnie.pdf.*
 
 /** PDFBox JVM adapter. CMS and RSA verification stay in the shared, proven crypto engine. */
-class JvmInvisiblePdfSigner(private val temporaryRoot: Path) : PadesSignerEngineInterface {
+class JvmPdfSigner(private val temporaryRoot: Path) : PadesSignerEngineInterface {
     companion object {
         const val SIGNATURE_RESERVE = 32768
         const val MAX_INPUT_BYTES = 256L * 1024 * 1024
@@ -32,7 +32,6 @@ class JvmInvisiblePdfSigner(private val temporaryRoot: Path) : PadesSignerEngine
     override suspend fun signConfiguredPdf(input: InputStream, output: OutputStream, certificate: ByteArray,
         cardSigner: suspend (ByteArray) -> Result<ByteArray>, options: PdfSigningOptions): Result<PdfSignResult> = withContext(Dispatchers.IO) {
         try {
-            require(!options.visible) { "Estampado visual aun no disponible en escritorio" }
             val signer = X509CertificateParser.toX509Certificate(certificate)
             val citizen = X509CertificateParser.extractCitizenData(signer)
             val timestamp = System.currentTimeMillis()
@@ -51,18 +50,20 @@ class JvmInvisiblePdfSigner(private val temporaryRoot: Path) : PadesSignerEngine
                 val signed = workspace.directory.resolve("signed.pdf")
                 val memory = MemoryUsageSetting.setupMixed(32L * 1024 * 1024).setTempDir(workspace.directory.toFile())
                 Loader.loadPDF(source.toFile(), "", null, null, { ScratchFile(memory) }).use { document ->
-                    PdfSigningPolicy.validate(document)
+                    PdfSigningPolicy.validate(document, options.visible)
                     val signature = PDSignature().apply {
                         setFilter(PDSignature.FILTER_ADOBE_PPKLITE)
                         setSubFilter(COSName.getPDFName("ETSI.CAdES.detached"))
                         name = citizen.fullName
                         signDate = Calendar.getInstance(TimeZone.getTimeZone("America/Lima")).apply { timeInMillis = timestamp }
-                        reason = options.reason; location = options.location
+                        reason = if(options.appearance.showReason) options.reason else ""; location = if(options.appearance.showLocation) options.location else ""
                     }
                     var size = 0
                     SignatureOptions().use { signingOptions ->
                         signingOptions.preferredSignatureSize = SIGNATURE_RESERVE
+                        if(options.visible) signingOptions.page=options.pageNumber-1
                         document.addSignature(signature, null, signingOptions)
+                        if(options.visible) DesktopStampRenderer.apply(document,signature,options,citizen.fullName,citizen.dniNumber,timestamp)
                         Files.newOutputStream(signed).use { stream ->
                             val signing = document.saveIncrementalForExternalSigning(stream)
                             val context = coroutineContext
@@ -80,7 +81,7 @@ class JvmInvisiblePdfSigner(private val temporaryRoot: Path) : PadesSignerEngine
                     // No partial PDF reaches caller if parsing/card/signature verification failed.
                     Files.newInputStream(signed).use { it.copyTo(output) }; output.flush()
                     Result.success(PdfSignResult(signerName = citizen.fullName, signerDni = citizen.dniNumber,
-                        timestamp = timestamp, signatureSize = size, pageNumber = 0))
+                        timestamp = timestamp, signatureSize = size, pageNumber = if(options.visible) options.pageNumber else 0))
                 }
             }
         } catch (cancelled: CancellationException) { throw cancelled }

@@ -29,7 +29,7 @@ class DesktopWorkspace private constructor(val id: String, val directory: Path) 
         }
     }
 
-    suspend fun import(inputs: List<Path>, pdfMode: pe.gob.reniec.dnie.desktop.model.DesktopPdfMode = pe.gob.reniec.dnie.desktop.model.DesktopPdfMode.INVISIBLE): List<SigningDocument> {
+    suspend fun import(inputs: List<Path>, pdfMode: pe.gob.reniec.dnie.desktop.model.DesktopPdfMode = pe.gob.reniec.dnie.desktop.model.DesktopPdfMode.INVISIBLE, pdfOptions: pe.gob.reniec.dnie.pdf.PdfSigningOptions = pe.gob.reniec.dnie.pdf.PdfSigningOptions(visible=false,reason="",location="")): List<SigningDocument> {
         var total = 0L
         return inputs.map { source ->
             coroutineContext.ensureActive()
@@ -56,7 +56,7 @@ class DesktopWorkspace private constructor(val id: String, val directory: Path) 
                 SigningDocument(id = id, name = name, file = target.toFile(), size = Files.size(target),
                     pdfInput = name.endsWith(".pdf", ignoreCase = true),
                     detached = pdfMode == pe.gob.reniec.dnie.desktop.model.DesktopPdfMode.DETACHED,
-                    options = pe.gob.reniec.dnie.pdf.PdfSigningOptions(visible = false, reason = "", location = ""))
+                    options = pdfOptions.copy(visible = pdfMode == pe.gob.reniec.dnie.desktop.model.DesktopPdfMode.VISIBLE))
             } catch (e: Exception) {
                 Files.deleteIfExists(target)
                 throw e

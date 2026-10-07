@@ -38,4 +38,16 @@ class CliTest {
             assertEquals(2, runCli(base + options, PrintStream(ByteArrayOutputStream()), PrintStream(errors)))
         }
     }
+    @Test fun visibleOptionsAreSharedAndRejectInvalidPlacementAndFields() {
+        val base=arrayOf("demo","--workspace","jobs","--input","prueba.pdf")
+        val request=CliOptions.parse(base+arrayOf("--pdf-mode","visible","--pdf-page","2",
+            "--pdf-box","0.1,0.2,0.6,0.3","--pdf-fields","date,reason","--pdf-reason","Conforme","--pdf-style","minimal"))
+        assertEquals(pe.gob.reniec.dnie.desktop.model.DesktopPdfMode.VISIBLE,request.pdfMode)
+        assertEquals(2,request.pdfOptions.pageNumber); assertTrue(request.pdfOptions.appearance.showDate)
+        assertFalse(request.pdfOptions.appearance.showDni); assertEquals("Conforme",request.pdfOptions.reason)
+        for(options in listOf(arrayOf("--pdf-page","0"),arrayOf("--pdf-box","0.9,0.1,0.5,0.2"),
+            arrayOf("--pdf-fields","unknown"),arrayOf("--pdf-fields","dni,dni"))) {
+            assertEquals(2,runCli(base+options,PrintStream(ByteArrayOutputStream()),PrintStream(ByteArrayOutputStream())))
+        }
+    }
 }
