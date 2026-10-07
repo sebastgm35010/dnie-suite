@@ -22,7 +22,7 @@ Motor y dependencias: [mapa del motor](architecture/MOTOR_FUNCIONAL.md). Compose
 2. Android20: cierre por SM obsoleto corregido con6985 y nueva autenticacion exitosa en pruebas cifradas. Consulta vaciaPIN corregida sin habilitar VERIFY con datos. Cambios requieren regresion fisica del candidato.
 3. Seleccion equivocada superada en prueba real Android22; ahora supervisor/panel operativos preparados. Autenticacion siguiente es facial con ID Peru; no se ejecutara descarga/programa de cambio PIN.104/104APDU de referencia. Ver [resultado Android22](architecture/RESULTADO_ANDROID22_CIUDADANO_DIGITAL.md) y [causa confirmada](architecture/RESULTADO_SELECTOR_JAVA_HELLO_CONFIRMADO.md).
 4. Convivencia de minidriver y clientes. Minidriver DNI aislado; preservar CertPropSvc y SCardSvr. Restore privado disponible bajo D:/DNIeToolchain/MinidriverBackups/.
-5. ReFirma pendiente en sesion independiente. Boveda/passkeys migraciones y QR no probados fisicamente donde los informes lo indican.
+5. ReFirma CMS real validado: firma SHA256_RSA correcta y digest coincide con JSON original local. Sesion activa auditada sin APDU: backend privado deniega usuario normal, PCSC expone lector; VPCD antiguo escucha todas interfaces. Falta endurecer autorizacion por operacion y captura opt-in, no atribuir permiso por app al selector. Ver [auditoria y firma ReFirma](architecture/AUDITORIA_SESION_ACTIVA_REFIRMA_2_0.md). Boveda/passkeys migraciones y QR no probados fisicamente donde los informes lo indican.
 
 ## Operacion y registros
 
