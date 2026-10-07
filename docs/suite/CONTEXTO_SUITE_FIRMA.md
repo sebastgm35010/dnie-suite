@@ -6,7 +6,7 @@ Actualizado: 2026-10-07, America/Bogota. Este archivo es la entrada de contexto 
 
 Portar el comportamiento comprobado de Android a una suite local, con motor separado de la futura UI. Procesar originales, CMS/PDF, lotes, resultados y exportación en la PC; Android conserva NFC/PACE y el acceso al DNI por el puente existente. Las firmas con Firma Perú/ReFirma PCX acreditan que el lector puede ejecutar operaciones privadas desde Windows, pero no constituyen una prueba del cliente nuevo de la suite.
 
-Orden aprobado: checkpoint/CLI JVM → primera firma CMS con DNI → lotes reales → PDF sin visor → contratos locales estables → UI/editor. Plan e inventario MIT: [PLAN_SUITE_FIRMA_PROPIA.md](../architecture/PLAN_SUITE_FIRMA_PROPIA.md). No cambiar lectores/transportes ni duplicar algoritmos para resolver diferencias de API de escritorio.
+Decisión corregida por el usuario el 2026-10-07: **la suite no dependerá de PC/SC ni expondrá el DNI como lector global de Windows**. Usará una conexión privada directa con Android, con originales/CMS/PDF en la PC y PACE/PIN/CAN en el teléfono. El lector existente queda como compatibilidad independiente para ReFirma/Firma Perú. No ampliar el servicio SYSTEM para firmar documentos. Orden: checkpoint/CLI JVM → canal privado → primera firma CMS con DNI → lotes reales → PDF sin visor → contratos locales estables → UI/editor. Plan e inventario MIT: [PLAN_SUITE_FIRMA_PROPIA.md](../architecture/PLAN_SUITE_FIRMA_PROPIA.md).
 
 ## Referencias preservadas
 
@@ -59,15 +59,25 @@ Evidencia fuera de Git: `D:/DNIeToolchain/SuiteDemoH0/jobs/3c3f5c0f-d953-475f-aa
 
 No se conectó el DNI, no se instalaron APK/servicios ni se modificaron el controlador, minidriver, firewall o sesiones activas. Motor Android y puente quedaron operativamente preservados.
 
+## H1a: contrato privado implementado, todavía sin enlace físico
+
+Módulo JVM `dnie-signing-link`, compartido por escritorio y biblioteca Android. `PrivateSigningCard` adapta el motor de lotes existente; `AuthorizedSigningEndpoint` posee el transceptor preparado y PIN local, con presupuesto de firmas y plazo monotónico. OPEN/AUTHORIZE/CERTIFICATE/SIGN_SHA256/CLOSE; UUID y secuencia estricta, framing versionado y acotado. Sin APDU arbitraria, reset, datos del documento, PIN ni CAN en el enlace.
+
+`SigningDuplex`, `StreamSigningExchange` y `AuthorizedSigningConnection` separan el framing de los transportes. **No autentican ni cifran por sí solos**: el próximo adaptador debe autenticar y proporcionar flujos TLS fijados o tailnet verificada; USB conserva cifrado. UUID no es una credencial. No abrir un socket plano de producción ni publicar el lector como atajo.
+
+PIN incorrecto, pérdida de respuesta, error físico, repetición, vencimiento, agotamiento o cancelación invalidan la aprobación; no reintentar ni reconstruir PACE. El motor PC recibe PIN vacío y solicita autorización local al teléfono. Se conserva el VERIFY preventivo por operación. Aprobación móvil, emparejamiento, red/USB y arbitraje NFC todavía no están conectados a UI. Nunca interpretar este incremento como firma real o transporte seguro terminado.
+
+Pruebas nuevas: 15 de protocolo/extremos/streams y una de dos CMS con motor real, tarjeta simulada y codec en memoria. No se usó DNI/PCSC/red. Build y compilación APK Debug satisfactorios; no se instaló el APK. Checkpoint previo `checkpoint/pre-suite-private-link`, ZIP en D:. [Contrato y límites](../../dnie-signing-link/README.md).
+
 ## Siguiente hito y criterios
 
-1. Crear adaptador cliente PC/SC independiente de `WindowsPcscDevice` (backend IOCTL). Seleccionar explícitamente lector, obtener certificado de firma y serializar la conexión con transacción.
-2. Resolver el estado lógico observado: Android posee PACE físico; una sesión PC-PACE ya negociada no admite VERIFY/PSO claros. No exigir CAN en Windows ni resetear a ciegas sin determinar qué ruta necesita el adaptador.
-3. Añadir comando de firma real con credencial oculta, sin caché ni fallback a demo. Procesar un documento aprobado, comprobar `.p7s` con .NET y verificar que el certificado coincide con el DNI.
-4. Ensayar sesión propia y convivencia ReFirma → suite → ReFirma. Liberar handle/transacción sin reset rutinario; pérdida/cancelación nunca repite PIN o PSO.
+1. Transporte privado bajo usuario normal, emparejamiento/identidad propios sin acceso a secretos SYSTEM del puente, servicio claramente distinto de DNIBRDG1; autenticación antes de crear el endpoint.
+2. Caso de uso Android para aprobación de lote/PIN local y sesión NFC/PACE exclusiva; no consumir el transceptor de un ViewModel ajeno ni compartir SSC con un puente activo.
+3. Comando real sin fallback a demo: preparar original en PC, mostrar y autorizar lote, leer certificado, generar `.p7s` y verificar independientemente .NET.
+4. Prueba física sin lector instalado/publicado, cancelación y pérdida después de PSO sin reenvío. Después extender a lotes y a LAN/USB/Tailscale. Convivencia mediante exclusión explícita del DNI, no compartir sesión APDU.
 
 Después: lotes reales y PDF JVM con corpus Android compartido. Visor/GUI solo después del motor documental. Simulación no sustituye las pruebas físicas.
 
 ## Deuda explícita del prototipo
 
-Recovery/catalogación de trabajos incompletos al morir el proceso, ACL/endurecimiento del workspace y reparse points de ancestros, espacio libre, política de actualización, códigos de error públicos estables y cancelación interactiva son pendientes. Los límites por streaming y separación UUID no acreditan todo ese endurecimiento. El overload legado Android sigue como deuda separada; no mezclar su retirada con el cliente PC/SC nuevo.
+Recovery/catalogación de trabajos incompletos al morir el proceso, ACL/endurecimiento del workspace y reparse points de ancestros, espacio libre, política de actualización, códigos de error públicos estables y cancelación interactiva son pendientes. Los límites por streaming y separación UUID no acreditan todo ese endurecimiento. El overload legado Android sigue como deuda separada. El teléfono autoriza cantidad de operaciones; no puede comprobar visualmente documentos que permanecen exclusivamente en la PC. Strings del PIN requeridas por el transceptor heredado no tienen garantía de borrado de heap.

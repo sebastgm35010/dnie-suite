@@ -13,6 +13,7 @@ providers.gradleProperty("desktopBuildDir").orNull?.let { layout.buildDirectory.
 
 dependencies {
     implementation(project(":dnie-signing-core"))
+    implementation(project(":dnie-signing-link"))
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
 }

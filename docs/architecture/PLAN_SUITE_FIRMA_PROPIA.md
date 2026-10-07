@@ -2,19 +2,15 @@
 
 Fecha de revisión: 2026-10-07, America/Bogota. Referencia local: `7223401`, con motor compartido introducido en `c97e6e3`. Este documento propone desarrollo; no modifica motores, servicios, lectores o sesiones, ni instala dependencias.
 
-## Decisión recomendada
+## Decisión vigente: suite sin lector global
 
-Construir inicialmente una suite Windows con presentación .NET separada y un auxiliar local Kotlin/JVM que reutilice `dnie-core` y `dnie-signing-core`. Adaptar el PDF con Apache PDFBox de escritorio y conservar el lector PC/SC funcional. Antes de invertir en un visor o interfaz extensa, demostrar el contrato del cliente PC/SC con el traductor Android y su comportamiento después de otro consumidor.
+Corregida por instrucción explícita del usuario el 2026-10-07: suite Windows con presentación separada y motor Kotlin/JVM que reutiliza CMS/lotes. Android posee NFC/PACE y PIN/CAN; los documentos, hashes y formatos permanecen en PC. La suite se conecta directamente al teléfono por un canal privado, sin PC/SC, controlador personalizado ni servicio SYSTEM. El puente actual sigue disponible de forma independiente para ReFirma/Firma Perú.
 
-Actualización de prioridad acordada el 2026-10-07: preparar el desarrollo para la próxima sesión, empezando por el motor local sin interfaz gráfica. Las firmas funcionales desde Firma Perú y ReFirma PCX son evidencia de que la cadena lector → puente → Android → DNI puede ejecutar operaciones privadas desde Windows. El trabajo inicial es reproducir ese comportamiento con nuestro cliente y portar los adaptadores de plataforma, conservando algoritmos y reglas probados. No reabrir el diseño del lector o de los transportes como condición general para construir la suite.
+La propuesta anterior de usar un cliente PC/SC como requisito quedó superada. Primero contrato privado y transporte autenticado, después firma CMS real y lotes, PDF sin visor y finalmente UI/editor. El procesamiento documental se conserva; no se reescribe la criptografía. Tailscale requiere verificar pares de la tailnet; LAN y USB conservan cifrado/autenticación. Reutilizar adaptadores de transporte cuando sea posible, sin asumir que DNIBRDG1 sea el protocolo de suite ni acceder al PFX reservado al servicio.
 
-La firma PDF sin visor pertenece al motor y sí es prioritaria. La vista previa, el editor para colocar el sello y el diseño visual de la aplicación pertenecen a una fase posterior. El motor debe poder firmar un PDF con parámetros de página/posición proporcionados por un archivo de configuración o una orden local antes de disponer de un editor gráfico.
+H0 ya entregado: consola y workspace con simulación. H1a implementa `dnie-signing-link`: endpoint autorizado, cliente de tarjeta semántico y flujos acotados. Todavía no hay transporte físico de suite ni firma real con este cliente. Estado exacto: [contexto de la suite](../suite/CONTEXTO_SUITE_FIRMA.md).
 
-La suite hará propios la preparación, CMS, estampado, lotes y resultados; el lector seguirá siendo el adaptador de tarjeta. Esa edición no elimina la instalación del lector. El transporte directo al teléfono, PKCS#11 y simplificación del instalador son líneas posteriores, independientes de poder firmar documentos desde nuestra interfaz. Portable LAN no es el objetivo principal elegido por el usuario.
-
-Procesamiento local significa que el original, la preparación PDF, hashes, CMS, resultados y catálogo se procesan en la PC, sin servidor externo ni subida de documentos. Android conserva el acceso NFC, PACE físico y operaciones con el DNI mediante el puente existente. Ese enlace sigue siendo necesario para la tarjeta; no requiere enviarle el documento completo. La primera entrega no depende de construir IPC con una GUI: el ejecutable JVM se prueba directamente por consola. La presentación .NET y su canal local se incorporan después.
-
-Usar componentes MIT cuando aporten una función concreta. No sustituir el CMS probado solamente para cambiar la licencia de una dependencia ni incorporar una aplicación completa como plantilla. La licencia final de la suite propia todavía debe decidirse: no existe un LICENSE global que permita atribuir MIT a todo el repositorio.
+La firma PDF pertenece al motor; el visor/editor a una fase posterior. GUI .NET y canal local de usuario se incorporan después. Usar MIT cuando aporte una función concreta; no atribuir MIT a todo el repositorio ni sustituir CMS probado por una preferencia de licencia.
 
 ## Contexto revisado y evidencia
 
@@ -47,8 +43,8 @@ El núcleo mantiene IAS → PKI → PACE → PKI protegido, MAC/token, SSC y GET
 | Autorización temporal, lote, progreso y resultados parciales | Usar `dnie-signing-core`; corregir contratos solo ante diferencias observadas, con regresión Android. |
 | Archivos/importación/exportación | Sustituir SAF/Uri/cache Android por workspace local y streams en escritorio; originales y resultados con propietarios explícitos. |
 | PDF integrado y estampado | Implementar el contrato existente con PDFBox JVM, trasladando comportamiento y corpus de prueba. No sustituir el motor por un visor. |
-| Tarjeta/certificado/PIN/firma RSA | Adaptador cliente PC/SC que implementa el contrato de tarjeta; selección explícita y misma conexión por lote. El backend IOCTL y el cliente tienen responsabilidades distintas. |
-| NFC/PACE físico | Mantener en Android y en el puente comprobado. La sesión lógica PC necesita adaptación y prueba, sin duplicar PACE físico. |
+| Tarjeta/certificado/PIN/firma RSA | Cliente privado de operaciones semánticas; PIN local en Android, aprobación por lote y misma conexión física. Sin lector PC/SC. |
+| NFC/PACE físico | Mantener en Android y en el puente comprobado. El endpoint privado utiliza el transceptor exclusivo, sin PACE emulado para PC. |
 | UI, vista previa y editor | Consumidores futuros de casos de uso; no requisitos para la primera firma de consola. |
 
 Separar diferencias de API de fallos de protocolo. Un import PDFBox distinto se resuelve en el adaptador PDF; un rechazo APDU se estudia en el cliente de tarjeta. No cambiar SSC o añadir reintentos privados para corregir errores documentales. Las bibliotecas externas se incorporan para una carencia concreta, no como una reescritura completa.
@@ -63,23 +59,13 @@ Separar diferencias de API de fallos de protocolo. Un import PDFBox distinto se 
 
 .NET no carga Kotlin/JVM como un assembly. El auxiliar recibe trabajos mediante streams locales heredados del proceso padre, con framing, versión y límites, no HTTP abierto. El PIN no viaja en argumentos, variables de entorno, archivos o logs. Ese IPC pertenece a la suite; no ampliar el pipe privilegiado del agente para firmar documentos.
 
-## Primer requisito: cliente de tarjeta correcto
+## Primer requisito: canal privado autorizado
 
-`tools/windows-bridge/WindowsPcscDevice.cs` utiliza IOCTL privados para alimentar el lector. **No es el cliente PC/SC de la suite**. Crear un adaptador separado que enumere lectores, seleccione explícitamente el nuestro, obtenga ATR/protocolo, abra handle y serialice el lote mediante transacción. No usar «primer lector disponible» ni caer en Windows Hello.
+`dnie-signing-link` adapta `DnieTransceiverInterface` mediante operaciones semánticas y una sesión explícitamente aprobada por Android. El endpoint tiene el PIN y el transceptor; la PC solicita certificado y firma de 32 bytes. Los UUID/secuencias impiden mezcla y repetición dentro de una conexión, pero no autentican ni cifran al par.
 
-| Backend | Propiedad de PACE/SSC | Consecuencia |
-| --- | --- | --- |
-| NFC Android | `DnieTransceiver` y canal físico Android | Ruta rc5 probada; conservar. |
-| Lector virtual del puente | Android posee PACE físico; el endpoint también puede emular otro PACE para el consumidor PC | No repetir a ciegas PACE físico ni exigir CAN Windows por inercia. El adaptador debe conocer el estado lógico que recibe. |
-| Lector físico de contacto/NFC | Depende del perfil real del lector/tarjeta | Adaptador y prueba propios. No inferir que necesita exactamente el flujo del puente. Fuera del primer alcance. |
+El nuevo autenticador debe operar bajo usuario normal, conservar identidad de suite y comprobar emparejamiento antes de abrir el DNI. NFC y SSC se poseen de forma exclusiva: no tomar el transceptor de otro ViewModel ni negociar PC-PACE. El lector global se conserva solo como compatibilidad; la prueba de suite debe poder hacerse sin él.
 
-Hay una condición concreta en el código: `PaceTranslationEndpoint` acepta APDU lógicas en claro antes de negociar PC-PACE. Después de negociar, la ruta clara permite certificados/estado PIN, mientras VERIFY/PSO deben pasar por la sesión PC protegida. Por tanto «Android hace PACE» no garantiza que un cliente claro pueda entrar a cualquier sesión existente.
-
-Además, `TranslatedPaceCard.reset()` llama al reset físico; `RestartablePaceCard.reset()` reconstruye PACE. Liberar un handle/transacción no debe producir ese reset por rutina. Usar disposición de cierre que conserve la tarjeta cuando corresponde y probarla; un cambio de presencia requiere nueva autorización, no recuperación de SSC anteriores.
-
-Ensayos obligatorios de integración: suite sola en contexto nuevo y **ReFirma → suite → ReFirma**. Son pruebas de nuestro adaptador y convivencia; la capacidad del lector para firmar desde Windows ya tiene evidencia. El primer prototipo puede avanzar con la sesión propia controlada, registrando explícitamente cualquier límite de convivencia. Si el contexto usado exige PC-PACE, comparar dos soluciones explícitas: cliente PC-PACE con su CAN/SSC separados, o un contrato futuro de nueva sesión lógica que preserve la física y mantenga la política de autorización. Ese contrato no está implementado. No bajar protección ni resetear a ciegas para hacer funcionar el prototipo. Elegir después de capturar y verificar ambos casos con datos sintéticos primero. La implementación del PDF con una tarjeta simulada puede avanzar independientemente de la prueba física.
-
-La primera opción de cliente JVM es `javax.smartcardio` de Java 17; no aporta drivers ni protocolo DNI. [API oficial Card](https://docs.oracle.com/en/java/javase/17/docs/api/java.smartcardio/javax/smartcardio/Card.html). Si requiere un auxiliar C# para mejores controles WinSCard, usar el adaptador MIT Vanara y un contrato acotado, sin mover el CMS a C#.
+Pérdida, rechazo PIN, fallo físico, repetición o respuesta incierta cierran sesión; no repetir firma ni abrir PACE automáticamente. La aprobación limita cantidad y vigencia del lote. El teléfono no verifica visualmente originales que nunca recibe; explicar ese límite de confianza y vincular resultados al certificado observado.
 
 ## Componentes externos investigados
 
@@ -119,10 +105,10 @@ flowchart LR
     Worker --> Jobs[dnie-signing-core: lotes y resultados]
     Jobs --> CMS[dnie-core: CMS e integridad]
     Jobs --> PDF[dnie-pdf-desktop: PDFBox JVM]
-    Jobs --> Card[Adaptador cliente PCSC]
-    Card --> Reader[Lector funcional instalado]
-    Reader --> Bridge[Puente Windows y Android existentes]
-    Bridge --> DNI[PACE físico Android / DNI]
+    Jobs --> Card[dnie-signing-link: cliente privado]
+    Card --> Transport[USB / LAN TLS / Tailscale verificado]
+    Transport --> Endpoint[Android: endpoint y aprobación local]
+    Endpoint --> DNI[Transceptor / PACE físico / DNI]
 ```
 
 Nombres de módulos futuros: `dnie-pdf-desktop`, `dnie-signing-desktop` (worker), cliente `.NET` separado de `windows-control` y presentación suite separada de administración. El coordinador acepta tarjeta y motor PDF inyectados; no conoce WinForms, pipes, NFC o SYSTEM.
@@ -131,7 +117,7 @@ Contrato IPC inicial: handshake versión/capacidades, crear trabajo, importar ar
 
 No transferir PDFs completos como un JSON/base64 ni aceptar paths arbitrarios que el worker privilegiado pudiera leer: el auxiliar no es privilegiado y recibe archivos importados a su workspace privado. Evitar symlinks/reparse points fuera del workspace, archivos modificados entre aprobación/firma, mezcla de resultados entre jobs y mensajes tardíos tras cancelar. El transporte local inicial es stream heredado; si se cambia a named pipes, aplicar ACL de usuario, rechazo remoto y verificación de proceso, siguiendo principios del broker existente sin reutilizar su canal administrativo.
 
-PIN temporal por lote; ninguna caché global. El auxiliar lo necesita durante autorización por operación, no solo la primera. Su cierre limpia la copia mutable, sin prometer borrado absoluto de Strings/GC. Toda cancelación invalida el trabajo y libera transacción/handle; APDU privada de respuesta incierta no se reenvía. Claves privadas permanecen en el DNI.
+PIN temporal por lote exclusivamente en Android; ninguna caché global ni envío al auxiliar PC. El endpoint verifica antes de cada operación. Su cierre limpia la copia mutable, sin prometer borrado absoluto de Strings/GC. Cancelar invalida trabajo y sesión; operación privada de respuesta incierta no se reenvía. Claves privadas permanecen en el DNI.
 
 Preflight controla formato, espacio libre, original importado, página/DocMDP, opciones y certificado de firma. Vincular el lote al DER/huella y rol del certificado; no elegir autenticación/cifrado por aparecer primero en Windows. Una imagen manuscrita es apariencia, no una firma criptográfica ni evidencia de identidad por sí sola.
 
@@ -139,15 +125,15 @@ Publicación: staging en el mismo volumen del destino, nombre nuevo sin sobrescr
 
 ## Hitos pequeños y criterios de cierre
 
-Estado 2026-10-07: hito 0 entregado (CLI JVM y laboratorio CMS); ocho pruebas y tres archivos sintéticos verificados .NET. Implementación y siguiente paso físico en [contexto de la suite](../suite/CONTEXTO_SUITE_FIRMA.md). Hito 1 con DNI/PCSC todavía pendiente.
+Estado 2026-10-07: hito 0 entregado (CLI JVM y laboratorio CMS); ocho pruebas y tres archivos sintéticos verificados .NET. Implementación y siguiente paso físico en [contexto de la suite](../suite/CONTEXTO_SUITE_FIRMA.md). H1a privado entregado con simulación; transporte autenticado y primera firma real pendientes.
 
 | Orden | Entrega | Prueba requerida antes de avanzar |
 | --- | --- | --- |
 | 0 | Base protegida y ejecutable JVM de consola | Checkpoint del estado físico validado; `dnie-signing-desktop` con adaptadores inyectables, workspace y resultados estructurados. Prueba con certificado/clave simulados sin teléfono ni UI. Regresión Android preservada; retirada del overload legado en parche separado, sin bloquear el esqueleto desktop. |
-| 1 | Primera firma CMS local desde la suite | Selección explícita del lector, lectura del certificado de firma y un `.p7s` contra archivo aprobado, con verificación independiente .NET. PIN por entrada oculta, nunca argumentos/archivos/logs; una conexión y transacción. Simular autorización consumida y errores antes de la prueba física. No rehacer lector/transportes que ya firman. |
-| 2 | Lote CMS funcional por consola | Tres o más originales, una entrada PIN, una sesión; resultados/ZIP y CER/PEM. Falla local continúa, rechazo PIN/pérdida tarjeta detienen sin repetir. Cancelación, disco lleno, colisión de nombres y originales inmutables. Capturar además ensayo ReFirma → suite → ReFirma, con límites de convivencia explícitos. |
+| 1 | Primera firma CMS local desde la suite | Conexión privada autenticada, aprobación/PIN local Android, certificado de firma y `.p7s` contra original aprobado en PC, con verificación independiente .NET. Probar sin lector publicado/instalado. Simular autorización consumida y pérdidas antes de la prueba física. |
+| 2 | Lote CMS funcional por consola | Tres o más originales, una entrada PIN, una sesión; resultados/ZIP y CER/PEM. Falla local continúa, rechazo PIN/pérdida tarjeta detienen sin repetir. Cancelación, disco lleno, colisión de nombres y originales inmutables. Comprobar exclusión NFC y regreso al puente compatible con sesiones nuevas; no compartir SSC. |
 | 3 | PDF escritorio sin vista previa | Adaptador `dnie-pdf-desktop` probado primero con clave simulada, después con DNI: invisible, visible/manuscrita, página y rectángulo por configuración. Corpus Android: firmas incrementales, ByteRange, alteración, CropBox/rotación, texto/Unicode, DocMDP/cifrado y reserva. Lote mixto PDF/CMS verificado independientemente. Ninguna firma de muestra para calcular tamaño. |
-| 4 | Motor local de trabajos estable y distribución de laboratorio | Contratos de trabajo/progreso/cancelación/exportación, preparación/aprobación explícita, cierre del proceso y limpieza de temporales sin repetir firma. Cliente IPC de usuario cuando se conecte la GUI. Verificador básico de integridad disponible desde fases CMS/PDF; confianza/revocación diferenciadas. Medir memoria y tamaño; versiones, avisos y prueba con cuenta normal/lector instalado. No crear otro servicio SYSTEM. |
+| 4 | Motor local de trabajos estable y distribución de laboratorio | Contratos de trabajo/progreso/cancelación/exportación, preparación/aprobación explícita, cierre del proceso y limpieza de temporales sin repetir firma. Cliente IPC de usuario cuando se conecte la GUI. Verificador básico de integridad disponible desde fases CMS/PDF; confianza/revocación diferenciadas. Medir memoria y tamaño; versiones, avisos y prueba con cuenta normal/sin lector global. No crear otro servicio SYSTEM. |
 | 5 | UI sobre el motor estable | Primero seleccionar archivos, confirmar lote, progreso, resultados y exportar. Después visor/editor PDF para página, arrastrar/redimensionar sello y campos. Preview con renderizado acotado y cancelación; probar que sus acciones llaman los mismos casos de uso de consola. Pulido visual y rediseño Android independientes. |
 
 Los hitos expresan orden de entrega, no estimaciones de días. Se avanza tras validar el criterio del incremento. Las simulaciones y el adaptador PDF pueden desarrollarse sin presencia del usuario; las operaciones físicas requieren una sesión y documentos aprobados. La convivencia completa se cierra antes de una distribución pública, sin convertirla en una investigación del lector que bloquee toda la adaptación local.
@@ -157,7 +143,7 @@ Los hitos expresan orden de entrega, no estimaciones de días. Se avanza tras va
 1. Guardar checkpoint/fuentes del estado actual sin sustituir el respaldo previo. Confirmar que los artefactos y caches grandes siguen en D:.
 2. Crear `dnie-signing-desktop` JVM dependiente de core/signing-core. Implementar entrada de consola y modelos de solicitud/resultado que no dependan de la futura GUI ni del gestor del puente.
 3. Usar un doble de tarjeta y archivos sintéticos para ejecutar CMS y luego un lote; comprobar resultados con el verificador independiente disponible.
-4. Añadir el adaptador PC/SC y diagnósticos mínimos de selección/estado/errores. Reproducir la secuencia compatible con el puente funcional, conservando la autoridad de PACE en Android.
+4. Añadir autenticación/transporte de suite y aprobación Android, utilizando el contrato privado H1a. Conservar PACE/PIN en Android y documentar límites de confianza.
 5. Cuando haya DNI disponible, ejecutar una firma CMS de un archivo explícitamente aprobado. Conservar evidencia privada fuera de Git y registrar solo resultados agregados.
 
 La entrega inicial concreta es un firmador local invocable por consola que produce un `.p7s` válido. No incluye visor, editor PDF, cloud, instalador nuevo ni una UI terminada. El PDF integrado y los lotes completos son las siguientes entregas del mismo motor.
@@ -166,11 +152,11 @@ Para el verificador offline aprovechar el CMS JVM y un adaptador Windows X509Cha
 
 ## Alcance inicial y pendientes
 
-PDF visible/invisible/manuscrita, CMS separado para archivos arbitrarios, lotes secuenciales, CER/PEM, ZIP y resultados parciales son alcance inicial. XML/XAdES, firma masiva desde aplicaciones externas, plantillas, QR remoto/web y validación avanzada quedan después. No implementar otro stack de transporte mientras se valida el documental.
+PDF visible/invisible/manuscrita, CMS separado para archivos arbitrarios, lotes secuenciales, CER/PEM, ZIP y resultados parciales son alcance inicial. XML/XAdES, firma masiva desde aplicaciones externas, plantillas, QR remoto/web y validación avanzada quedan después. El transporte privado es requisito de esta suite; desacoplarlo del motor documental y del puente PC/SC.
 
-Antes de empaquetar públicamente: inventario de procedencia/licencias propias, dependencias exactas y avisos; elección de licencia del producto; editor/instalador y driver de producción; estabilidad/reconexión USB/LAN; política de autorización de otros consumidores PC/SC; cambios de DNI/certificado; Windows sin middleware y con middleware activo. Las licencias permisivas localizadas son candidatos, no una decisión de publicar todo el proyecto ni una prueba de interoperabilidad con RENIEC.
+Antes de empaquetar públicamente: inventario de procedencia/licencias propias, dependencias exactas y avisos; elección de licencia del producto; editor/instalador propio (el driver del puente no es requisito de suite); estabilidad/reconexión USB/LAN; política de autorización de otros consumidores PC/SC; cambios de DNI/certificado; Windows sin middleware y con middleware activo. Las licencias permisivas localizadas son candidatos, no una decisión de publicar todo el proyecto ni una prueba de interoperabilidad con RENIEC.
 
-Usar Java 17/.NET 8 y caches actuales para el primer ensayo. Artefactos, descargas y pruebas grandes en D:, sin otro SDK/WDK ni caches duplicadas en C:. Medir tamaño y memoria reales de worker/runtime/visor; estudiar runtime Java reducido y revisar sus avisos antes de distribuirlo. No prometer paquete portable pequeño ni driverless por usar un auxiliar de usuario.
+Usar Java 17/.NET 8 y caches actuales para el primer ensayo. Artefactos, descargas y pruebas grandes en D:, sin otro SDK/WDK ni caches duplicadas en C:. Medir tamaño y memoria reales de worker/runtime/visor; estudiar runtime Java reducido y revisar sus avisos antes de distribuirlo. No prometer paquete pequeño ni USB libre de dependencias nativas antes de verificar su distribución. La suite no necesita el controlador lector PC/SC.
 
 ## Resultado de esta investigación
 

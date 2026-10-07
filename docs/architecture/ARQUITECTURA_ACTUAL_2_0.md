@@ -15,12 +15,13 @@ La UI presenta estado y emite acciones. ViewModels y controladores coordinan cas
 | `dnie-icao` | Sesión ICAO independiente y lectura por bloques | protocol |
 | `dnie-pdf` | Motor PDF/PAdES y sello visual Android | core, signing-core |
 | `dnie-signing-core` | Contratos PDF, documentos/resultados y motor de lotes JVM; autorización limitada a una conexión | protocol, diagnostics-core |
-| `dnie-signing-desktop` | CLI JVM, workspace/adaptadores locales y simulación explícita de suite (hito 0) | signing-core |
+| `dnie-signing-desktop` | CLI JVM, workspace/adaptadores locales y simulación explícita de suite (hito 0) | signing-core, signing-link |
+| `dnie-signing-link` | Contrato privado de firma, endpoint con autorización/PIN móvil, cliente y framing de flujos; todavía sin transporte físico de suite | protocol |
 | `dnie-vault-core` | Contenedor, catálogo y formatos cifrados de bóveda | Ninguna interna |
 | `dnie-passkeys-core` | WebAuthn, CBOR/COSE y validación | diagnostics-core |
 | `dnie-passkeys-android` | Credential Manager, almacén Android y autorización | passkeys-core, vault-core, protocol |
 | `dnie-bridge-core` | Contratos/framing del puente y método de conexión | Ninguna interna |
-| `dnie-bridge-android` | Sesión del puente y adaptación del traductor | bridge-core, protocol |
+| `dnie-bridge-android` | Sesión del puente y adaptación del traductor; acceso al contrato privado de suite todavía sin enlace físico | bridge-core, protocol, signing-link |
 | `app` | Compose, ViewModels, casos de uso y adaptadores Android | Bibliotecas anteriores según función |
 
 La tabla se contrastó con `settings.gradle.kts` y las dependencias `project(...)`. Los detalles de archivos de funcionalidades anteriores permanecen en [arquitectura del fork](../../ARQUITECTURA_FORK.md).
@@ -46,6 +47,8 @@ Invariantes: mantener IAS → PKI → PACE → PKI protegido. Las claves y SSC d
 ICAO abre una conexión y sesión propias. Los bloques ausentes no impiden recuperar los completos; pérdida de transporte/integridad detiene esa sesión. EF.SOD contiene material del emisor, no el certificado de firma personal.
 
 ## Extremo Windows
+
+Decisión 2026-10-07: el esquema siguiente describe **el puente compatible existente**, no la futura suite documental. La suite usa `dnie-signing-desktop → dnie-signing-link → transporte privado autenticado → endpoint Android → transceptor/PACE → DNI`, sin PC/SC ni servicio SYSTEM. H1a implementa motores/framing y pruebas simuladas; faltan autenticador, integración física y aprobación UI. Los originales y CMS permanecen en PC; PIN/CAN en Android. Detalle en [contexto de suite](../suite/CONTEXTO_SUITE_FIRMA.md).
 
 ```mermaid
 flowchart LR

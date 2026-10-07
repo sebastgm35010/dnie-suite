@@ -15,6 +15,7 @@ android {
 dependencies {
     api(project(":dnie-bridge-core"))
     api(project(":dnie-protocol"))
+    implementation(project(":dnie-signing-link"))
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20240303")
 }
