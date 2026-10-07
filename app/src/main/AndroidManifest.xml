@@ -55,6 +55,7 @@
             android:excludeFromRecents="true" android:theme="@style/Theme.DnieSigner" />
 
         <activity android:name=".ui.bridge.BridgeActivity" android:exported="false" android:launchMode="singleTop" android:excludeFromRecents="true" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".ui.suite.RemoteSigningActivity" android:exported="false" android:excludeFromRecents="true" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ui.bridge.BridgeUsbAttachActivity" android:exported="true"
             android:theme="@android:style/Theme.NoDisplay" android:excludeFromRecents="true">
             <intent-filter>

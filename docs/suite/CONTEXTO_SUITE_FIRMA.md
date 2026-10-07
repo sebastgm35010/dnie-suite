@@ -2,6 +2,8 @@
 
 Actualizado: 2026-10-07, America/Bogota. Este archivo es la entrada de contexto para el nuevo extremo documental Windows. Diferenciar motor probado, simulación de escritorio y conexión real al DNI.
 
+Estado más reciente: **H1b implementado**: comando `remote`, TLS inverso autenticado, solicitud de un trabajo con huella/token, pantalla Android Certificados → Suite y autorización/PIN local/NFC. APK 54 / `2.0.0-rc6-remote-signing`; primera firma física LAN completada: 1/1 CMS con DNI y verificación independiente .NET, certificado coincidente con el previamente validado y rechazo al alterar contenido. Revocación no comprobada. [Procedimiento y límites](FIRMA_REMOTA_H1B.md).
+
 ## Objetivo y alcance
 
 Portar el comportamiento comprobado de Android a una suite local, con motor separado de la futura UI. Procesar originales, CMS/PDF, lotes, resultados y exportación en la PC; Android conserva NFC/PACE y el acceso al DNI por el puente existente. Las firmas con Firma Perú/ReFirma PCX acreditan que el lector puede ejecutar operaciones privadas desde Windows, pero no constituyen una prueba del cliente nuevo de la suite.
@@ -71,10 +73,10 @@ Pruebas nuevas: 15 de protocolo/extremos/streams y una de dos CMS con motor real
 
 ## Siguiente hito y criterios
 
-1. Transporte privado bajo usuario normal, emparejamiento/identidad propios sin acceso a secretos SYSTEM del puente, servicio claramente distinto de DNIBRDG1; autenticación antes de crear el endpoint.
-2. Caso de uso Android para aprobación de lote/PIN local y sesión NFC/PACE exclusiva; no consumir el transceptor de un ViewModel ajeno ni compartir SSC con un puente activo.
-3. Comando real sin fallback a demo: preparar original en PC, mostrar y autorizar lote, leer certificado, generar `.p7s` y verificar independientemente .NET.
-4. Prueba física sin lector instalado/publicado, cancelación y pérdida después de PSO sin reenvío. Después extender a lotes y a LAN/USB/Tailscale. Convivencia mediante exclusión explícita del DNI, no compartir sesión APDU.
+1. H1b físico completado: solicitud TXT, autorización local y DNI produjeron un CMS verificado independientemente. Evidencia y rutas privadas en [FIRMA_REMOTA_H1B.md](FIRMA_REMOTA_H1B.md).
+2. Validar lote real, cancelación/pérdida y ausencia de lector publicado en este recorrido. Los tests TLS reales con tarjeta simulada no sustituyen ese ensayo.
+3. Identidad permanente/recordar PC y autorizaciones posteriores. H1b usa identidad TLS efímera por trabajo, solicitud cinco minutos, sin acceder a secretos SYSTEM del puente.
+4. Extender UX/conexión Tailscale y USB privado, después PDF integrado. LAN/Tailscale por IP privada usan TLS inverso; USB de suite aún no está implementado. Convivencia mediante exclusión explícita del DNI, no compartir sesión APDU.
 
 Después: lotes reales y PDF JVM con corpus Android compartido. Visor/GUI solo después del motor documental. Simulación no sustituye las pruebas físicas.
 

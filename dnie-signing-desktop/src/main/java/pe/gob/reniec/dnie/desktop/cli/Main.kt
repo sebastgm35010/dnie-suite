@@ -13,17 +13,23 @@ fun runCli(args: Array<String>, output: PrintStream = System.out, errors: PrintS
     if (args.isEmpty() || args.contentEquals(arrayOf("--help"))) {
         output.println("Suite DNIe - Hito 0 (laboratorio local)")
         output.println("demo --workspace <carpeta> --input <archivo> [--input <otro>]")
+        output.println("remote --pc <IP privada PC> --phone <IP teléfono> --workspace <carpeta> --input <archivo> [--input <otro>]")
         output.println("SIMULACION: certificado y clave temporales; no utiliza el DNI ni PC/SC.")
         return 0
     }
-    val request = try { CliOptions.parse(args) } catch (_: Exception) {
+    val remote = try { if (args.firstOrNull() == "remote") pe.gob.reniec.dnie.desktop.remote.RemoteOptions.parse(args) else null } catch (_: Exception) {
+        errors.println("Solicitud remota inválida. No se aceptan PIN/CAN como argumentos.")
+        return 2
+    }
+    val request = try { remote?.request ?: CliOptions.parse(args) } catch (_: Exception) {
         errors.println("Solicitud inválida. Consulte --help. No se aceptan PIN/CAN como argumentos.")
         return 2
     }
     return try {
-        output.println("SIMULACION: estos resultados no están firmados con un DNI.")
+        if (remote == null) output.println("SIMULACION: estos resultados no están firmados con un DNI.")
         val result = runBlocking {
-            DesktopSigningService().execute(request, SimulatedSigningCard(), SimulatedSigningCard.DEMO_PIN, SigningBackend.SIMULATED)
+            if (remote != null) pe.gob.reniec.dnie.desktop.remote.RemoteSigningCommand.execute(remote, output)
+            else DesktopSigningService().execute(request, SimulatedSigningCard(), SimulatedSigningCard.DEMO_PIN, SigningBackend.SIMULATED)
         }
         output.println("Trabajo: ${result.jobId}")
         output.println("Resultados: ${result.directory}")

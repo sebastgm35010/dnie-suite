@@ -1,5 +1,11 @@
 # Canal privado de la suite (incremento H1a)
 
+Actualización H1b: `SigningProvision` y `PhoneSigningTransport` implementan solicitud de
+un trabajo y TLS inverso con huella fijada; cliente `ReverseTlsExchange` en escritorio.
+La UI Android y comando `remote` están conectados al motor. Tests TLS reales con tarjeta
+simulada pasan; primera firma física LAN de suite completada y verificada con .NET. El estado H1a al final es histórico.
+[Procedimiento vigente](../docs/suite/FIRMA_REMOTA_H1B.md).
+
 Contrato JVM compartido entre escritorio y Android, independiente de PC/SC, controlador,
 servicio SYSTEM, UI y transporte físico. No crea un lector del sistema ni sockets de red.
 

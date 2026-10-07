@@ -8,7 +8,7 @@ Corregida por instrucción explícita del usuario el 2026-10-07: suite Windows c
 
 La propuesta anterior de usar un cliente PC/SC como requisito quedó superada. Primero contrato privado y transporte autenticado, después firma CMS real y lotes, PDF sin visor y finalmente UI/editor. El procesamiento documental se conserva; no se reescribe la criptografía. Tailscale requiere verificar pares de la tailnet; LAN y USB conservan cifrado/autenticación. Reutilizar adaptadores de transporte cuando sea posible, sin asumir que DNIBRDG1 sea el protocolo de suite ni acceder al PFX reservado al servicio.
 
-H0 ya entregado: consola y workspace con simulación. H1a implementa `dnie-signing-link`: endpoint autorizado, cliente de tarjeta semántico y flujos acotados. Todavía no hay transporte físico de suite ni firma real con este cliente. Estado exacto: [contexto de la suite](../suite/CONTEXTO_SUITE_FIRMA.md).
+H0 ya entregado: consola y workspace con simulación. H1a implementa `dnie-signing-link`: endpoint autorizado, cliente de tarjeta semántico y flujos acotados. H1b ya añade TLS inverso, consentimiento Android y firma física LAN: 1/1 CMS verificado independientemente .NET. Lotes remotos físicos, identidad permanente y PDF integrado son los siguientes hitos. Estado exacto: [contexto de la suite](../suite/CONTEXTO_SUITE_FIRMA.md).
 
 La firma PDF pertenece al motor; el visor/editor a una fase posterior. GUI .NET y canal local de usuario se incorporan después. Usar MIT cuando aporte una función concreta; no atribuir MIT a todo el repositorio ni sustituir CMS probado por una preferencia de licencia.
 

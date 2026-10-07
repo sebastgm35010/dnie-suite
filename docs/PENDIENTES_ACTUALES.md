@@ -1,13 +1,13 @@
 # Pendientes actuales · Windows rc4 USB / Android rc4-usb
 
-Actualizado 2026-10-07 tras validación física del motor compartido de firma. El diagnóstico del teléfono confirma `2.0.0-rc5-signing`, correspondiente al candidato compilado 53. Este listado sustituye los encabezados de pendientes de versiones anteriores. Diferenciar implementación, simulación y validación con dispositivo real.
+Actualizado 2026-10-07 tras primera firma remota física de suite H1b (APK 54), además de la validación del motor compartido de firma. El diagnóstico del teléfono confirma `2.0.0-rc5-signing`, correspondiente al candidato compilado 53. Este listado sustituye los encabezados de pendientes de versiones anteriores. Diferenciar implementación, simulación y validación con dispositivo real.
 
 ## Siguiente secuencia
 
 | Prioridad | Trabajo | Estado / criterio de cierre |
 | --- | --- | --- |
 | P1 | Causa de lector ausente de PC/SC pese a backend conectado | Usuario confirma recuperación tras reiniciar. Falta determinar causa y reproducibilidad: capturar enumeración/arranque PnP, UMDF y SCardSvr si se repite, distinguiendo estado privado del backend y visibilidad real. No reinstalar minidriver sin evidencia. [Diagnóstico](operations/LECTOR_AUSENTE_PCSC_2026_10_07.md). |
-| P1 | Canal privado de suite propia, sin PC/SC | H0 CLI y H1a contrato/endpoint/cliente/streams implementados con simulación. Sigue autenticación propia de usuario y transporte, aprobación Android/PIN local y primera firma CMS real sin publicar lector. Después lotes/PDF. No compartir SSC con puente activo ni ampliar servicio SYSTEM. [Contexto de suite](suite/CONTEXTO_SUITE_FIRMA.md). |
+| P1 | Firma remota privada de suite, sin PC/SC | H1b implementa comando real/TLS inverso y aprobación Android/PIN local. Tests de red TLS con tarjeta simulada pasan, APK 54 compilado. Primera firma física LAN completada (1/1 CMS) y verificada .NET, con certificado DNI coincidente y rechazo de contenido alterado. Faltan lotes/pérdidas físicos y emparejamiento permanente; USB/PDF pendientes. No compartir SSC ni ampliar SYSTEM. [Procedimiento](suite/FIRMA_REMOTA_H1B.md). |
 | P1 | Ampliar regresión física de lotes Android rc5 | Lote físico de cuatro archivos y ZIP verificados: dos PDF, dos CMS y una firma PDF anterior conservada; mismo certificado instalado Windows. Una entrada de PIN, una apertura PACE, 3.721 s, sin fallas. Pendientes: lotes mayores, interrupción/cancelación física y perfilado de frames lentos. Ver MOTOR_FIRMA_LOTES_RC5.md. |
 | P0 | Arranque real después del reinicio | Comprobar servicio automático y lector PnP, sin host/red hasta pulsar Iniciar. Abrir dos veces el gestor y comprobar una ventana; iniciar/parar sin UAC. No asumir que la prueba previa de SCM acredita un reinicio real. |
 | P0 | Identificar y retirar el listener legado | Antes del reinicio hay `0.0.0.0:35963` bajo WUDFHost. Identificar su dispositivo/controlador; retirar únicamente el componente legado si se confirma. No matar WUDFHost genéricamente, ni tocar SCardSvr/Hello. El lector propio no usa red/VPCD. Cierre: sin listener legado y lector propio operativo. |

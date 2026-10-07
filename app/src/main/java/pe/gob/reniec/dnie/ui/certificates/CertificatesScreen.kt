@@ -61,7 +61,8 @@ fun CertificatesScreen(
     viewModel: CertificatesViewModel,
     modifier: Modifier = Modifier,
     onOpenVault: () -> Unit = {},
-    onOpenBridge: () -> Unit = {}
+    onOpenBridge: () -> Unit = {},
+    onOpenSuite: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -105,6 +106,9 @@ fun CertificatesScreen(
                     actionIconContentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 actions = {
+                    TextButton(onClick = onOpenSuite, enabled = uiState !is CertificatesUiState.ReadingCard) {
+                        Text("Suite", color = MaterialTheme.colorScheme.onPrimary)
+                    }
                     TextButton(onClick = onOpenBridge, enabled = uiState !is CertificatesUiState.ReadingCard) {
                         Text("PC", color = MaterialTheme.colorScheme.onPrimary)
                     }

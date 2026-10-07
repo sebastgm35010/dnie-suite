@@ -40,7 +40,8 @@ class StreamSigningExchange(private val channel: SigningDuplex) : SigningExchang
  * Never reopen physical PACE, extend approval, retry a signature or publish a system reader.
  */
 class AuthorizedSigningConnection(private val channel: SigningDuplex,
-                                  private val endpoint: AuthorizedSigningEndpoint) : AutoCloseable {
+                                  private val endpoint: AuthorizedSigningEndpoint,
+                                  private val onStatus: (SigningStatus) -> Unit = {}) : AutoCloseable {
     private val used = AtomicBoolean()
     private val closed = AtomicBoolean()
     suspend fun run() = withContext(Dispatchers.IO) {
@@ -51,6 +52,7 @@ class AuthorizedSigningConnection(private val channel: SigningDuplex,
                 coroutineContext.ensureActive()
                 val request = SigningFrames.read(channel.input) ?: break
                 val response = endpoint.process(request)
+                onStatus(response.status)
                 SigningFrames.write(channel.output, response)
                 if (request.operation == SigningOperation.CLOSE || response.status != SigningStatus.OK) break
             }

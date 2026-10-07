@@ -1,4 +1,4 @@
-# Suite local · primer hito
+# Suite local · registro histórico H0
 
 Ejecutable Kotlin/JVM, sin GUI, que reutiliza `dnie-core` y `dnie-signing-core`. Esta entrega es **simulación explícita**, con una clave temporal y un certificado sintético por trabajo. No firma con el DNI, no conecta a PC/SC y no usa certificados personales Windows. La clave simulada no se exporta.
 
@@ -26,4 +26,10 @@ El motor inyecta tarjeta/PDF; los adaptadores de almacenamiento, CLI y resultado
 
 Códigos CLI: `0` ayuda o trabajo completo; `1` resultado incompleto/falla; `2` argumentos inválidos. No se aceptan PIN/CAN como argumentos. No hay fallback automático desde un modo real a simulación. Workspace y resultados de laboratorio deben permanecer fuera de Git.
 
-Siguiente entrega: adaptador cliente PC/SC, selección explícita del lector, credencial oculta y primera firma CMS con DNI aprobado. Contexto permanente: [CONTEXTO_SUITE_FIRMA.md](../docs/suite/CONTEXTO_SUITE_FIRMA.md).
+La propuesta H0 de cliente PC/SC fue sustituida por el canal privado H1b descrito abajo. Contexto permanente: [CONTEXTO_SUITE_FIRMA.md](../docs/suite/CONTEXTO_SUITE_FIRMA.md).
+# Actualización H1b: firma remota privada
+
+El comando `remote` conecta con Android por TLS inverso y utiliza el DNI real exclusivamente
+después de autorizar el lote/PIN en Certificados → Suite. No usa PC/SC ni fallback a demo.
+Solicitud TXT/QR efímera por trabajo; documentos, CMS y resultados permanecen en PC.
+Primera firma física LAN completada (1/1 CMS), con integridad/certificado DNI y rechazo de contenido alterado verificados mediante .NET; tests TLS con tarjeta simulada también pasan. [Procedimiento](../docs/suite/FIRMA_REMOTA_H1B.md).
