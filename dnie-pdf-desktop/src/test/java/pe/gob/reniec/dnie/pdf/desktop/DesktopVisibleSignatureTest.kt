@@ -33,7 +33,9 @@ class DesktopVisibleSignatureTest {
         assertArrayEquals(bytes,out.toByteArray().copyOf(bytes.size)); return out.toByteArray()
     }
     private fun verify(bytes: ByteArray) = Loader.loadPDF(bytes).use { doc ->
+        assertEquals(bytes.size, doc.signatureDictionaries.last().byteRange.let { it[2] + it[3] })
         doc.signatureDictionaries.forEach { sig ->
+            assertPadesProfile(sig, bytes, identity.certificate)
             val cms=CMSSignedData(CMSProcessableByteArray(sig.getSignedContent(bytes)),sig.getContents(bytes))
             assertTrue(cms.signerInfos.signers.single().verify(JcaSimpleSignerInfoVerifierBuilder().build(identity.certificate)))
         }

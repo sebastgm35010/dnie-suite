@@ -1,5 +1,7 @@
 # Pendientes actuales · Windows rc4 USB / Android rc4-usb
 
+2026-10-07 · H7: usuario confirma PDF Android 58 VÁLIDO y PAdES_BASELINE_B. Perfil DER sin signingTime y /M UTC trasladado a PDF desktop; 104 pruebas y demo sintético .NET pasan. GUI/CLI nuevas en D:/DNIeToolchain/Builds/pades-baseline-b, distribuciones anteriores preservadas. Pendiente clasificación externa de PDF Windows con DNI, revocación/TSL integradas y TSA. [Estado y rutas](suite/PADES_BASELINE_DESKTOP_H7.md).
+
 2026-10-07 · H6 Android: perfil PAdES explícito sin signingTime CMS, DER y /M UTC; CMS .p7s y Windows conservan perfil previo. 189 pruebas finales pasan, APK 58 compilado y pendiente de instalar (ADB sin dispositivo). Checkpoint previo de código/APK 57 en D:. Siguiente: PDF físico firmado en Android y clasificación Baseline B en validador antes de portar a Windows. [Detalle y evidencia](suite/ANDROID_PADES_BASELINE_H6.md).
 
 2026-10-07 · Prioridad de conformidad: validador reporta PDF_NOT_ETSI para la suite pese a integridad válida. Auditoría confirma signingTime CMS incompatible y BER en PDF real; investigar/corregir perfil PAdES B antes de TSA T, luego LT/LTA. Sin cambios de motor en este diagnóstico. [Plan y evidencia](suite/PADES_CONFORMIDAD_PLAN.md).

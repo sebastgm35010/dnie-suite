@@ -28,3 +28,8 @@ APK: D:/DNIeToolchain/AndroidPackages/dnie-evolution-2.0.0-rc10-android-pades-de
 SHA256: C71982E723D575FAC9BAE14C61650B3AF60427FBE277133F93F234C077A01330.
 
 No instalado: teléfono primero offline y luego ausente de ADB. Prueba física y clasificación externa pendientes. Las comprobaciones ASN.1/PDF propias no sustituyen una evaluación independiente completa de conformidad.
+## Prueba física reportada: Baseline B confirmado
+
+2026-10-07: usuario recibió APK 58 por Telegram y aporta resultado de su PDF nuevo firmado desde Android. Firma generada 13:07:07 UTC−05; validada 13:07:41 UTC−05. Portal reporta VÁLIDO, integridad preservada, una firma válida, PAdES_BASELINE_B, RSA with SHA256 y raíz en TSL. No hay TSA; fecha declarada del equipo. Coincide certificado de firma y cadena ya observados, sin almacenar datos personales del reporte en Git.
+
+La clasificación Baseline B queda confirmada para este artefacto según el resultado aportado; no es homologación del producto, conformidad exhaustiva de todos los casos ni validación local independiente del PDF, que no fue adjuntado en esta prueba. El estado «no instalado/pendiente» anterior corresponde al momento de publicar el APK; esta prueba posterior acredita su uso reportado. Según el orden autorizado, se inicia traslado del mismo perfil explícito a PDF desktop, manteniendo .p7s y transportes.

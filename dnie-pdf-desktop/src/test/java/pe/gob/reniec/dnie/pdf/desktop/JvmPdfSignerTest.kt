@@ -33,6 +33,7 @@ class JvmPdfSignerTest {
         Loader.loadPDF(bytes).use { doc ->
             assertEquals(expected, doc.signatureDictionaries.size)
             doc.signatureDictionaries.forEach { signature ->
+                assertPadesProfile(signature, bytes, identity.certificate)
                 val cms = CMSSignedData(CMSProcessableByteArray(signature.getSignedContent(bytes)), signature.getContents(bytes))
                 assertTrue(cms.signerInfos.signers.single().verify(JcaSimpleSignerInfoVerifierBuilder().build(identity.certificate)))
             }

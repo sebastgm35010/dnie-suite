@@ -55,7 +55,7 @@ class JvmPdfSigner(private val temporaryRoot: Path) : PadesSignerEngineInterface
                         setFilter(PDSignature.FILTER_ADOBE_PPKLITE)
                         setSubFilter(COSName.getPDFName("ETSI.CAdES.detached"))
                         name = citizen.fullName
-                        signDate = Calendar.getInstance(TimeZone.getTimeZone("America/Lima")).apply { timeInMillis = timestamp }
+                        signDate = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { timeInMillis = timestamp }
                         reason = if(options.appearance.showReason) options.reason else ""; location = if(options.appearance.showLocation) options.location else ""
                     }
                     var size = 0
@@ -69,6 +69,7 @@ class JvmPdfSigner(private val temporaryRoot: Path) : PadesSignerEngineInterface
                             val context = coroutineContext
                             val cms = signing.content.use { content -> CmsSignatureBuilder.buildDetachedSignatureFromStream(
                                 inputStream = content, signerCertificate = signer,
+                                profile = CmsSignatureProfile.PADES_BASELINE_B,
                                 cardSigner = { hash ->
                                     context.ensureActive()
                                     runBlocking(context) { CardSignatureVerifier.verify(signer, hash, cardSigner(hash).getOrThrow()) }
