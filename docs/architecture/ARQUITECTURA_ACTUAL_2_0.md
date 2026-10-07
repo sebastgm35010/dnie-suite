@@ -15,6 +15,7 @@ La UI presenta estado y emite acciones. ViewModels y controladores coordinan cas
 | `dnie-icao` | Sesión ICAO independiente y lectura por bloques | protocol |
 | `dnie-pdf` | Motor PDF/PAdES y sello visual Android | core, signing-core |
 | `dnie-signing-core` | Contratos PDF, documentos/resultados y motor de lotes JVM; autorización limitada a una conexión | protocol, diagnostics-core |
+| `dnie-signing-desktop` | CLI JVM, workspace/adaptadores locales y simulación explícita de suite (hito 0) | signing-core |
 | `dnie-vault-core` | Contenedor, catálogo y formatos cifrados de bóveda | Ninguna interna |
 | `dnie-passkeys-core` | WebAuthn, CBOR/COSE y validación | diagnostics-core |
 | `dnie-passkeys-android` | Credential Manager, almacén Android y autorización | passkeys-core, vault-core, protocol |

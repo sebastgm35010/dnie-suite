@@ -5,6 +5,7 @@ La base 1.0.8 permanece clausurada en `G:\Mi unidad\BOT TRADER\DNI_CODEX\modest-
 No modificar la copia de Antigravity.
 
 - Al retomar, leer `docs/CONTEXTO_ACTUAL.md`, `docs/operations/RETOMAR_TRAS_REINICIO_RC4.md` y `docs/PENDIENTES_ACTUALES.md`; usar `docs/architecture/ARQUITECTURA_ACTUAL_2_0.md` como mapa de capas vigente. Los PIDs/sesiones de informes antiguos no son estado actual. Windows operativo usa el gestor nativo y el servicio, sin lanzar hosts BAT históricos en paralelo.
+- Para trabajar en la suite propia, leer además `docs/suite/CONTEXTO_SUITE_FIRMA.md` y mantenerlo actualizado. Distinguir siempre simulación del ejecutable local y firma real con DNI; nunca introducir fallback automático a la tarjeta simulada.
 
 - Mantener las invariantes de IAS → PKI → PACE → PKI protegido.
 - Mantener token PACE, MAC, contador SSC y GET RESPONSE físico previo al desenvolvimiento.

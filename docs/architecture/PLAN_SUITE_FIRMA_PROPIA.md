@@ -139,6 +139,8 @@ Publicación: staging en el mismo volumen del destino, nombre nuevo sin sobrescr
 
 ## Hitos pequeños y criterios de cierre
 
+Estado 2026-10-07: hito 0 entregado (CLI JVM y laboratorio CMS); ocho pruebas y tres archivos sintéticos verificados .NET. Implementación y siguiente paso físico en [contexto de la suite](../suite/CONTEXTO_SUITE_FIRMA.md). Hito 1 con DNI/PCSC todavía pendiente.
+
 | Orden | Entrega | Prueba requerida antes de avanzar |
 | --- | --- | --- |
 | 0 | Base protegida y ejecutable JVM de consola | Checkpoint del estado físico validado; `dnie-signing-desktop` con adaptadores inyectables, workspace y resultados estructurados. Prueba con certificado/clave simulados sin teléfono ni UI. Regresión Android preservada; retirada del overload legado en parche separado, sin bloquear el esqueleto desktop. |

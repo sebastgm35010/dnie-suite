@@ -1,0 +1,24 @@
+plugins {
+    id("org.jetbrains.kotlin.jvm")
+    application
+}
+
+kotlin { jvmToolchain(17) }
+application {
+    mainClass.set("pe.gob.reniec.dnie.desktop.cli.MainKt")
+    applicationDefaultJvmArgs = listOf("-Dfile.encoding=UTF-8")
+}
+
+providers.gradleProperty("desktopBuildDir").orNull?.let { layout.buildDirectory.set(file(it)) }
+
+dependencies {
+    implementation(project(":dnie-signing-core"))
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
+}
+
+tasks.test {
+    val temporary = layout.buildDirectory.dir("test-tmp")
+    doFirst { temporary.get().asFile.mkdirs() }
+    systemProperty("java.io.tmpdir", temporary.get().asFile.absolutePath)
+}
