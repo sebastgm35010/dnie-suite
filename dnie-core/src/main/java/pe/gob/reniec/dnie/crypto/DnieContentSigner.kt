@@ -16,7 +16,8 @@ import java.security.MessageDigest
  * 1. BouncyCastle serializa los atributos firmados (`signedAttrs`) DER en el [outputStream].
  * 2. [getSignature] acumula los bytes, calcula el resumen criptográfico SHA-256 (32 bytes).
  * 3. Delega el hash de 32 bytes a la tarjeta inteligente mediante el callback [cardSigner].
- * 4. La tarjeta ejecuta en hardware MSE + PSO: Compute Digital Signature (con prefijo DigestInfo de 19b).
+ * 4. El adaptador ejecuta MSE + PSO: Compute Digital Signature. V3 recibe el digest
+ *    de 32 bytes; el formato APDU de cada tarjeta corresponde al módulo de protocolo.
  * 5. Retorna la firma RSA-2048 en crudo (256 bytes).
  */
 class DnieContentSigner(

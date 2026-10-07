@@ -12,8 +12,8 @@ android {
         applicationId = "pe.gob.reniec.dnie.evolution"
         minSdk = 24
         targetSdk = 34
-        versionCode = 52
-        versionName = "2.0.0-rc4-usb"
+        versionCode = 53
+        versionName = "2.0.0-rc5-signing"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -98,6 +98,7 @@ dependencies {
     implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
     implementation(project(":dnie-core"))
     implementation(project(":dnie-protocol"))
+    implementation(project(":dnie-signing-core"))
     implementation(project(":dnie-nfc"))
     implementation(project(":dnie-bridge-android"))
     implementation(project(":dnie-pdf"))

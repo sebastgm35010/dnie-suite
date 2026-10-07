@@ -43,7 +43,7 @@ fun SignerScreen(viewModel: SignerViewModel, batch: Boolean = false, onReadIdent
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(if (batch) "Varios documentos, una autorización" else "Tu firma, en el lugar que elijas", style = MaterialTheme.typography.titleLarge)
-                    Text(if (batch) "PDF con firma integrada y otros formatos con firma separada .p7s. La cola es independiente de Firmar PDF." else "Selecciona un PDF y coloca la firma en una vista previa a pantalla completa.")
+                    Text(if (batch) "Añade todos los archivos antes de firmar. Introduces el PIN una vez para todo el lote: PDF con firma integrada y otros formatos con firma separada .p7s." else "Selecciona un PDF y coloca la firma en una vista previa a pantalla completa.")
                     Button(enabled = editing, onClick = { if (batch) open.launch(arrayOf("*/*")) else openPdf.launch(arrayOf("application/pdf")) }) {
                         Text(if (batch) "Añadir archivos" else if (workspace.documents.isEmpty()) "Seleccionar PDF" else "Cambiar PDF")
                     }

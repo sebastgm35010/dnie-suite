@@ -18,6 +18,7 @@ android {
 
 dependencies {
     api(project(":dnie-core"))
+    api(project(":dnie-signing-core"))
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
     api("com.tom-roush:pdfbox-android:2.0.27.0") { exclude(group = "org.bouncycastle") }
     testImplementation("junit:junit:4.13.2")

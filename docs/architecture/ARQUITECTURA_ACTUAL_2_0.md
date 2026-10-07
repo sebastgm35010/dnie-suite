@@ -13,7 +13,8 @@ La UI presenta estado y emite acciones. ViewModels y controladores coordinan cas
 | `dnie-protocol` | Sesiones DNI v3, IAS/PKI, PACE físico, SM, traducción de PACE PC | core, diagnostics-core |
 | `dnie-nfc` | IsoDep y adaptación Android NFC | protocol |
 | `dnie-icao` | Sesión ICAO independiente y lectura por bloques | protocol |
-| `dnie-pdf` | Motor PDF/PAdES y sello visual | core |
+| `dnie-pdf` | Motor PDF/PAdES y sello visual Android | core, signing-core |
+| `dnie-signing-core` | Contratos PDF, documentos/resultados y motor de lotes JVM; autorización limitada a una conexión | protocol, diagnostics-core |
 | `dnie-vault-core` | Contenedor, catálogo y formatos cifrados de bóveda | Ninguna interna |
 | `dnie-passkeys-core` | WebAuthn, CBOR/COSE y validación | diagnostics-core |
 | `dnie-passkeys-android` | Credential Manager, almacén Android y autorización | passkeys-core, vault-core, protocol |
@@ -22,6 +23,8 @@ La UI presenta estado y emite acciones. ViewModels y controladores coordinan cas
 | `app` | Compose, ViewModels, casos de uso y adaptadores Android | Bibliotecas anteriores según función |
 
 La tabla se contrastó con `settings.gradle.kts` y las dependencias `project(...)`. Los detalles de archivos de funcionalidades anteriores permanecen en [arquitectura del fork](../../ARQUITECTURA_FORK.md).
+
+Actualización 2026-10-07: `dnie-pdf` depende también de `dnie-signing-core`, que aloja los contratos neutrales extraídos del módulo Android. `app` consume ambos y conserva `SigningWorkspace`/SAF/UI. Implementación y prueba pendiente del lote real: [motor de firma rc5](MOTOR_FIRMA_LOTES_RC5.md).
 
 ## Motor del DNI y del puente
 

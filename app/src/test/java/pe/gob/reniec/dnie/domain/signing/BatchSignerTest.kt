@@ -7,6 +7,9 @@ import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
+import org.bouncycastle.cms.CMSProcessableByteArray
+import org.bouncycastle.cms.CMSSignedData
+import org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoVerifierBuilder
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
@@ -34,12 +37,21 @@ class BatchSignerTest {
             JcaX509v3CertificateBuilder(name, BigInteger.ONE, Date(0), Date(4102444800000L), name, keys.public)
                 .build(JcaContentSignerBuilder("SHA256withRSA").setProvider(CryptoProviderInitializer.provider).build(keys.private)))
     }
-    private inner class Card(val failAt: Int = 0, val pin: PinVerificationResult = PinVerificationResult.Success, val corrupt: Boolean = false) : DnieTransceiverInterface {
+    private inner class Card(val failAt: Int = 0, val pin: PinVerificationResult = PinVerificationResult.Success, val corrupt: Boolean = false,
+                             val rejectPinAt: Int = 0) : DnieTransceiverInterface {
         var verify = 0; var cert = 0; var sign = 0; var selects = 0; var closed = false
+        var authorized = false
         override suspend fun selectPkiApplet(): Result<Unit> { selects++; return Result.success(Unit) }
-        override suspend fun verifyPin(pin: String): Result<PinVerificationResult> { verify++; return Result.success(this.pin) }
+        override suspend fun verifyPin(pin: String): Result<PinVerificationResult> {
+            verify++
+            val result = if (verify == rejectPinAt) PinVerificationResult.InvalidPin(2) else this.pin
+            authorized = result == PinVerificationResult.Success
+            return Result.success(result)
+        }
         override suspend fun readCertificate(type: CertificateType): Result<ByteArray> { cert++; assertEquals(CertificateType.SIGNATURE, type); return Result.success(certificate.encoded) }
         override suspend fun signSha256Hash(hash32Bytes: ByteArray): Result<ByteArray> {
+            if (!authorized) return Result.failure(IllegalStateException("6982: autorización consumida"))
+            authorized = false
             sign++
             if (sign == failAt) return Result.failure(IllegalStateException("NFC interrumpido"))
             if (corrupt) return Result.success(ByteArray(256))
@@ -81,13 +93,13 @@ class BatchSignerTest {
         assertEquals(DocumentSignStatus.SIGNED, result.artifacts.single().status)
         assertEquals("acta.pdf.p7s", result.artifacts.single().output!!.name)
     }
-    @Test fun multipleFilesRequireOneVerificationAndPreserveTheirOriginals() = runTest {
+    @Test fun multipleFilesUseOneSessionAndReauthorizeConsumedPinWithoutChangingOriginals() = runTest {
         val docs = listOf(doc("acta.txt"), doc("informe.docx", ByteArray(12345) { it.toByte() }), doc("planilla.xlsx"))
         val originals = docs.map { it.file.readBytes() }
         val card = Card()
         val result = signer.sign(docs, card, "1234", directory.newFolder())
         assertEquals(3, result.artifacts.count { it.status == DocumentSignStatus.SIGNED })
-        assertEquals(1, card.verify); assertEquals(1, card.cert); assertEquals(1, card.selects); assertEquals(3, card.sign); assertTrue(card.closed)
+        assertEquals(3, card.verify); assertEquals(1, card.cert); assertEquals(1, card.selects); assertEquals(3, card.sign); assertTrue(card.closed)
         docs.forEachIndexed { i, d -> assertArrayEquals(originals[i], d.file.readBytes()) }
     }
     @Test fun nfcFailureRetainsCompletedOutputAndStopsRemainingPrivateOperations() = runTest {
@@ -96,7 +108,50 @@ class BatchSignerTest {
         val result = signer.sign(listOf(doc("uno.txt"), doc("dos.txt"), doc("tres.txt")), card, "1234", directory.newFolder()) { _, _, results, _ -> progress += results }
         assertEquals(listOf(DocumentSignStatus.SIGNED, DocumentSignStatus.INTERRUPTED, DocumentSignStatus.INTERRUPTED), result.artifacts.map { it.status })
         assertTrue(result.artifacts[0].output!!.exists()); assertNull(result.artifacts[1].output)
-        assertEquals(2, card.sign); assertEquals(1, card.verify); assertTrue(progress.any { it.size == 1 }); assertTrue(card.closed)
+        assertEquals(2, card.sign); assertEquals(2, card.verify); assertTrue(progress.any { it.size == 1 }); assertTrue(card.closed)
+    }
+    @Test fun mixedPdfAndBinaryBatchProducesFourVerifiableSignaturesOnOneConnection() = runTest {
+        val pdfBytes = com.tom_roush.pdfbox.pdmodel.PDDocument().use { pdf ->
+            pdf.addPage(com.tom_roush.pdfbox.pdmodel.PDPage())
+            ByteArrayOutputStream().also { pdf.save(it) }.toByteArray()
+        }
+        val documents = listOf(doc("uno.pdf", pdfBytes, pdf = true), doc("dos.bin", ByteArray(8193) { it.toByte() }),
+            doc("tres.pdf", pdfBytes, pdf = true, options = PdfSigningOptions(visible = false)), doc("cuatro.txt"))
+        val card = Card()
+        val result = signer.sign(documents, card, "1234", directory.newFolder())
+        assertEquals(4, result.artifacts.count { it.status == DocumentSignStatus.SIGNED })
+        assertEquals(1, card.selects); assertEquals(1, card.cert); assertEquals(4, card.verify); assertEquals(4, card.sign)
+        val verifier = JcaSimpleSignerInfoVerifierBuilder().setProvider(CryptoProviderInitializer.provider).build(certificate)
+        result.artifacts.forEach { artifact ->
+            val signedBytes = artifact.output!!.readBytes()
+            val cms = if (artifact.document.isPdf) com.tom_roush.pdfbox.pdmodel.PDDocument.load(signedBytes).use { pdf ->
+                val signature = pdf.signatureDictionaries.single()
+                CMSSignedData(CMSProcessableByteArray(signature.getSignedContent(signedBytes)), signature.getContents(signedBytes))
+            } else CMSSignedData(CMSProcessableByteArray(artifact.document.file.readBytes()), signedBytes)
+            assertTrue(cms.signerInfos.signers.single().verify(verifier))
+        }
+        assertTrue(card.closed)
+    }
+    @Test fun pinRejectionAfterFirstSignatureRetainsItAndStopsRemainingFiles() = runTest {
+        val card = Card(rejectPinAt = 2)
+        val output = directory.newFolder()
+        val result = signer.sign(listOf(doc("uno.txt"), doc("dos.txt"), doc("tres.txt")), card, "1234", output)
+        assertEquals(listOf(DocumentSignStatus.SIGNED, DocumentSignStatus.INTERRUPTED, DocumentSignStatus.INTERRUPTED), result.artifacts.map { it.status })
+        assertTrue(result.artifacts.first().output!!.exists())
+        assertEquals(2, card.verify); assertEquals(1, card.sign); assertEquals(1, card.selects)
+        assertTrue(output.walkTopDown().none { it.extension == "part" }); assertTrue(card.closed)
+    }
+    @Test fun failedSignatureDoesNotPublishPartialFilesOrOverwriteExistingResults() = runTest {
+        val document = doc("acta.txt")
+        val output = directory.newFolder()
+        val result = signer.sign(listOf(document), Card(corrupt = true), "1234", output)
+        assertEquals(DocumentSignStatus.INTERRUPTED, result.artifacts.single().status)
+        assertTrue(output.walkTopDown().none { it.isFile })
+        val existing = java.io.File(output, document.id + "/acta.txt.p7s").apply { requireNotNull(parentFile).mkdirs(); writeText("resultado anterior") }
+        val card = Card()
+        val repeated = signer.sign(listOf(document), card, "1234", output)
+        assertEquals(DocumentSignStatus.FAILED, repeated.artifacts.single().status)
+        assertEquals("resultado anterior", existing.readText()); assertEquals(0, card.sign)
     }
     @Test fun localPdfFailureDoesNotPreventFollowingFileFromBeingSigned() = runTest {
         val card = Card()

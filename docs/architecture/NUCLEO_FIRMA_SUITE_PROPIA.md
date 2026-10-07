@@ -2,6 +2,8 @@
 
 Revisión: 2026-10-06. Alcance: código actual de Android y pruebas existentes. No se modificó el motor, no se instaló una versión nueva y no se abrió una sesión con el DNI durante esta revisión.
 
+Este documento conserva la revisión previa al cambio. Primer incremento implementado el 2026-10-07: [motor compartido y lotes rc5](MOTOR_FIRMA_LOTES_RC5.md), con extracción JVM y renovación de autorización dentro de la sesión. Sus rutas nuevas sustituyen las ubicaciones descritas aquí cuando se indica una extracción.
+
 ## Dirección acordada
 
 La siguiente línea de desarrollo es una suite propia de firma, con motor independiente de la interfaz. El lector PC/SC actual conserva su valor para ReFirma, Firma Perú y otras aplicaciones; simplificar su instalación sigue pendiente. Una edición portable LAN no es la prioridad elegida por el usuario.
