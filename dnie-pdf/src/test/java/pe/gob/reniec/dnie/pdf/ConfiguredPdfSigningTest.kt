@@ -39,6 +39,56 @@ class ConfiguredPdfSigningTest {
         PadesSignerEngine().signConfiguredPdf(bytes.inputStream(), out, cert.encoded, { Result.success(sign(it)) }, options).getOrThrow()
         return out.toByteArray()
     }
+    @Test fun timestampFailurePublishesNothingAndNeverRepeatsCardSignature() = runTest {
+        val input = PDDocument().use { doc -> doc.addPage(PDPage(PDRectangle.A4)); ByteArrayOutputStream().also { doc.save(it) }.toByteArray() }
+        var calls=0; var tsaCalls=0; val out=ByteArrayOutputStream()
+        val engine=PadesSignerEngine { tsaCalls++; throw java.io.IOException("TSA offline") }
+        val result=engine.signConfiguredPdf(input.inputStream(),out,cert.encoded,
+            { calls++; Result.success(sign(it)) },PdfSigningOptions(visible=false,reniecTimestamp=true))
+        assertTrue(result.isFailure); assertEquals(1,calls); assertEquals(1,tsaCalls); assertEquals(0,out.size())
+    }
+    @Test fun disabledTimestampKeepsBaselineSignatureAndDoesNotAccessTsa() = runTest {
+        val input = PDDocument().use { doc -> doc.addPage(PDPage(PDRectangle.A4)); ByteArrayOutputStream().also { doc.save(it) }.toByteArray() }
+        val out=ByteArrayOutputStream()
+        PadesSignerEngine { error("Must not access TSA") }.signConfiguredPdf(input.inputStream(),out,cert.encoded,
+            { Result.success(sign(it)) },PdfSigningOptions(visible=false)).getOrThrow()
+        PDDocument.load(out.toByteArray()).use { doc ->
+            val sig=doc.signatureDictionaries.single()
+            val cms=CMSSignedData(CMSProcessableByteArray(sig.getSignedContent(out.toByteArray())),sig.getContents(out.toByteArray()))
+            assertNull(cms.signerInfos.signers.single().unsignedAttributes)
+        }
+    }
+    @Test fun timestampedPdfRetainsValidDocumentSignatureAndEmbeddedToken() = runTest {
+        val tsa = JcaX509CertificateConverter().getCertificate(JcaX509v3CertificateBuilder(
+            X500Name("CN=Synthetic TSA"), BigInteger.TEN, Date(System.currentTimeMillis()-60000),
+            Date(System.currentTimeMillis()+3600000), X500Name("CN=Synthetic TSA"), keys.public).apply {
+            addExtension(org.bouncycastle.asn1.x509.Extension.extendedKeyUsage, true,
+                org.bouncycastle.asn1.x509.ExtendedKeyUsage(org.bouncycastle.asn1.x509.KeyPurposeId.id_kp_timeStamping))
+        }.build(JcaContentSignerBuilder("SHA256withRSA").build(keys.private)))
+        val service = pe.gob.reniec.dnie.timestamp.ReniecCmsTimestampService(
+            pe.gob.reniec.dnie.timestamp.TimestampClient { bytes ->
+                val digests=org.bouncycastle.operator.jcajce.JcaDigestCalculatorProviderBuilder().build()
+                val generator=org.bouncycastle.tsp.TimeStampTokenGenerator(
+                    org.bouncycastle.cms.jcajce.JcaSignerInfoGeneratorBuilder(digests).build(JcaContentSignerBuilder("SHA256withRSA").build(keys.private),tsa),
+                    digests.get(org.bouncycastle.asn1.x509.AlgorithmIdentifier(org.bouncycastle.tsp.TSPAlgorithms.SHA256)),
+                    org.bouncycastle.asn1.ASN1ObjectIdentifier(pe.gob.reniec.dnie.timestamp.TimestampTokenValidator.RENIEC_POLICY))
+                generator.addCertificates(org.bouncycastle.util.CollectionStore(listOf(org.bouncycastle.cert.jcajce.JcaX509CertificateHolder(tsa))))
+                org.bouncycastle.tsp.TimeStampResponseGenerator(generator,setOf(org.bouncycastle.tsp.TSPAlgorithms.SHA256))
+                    .generateGrantedResponse(org.bouncycastle.tsp.TimeStampRequest(bytes),BigInteger.ONE,Date()).encoded
+            }, pe.gob.reniec.dnie.timestamp.TimestampTokenValidator(pe.gob.reniec.dnie.timestamp.TimestampCertificateTrust { _, _ -> }))
+        val input = PDDocument().use { doc -> doc.addPage(PDPage(PDRectangle.A4)); ByteArrayOutputStream().also { doc.save(it) }.toByteArray() }
+        val out=ByteArrayOutputStream(); var calls=0
+        PadesSignerEngine(service).signConfiguredPdf(input.inputStream(),out,cert.encoded,
+            { calls++; Result.success(sign(it)) },PdfSigningOptions(visible=false,reniecTimestamp=true)).getOrThrow()
+        PDDocument.load(out.toByteArray()).use { doc ->
+            val sig=doc.signatureDictionaries.single()
+            val cms=CMSSignedData(CMSProcessableByteArray(sig.getSignedContent(out.toByteArray())),sig.getContents(out.toByteArray()))
+            assertTrue(cms.signerInfos.signers.single().verify(JcaSimpleSignerInfoVerifierBuilder().build(cert)))
+            assertNotNull(cms.signerInfos.signers.single().unsignedAttributes.get(org.bouncycastle.asn1.ASN1ObjectIdentifier("1.2.840.113549.1.9.16.2.14")))
+            assertEquals("ETSI.CAdES.detached",sig.subFilter)
+        }
+        assertEquals(1,calls)
+    }
     @Test fun normalizedPlacementHandlesEveryRotationAndCropOrigin() {
         val page = PDPage(PDRectangle(600f, 800f)).apply { cropBox = PDRectangle(10f, 20f, 400f, 600f) }
         val placement = NormalizedStampPlacement(.1f, .2f, .3f, .1f)

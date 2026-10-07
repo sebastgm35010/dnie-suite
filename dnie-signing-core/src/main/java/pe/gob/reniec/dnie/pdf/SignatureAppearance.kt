@@ -53,5 +53,6 @@ data class PdfSigningOptions(
     val placement: NormalizedStampPlacement = NormalizedStampPlacement(),
     val appearance: SignatureAppearance = SignatureAppearance(),
     val reason: String = "Doy conformidad",
-    val location: String = ""
+    val location: String = "",
+    val reniecTimestamp: Boolean = false
 )

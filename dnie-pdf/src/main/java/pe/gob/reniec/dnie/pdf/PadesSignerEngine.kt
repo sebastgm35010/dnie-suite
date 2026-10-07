@@ -30,7 +30,8 @@ import java.util.TimeZone
  * 4. Reserva 32 KB ([PREFERRED_SIGNATURE_SIZE]) para evitar desbordamiento con cadenas de certificación completas de RENIEC.
  * 5. Gestiona archivos temporales seguros para evitar colisiones de E/S en Android.
  */
-class PadesSignerEngine : PadesSignerEngineInterface {
+class PadesSignerEngine(private val timestampService: pe.gob.reniec.dnie.timestamp.CmsTimestampService =
+    pe.gob.reniec.dnie.timestamp.ReniecCmsTimestampService()) : PadesSignerEngineInterface {
     override suspend fun signConfiguredPdf(input: InputStream, output: OutputStream, certificate: ByteArray,
         cardSigner: suspend (ByteArray) -> Result<ByteArray>, options: PdfSigningOptions): Result<PdfSignResult> = signPdf(
         pdfInputStream = input, pdfOutputStream = output, signingCertificateDer = certificate,
@@ -187,8 +188,19 @@ class PadesSignerEngine : PadesSignerEngineInterface {
                             }
                         }
                     )
-                    signatureSize = cmsBytes.size
-                    cmsBytes
+                    val finalCms = if (modernOptions?.reniecTimestamp == true) {
+                        require(subFilter == SUBFILTER_ETSI_CADES_DETACHED) { "TSA requiere perfil PAdES" }
+                        pe.gob.reniec.dnie.diagnostics.DiagnosticLog.event("timestamp", "request", "mode" to "RENIEC")
+                        try { timestampService.stamp(cmsBytes).also {
+                            pe.gob.reniec.dnie.diagnostics.DiagnosticLog.event("timestamp", "verified", "status" to "GOOD")
+                        } } catch (failure: Exception) {
+                            pe.gob.reniec.dnie.diagnostics.DiagnosticLog.failure("timestamp", "verify", failure)
+                            throw failure
+                        }
+                    } else cmsBytes
+                    require(finalCms.size <= PREFERRED_SIGNATURE_SIZE) { "El sello excede la reserva de firma PDF" }
+                    signatureSize = finalCms.size
+                    finalCms
                 }
 
                 // 5. Agregar firma al documento y ejecutar guardado incremental

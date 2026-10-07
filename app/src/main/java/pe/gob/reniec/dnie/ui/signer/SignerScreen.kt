@@ -62,7 +62,7 @@ fun SignerScreen(viewModel: SignerViewModel, batch: Boolean = false, onReadIdent
                             Text((if (doc.id == workspace.selectedId) "● " else "") + doc.name, style = MaterialTheme.typography.titleSmall)
                             Text((if (doc.isPdf) "PDF · " + doc.pages.size + " páginas" else "Archivo · .p7s") + " · " + (doc.size / 1024) + " KiB", style = MaterialTheme.typography.bodySmall)
                             if (result != null) Text(when (result.status) {
-                                DocumentSignStatus.SIGNED -> "Firmado ✓"
+                                DocumentSignStatus.SIGNED -> if (doc.isPdf && doc.options.reniecTimestamp) "Firmado ✓ · sello RENIEC" else "Firmado ✓"
                                 DocumentSignStatus.FAILED -> "No firmado: " + result.message
                                 DocumentSignStatus.INTERRUPTED -> "Pendiente: " + result.message
                             }, color = if (result.status == DocumentSignStatus.SIGNED) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error)
@@ -94,6 +94,10 @@ fun SignerScreen(viewModel: SignerViewModel, batch: Boolean = false, onReadIdent
                 if (batch && doc.pages.isNotEmpty()) SwitchRow("Firmar este PDF como archivo separado (.p7s)", doc.detached, enabled, viewModel::setDetached)
                 if (doc.isPdf) {
                     val config = doc.options
+                    SwitchRow("Sello de tiempo RENIEC · PAdES-T", config.reniecTimestamp, enabled) { value ->
+                        viewModel.updateOptions { it.copy(reniecTimestamp = value) }
+                    }
+                    if (config.reniecTimestamp) Text("Requiere internet. Solo se envía el resumen de la firma. Si el sello no se verifica, no se publica el PDF firmado.", style = MaterialTheme.typography.bodySmall)
                     val look = config.appearance
                     Text("Sello · " + doc.name, style = MaterialTheme.typography.titleMedium)
                     SwitchRow("Mostrar sello en el PDF", config.visible, enabled) { viewModel.updateOptions { c -> c.copy(visible = it) } }

@@ -25,7 +25,7 @@ class OnlineCertificateValidationRepository(private val inspector: CertificateTr
         private var shared: OnlineCertificateValidationRepository? = null
         @Synchronized fun create(context: android.content.Context): OnlineCertificateValidationRepository {
             return shared ?: OnlineCertificateValidationRepository(CertificateTrustInspector(
-                PeruTrustedListProvider(records = AndroidTrustedListRecordStore(context.applicationContext)),
+                AndroidTrustedListSources.create(context),
                 CachedPublicCertificateSource()
             )).also { shared = it }
         }
@@ -33,7 +33,7 @@ class OnlineCertificateValidationRepository(private val inspector: CertificateTr
 }
 
 /** Public rollback metadata only. No certificates, PIN, CAN or document contents. */
-private class AndroidTrustedListRecordStore(context: android.content.Context) : TrustedListRecordStore {
+internal class AndroidTrustedListRecordStore(context: android.content.Context) : TrustedListRecordStore {
     private val preferences = context.getSharedPreferences("verified_tsl_version", android.content.Context.MODE_PRIVATE)
     override fun read(): TrustedListRecord? {
         val hash = preferences.getString("sha256", null) ?: return null

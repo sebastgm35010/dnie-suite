@@ -34,7 +34,7 @@ import pe.gob.reniec.dnie.crypto.X509CertificateParser
 /**
  * ViewModel que orquesta el ciclo de firma digital PAdES con verificación de credenciales (CAN + PIN).
  */
-class SignerViewModel(private val signerEngine: PadesSignerEngineInterface = PadesSignerEngine.defaultInstance) : ViewModel() {
+class SignerViewModel(private val signerEngine: PadesSignerEngineInterface? = null) : ViewModel() {
     private val _uiState = MutableStateFlow<SignerUiState>(SignerUiState.NoDocument)
     val uiState = _uiState.asStateFlow()
     private val _workspace = MutableStateFlow(SigningWorkspace())
@@ -194,7 +194,15 @@ class SignerViewModel(private val signerEngine: PadesSignerEngineInterface = Pad
                 val ids = documents.map { it.id }.toSet()
                 val previous = _workspace.value.artifacts.filter { it.document.id !in ids }
                 val result = withContext(Dispatchers.IO) {
-                    BatchSigner(signerEngine).sign(documents, transceiver, awaiting.pin, File(app.cacheDir, "signed_docs"), mark) { count, name, artifacts, cert ->
+                    val timestampService = pe.gob.reniec.dnie.data.signing.AndroidTimestampServices.create(app)
+                    val engine = signerEngine ?: PadesSignerEngine(pe.gob.reniec.dnie.timestamp.CmsTimestampService { cms ->
+                        _uiState.update { current ->
+                            if (token == operation && current is SignerUiState.Signing)
+                                current.copy(message = "Solicitando y verificando sello de tiempo RENIEC…") else current
+                        }
+                        timestampService.stamp(cms)
+                    })
+                    BatchSigner(engine).sign(documents, transceiver, awaiting.pin, File(app.cacheDir, "signed_docs"), mark) { count, name, artifacts, cert ->
                         if (token == operation) {
                             _uiState.value = SignerUiState.Signing("$count de ${documents.size} · $name", count, documents.size)
                             _workspace.update { it.copy(artifacts = previous + artifacts) }
@@ -303,7 +311,7 @@ class SignerViewModel(private val signerEngine: PadesSignerEngineInterface = Pad
 
                 // 4. Firmar documento PAdES
                 _uiState.value = SignerUiState.Signing("Calculando firma digital PAdES en hardware...")
-                val signResult = signerEngine.signPdf(
+                val signResult = (signerEngine ?: PadesSignerEngine.defaultInstance).signPdf(
                     pdfInputStream = inputStream,
                     pdfOutputStream = outputStream,
                     signingCertificateDer = certDer,

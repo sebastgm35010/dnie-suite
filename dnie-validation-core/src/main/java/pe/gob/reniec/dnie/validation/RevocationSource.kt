@@ -13,13 +13,22 @@ fun interface PublicCertificateSource { fun download(url: String): ByteArray }
 class ReniecPublicSource : PublicCertificateSource, OcspResponseSource {
     companion object {
         const val MAX_BYTES = 8 * 1024 * 1024
+        private val root5Paths = setOf("/ecernep/root5/crt/ecpsva5.crt", "/ecernep/root5/crt/ecernep5.crt",
+            "/ecernep/root5/arl/ecpsva5.crl", "/ecernep/root5/arl/ecernep5.crl")
         fun allowed(url: String): Boolean = runCatching {
             val uri = URI(url)
-            uri.scheme in setOf("https", "http") && uri.host in setOf("www.reniec.gob.pe", "crl.reniec.gob.pe", "crl2.reniec.gob.pe") &&
+            uri.scheme in setOf("https", "http") &&
                 uri.userInfo == null && uri.fragment == null && uri.query == null && uri.port == -1 &&
                 !uri.rawPath.contains("%") && !uri.path.contains("..") &&
-                listOf("/crt/sha2/", "/crl/sha2/", "/arl/sha2/").any { uri.path.startsWith(it) }
+                ((uri.host in setOf("www.reniec.gob.pe", "crl.reniec.gob.pe", "crl2.reniec.gob.pe") &&
+                    listOf("/crt/sha2/", "/crl/sha2/", "/arl/sha2/").any { uri.path.startsWith(it) }) ||
+                    (uri.host == "cdn.www.gob.pe" && uri.path in root5Paths))
         }.getOrDefault(false)
+        /** Published AIA uses HTTP; these exact public ROOT5 objects are fetched over HTTPS. */
+        fun transportUrl(url: String): String {
+            require(allowed(url))
+            return if (URI(url).host == "cdn.www.gob.pe") "https://cdn.www.gob.pe${URI(url).path}" else url
+        }
     }
     override fun query(url: String, request: ByteArray): ByteArray {
         val uri = URI(url)
@@ -51,7 +60,7 @@ class ReniecPublicSource : PublicCertificateSource, OcspResponseSource {
     }
     override fun download(url: String): ByteArray {
         require(allowed(url)) { "Dirección de autoridad no permitida" }
-        val connection = URI(url).toURL().openConnection() as HttpURLConnection
+        val connection = URI(transportUrl(url)).toURL().openConnection() as HttpURLConnection
         connection.connectTimeout = 5000; connection.readTimeout = 5000
         connection.instanceFollowRedirects = false
         val deadline = System.nanoTime() + 12_000_000_000L

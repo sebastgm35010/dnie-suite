@@ -1,5 +1,7 @@
 # Arquitectura actual · motor 2.0 y gestor Windows rc4
 
+2026-10-07 · H11 Android: sello RENIEC opcional/obligatorio al activar en PDF integrado, módulo JVM RFC3161 y confianza ROOT5/CRL/TSL; sin repetir operación privada ni publicar B silenciosamente ante fallo. Prueba real del motor con TSA TRUSTED/GOOD y 254 pruebas pasan; APK63 compilado, físico pendiente. Checkpoint previo preservado. [Arquitectura, uso y límites](../suite/ANDROID_TSA_RENIEC_H11.md).
+
 2026-10-07 · H9b físico superado: usuario confirma APK62 con vigencia/uso aptos, titular GOOD por OCSP firmado/vigente, ambas CA intermedias GOOD por CRL vigente/firmada y ruta PKIX verificada con TSL Perú autenticada secuencia25. Vigencia agregada hasta 2026-10-07 17:33:45 UTC-05, limitada por OCSP; requiere nueva consulta al caducar. La causa del UNKNOWN anterior no quedó demostrada. Preflight automático, histórico y TSA pendientes. [Evidencia y límites](../suite/REVOCACION_CA_DIAGNOSTICO_H9B.md).
 
 2026-10-07 · H9b: usuario confirma APK61 con TSL autenticada y ruta PKIX verificada; titular GOOD, revocación global UNKNOWN. CRL de ambas CA verificadas en PC; causa del fallo en móvil aún sin determinar. Motor extraído por CA con resultado/método/código seguro, panel y registro por CA, distinción de evidencia caducada durante consulta. 236 pruebas pasan; APK62 compilado, prueba física pendiente. [Detalle](../suite/REVOCACION_CA_DIAGNOSTICO_H9B.md).

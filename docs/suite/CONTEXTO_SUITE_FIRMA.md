@@ -1,5 +1,7 @@
 # Contexto vigente de la suite propia de firma
 
+2026-10-07 · H11 Android: sello RENIEC opcional/obligatorio al activar en PDF integrado, módulo JVM RFC3161 y confianza ROOT5/CRL/TSL; sin repetir operación privada ni publicar B silenciosamente ante fallo. Prueba real del motor con TSA TRUSTED/GOOD y 254 pruebas pasan; APK63 compilado, físico pendiente. Checkpoint previo preservado. [Arquitectura, uso y límites](ANDROID_TSA_RENIEC_H11.md).
+
 2026-10-07 · Investigación previa TSA: LLAMA.PE figura en TSL y anuncia sellado gratuito web en Watana (PDF hasta50MB). API documentada exige cuenta/token y sellar_pdf solo producción; gratuidad de endpoint RFC3161 integrable no demostrada. Se informa hallazgo antes de modificar Android, conforme a la condición solicitada. APK62 preservado. [Fuentes y alcance](TSA_PROVEEDORES_GRATUITOS_PERU.md).
 
 2026-10-07 · H10 externo superado: Firma Perú reconoce ambos PDF sintéticos como PAdES_BASELINE_T e íntegros; raíz TSA RENIEC en TSL Sí, FreeTSA No. Resultado global indeterminado con error de cadena del firmante sintético, como corresponde a esta prueba. Pendientes módulo TSA Android, confianza/revocación local ROOT5, disponibilidad/condiciones y PDF con DNI real. APK62 sin cambios. [Evidencia y límites](TSA_EXPERIMENTO_REAL_H10.md).

@@ -75,6 +75,10 @@ class CertificateValidationTest {
     }
     @Test fun sourcePolicyRejectsLocalAddressesCredentialsRedirectHostsAndEncodedTraversal() {
         assertTrue(ReniecPublicSource.allowed("http://crl.reniec.gob.pe/crl/sha2/caclass2.crl"))
+        assertEquals("https://cdn.www.gob.pe/ecernep/root5/crt/ecpsva5.crt",
+            ReniecPublicSource.transportUrl("http://cdn.www.gob.pe/ecernep/root5/crt/ecpsva5.crt"))
+        assertFalse(ReniecPublicSource.allowed("https://cdn.www.gob.pe/ecernep/root5/crt/unknown.crt"))
+        assertFalse(ReniecPublicSource.allowed("https://cdn.www.gob.pe/other/secret"))
         listOf("http://127.0.0.1/crl/sha2/a", "http://crl.reniec.gob.pe.evil.test/crl/sha2/a",
             "http://user@crl.reniec.gob.pe/crl/sha2/a", "http://crl.reniec.gob.pe:8080/crl/sha2/a",
             "http://crl.reniec.gob.pe/crl/sha2/%2e%2e/a").forEach { assertFalse(ReniecPublicSource.allowed(it)) }
