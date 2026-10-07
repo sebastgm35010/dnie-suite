@@ -57,3 +57,5 @@ Tailscale y las firmas/lecturas del puente tienen evidencia física histórica. 
 ## Historia
 
 El contexto anterior, que mezclaba rc1/rc2/rc3/rc4 y PIDs antiguos, se preserva en [archivo histórico](archive/CONTEXTO_HASTA_WINDOWS_NATIVE_RC4.md). Para operar, usar esta entrada y el procedimiento actual; no los launchers ni sesiones temporales de esas notas.
+
+2026-10-07: fallo real de enumeración: backend Tailscale con CardPresent=true pero lector propio ausente de SCardListReaders. Reinicio específico del dispositivo devuelve 3010 (requiere reinicio manual de Windows); no se reinició PC ni se modificó SCardSvr/minidriver. No considerar estado privado del host como presencia usable por ReFirma. Ver [diagnóstico](operations/LECTOR_AUSENTE_PCSC_2026_10_07.md).
