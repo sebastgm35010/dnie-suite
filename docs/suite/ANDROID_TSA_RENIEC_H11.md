@@ -24,11 +24,11 @@ Diagnóstico de desarrollo registra solicitud/verificación/fallo TSA y trazas a
 
 LiveEngineTsaProbe, usando el módulo nuevo compilado y BC prioritario, consulta el certificado real TSU-2026-01: TRUSTED / titular GOOD / cadena GOOD, CA intermedia GOOD. Solicitud posterior con ReniecCmsTimestampService de producción completa: PASS, CMS sellado4346bytes. Evidencia D:/DNIeToolchain/TsaExperiment/h11-live.log y h11-real-stamped.cms; el firmante documental sigue siendo sintético. No equivale a teléfono físico ni modifica certificados del DNI.
 
-Pruebas nuevas: preservación del valor de firma al incorporar token, nonce/imprint incorrectos, token falsificado/no confiable, tiempo/política inválidos y rechazo de sellado duplicado. En PDF Android: token sintético incorporado con firma documental válida, TSA desactivada sin red, y fallo TSA sin publicación ni repetición de operación privada. Validación real externa previa H10 confirmó PAdES_BASELINE_T y raíz TSA RENIEC en TSL; la integración física APK63 requiere prueba propia.
+Pruebas nuevas: preservación del valor de firma al incorporar token, nonce/imprint incorrectos, token falsificado/no confiable, tiempo/política inválidos y rechazo de sellado duplicado. En PDF Android: token sintético incorporado con firma documental válida, TSA desactivada sin red, y fallo TSA sin publicación ni repetición de operación privada. Validación real externa previa H10 confirmó PAdES_BASELINE_T y raíz TSA RENIEC en TSL; la integración física APK63 quedó confirmada posteriormente por el resultado aportado por el usuario, registrado abajo.
 
 ## Pendientes
 
-Instalar APK63, activar TSA, firmar un PDF real con DNI y validar en Firma Perú. Recoger estado global, PAdES_BASELINE_T, raíz del firmante/TSA en TSL y hora TSA. Disponibilidad y condiciones generales del proveedor, recuperación/reintento de solo sellado, preflight online del titular, LT/LTA e integración equivalente Windows siguen pendientes. No confundir que el endpoint responda desde la PC con una oferta pública gratuita ilimitada.
+Prueba física APK63 con DNI y validación externa superada según el informe del usuario. Disponibilidad y condiciones generales del proveedor, recuperación/reintento de solo sellado, preflight online del titular, LT/LTA e integración equivalente Windows siguen pendientes. No confundir que el endpoint responda desde la PC con una oferta pública gratuita ilimitada.
 
 ## Verificación de compilación
 
@@ -37,3 +37,15 @@ Instalar APK63, activar TSA, firmar un PDF real con DNI y validar en Firma Perú
 Compilación final app/Debug correcta 1m25s y 76 pruebas app pasan. Artefacto APK63: D:/DNIeToolchain/AndroidPackages/dnie-evolution-2.0.0-rc15-tsa-reniec-debug.apk. ADB sin dispositivos; distribución por mensajero Telegram autorizado, entrega se confirma por separado.
 
 SHA256 APK63: 6A00B98B1CECE026307492413B2E866BEA1F92C99253819BD7D7E6F760558D92.
+
+## Confirmación física del usuario · 2026-10-07
+
+El usuario aporta el resultado del validador Firma Perú para el PDF firmado con DNI real desde Android APK63. Validación a las 18:14:21 UTC-05:
+
+- Resultado VÁLIDO; una firma procesada y válida, integridad del documento y de su firma conservada.
+- Formato PAdES_BASELINE_T, RSA with SHA256; raíz del firmante en TSL Sí y raíz TSA en TSL Sí.
+- Fecha declarada de firma 18:13:45 UTC-05; fecha del servicio TSA 18:13:47 UTC-05.
+- TSA PSVA-TSA-RENIEC TSU-2026-02 → EC-PSVA CA ROOT 5 → ECERNEP PERU CA ROOT 5; RSA with SHA256, vigencia hasta 2038-01-17 11:48:52 UTC-05.
+- Telegram confirmó entrega APK63, mensaje 3735, SHA256 coincidente.
+
+Evidencia: informe textual aportado por el usuario en el chat; el PDF de esta prueba no fue adjuntado ni inspeccionado localmente. Se registra el resultado externo, sin copiar datos personales ni número de serie del titular. Confirma el flujo Android/DNI/TSA y clasificación T de esta firma; no acredita LT/LTA, clasificación eIDAS, acreditación del software ni condiciones generales de acceso al servicio.
