@@ -1,5 +1,7 @@
 # Contexto vigente de la suite propia de firma
 
+2026-10-07 · H3: PDF integrado invisible de escritorio implementado en módulo JVM `dnie-pdf-desktop` (PDFBox 3.0.8). Por defecto PDF → `_firmado.pdf`, otros → `.p7s`; `--pdf-mode detached` conserva el modo anterior. Simulación del ejecutable verificada independientemente .NET; prueba física con DNI pendiente. APK instalado 56 y transporte/motor NFC sin cambios funcionales. [Arquitectura, límites y procedimiento](PDF_INVISIBLE_H3.md).
+
 Actualizado: 2026-10-07, America/Bogota. Este archivo es la entrada de contexto para el nuevo extremo documental Windows. Diferenciar motor probado, simulación de escritorio y conexión real al DNI.
 
 Evidencia física rc8: reconexión con PC recordada/misma huella y lote PPTX/PNG/PDF 3/3 con una entrada PIN, CMS verificados .NET y certificado DNI coincidente. Cierre posterior por Ctrl+C del usuario. Secuencia detallada de retirada/estados y dos trabajos exitosos en mismo TLS pendientes. [Evidencia](SESION_CONTINUA_H2.md).

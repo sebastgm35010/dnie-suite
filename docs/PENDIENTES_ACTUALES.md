@@ -1,5 +1,7 @@
 # Pendientes actuales · Windows rc4 USB / Android rc4-usb
 
+2026-10-07 · H3: PDF integrado invisible de escritorio implementado en módulo JVM `dnie-pdf-desktop` (PDFBox 3.0.8). Por defecto PDF → `_firmado.pdf`, otros → `.p7s`; `--pdf-mode detached` conserva el modo anterior. Simulación del ejecutable verificada independientemente .NET; prueba física con DNI pendiente. APK instalado 56 y transporte/motor NFC sin cambios funcionales. [Arquitectura, límites y procedimiento](suite/PDF_INVISIBLE_H3.md).
+
 Actualizado 2026-10-07 tras primera firma remota física de suite H1b (APK 54), además de la validación del motor compartido de firma. El diagnóstico del teléfono confirma `2.0.0-rc5-signing`, correspondiente al candidato compilado 53. Este listado sustituye los encabezados de pendientes de versiones anteriores. Diferenciar implementación, simulación y validación con dispositivo real.
 
 ## Siguiente secuencia

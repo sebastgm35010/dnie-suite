@@ -8,8 +8,9 @@ data class PdfPageSize(val width: Float, val height: Float)
 data class SigningDocument(
     val id: String = UUID.randomUUID().toString(), val name: String,
     val file: File, val size: Long, val pages: List<PdfPageSize> = emptyList(),
-    val options: PdfSigningOptions = PdfSigningOptions(), val detached: Boolean = false
-) { val isPdf: Boolean get() = pages.isNotEmpty() && !detached }
+    val options: PdfSigningOptions = PdfSigningOptions(), val detached: Boolean = false,
+    val pdfInput: Boolean = false
+) { val isPdf: Boolean get() = (pages.isNotEmpty() || pdfInput) && !detached }
 
 enum class DocumentSignStatus { SIGNED, FAILED, INTERRUPTED }
 data class SignedArtifact(

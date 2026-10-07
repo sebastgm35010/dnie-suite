@@ -1,0 +1,3 @@
+
+# Preserve upstream PDF dependency licenses byte-for-byte.
+dnie-pdf-desktop/third-party/*.txt -text -whitespace

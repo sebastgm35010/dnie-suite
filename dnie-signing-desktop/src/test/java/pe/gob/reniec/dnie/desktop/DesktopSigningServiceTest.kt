@@ -27,7 +27,7 @@ class DesktopSigningServiceTest {
         val sources = listOf(input("acta.txt"), input("acta.txt", ByteArray(130000) { it.toByte() }), input("ñandú.pdf", "PDF tratado como binario CMS".toByteArray()))
         val originalBytes = sources.map { Files.readAllBytes(it) }
         val card = SimulatedSigningCard()
-        val result = DesktopSigningService().execute(DesktopSigningRequest(sources, directory.root.toPath().resolve("jobs")),
+        val result = DesktopSigningService().execute(DesktopSigningRequest(sources, directory.root.toPath().resolve("jobs"), DesktopPdfMode.DETACHED),
             card, SimulatedSigningCard.DEMO_PIN, SigningBackend.SIMULATED)
         assertTrue(result.complete)
         assertEquals(3, card.signatures); assertEquals(3, card.verifications)

@@ -11,10 +11,11 @@ fun main(args: Array<String>) { exitProcess(runCli(args)) }
 
 fun runCli(args: Array<String>, output: PrintStream = System.out, errors: PrintStream = System.err): Int {
     if (args.isEmpty() || args.contentEquals(arrayOf("--help"))) {
-        output.println("Suite DNIe - Hito 0 (laboratorio local)")
+        output.println("Suite DNIe - firma privada de escritorio")
         output.println("demo --workspace <carpeta> --input <archivo> [--input <otro>]")
         output.println("remote --pc <IP privada PC> --phone <IP teléfono> --workspace <carpeta> --input <archivo> [--input <otro>]")
         output.println("suite --pc <IP PC> --phone <IP telefono> --workspace <carpeta> --identity <archivo DPAPI> (terminal interactiva)")
+        output.println("PDF: integrado invisible por defecto; --pdf-mode detached conserva salida .p7s (demo, remote y suite).")
         output.println("SIMULACION: certificado y clave temporales; no utiliza el DNI ni PC/SC.")
         return 0
     }

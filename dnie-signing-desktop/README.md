@@ -1,3 +1,9 @@
+# Suite de firma privada · estado vigente H3
+
+La suite continua usa Android/DNI por TLS privado, PC recordada y PIN único por lote. PDF integrado invisible por defecto (`_firmado.pdf`); otros archivos CMS separado. Añadir `--pdf-mode detached` para conservar `.p7s` también en PDF. La firma remota CMS física está validada; PDF integrado de escritorio tiene pruebas sintéticas y verificación independiente, pendiente prueba física. [H3: arquitectura y uso](../docs/suite/PDF_INVISIBLE_H3.md).
+
+El historial siguiente documenta los hitos previos; las limitaciones de H0/H1b sobre PDF no describen el estado H3.
+
 # Suite local · registro histórico H0
 
 Ejecutable Kotlin/JVM, sin GUI, que reutiliza `dnie-core` y `dnie-signing-core`. Esta entrega es **simulación explícita**, con una clave temporal y un certificado sintético por trabajo. No firma con el DNI, no conecta a PC/SC y no usa certificados personales Windows. La clave simulada no se exporta.

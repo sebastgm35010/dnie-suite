@@ -32,3 +32,5 @@ include(":dnie-bridge-core", ":dnie-bridge-android")
 include(":dnie-signing-core")
 include(":dnie-signing-desktop")
 include(":dnie-signing-link")
+
+include(":dnie-pdf-desktop")

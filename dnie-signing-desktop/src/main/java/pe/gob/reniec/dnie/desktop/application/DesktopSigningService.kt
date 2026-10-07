@@ -4,22 +4,22 @@ import java.nio.file.Files
 import pe.gob.reniec.dnie.core.nfc.DnieTransceiverInterface
 import pe.gob.reniec.dnie.crypto.CertificateExporter
 import pe.gob.reniec.dnie.desktop.model.*
-import pe.gob.reniec.dnie.desktop.pdf.UnavailablePdfEngine
+import pe.gob.reniec.dnie.pdf.desktop.JvmInvisiblePdfSigner
 import pe.gob.reniec.dnie.desktop.storage.DesktopWorkspace
 import pe.gob.reniec.dnie.domain.signing.BatchSigner
 import pe.gob.reniec.dnie.domain.signing.SignedBatchExporter
 import pe.gob.reniec.dnie.pdf.PadesSignerEngineInterface
 
 /** Platform coordination only; CMS, PIN lifetime and sequential signing remain in core. */
-class DesktopSigningService(private val pdf: PadesSignerEngineInterface = UnavailablePdfEngine()) {
+class DesktopSigningService(private val pdf: PadesSignerEngineInterface? = null) {
     suspend fun execute(request: DesktopSigningRequest, card: DnieTransceiverInterface, pin: String,
                         backend: SigningBackend): DesktopSigningResult {
         val owned = OwnedCard(card)
         try {
             DesktopWorkspace.validate(request)
             val workspace = DesktopWorkspace.create(request.workspaceRoot)
-            val documents = workspace.import(request.inputs)
-            val signed = BatchSigner(pdf).sign(documents, owned, pin, workspace.directory.resolve("signed").toFile())
+            val documents = workspace.import(request.inputs, request.pdfMode)
+            val signed = BatchSigner(pdf ?: JvmInvisiblePdfSigner(workspace.directory.resolve("pdf-work"))).sign(documents, owned, pin, workspace.directory.resolve("signed").toFile())
             val results = signed.artifacts.map { DesktopDocumentResult(it.document.id, it.document.name, it.status,
                 it.document.file.toPath(), it.output?.toPath(), it.message) }
             signed.artifacts.firstOrNull { it.certificate != null }?.certificate?.let { cert ->

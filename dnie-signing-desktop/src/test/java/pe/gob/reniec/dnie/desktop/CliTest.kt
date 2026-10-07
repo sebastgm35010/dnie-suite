@@ -27,4 +27,15 @@ class CliTest {
         assertEquals(0, runCli(arrayOf("--help"), PrintStream(output)))
         assertTrue(output.toString().contains("SIMULACION")); assertTrue(output.toString().contains("no utiliza el DNI"))
     }
+    @Test fun pdfModeDefaultsToInvisibleAndDetachedRequiresExplicitSelection() {
+        val base = arrayOf("demo", "--workspace", "jobs", "--input", "prueba.pdf")
+        assertEquals(pe.gob.reniec.dnie.desktop.model.DesktopPdfMode.INVISIBLE, CliOptions.parse(base).pdfMode)
+        assertEquals(pe.gob.reniec.dnie.desktop.model.DesktopPdfMode.DETACHED,
+            CliOptions.parse(base + arrayOf("--pdf-mode", "detached")).pdfMode)
+        for (options in listOf(arrayOf("--pdf-mode", "unsupported"),
+            arrayOf("--pdf-mode", "invisible", "--pdf-mode", "detached"))) {
+            val errors = ByteArrayOutputStream()
+            assertEquals(2, runCli(base + options, PrintStream(ByteArrayOutputStream()), PrintStream(errors)))
+        }
+    }
 }
