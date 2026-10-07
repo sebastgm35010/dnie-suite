@@ -47,3 +47,8 @@
 -keep class pe.gob.reniec.dnie.domain.model.** { *; }
 -keep class pe.gob.reniec.dnie.core.apdu.** { *; }
 -keep class pe.gob.reniec.dnie.ui.**$UiState { *; }
+
+# Santuario canonicalizer registry instantiates these via their public constructors.
+-keepclassmembers class org.apache.xml.security.c14n.implementations.** {
+    public <init>();
+}

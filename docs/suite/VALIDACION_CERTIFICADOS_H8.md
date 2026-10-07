@@ -39,3 +39,4 @@ D:/DNIeToolchain/AndroidPackages/dnie-evolution-2.0.0-rc11-certificates-debug.ap
 SHA256 0F73146A9D59E1F7E0AFFB14F6C27173C38DDE77FA6FD65B9395CADA6C535C0B.
 
 Prueba UI física pendiente. Solicitud de envío al mensajero Telegram autorizada por el flujo vigente; confirmar entrega por separado. No se declara APK instalado por ADB. Después de leer el DNI, seleccionar Firma en Certificados y pulsar Comprobar revocación; debe mostrar resultado independiente de confianza de cadena. Prueba de firma nueva debe conservar clasificación PAdES_BASELINE_B.
+2026-10-07: usuario confirma funcionamiento de la consulta H8 en teléfono. Entrega única Telegram confirmada, mensaje 3728. No implica prueba del nuevo panel TSL H9 ni firma con TSA.
