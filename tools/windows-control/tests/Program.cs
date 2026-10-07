@@ -67,6 +67,15 @@ await using(var controller=new HostController(async(_,log,token)=> {
 await using(var failed=new HostController((_,_,_)=>throw new IOException("synthetic startup failure"),_=>throw new Exception(),()=>[])) {
     var response=await failed.HandleAsync(new("start",profile));Check(!response.Ok && response.Status?.State=="Failed","Startup error surfaced in structured response");
 }
+await using(var cancelledUsb=new HostController(async(_,log,token)=> {
+    log("host_ready");
+    try {await Task.Delay(Timeout.Infinite,token);}
+    catch(OperationCanceledException) {throw new IOException("USB transfer interrupted during stop");}
+},_=>throw new Exception(),()=>[])) {
+    await cancelledUsb.StartAsync(profile);
+    await cancelledUsb.StopAsync();
+    Check(cancelledUsb.Snapshot.State=="Stopped" && cancelledUsb.Snapshot.Error==null,"Cancelled USB I/O does not become a spurious failure");
+}
 if(OperatingSystem.IsWindows()) {
     string owner=WindowsIdentity.GetCurrent().User!.Value;
     string name="DNIeBridge.Test."+Guid.NewGuid().ToString("N");

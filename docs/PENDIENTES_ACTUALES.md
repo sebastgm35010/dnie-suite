@@ -1,6 +1,6 @@
-# Pendientes actuales · Windows rc4 / Android rc3
+# Pendientes actuales · Windows rc4 USB / Android rc4-usb
 
-Actualizado 2026-10-06 antes del reinicio. Este listado sustituye los encabezados de pendientes de versiones anteriores. Diferenciar implementación, simulación y validación con dispositivo real.
+Actualizado 2026-10-06 tras reinicio y corrección USB. Este listado sustituye los encabezados de pendientes de versiones anteriores. Diferenciar implementación, simulación y validación con dispositivo real.
 
 ## Siguiente secuencia
 
@@ -9,11 +9,13 @@ Actualizado 2026-10-06 antes del reinicio. Este listado sustituye los encabezado
 | P0 | Arranque real después del reinicio | Comprobar servicio automático y lector PnP, sin host/red hasta pulsar Iniciar. Abrir dos veces el gestor y comprobar una ventana; iniciar/parar sin UAC. No asumir que la prueba previa de SCM acredita un reinicio real. |
 | P0 | Identificar y retirar el listener legado | Antes del reinicio hay `0.0.0.0:35963` bajo WUDFHost. Identificar su dispositivo/controlador; retirar únicamente el componente legado si se confirma. No matar WUDFHost genéricamente, ni tocar SCardSvr/Hello. El lector propio no usa red/VPCD. Cierre: sin listener legado y lector propio operativo. |
 | P0 | Regresión Tailscale con gestor nativo | Sesión física, lectura y una firma ReFirma/Firma Perú con verificación independiente; manualmente retirar/volver a presentar el DNI y reconectar. Evidencia histórica funciona, pero no valida la GUI/servicio recién instalados. |
-| P1 | USB AOA real tras reinicio | UsbDk instalado y firmado; PnP devolvió 3010. Reconectar cable de datos, enumerar teléfono y aceptar accesorio. Validar TLS, lectura/firma y cancelación sin depuración/RNDIS. Si sigue vacío, distinguir PnP, UsbDk, AOA y endpoints antes de cambiar drivers. |
+| P1 | USB AOA real tras reinicio | Descubrimiento físico corregido: Android ofrece abrir DNIe Evolución y Windows llega a usb_waiting_android. APK 52 y gestor Release actualizado. Falta validar autorización, TLS, lectura/firma, reconexión y parada con paquete final sin depuración/RNDIS. Ver CORRECCION_USB_AOA_RC4.md. |
 | P1 | LAN TLS real | Usar IP Wi-Fi real del teléfono, ruta PC→Android y huella estable. Localizar fallo por etapa: TCP, DNIREADY1, TLS, token, PC/SC, NFC. Validar firma y reconexión sin abrir reglas globales ni desactivar cifrado. |
 | P1 | Ciudadano Digital sobre candidato actual | Activar selector opcional, comprobar lector exacto y repetir reconocimiento. El hito previo es «DNIe ya tiene certificados instalados» y paso a autenticación facial. No continuar a descargar certificados/cambio de PIN como prueba automática. |
 
 ## Seguridad y distribución
+
+- USB P0: segunda apertura atascada en `usb_switching_accessory`, parada agotada (25 s), sin tarjeta. Investigar bloqueo de llamada UsbDk y aislamiento/cancelación; la corrección de descubrimiento Android no cierra este pendiente. Registrar nueva prueba antes de declarar estable el método USB.
 
 | Trabajo | Pendiente concreto |
 | --- | --- |

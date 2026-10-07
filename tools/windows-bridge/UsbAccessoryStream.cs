@@ -63,29 +63,31 @@ public sealed class UsbAccessoryStream : Stream
         if(handle==IntPtr.Zero || handle==new IntPtr(-1)) throw new IOException("Selected USB device is busy or redirect failed.");
         return handle;
     }
-    public static async Task<UsbAccessoryStream> OpenAsync(CancellationToken stop,string? serial=null) {
+    public static async Task<UsbAccessoryStream> OpenAsync(CancellationToken stop,string? serial=null,Action<string>? log=null) {
         if(string.IsNullOrWhiteSpace(serial)) throw new InvalidDataException("Select the phone USB serial before connecting; arbitrary USB devices are never probed.");
         while(true) {
             stop.ThrowIfCancellationRequested();
             var selected=Devices().Where(d=>string.Equals(d.Id.Instance,serial,StringComparison.OrdinalIgnoreCase)).ToArray();
-            if(selected.Length==0) selected=Devices().Where(d=>Accessory(d) && d.Id.Instance=="DNIeBridge-PC").ToArray();
-            if(selected.Length==0) { await Task.Delay(1000,stop);continue; }
+            if(selected.Length==0) selected=Devices().Where(d=>Accessory(d) && d.Id.Instance==UsbAccessoryIdentity.Serial).ToArray();
+            if(selected.Length==0) { log?.Invoke("usb_waiting_phone");await Task.Delay(1000,stop);continue; }
             if(selected.Length!=1) throw new IOException("USB selection is ambiguous.");
             var device=selected[0];
             if(!Accessory(device)) {
+                log?.Invoke("usb_switching_accessory");
                 IntPtr initial=Redirect(device);
                 try {
                     byte[] protocol=Control(initial,true,51,0,new byte[2],stop);
                     if(protocol[8]==0 && protocol[9]==0) throw new PlatformNotSupportedException("Phone does not support Android Open Accessory.");
-                    string[] identity={"DNIeBridge","NFC PC Bridge","Direct USB secure card bridge","2.0","https://source.android.com/docs/core/interaction/accessories/aoa","DNIeBridge-PC"};
+                    string[] identity=UsbAccessoryIdentity.Strings();
                     for(ushort index=0;index<identity.Length;index++) Control(initial,false,52,index,Encoding.UTF8.GetBytes(identity[index]+"\0"),stop);
                     Control(initial,false,53,0,[],stop);
                 } finally {Native.UsbDk_StopRedirect(initial);}
-                await Task.Delay(1500,stop);
-                // Android may expose its original serial or our accessory serial after re-enumeration.
-                var accessories=Devices().Where(d=>Accessory(d) && (string.Equals(d.Id.Instance,serial,StringComparison.OrdinalIgnoreCase) || d.Id.Instance=="DNIeBridge-PC")).ToArray();
-                if(accessories.Length!=1) throw new IOException("Waiting for the selected phone in accessory mode. Reconnect if necessary.");
-                device=accessories[0];
+                log?.Invoke("usb_waiting_accessory");
+                device=await UsbAccessoryTransition.WaitAsync<Native.DeviceInfo>(()=> {
+                    var accessories=Devices().Where(d=>Accessory(d) && (string.Equals(d.Id.Instance,serial,StringComparison.OrdinalIgnoreCase) || d.Id.Instance==UsbAccessoryIdentity.Serial)).ToArray();
+                    if(accessories.Length>1)throw new IOException("USB selection is ambiguous.");
+                    return accessories.Length==1?accessories[0]:null;
+                },TimeSpan.FromSeconds(20),stop);
             }
             var request=new Native.ConfigRequest {Id=device.Id,Index=0};
             if(!Native.UsbDk_GetConfigurationDescriptor(ref request,out var ptr,out var length)) throw new IOException("Missing accessory configuration.");
@@ -93,6 +95,7 @@ public sealed class UsbAccessoryStream : Stream
             try {if(length>65535) throw new IOException("Invalid USB configuration.");config=new byte[length];Marshal.Copy(ptr,config,0,(int)length);}
             finally {Native.UsbDk_ReleaseConfigurationDescriptor(ptr);}
             var endpoints=UsbAccessoryDescriptors.Endpoints(config);
+            log?.Invoke("usb_accessory_open");
             return new UsbAccessoryStream(Redirect(device),endpoints.Input,endpoints.Output,endpoints.PacketSize,stop);
         }
     }

@@ -20,7 +20,8 @@ public static class PersistentPcscHost
         while (!stop.IsCancellationRequested) {
             try {
                 if (config.Transport == "usb_accessory") {
-                    using var stream=await UsbAccessoryStream.OpenAsync(stop,config.PhoneHost);
+                    using var stream=await UsbAccessoryStream.OpenAsync(stop,config.PhoneHost,log);
+                    log?.Invoke("usb_waiting_android");
                     await TransportReadiness.WaitAsync(stream,stop);
                     await RunSessionAsync(stream,config,certificate,token,expires,stop,log);
                 } else {
@@ -40,7 +41,7 @@ public static class PersistentPcscHost
             } catch (Exception failure) when (failure is PlatformNotSupportedException or DllNotFoundException or TypeInitializationException) {
                 throw new InvalidOperationException("USB support unavailable; stop and fix the selected device or UsbDk installation.",failure);
             } catch (Exception failure) when (!stop.IsCancellationRequested) {
-                if(log!=null)log($"transport_retry type={failure.GetType().Name}");
+                if(log!=null)log($"{(config.Transport=="usb_accessory"?"usb_retry":"transport_retry")} type={failure.GetType().Name}");
                 else Console.WriteLine($"{DateTimeOffset.UtcNow:O} bridge_closed type={failure.GetType().Name} message={failure.Message}");
                 await Task.Delay(1000,stop);
             }

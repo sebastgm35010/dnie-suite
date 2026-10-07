@@ -67,31 +67,46 @@ public sealed partial class MainForm {
     private async Task ActionAsync(Func<Task> action) {
         if(busy)return;busy=true;error.Text="";Render();
         try {await action();}catch(Exception failure){error.Text=failure is System.ComponentModel.Win32Exception {NativeErrorCode:1223}?"Se canceló la elevación. El puente no cambió.":failure.Message;}
-        finally{busy=false;Render();}
+        finally{busy=false;if(!IsDisposed)Render();}
     }
     private async Task PollAsync() {
         if(polling || busy)return;polling=true;
         try {
             var service=ServiceControl.Query();serviceStatus.Text=service==null?"Servicio: no instalado":service.Value.State==4?"Servicio: disponible · permisos SYSTEM conservados":"Servicio: detenido";
             if(service?.State==1){ServiceControl.Start();service=ServiceControl.Query();}
-            if(service?.State==4){var response=await client.SendAsync(new("status"));Check(response);last=response.Status??new();
+            if(service?.State==4){var response=await client.SendAsync(new("status"));
+                if(busy || IsDisposed)return;
+                Check(response);last=response.Status??new();
                 if(last.State is "Running" or "Starting" && last.Profile is {} active) {
                     method.SelectedItem=active.Method;pc.Text=active.Pc;
                     if(active.Method!="USB")phone.Text=active.Phone;
+                    else if((usb.SelectedItem as UsbItem)?.Serial!=active.Phone) {
+                        var selected=new UsbItem("Telefono seleccionado: "+active.Phone,active.Phone);
+                        usb.Items.Add(selected);usb.SelectedItem=selected;
+                    }
                 }
             }
             else last=new("Unavailable","idle");
             Render();selectorStatus.Text="Selector: "+selector.Status;selectorStart.Enabled=!selector.Running;selectorStop.Enabled=selector.Running;
-        }catch(Exception failure){serviceStatus.Text="Servicio: no disponible";last=new("Unavailable","idle");error.Text=failure.Message;Render();}
+        }catch(Exception failure){if(!busy && !IsDisposed){serviceStatus.Text="Servicio: no disponible";last=new("Unavailable","idle");error.Text=failure.Message;Render();}}
         finally{polling=false;}
     }
     private void Render() {
+        if(IsDisposed)return;
         bool running=last.State is "Running" or "Starting" or "Stopping";
         start.Enabled=!busy && !running && last.State!="Unavailable";stop.Enabled=!busy && running;
         install.Enabled=!busy && !running;pair.Enabled=!busy && last.State!="Unavailable";
         method.Enabled=!busy && !running;pc.Enabled=!busy && !running && method.Text!="USB";phone.Enabled=pc.Enabled;usb.Enabled=!busy && !running && method.Text=="USB";refresh.Enabled=!busy && !running;
         hostStatus.Text=busy?"Procesando…":last.CardPresent?"DNI disponible para aplicaciones de Windows":last.State switch {
-            "Running"=>last.Phase=="transport_retry"?"Esperando al teléfono · revisa la conexión":"Puente activo · esperando DNI",
+            "Running"=>last.Phase switch {
+                "usb_waiting_phone"=>"USB: esperando el teléfono conectado",
+                "usb_switching_accessory"=>"USB: preparando modo accesorio Android",
+                "usb_waiting_accessory"=>"USB: esperando que el teléfono reaparezca",
+                "usb_accessory_open" or "usb_waiting_android"=>"USB: abre DNIe Evolución y autoriza el puente",
+                "usb_retry"=>"USB: reconectando · comprueba el permiso y la app Android",
+                "transport_retry"=>"Esperando al teléfono · revisa la conexión",
+                _=>"Puente activo · esperando DNI"
+            },
             "Starting"=>"Preparando puente…","Stopping"=>"Cerrando conexión…","Failed"=>"El puente se detuvo por un error","Unavailable"=>"Instala el servicio para comenzar",_=>"Puente detenido"
         };
         if(last.Error!=null && !busy)error.Text=last.Error;

@@ -47,7 +47,7 @@ await TestFramesAndDisconnect();
 await TestMalformedFrame();
 await TestTimeout();
 await TestIdleDoesNotExpire();
-passed += UsbTransportTests.Run();
+passed += await UsbTransportTests.RunAsync();
 passed += await PcIdentityTests.RunAsync();
 await TestReverseTls();
 passed += await PrivateCardPipeTests.RunAsync();

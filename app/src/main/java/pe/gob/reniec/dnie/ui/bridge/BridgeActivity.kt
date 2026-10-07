@@ -33,6 +33,9 @@ class BridgeActivity : ComponentActivity() {
         reader = NfcReaderManager(NfcAdapter.getDefaultAdapter(this))
         scanner = BridgeQrScanner(this)
         usb = pe.gob.reniec.dnie.data.bridge.BridgeUsbPermission(this)
+        if (intent.getBooleanExtra("usb_attached", false)) {
+            model.method(pe.gob.reniec.dnie.bridge.BridgeConnectionMethod.USB_NETWORK)
+        }
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.RESUMED) { reader.discoveredTags.collect(model::tag) }
         }
@@ -50,6 +53,14 @@ class BridgeActivity : ComponentActivity() {
                 onForgetPc = model::forgetPc,
                 development = pe.gob.reniec.dnie.BuildConfig.DEBUG && intent.getBooleanExtra("development", false))
         } }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (intent.getBooleanExtra("usb_attached", false)) {
+            model.method(pe.gob.reniec.dnie.bridge.BridgeConnectionMethod.USB_NETWORK)
+        }
     }
 
     override fun onDestroy() { usb.close(); super.onDestroy() }

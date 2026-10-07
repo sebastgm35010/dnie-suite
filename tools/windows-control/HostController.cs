@@ -70,6 +70,7 @@ public sealed class HostController : IAsyncDisposable {
                     },stop);
                     if(!stop.IsCancellationRequested)throw new IOException("El motor finalizo inesperadamente.");
                 } catch(OperationCanceledException) when(stop.IsCancellationRequested) {ready.TrySetCanceled(stop);}
+                catch(IOException) when(stop.IsCancellationRequested) {ready.TrySetCanceled(stop);}
                 catch(Exception failure) {Update(s=>s with {State="Failed",CardPresent=false,Error=failure.Message});ready.TrySetException(failure);}
                 finally {if(stop.IsCancellationRequested)Update(s=>s with {State="Stopped",Phase="idle",CardPresent=false});}
             });

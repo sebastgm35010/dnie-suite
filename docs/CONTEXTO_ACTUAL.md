@@ -1,4 +1,8 @@
-# Estado vigente · antes del reinicio
+# Estado vigente · corrección USB tras reinicio
+
+Actualización 2026-10-06: Android `2.0.0-rc4-usb` (52) instalado y gestor/servicio Windows Release actualizado. Tailscale y LAN parecen funcionar según el usuario; no se documenta una nueva firma de regresión. Se corrigió el registro Android de accesorio AOA, el permiso USB y la espera/estado Windows. Prueba física sin DNI: host llegó a `usb_waiting_android` y Android ofreció abrir DNIe Evolución, confirmado por el usuario. Falta la conexión TLS y firma por USB. Detalles y pruebas en [corrección USB AOA](architecture/CORRECCION_USB_AOA_RC4.md). El host se detuvo tras la prueba, sin tarjeta publicada; servicio permanece activo. Distribuciones/evidencia en `D:/DNIeToolchain/Checkpoints/usb-aoa-rc4`.
+
+## Registro previo conservado: antes del reinicio
 Actualizado: 2026-10-06; comprobación operativa 2026-10-07 02:42 UTC. Este archivo describe el estado actual. Los informes con números de versión anteriores son historia, no instrucciones para iniciar hosts adicionales.
 
 ## Por dónde retomar

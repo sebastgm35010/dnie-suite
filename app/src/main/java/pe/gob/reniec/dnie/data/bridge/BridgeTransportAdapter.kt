@@ -28,7 +28,7 @@ class BridgeTransportAdapter(private val context: Context) : Closeable {
         if (pairing.transport == "usb_accessory") {
             val manager = context.getSystemService(Context.USB_SERVICE) as UsbManager
             val device = manager.accessoryList?.singleOrNull() ?: error("Inicia USB directo en la PC y conecta el cable")
-            check(device.manufacturer == "DNIeBridge" && device.model == "NFC PC Bridge") { "Accesorio USB desconocido" }
+            check(BridgeUsbIdentity.matches(device)) { "Accesorio USB desconocido" }
             check(manager.hasPermission(device)) { "Autoriza el accesorio USB en Android" }
             return "USB directo listo"
         }
@@ -49,7 +49,7 @@ class BridgeTransportAdapter(private val context: Context) : Closeable {
     private fun openAccessorySocket(): Socket {
         val manager = context.getSystemService(Context.USB_SERVICE) as UsbManager
         val device = manager.accessoryList?.singleOrNull() ?: error("Cable USB desconectado")
-        check(device.manufacturer == "DNIeBridge" && device.model == "NFC PC Bridge" && manager.hasPermission(device))
+        check(BridgeUsbIdentity.matches(device) && manager.hasPermission(device))
         val descriptor = checkNotNull(manager.openAccessory(device)) { "No se pudo abrir el accesorio USB" }
         accessory = descriptor
         val input = FileInputStream(descriptor.fileDescriptor)
