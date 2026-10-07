@@ -24,7 +24,7 @@ TLS, identidad persistente de PC, protocolo PC/SC y motor NFC/PACE no se modific
 
 ## Siguiente prueba
 
-Limitación detectada en una segunda apertura física: el host quedó en `usb_switching_accessory`; la parada agotó su espera de 25 segundos y dejó estado Stopping, sin tarjeta publicada. La llamada nativa UsbDk aún puede bloquear durante transición/redirección. El ajuste de IOException no resuelve ese bloqueo. Recuperar solo el servicio propio, sin tocar WUDFHost ni servicios PC/SC. Investigar y aislar la llamada nativa, y repetir apertura/parada, antes de considerar USB estable.
+Limitación detectada en una segunda apertura física: el host quedó en `usb_switching_accessory`; la parada agotó su espera de 25 segundos y dejó estado Stopping, sin tarjeta publicada. La llamada nativa UsbDk aún puede bloquear durante transición/redirección. El ajuste de IOException no resuelve ese bloqueo. Se solicitó parada SCM y, agotada la espera, se terminó exclusivamente el proceso del servicio propio, verificando PID y ruta bajo D:/DNIeBridgeApp/versions. Se instaló el paquete final correctamente; el broker volvió a Running con host Stopped, sin tarjeta ni error. No se tocaron WUDFHost ni servicios PC/SC. Investigar y aislar la llamada nativa, y repetir apertura/parada, antes de considerar USB estable.
 
 Abrir gestor Windows, elegir USB y el teléfono; iniciar, aceptar abrir la app Android y usar su perfil USB/QR de primera vinculación. Autorizar NFC con CAN y presentar DNI. Comprobar lectura, firma de documento de prueba y verificación independiente, retirada/reconexión y cancelación. No reenviar firmas automáticamente ante errores.
 
