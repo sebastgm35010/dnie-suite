@@ -1,5 +1,7 @@
 # DNIe Evolucion: organización del fork
 
+Mapa vigente consolidado antes del reinicio: [arquitectura actual 2.0](docs/architecture/ARQUITECTURA_ACTUAL_2_0.md). Estado instalado y pruebas siguientes: [retomar rc4](docs/operations/RETOMAR_TRAS_REINICIO_RC4.md). Las secciones de versiones antiguas de este documento conservan la historia de modularización.
+
 Windows separa ahora la interfaz nativa (`tools/windows-manager`), control/vida del host (`tools/windows-control`), servicio SYSTEM (`tools/windows-agent`) y motor (`tools/windows-bridge`). Uso del ejecutable y permisos: [gestor Windows](tools/windows-manager/README.md).
 
 ## Origen y aislamiento

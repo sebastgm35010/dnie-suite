@@ -1,5 +1,7 @@
 # Motor funcional: responsabilidades y puntos de entrada
 
+Actualización Windows rc4: la presentación operativa es `tools/windows-manager`, coordinación/IPC `tools/windows-control` y servicio `tools/windows-agent`; `windows-desktop` de la tabla inferior es histórico. Ver [arquitectura actual](ARQUITECTURA_ACTUAL_2_0.md) y [estado de reinicio](../operations/RETOMAR_TRAS_REINICIO_RC4.md).
+
 La referencia de comportamiento es checkpoint/firma-windows-1.8.14. Firma Windows validada en RESULTADO_ANDROID21_FIRMA_PERU_VALIDADA.md. Esta guia describe codigo propio; no incorpora implementaciones propietarias inspeccionadas.
 
 | Responsabilidad | Propietario / entrada |

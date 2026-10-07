@@ -4,6 +4,10 @@ Los registros de entregas anteriores permanecen en su ubicación original para c
 
 ## Entrada al proyecto
 
+- [Retomar después del reinicio rc4](operations/RETOMAR_TRAS_REINICIO_RC4.md): estado instalado, persistencia, pruebas y siguiente secuencia.
+- [Arquitectura actual 2.0](architecture/ARQUITECTURA_ACTUAL_2_0.md): módulos Android, gestor/servicio Windows y límites de confianza.
+- [Pendientes vigentes](PENDIENTES_ACTUALES.md): prioridad, evidencia pendiente y criterios de cierre. Los listados 1.7.x siguientes son históricos.
+
 - [Contexto vigente](CONTEXTO_ACTUAL.md): referencia fisica y candidata2.0; empezar por aqui.
 - [Consolidacion 2.0.0-rc1](architecture/CONSOLIDACION_2_0_RC1.md): cambios, pruebas y artefactos.
 - [Plan 2.0 y redisenio 3.0](architecture/PLAN_VERSIONES_2_Y_3.md).
