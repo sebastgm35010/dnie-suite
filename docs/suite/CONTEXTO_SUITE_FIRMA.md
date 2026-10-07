@@ -1,5 +1,7 @@
 # Contexto vigente de la suite propia de firma
 
+2026-10-07 · H10 experimental: PDF sintético con TSA real FreeTSA y RENIEC generados/verificados localmente, ruta HTTPS RENIEC /service responde sin credenciales desde esta PC. Integridad/token comprobados; clasificación externa, confianza/revocación TSA y condiciones de distribución pendientes. APK62 sin cambios. [Archivos, fuentes y límites](TSA_EXPERIMENTO_REAL_H10.md).
+
 2026-10-07 · H9b físico superado: usuario confirma APK62 con vigencia/uso aptos, titular GOOD por OCSP firmado/vigente, ambas CA intermedias GOOD por CRL vigente/firmada y ruta PKIX verificada con TSL Perú autenticada secuencia25. Vigencia agregada hasta 2026-10-07 17:33:45 UTC-05, limitada por OCSP; requiere nueva consulta al caducar. La causa del UNKNOWN anterior no quedó demostrada. Preflight automático, histórico y TSA pendientes. [Evidencia y límites](REVOCACION_CA_DIAGNOSTICO_H9B.md).
 
 2026-10-07 · H9b: usuario confirma APK61 con TSL autenticada y ruta PKIX verificada; titular GOOD, revocación global UNKNOWN. CRL de ambas CA verificadas en PC; causa del fallo en móvil aún sin determinar. Motor extraído por CA con resultado/método/código seguro, panel y registro por CA, distinción de evidencia caducada durante consulta. 236 pruebas pasan; APK62 compilado, prueba física pendiente. [Detalle](REVOCACION_CA_DIAGNOSTICO_H9B.md).
