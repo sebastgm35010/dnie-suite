@@ -20,7 +20,7 @@ Evidencia local fuera de Git: D:/DNIeToolchain/CertificateAudit/2026-10-07/h9-en
 
 ## Verificación de compilación
 
-236 pruebas pasan sin fallos: validation-core 35, core 51, app Debug 76, PDF Android 20, signing-link 23, signing-desktop 22 y PDF desktop 9. Compilación Debug correcta; registro D:/DNIeToolchain/Temp/chain-revocation-h9b.log. Release62 no compilado; no cambian dependencias. APK62 / 2.0.0-rc14-chain-revocation se distribuye en D:/DNIeToolchain/AndroidPackages/dnie-evolution-2.0.0-rc14-chain-revocation-debug.apk. Prueba física por CA pendiente.
+236 pruebas pasan sin fallos: validation-core 35, core 51, app Debug 76, PDF Android 20, signing-link 23, signing-desktop 22 y PDF desktop 9. Compilación Debug correcta; registro D:/DNIeToolchain/Temp/chain-revocation-h9b.log. Release62 no compilado; no cambian dependencias. APK62 / 2.0.0-rc14-chain-revocation se distribuye en D:/DNIeToolchain/AndroidPackages/dnie-evolution-2.0.0-rc14-chain-revocation-debug.apk. Prueba física por CA posteriormente superada; ver confirmación abajo.
 
 ## Próxima prueba y límites
 
@@ -29,3 +29,9 @@ Repetir consulta en APK62 y recoger el resultado de CA intermedia 1 y 2, incluye
 La consulta sigue siendo manual. Preflight online automático, validación histórica, TSA y niveles PAdES T/LT/LTA siguen pendientes. La raíz de confianza se admite mediante la TSL autenticada; no se trata como certificado del titular. No se declara clasificación eIDAS ni acreditación IOFE. Las distribuciones Windows existentes no se actualizan con este APK.
 
 SHA256 APK62: E765F2E9D72D94B529ABB368C3937BEE59A9FFBC147C29C0ED280D15900223C6. Segunda compilación y prueba app tras ajuste de texto: BUILD SUCCESSFUL 36s, chain-revocation-h9b-final.log.
+
+## Confirmación física APK62
+
+El usuario reporta vigencia y uso aptos, titular GOOD mediante OCSP firmado y vigente, TSL Perú autenticada secuencia25 y ruta PKIX verificada. CA intermedia 1 y 2: GOOD, sin entrada en CRL vigente y firma verificada. Agregado de titular y CA: GOOD. Estado válido hasta 2026-10-07 17:33:45 UTC-05, coincidente con nextUpdate del OCSP del titular. Es evidencia de estado actual, no garantía permanente ni validación histórica. La prueba manual queda superada; no se demuestra retrospectivamente si el UNKNOWN anterior fue red, plazo o caducidad. No se amplían las afirmaciones de acreditación ni clasificación eIDAS.
+
+APK62 entregado una sola vez por Telegram, mensaje3733 confirmado; checkpoint de código checkpoint/chain-revocation-detail-h9b, commit278d269. Esta actualización solo documenta evidencia física; no cambia el APK ni requiere recompilación.
