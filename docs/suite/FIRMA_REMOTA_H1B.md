@@ -53,3 +53,12 @@ Evidencia privada fuera de Git:
 - APK: `D:/DNIeToolchain/AndroidPackages/dnie-evolution-2.0.0-rc6-remote-signing-debug.apk`.
 
 Solicitud de emparejamiento PC eliminada al finalizar. No reutilizar token/UUID ni PID histórico. Próximos ensayos físicos: varios originales en un lote, cancelación/pérdida y reconexión con autorización nueva. Después, identidad permanente de PC y PDF integrado; USB privado permanece pendiente.
+
+
+## Lote físico remoto de tres archivos — 2026-10-07
+
+Mismo APK 54 y motor H1b, sin cambios de código entre pruebas. Solicitud de tres archivos (TXT, CSV y binario) abierta mediante QR; el usuario confirmó el fin de sesión. La CLI terminó con `3 / 3`, backend `PRIVATE_ANDROID`, `complete=true`, sin error de sesión ni errores por documento. El recorrido usa una autorización de lote y un único endpoint; el VERIFY preventivo por operación se conserva, sin volver a pedir el PIN en UI.
+
+.NET SignedCms verificó las tres firmas: integridad, coincidencia con el certificado del trabajo y rechazo al alterar cada original. El certificado también coincide con el DNI previamente verificado y está en CurrentUser/My. Revocación y confianza completa de cadena no evaluadas. Evidencia privada: `D:/DNIeToolchain/SuiteRemoteH1bBatch01/jobs/12464c29-50d1-47af-bf8f-29aa02872110`, incluyendo `result.json`, `independent-verification.json` y `signed-documents.zip`; salida CLI en `D:/DNIeToolchain/SuiteRemoteH1bBatch01/desktop.stdout.log`, stderr vacío. Solicitud PC eliminada al terminar.
+
+Quedan ensayos físicos de cancelación/pérdida y recuperación con autorización nueva; después identidad permanente de PC y PDF integrado. No repetir pruebas de PIN erróneo con la tarjeta real.

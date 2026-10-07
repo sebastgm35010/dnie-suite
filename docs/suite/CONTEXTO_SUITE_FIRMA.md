@@ -74,7 +74,7 @@ Pruebas nuevas: 15 de protocolo/extremos/streams y una de dos CMS con motor real
 ## Siguiente hito y criterios
 
 1. H1b físico completado: solicitud TXT, autorización local y DNI produjeron un CMS verificado independientemente. Evidencia y rutas privadas en [FIRMA_REMOTA_H1B.md](FIRMA_REMOTA_H1B.md).
-2. Validar lote real, cancelación/pérdida y ausencia de lector publicado en este recorrido. Los tests TLS reales con tarjeta simulada no sustituyen ese ensayo.
+2. Lote físico remoto completado: 3/3 (TXT/CSV/binario), con verificación .NET de las tres firmas y certificado DNI coincidente. Pendiente cancelación/pérdida física y recuperación con autorización nueva. La ruta no publica lector PC/SC; el lector compatible instalado permanece separado.
 3. Identidad permanente/recordar PC y autorizaciones posteriores. H1b usa identidad TLS efímera por trabajo, solicitud cinco minutos, sin acceder a secretos SYSTEM del puente.
 4. Extender UX/conexión Tailscale y USB privado, después PDF integrado. LAN/Tailscale por IP privada usan TLS inverso; USB de suite aún no está implementado. Convivencia mediante exclusión explícita del DNI, no compartir sesión APDU.
 
