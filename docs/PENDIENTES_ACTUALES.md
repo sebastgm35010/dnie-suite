@@ -9,13 +9,15 @@ Actualizado 2026-10-06 tras reinicio y corrección USB. Este listado sustituye l
 | P0 | Arranque real después del reinicio | Comprobar servicio automático y lector PnP, sin host/red hasta pulsar Iniciar. Abrir dos veces el gestor y comprobar una ventana; iniciar/parar sin UAC. No asumir que la prueba previa de SCM acredita un reinicio real. |
 | P0 | Identificar y retirar el listener legado | Antes del reinicio hay `0.0.0.0:35963` bajo WUDFHost. Identificar su dispositivo/controlador; retirar únicamente el componente legado si se confirma. No matar WUDFHost genéricamente, ni tocar SCardSvr/Hello. El lector propio no usa red/VPCD. Cierre: sin listener legado y lector propio operativo. |
 | P0 | Regresión Tailscale con gestor nativo | Sesión física, lectura y una firma ReFirma/Firma Perú con verificación independiente; manualmente retirar/volver a presentar el DNI y reconectar. Evidencia histórica funciona, pero no valida la GUI/servicio recién instalados. |
-| P1 | USB AOA real tras reinicio | Descubrimiento físico corregido: Android ofrece abrir DNIe Evolución y Windows llega a usb_waiting_android. APK 52 y gestor Release actualizado. Falta validar autorización, TLS, lectura/firma, reconexión y parada con paquete final sin depuración/RNDIS. Ver CORRECCION_USB_AOA_RC4.md. |
+| P1 | USB AOA real tras reinicio | Usuario confirma funcionamiento y firma después del aislamiento. Falta adjuntar/validar artefacto independiente y cerrar estabilidad, reconexión y parada repetidas. APK 52 y gestor Release actualizado. Ver AISLAMIENTO_USB_USBDK.md. |
 | P1 | LAN TLS real | Usar IP Wi-Fi real del teléfono, ruta PC→Android y huella estable. Localizar fallo por etapa: TCP, DNIREADY1, TLS, token, PC/SC, NFC. Validar firma y reconexión sin abrir reglas globales ni desactivar cifrado. |
 | P1 | Ciudadano Digital sobre candidato actual | Activar selector opcional, comprobar lector exacto y repetir reconocimiento. El hito previo es «DNIe ya tiene certificados instalados» y paso a autenticación facial. No continuar a descargar certificados/cambio de PIN como prueba automática. |
 
 ## Seguridad y distribución
 
-- USB P0: identificado `UsbDk_StartRedirect` en `usb_redirect_initial`. Implementado aislamiento en auxiliar, Job Object, cancelación acotada y cuarentena si no termina. Reconectar el cable liberó el auxiliar físico. Continúa pendiente eliminar el bloqueo nativo y validar ciclos, AOA/TLS y firma. Ver AISLAMIENTO_USB_USBDK.md; aislamiento no equivale a USB estable.
+- USB P0: identificado `UsbDk_StartRedirect` en `usb_redirect_initial`. Implementado aislamiento en auxiliar, Job Object, cancelación acotada y cuarentena si no termina. Reconectar el cable liberó el auxiliar físico. Usuario confirma funcionamiento/firma; continúa pendiente eliminar el bloqueo nativo y validar ciclos/artefactos. Ver AISLAMIENTO_USB_USBDK.md; una firma no acredita estabilidad en reconexión.
+
+- Escalabilidad: evaluación de API propia/PKCS#11 portable, KSP/CSP, UMDF, CCID, UDE/USB-IP y RDP en VIABILIDAD_DISTRIBUCION_SIN_CONTROLADOR.md. Próximo candidato: prueba de firma por LAN TLS desde usuario normal sin lector propio/UsbDk en una máquina limpia. Es una propuesta, no implementación ni autorización para cambiar el driver actual.
 
 | Trabajo | Pendiente concreto |
 | --- | --- |
