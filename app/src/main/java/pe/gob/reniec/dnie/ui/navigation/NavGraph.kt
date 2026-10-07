@@ -28,8 +28,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import pe.gob.reniec.dnie.ui.certificates.CertificatesScreen
 import pe.gob.reniec.dnie.ui.certificates.CertificatesViewModel
-import pe.gob.reniec.dnie.ui.console.ConsoleScreen
-import pe.gob.reniec.dnie.ui.console.ConsoleViewModel
+import pe.gob.reniec.dnie.development.DevelopmentScreen
+import pe.gob.reniec.dnie.development.DevelopmentController
 import pe.gob.reniec.dnie.ui.signer.SignerScreen
 import pe.gob.reniec.dnie.ui.signer.SignerViewModel
 import pe.gob.reniec.dnie.ui.identity.IdentityScreen
@@ -46,7 +46,7 @@ fun NavGraph(
     certificatesViewModel: CertificatesViewModel = viewModel(),
     signerViewModel: SignerViewModel = viewModel(),
     batchSignerViewModel: SignerViewModel = viewModel(key = "batchSigner"),
-    consoleViewModel: ConsoleViewModel = viewModel(),
+    consoleViewModel: DevelopmentController = viewModel(),
     identityViewModel: IdentityViewModel = viewModel(),
     vaultViewModel: VaultViewModel = viewModel(),
     onRouteChanged: (String?) -> Unit = {},
@@ -108,8 +108,8 @@ fun NavGraph(
                     onReadIdentity = { navController.navigate(Screen.Identity.route) { launchSingleTop = true } },
                     onReadCertificates = { navController.navigate(Screen.Certificates.route) { launchSingleTop = true } })
             }
-            composable(Screen.Console.route) {
-                ConsoleScreen(viewModel = consoleViewModel)
+            if (pe.gob.reniec.dnie.BuildConfig.DEBUG) composable(Screen.Console.route) {
+                DevelopmentScreen(consoleViewModel)
             }
             composable(Screen.BatchSigner.route) {
                 SignerScreen(viewModel = batchSignerViewModel, batch = true,

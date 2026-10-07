@@ -30,8 +30,10 @@ foreach ($rule in (Get-Acl -LiteralPath $root).Access) {
 }
 $stage = Join-Path $root ('tailnet-' + [Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $stage | Out-Null
+$runtimeHome = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../runtime'))
+if (-not (Test-Path (Join-Path $runtimeHome 'WindowsBridge.dll'))) { $runtimeHome = 'D:\DNIeToolchain\PairingUi' }
 foreach ($name in @('WindowsBridge.dll','WindowsBridge.deps.json','WindowsBridge.runtimeconfig.json')) {
-    Copy-Item -LiteralPath (Join-Path 'D:\DNIeToolchain\PairingUi' $name) -Destination (Join-Path $stage $name)
+    Copy-Item -LiteralPath (Join-Path $runtimeHome $name) -Destination (Join-Path $stage $name)
 }
 & icacls.exe $stage /setowner '*S-1-5-32-544' /T | Out-Null
 if ($LASTEXITCODE) { throw 'No se pudo establecer la propiedad del host.' }

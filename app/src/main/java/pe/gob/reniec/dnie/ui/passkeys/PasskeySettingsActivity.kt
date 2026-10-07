@@ -48,8 +48,7 @@ class PasskeySettingsActivity : ComponentActivity() {
                 } else Text("El proveedor necesita Android 14 o superior. La bóveda de archivos sigue disponible.")
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 TextButton(onClick = { finish() }) { Text("Volver") }
-                TextButton(onClick = { startActivity(android.content.Intent(this@PasskeySettingsActivity,
-                    pe.gob.reniec.dnie.ui.diagnostics.DiagnosticsActivity::class.java)) }) { Text("Diagnóstico persistente") }
+                pe.gob.reniec.dnie.development.DevelopmentEntry()
             } }
         } }
     }

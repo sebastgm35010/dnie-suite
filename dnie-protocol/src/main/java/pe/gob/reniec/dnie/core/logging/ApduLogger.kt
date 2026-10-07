@@ -102,6 +102,10 @@ class ApduLogger(
         /**
          * Instancia compartida por defecto para la aplicación.
          */
-        val default = ApduLogger()
+        var default = ApduLogger()
+            private set
+
+        /** Select once during application startup, before feature adapters are created. */
+        fun configureDefault(enabled: Boolean) { default = ApduLogger(enabled = enabled) }
     }
 }

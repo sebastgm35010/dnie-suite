@@ -52,7 +52,8 @@ internal class PinnedTrust(private val pin: ByteArray) : X509TrustManager {
 }
 
 /** Blocking IO adapter: run off Main, and close() from cancellation/disconnect owner. No logging. */
-class PinnedBridgeClient(private val pairing: BridgePairing) : Closeable {
+class PinnedBridgeClient(private val pairing: BridgePairing,
+    private val settings: pe.gob.reniec.dnie.bridge.BridgeRuntimeSettings = pe.gob.reniec.dnie.bridge.BridgeRuntimeSettings()) : Closeable {
     private val lifecycle = Any()
     private var closed = false
     private var used = false
@@ -73,13 +74,13 @@ class PinnedBridgeClient(private val pairing: BridgePairing) : Closeable {
         }
         try {
             check(System.currentTimeMillis() < pairing.expiresAtEpochMillis) { "Pairing expired" }
-            connection.soTimeout = if (direct) 120_000 else 30_000
+            connection.soTimeout = 30_000 // Bound the unauthenticated synchronization/handshake.
             connection.tcpNoDelay = true
             val address = if (direct) {
                 InetAddress.getAllByName(pairing.host).firstOrNull(TailnetAddress::isTailnet)
                     ?: error("Tailscale address unavailable")
             } else InetAddress.getByName(pairing.host)
-            connection.connect(InetSocketAddress(address, pairing.port), if (direct) 15_000 else 5_000)
+            connection.connect(InetSocketAddress(address, pairing.port), settings.connectTimeoutMs)
             if (connection is SSLSocket) {
                 connection.enabledProtocols = connection.supportedProtocols.filter { it in setOf("TLSv1.2", "TLSv1.3") }.toTypedArray()
                 connection.startHandshake()
@@ -97,6 +98,7 @@ class PinnedBridgeClient(private val pairing: BridgePairing) : Closeable {
             } finally { sessionToken.fill(0) }
             check(input.read() == 1) { "Bridge authentication rejected" }
             event("peer_authorized")
+            connection.soTimeout = settings.readTimeoutMs
             val sessionDeadline = System.nanoTime() + 30L * 60 * 1_000_000_000
             val card = authorizedCard()
             val processor: BridgeProcessor = if (restricted) ReadOnlyBridge(card) else TransparentBridge(card)

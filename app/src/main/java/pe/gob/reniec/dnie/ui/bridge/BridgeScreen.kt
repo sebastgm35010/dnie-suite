@@ -14,38 +14,32 @@ import androidx.compose.ui.unit.dp
 fun BridgeScreen(state: BridgeUiState, nfcEnabled: Boolean, onImport: () -> Unit, onScan: () -> Unit,
     onCan: (String) -> Unit, onAuthorize: () -> Unit, onStop: () -> Unit, onBack: () -> Unit,
     onExportTrace: () -> Unit, onClearTrace: () -> Unit, onWindowsPace: (Boolean) -> Unit, onTranslatePace: (Boolean) -> Unit,
-    onTailnetHost: (String) -> Unit, onConnectTailnet: () -> Unit) {
+    onTailnetHost: (String) -> Unit, onConnectTailnet: () -> Unit,
+    onMethod: (pe.gob.reniec.dnie.bridge.BridgeConnectionMethod) -> Unit,
+    onSettings: (pe.gob.reniec.dnie.bridge.BridgeRuntimeSettings) -> Unit, development: Boolean = false) {
+    var settings by remember { mutableStateOf(false) }
     var advanced by remember { mutableStateOf(false) }
+    if (advanced) BridgeAdvancedSettings(state.settings, onSettings) { advanced = false }
     Scaffold { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text("Puente NFC · PC", style = MaterialTheme.typography.headlineSmall)
-            OutlinedTextField(value = state.tailnetHost, onValueChange = onTailnetHost,
-                label = { Text("PC en Tailscale") },singleLine = true,modifier = Modifier.fillMaxWidth(), enabled = !state.busy && !state.armed)
-            Button(onClick = onConnectTailnet, enabled = !state.busy && !state.armed) { Text("Conectar por Tailscale · sin JSON") }
+            TextButton(onClick = { settings = !settings }, enabled = !state.busy && !state.armed) { Text("Configuración de conexión") }
+            TextButton(onClick = { advanced = true }, enabled = !state.busy && !state.armed) { Text("Configuración avanzada") }
+            if (settings || state.peer.isEmpty()) BridgeConnectionSettings(state.method, !state.busy && !state.armed, onMethod)
+            if (state.method == pe.gob.reniec.dnie.bridge.BridgeConnectionMethod.TAILSCALE) {
+                OutlinedTextField(value = state.tailnetHost, onValueChange = onTailnetHost,
+                    label = { Text("PC en Tailscale") },singleLine = true,modifier = Modifier.fillMaxWidth(), enabled = !state.busy && !state.armed)
+                Button(onClick = onConnectTailnet, enabled = !state.busy && !state.armed) { Text("Conectar por Tailscale") }
+            }
             Text(if (state.tailscale) "Conexión cifrada por Tailscale." else "Conexión cifrada con la PC mediante TLS.")
             Text(if (state.translatePace) "Traducción PACE · modo recomendado" else if (state.windowsPace) "Modo directo · PACE gestionado por Windows" else "PACE en Android · instrucciones lógicas")
             Text("El teléfono mantiene protegido el acceso NFC al DNI y lo presenta como tarjeta inteligente a la PC.")
-            TextButton(onClick = { advanced = !advanced }) { Text(if (advanced) "Ocultar opciones avanzadas" else "Opciones avanzadas") }
-            if (advanced) {
-            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                Switch(checked = state.windowsPace, onCheckedChange = onWindowsPace, enabled = !state.busy && !state.armed)
-                Text("PACE en Windows")
-            }
-            Text(if (state.windowsPace) "Android retransmite las APDU físicas. El middleware de Windows puede solicitar el CAN." else "Android abre PACE y recibe APDU lógicas de la PC.")
-            if (!state.windowsPace) {
-                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                    Switch(checked = state.translatePace, onCheckedChange = onTranslatePace, enabled = !state.busy && !state.armed)
-                    Text("Traducir PACE del middleware")
-                }
-                if (state.translatePace) Text("Android mantiene independientes las sesiones seguras del PC y del DNI.")
-            }
-            }
-            Text("Registro APDU activo: incluye comandos y respuestas lógicos completos. Los datos de PIN no se guardan. Exporta el registro al terminar.", style = MaterialTheme.typography.bodySmall)
+            if (development) pe.gob.reniec.dnie.development.BridgeDevelopmentSettings(state, onWindowsPace, onTranslatePace, onExportTrace, onClearTrace)
             Text(if (state.tailscale) "La PC sincroniza la sesión automáticamente al acercar el DNI." else "Empareja la PC y compara su huella antes de autorizar.",
                 style = MaterialTheme.typography.bodySmall)
-            Button(onClick = onScan, enabled = !state.busy && !state.armed) { Text("Escanear QR de la PC") }
-            OutlinedButton(onClick = onImport, enabled = !state.busy && !state.armed) { Text("Importar archivo de emparejamiento") }
+            if (state.method.usesPairing) Button(onClick = onScan, enabled = !state.busy && !state.armed) { Text("Escanear QR de la PC") }
+            if (state.method.usesPairing) OutlinedButton(onClick = onImport, enabled = !state.busy && !state.armed) { Text("Importar archivo de emparejamiento") }
             if (state.peer.isNotEmpty()) {
                 Text("PC: ${state.peer}", style = MaterialTheme.typography.titleMedium)
                 if (!state.tailscale) {
@@ -66,10 +60,6 @@ fun BridgeScreen(state: BridgeUiState, nfcEnabled: Boolean, onImport: () -> Unit
             }
             if (state.busy) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             OutlinedButton(onClick = onStop, enabled = state.busy || state.armed) { Text("Detener sesión") }
-            if (state.traceAvailable) {
-                OutlinedButton(onClick = onExportTrace, enabled = !state.busy && !state.armed) { Text("Exportar registro APDU") }
-                TextButton(onClick = onClearTrace, enabled = !state.busy && !state.armed) { Text("Borrar registro APDU") }
-            }
             Text("Solo permanece activo en esta pantalla. Al salir, bloquear el teléfono o perder la tarjeta se cierra la sesión.",
                 style = MaterialTheme.typography.bodySmall)
             TextButton(onClick = onBack) { Text("Volver") }

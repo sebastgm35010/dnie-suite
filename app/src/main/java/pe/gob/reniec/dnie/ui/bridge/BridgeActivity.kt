@@ -43,7 +43,9 @@ class BridgeActivity : ComponentActivity() {
                 onScan = { scanner.scan(model::importQr, model::scanStatus) },
                 onCan = model::can, onAuthorize = model::authorize, onStop = model::stop, onBack = ::finish,
                 onExportTrace = { exporter.launch("dnie-apdu-pace-android.jsonl") }, onClearTrace = model::clearTrace, onWindowsPace = model::windowsPace, onTranslatePace = model::translatePace,
-                onTailnetHost = model::tailnetHost, onConnectTailnet = model::connectTailnet)
+                onTailnetHost = model::tailnetHost, onConnectTailnet = model::connectTailnet,
+                onMethod = model::method, onSettings = model::settings,
+                development = pe.gob.reniec.dnie.BuildConfig.DEBUG && intent.getBooleanExtra("development", false))
         } }
     }
 

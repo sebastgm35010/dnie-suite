@@ -17,7 +17,12 @@ $bindAllowed = if ($tailnet) {
     $localAddresses = @(Get-NetIPAddress -AddressFamily IPv4 | Select-Object -ExpandProperty IPAddress)
     $address.Length -eq 4 -and $address[0] -eq 100 -and $address[1] -ge 64 -and $address[1] -le 127 -and
         $localAddresses -contains $config.host -and $config.peerHost -match '^[a-z0-9-]+\.[a-z0-9-]+\.ts\.net$'
-} else { $config.host -eq '127.0.0.1' }
+} else {
+    $bytes = [Net.IPAddress]::Parse($config.host).GetAddressBytes()
+    $private = $bytes.Length -eq 4 -and ($bytes[0] -eq 127 -or $bytes[0] -eq 10 -or ($bytes[0] -eq 172 -and $bytes[1] -ge 16 -and $bytes[1] -le 31) -or ($bytes[0] -eq 192 -and $bytes[1] -eq 168))
+    $localAddresses = @(Get-NetIPAddress -AddressFamily IPv4 | Select-Object -ExpandProperty IPAddress)
+    $config.transport -eq 'tls' -and $private -and ($bytes[0] -eq 127 -or $localAddresses -contains $config.host)
+}
 if (-not $bindAllowed -or $config.port -ne 39443 -or [IO.Path]::GetFullPath($config.certificatePath) -ne (Join-Path $Session 'bridge.pfx')) { throw 'Configuracion fuera del perfil autorizado.' }
 $protectedRoot = 'D:\DNIeBridgePrivileged'
 $sid = $identity.User.Value
@@ -31,18 +36,19 @@ $trusted = @('S-1-5-32-544','S-1-5-18',$sid)
 foreach ($rule in (Get-Acl -LiteralPath $protectedRoot).Access) {
     if ($rule.AccessControlType -eq 'Allow' -and $trusted -notcontains $rule.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value) { throw 'ACL del host contiene permisos inesperados.' }
 }
-$stage = Join-Path $protectedRoot (Split-Path -Leaf $Session)
-if (Test-Path -LiteralPath $stage) { throw 'Esta sesion ya se preparo; crear un QR nuevo.' }
+$stage = Join-Path $protectedRoot ((Split-Path -Leaf $Session) + '-' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $stage | Out-Null
+$runtimeHome = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../runtime'))
+if (-not (Test-Path (Join-Path $runtimeHome 'WindowsBridge.dll'))) { $runtimeHome = 'D:\DNIeToolchain\PairingUi' }
 foreach ($name in @('WindowsBridge.dll','WindowsBridge.deps.json','WindowsBridge.runtimeconfig.json')) {
-    Copy-Item -LiteralPath (Join-Path 'D:\DNIeToolchain\PairingUi' $name) -Destination (Join-Path $stage $name)
+    Copy-Item -LiteralPath (Join-Path $runtimeHome $name) -Destination (Join-Path $stage $name)
 }
 Copy-Item -LiteralPath (Join-Path $Session 'bridge.pfx') -Destination (Join-Path $stage 'bridge.pfx')
 $config.certificatePath = Join-Path $stage 'bridge.pfx'
 $config | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $stage 'server-private.json') -Encoding UTF8
 & icacls.exe $stage /setowner '*S-1-5-32-544' /T | Out-Null
 if ($LASTEXITCODE) { throw 'No se pudo establecer propiedad administrativa.' }
-$taskName = 'DNIeBridge-Session-' + (Split-Path -Leaf $Session)
+$taskName = 'DNIeBridge-Session-' + [guid]::NewGuid().ToString('N')
 $command = '/c ""C:\Program Files\dotnet\dotnet.exe" ' + $stage + '\WindowsBridge.dll serve-pcsc --config ' + $stage + '\server-private.json > ' + $stage + '\host.log 2> ' + $stage + '\host-error.log"'
 Import-Module ScheduledTasks
 $action = New-ScheduledTaskAction -Execute (Join-Path $env:SystemRoot 'System32/cmd.exe') -Argument $command

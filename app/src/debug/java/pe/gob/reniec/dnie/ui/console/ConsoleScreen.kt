@@ -104,9 +104,6 @@ fun ConsoleScreen(
                     }
 
                     // Copiar al Portapapeles
-                    IconButton(onClick = { context.startActivity(android.content.Intent(context, pe.gob.reniec.dnie.ui.diagnostics.DiagnosticsActivity::class.java)) }) {
-                        Icon(Icons.Default.Terminal, contentDescription = "Diagnóstico persistente de la app")
-                    }
                     IconButton(onClick = {
                         val copied = viewModel.copyLogsToClipboard(context)
                         if (copied) {

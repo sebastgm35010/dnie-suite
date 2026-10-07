@@ -7,13 +7,14 @@ using System.Security.Principal;
 using System.Text.Json;
 using DniBridge;
 
-if (args.Length == 0) { Console.WriteLine("doctor | setup --output <private-directory> [--host IP] [--port 39443] | serve-local --config <server-private.json> | pcsc-devices | pcsc-relay --pipe <session-name> [--device <interface-path>] | serve --config <server-private.json>"); return; }
+if (args.Length == 0) { Console.WriteLine("setup --output <private-directory> --host <local-IP> | serve-pcsc --config <server-private.json> | serve-tailnet --host <tailnet-host> --peer <tailnet-peer>"); return; }
 string Option(string name, string? fallback = null)
 {
     int index = Array.IndexOf(args, name);
     return index >= 0 && index + 1 < args.Length ? args[index + 1] : fallback ?? throw new ArgumentException($"Missing {name}.");
 }
 var jsonOptions = new JsonSerializerOptions { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+#if DEBUG
 if (args[0] == "doctor")
 {
     var properties = System.Net.NetworkInformation.IPGlobalProperties.GetIPGlobalProperties();
@@ -58,7 +59,9 @@ else if (args[0] == "pcsc-relay")
     Console.WriteLine("PC/SC backend connected to session-local transport. Card presence requires a real NFC ATR.");
     await PcscBackend.RunAsync(device, pipe, stop.Token);
 }
-else if (args[0] == "serve-tailnet")
+else
+#endif
+if (args[0] == "serve-tailnet")
 {
     var address = TailnetTransport.Resolve(Option("--host", "sebas-laptop.tail2752e9.ts.net"));
     string peer = Option("--peer", "sebas-poco.tail2752e9.ts.net");
@@ -84,6 +87,7 @@ else if (args[0] == "setup")
     IPAddress host = tailnet ? TailnetTransport.Resolve(advertisedHost) : IPAddress.Parse(advertisedHost);
     string? peerHost = tailnet ? Option("--peer") : null;
     if (tailnet) TailnetTransport.Resolve(peerHost!);
+    if (!tailnet) LocalNetworkPolicy.VerifyBinding(host);
     if (host.Equals(IPAddress.Any) || host.Equals(IPAddress.IPv6Any)) throw new ArgumentException("Specify one local interface address.");
     int port = int.Parse(Option("--port", "39443"));
     if (port is < 1024 or > 65535) throw new ArgumentException("Invalid TLS port.");
@@ -110,14 +114,20 @@ else if (args[0] == "setup")
     string certificatePath = Path.Combine(directory, "bridge.pfx");
     await File.WriteAllBytesAsync(certificatePath, certificate.Export(X509ContentType.Pfx, password));
     string pin = Convert.ToHexString(SHA256.HashData(certificate.RawData));
+    int idleTimeout = int.Parse(Option("--idle-seconds", "120"));
+    if (idleTimeout is < 5 or > 300) throw new ArgumentException("Invalid idle timeout.");
     string pairingExpiresAt = DateTime.UtcNow.AddMinutes(10).ToString("O");
-    await File.WriteAllTextAsync(Path.Combine(directory, "server-private.json"), JsonSerializer.Serialize(new ServerConfig(host.ToString(), port, 35963, certificatePath, password, Convert.ToBase64String(token), 120, pairingExpiresAt, transport, advertisedHost, peerHost), jsonOptions));
+    await File.WriteAllTextAsync(Path.Combine(directory, "server-private.json"), JsonSerializer.Serialize(new ServerConfig(host.ToString(), port, 35963, certificatePath, password, Convert.ToBase64String(token), idleTimeout, pairingExpiresAt, transport, advertisedHost, peerHost), jsonOptions));
     await File.WriteAllTextAsync(Path.Combine(directory, "android-provision.json"), JsonSerializer.Serialize(new { version = 1, host = advertisedHost, port, certificateSha256 = pin, transport, pairingTokenBase64 = Convert.ToBase64String(token), expiresAt = pairingExpiresAt }, jsonOptions));
     CryptographicOperations.ZeroMemory(token);
     Console.WriteLine("Private provisioning created. Import android-provision.json through a trusted channel; it is a credential.");
     Console.WriteLine($"Server SHA-256: {string.Join(":", Enumerable.Range(0, 32).Select(i => pin.Substring(i * 2, 2)))}");
 }
-else if (args[0] is "serve" or "serve-local" or "serve-pcsc")
+else if (args[0] == "serve-pcsc"
+#if DEBUG
+    || args[0] is "serve" or "serve-local"
+#endif
+    )
 {
     bool nativePcsc = args[0] == "serve-pcsc";
     bool privateLocal = args[0] is "serve-local" or "serve-pcsc";
@@ -140,8 +150,9 @@ else if (args[0] is "serve" or "serve-local" or "serve-pcsc")
     using var certificate = new X509Certificate2(config.CertificatePath, config.CertificatePassword, X509KeyStorageFlags.UserKeySet);
     if (!certificate.HasPrivateKey || DateTime.UtcNow < certificate.NotBefore.ToUniversalTime() || DateTime.UtcNow >= certificate.NotAfter.ToUniversalTime()) throw new InvalidDataException("Certificate unavailable or expired; provision again.");
     IPAddress bindAddress = IPAddress.Parse(config.Host);
-    if (tailnet ? !TailnetTransport.IsAddress(bindAddress) : privateLocal && !IPAddress.IsLoopback(bindAddress)) throw new InvalidDataException("Transport binding outside its profile.");
+    if (tailnet ? !TailnetTransport.IsAddress(bindAddress) : !LocalNetworkPolicy.IsPrivateAddress(bindAddress)) throw new InvalidDataException("Transport binding outside its profile.");
     if (bindAddress.Equals(IPAddress.Any) || bindAddress.Equals(IPAddress.IPv6Any)) throw new InvalidDataException("Specify one local interface address.");
+    if (!tailnet) LocalNetworkPolicy.VerifyBinding(bindAddress);
     using var stop = new CancellationTokenSource();
     using var pairingDeadline = CancellationTokenSource.CreateLinkedTokenSource(stop.Token);
     if (config.PairingExpiresAt != null) pairingDeadline.CancelAfter(expires - DateTimeOffset.UtcNow);
@@ -184,6 +195,6 @@ else if (args[0] is "serve" or "serve-local" or "serve-pcsc")
     catch (Exception) { Console.WriteLine("Bridge session closed. Authentication, transport or framing failed."); Environment.ExitCode = 1; }
     finally { listener.Stop(); CryptographicOperations.ZeroMemory(token); }
 }
-else throw new ArgumentException("Unknown command.");
+else { Console.Error.WriteLine("Unknown command for this build."); Environment.ExitCode = 2; }
 
 public sealed record ServerConfig(string Host, int Port, int VpcdPort, string CertificatePath, string CertificatePassword, string PairingTokenBase64, int IdleTimeoutSeconds, string? PairingExpiresAt = null, string Transport = "tls", string? AdvertisedHost = null, string? PeerHost = null);

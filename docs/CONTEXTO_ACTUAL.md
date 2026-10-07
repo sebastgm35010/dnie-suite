@@ -2,6 +2,12 @@
 
 Fork autorizado: modest-bose-evolution. Base modest-bose y Antigravity clausuradas; no modificarlas.
 
+## Candidata actual: 2.0.0-rc2 (50)
+
+Tres métodos implementados: Tailscale con sincronización, LAN TLS por QR y cable mediante red USB/tethering TLS, sin ADB. Gestor Windows con selección de método/interfaz, preferencias y tiempo de inactividad; Android con configuración y ajustes avanzados acotados. Consola, historial, métricas y grabador separados por fuentes Debug/Release; captura APDU opt-in inicialmente apagada. Release comprobado sin implementaciones ni actividad de diagnóstico y Windows sin módulos/entrada debug ni comandos de desarrollo.
+
+250 pruebas Android/JVM aprobadas, dos omitidas; 110 host Windows y cuatro selector. APK Debug/Release y paquetes Windows compilados. QR LAN preparado y decodificado sin abrir un listener ni tocar la tarjeta. Pendiente validación física LAN y USB. Entrega privada D:/DNIeToolchain/Checkpoints/2.0.0-rc2/. No instalado por ADB; host anterior PID53000 preservado, runtime preparado actualizado con respaldo. Ver [transportes, separación y prueba](architecture/TRANSPORTES_Y_DEBUG_2_0_RC2.md). Los apartados rc1 siguientes describen la referencia anterior; la captura opt-in ya está resuelta para rc2, el consentimiento por operación sigue pendiente.
+
 ## Referencia funcional preservada
 
 Commit10089b4, tag checkpoint/firma-windows-1.8.14. APK1.8.14-reniec-pki(47) preservado y SHA256 comprobado en D:/DNIeToolchain/Checkpoints/firma-windows-1.8.14-2026-10-06/. Fuentes y tests propios en Git; secretos, capturas personales y runtimes de terceros fuera de Git.

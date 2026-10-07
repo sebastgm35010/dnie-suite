@@ -21,6 +21,13 @@ byte[] token = RandomNumberGenerator.GetBytes(32);
 byte[] pin = SHA256.HashData(certificate.RawData);
 int passed = 0;
 passed += BridgePairingQrTests.Run();
+foreach (var ip in new[] { "192.168.1.5", "10.0.0.2", "172.16.0.3" }) {
+    var address = IPAddress.Parse(ip);
+    Assert(LocalNetworkPolicy.IsBindingAllowed(address, [address]), "Assigned LAN/USB accepted.");
+    Assert(!LocalNetworkPolicy.IsBindingAllowed(address, []), "Unassigned interface rejected.");
+}
+foreach (var ip in new[] { "0.0.0.0", "8.8.8.8", "100.104.106.125", "169.254.1.1", "::", "::1" })
+    Assert(!LocalNetworkPolicy.IsBindingAllowed(IPAddress.Parse(ip), [IPAddress.Parse(ip)]), "Public, wildcard or unsupported binding rejected.");
 BridgeSession.VerifyDriverIsolation([new IPEndPoint(IPAddress.Loopback, 35963)], 35963);
 Assert(true, "Loopback-only driver accepted.");
 foreach (var address in new[] { IPAddress.Any, IPAddress.IPv6Any, IPAddress.Parse("192.0.2.1") })

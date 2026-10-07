@@ -31,12 +31,12 @@ sealed class Screen(
 
     data object Console : Screen(
         route = "console",
-        title = "Consola APDU",
+        title = "Desarrollo",
         icon = Icons.Default.Terminal
     )
 
     companion object {
-        val items = listOf(Identity, Certificates, Signer, BatchSigner, Console)
+        val items = listOf(Identity, Certificates, Signer, BatchSigner) + pe.gob.reniec.dnie.development.developmentDestinations()
     }
 
     data object Identity : Screen("identity", "Identidad", Icons.Default.Person)

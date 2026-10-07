@@ -21,8 +21,8 @@ function Stop-BridgeSelector($control) {
     }
 }
 function Get-BridgeDesktopState($control) {
-    $listening=[bool]([Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties().GetActiveTcpListeners() |
-        Where-Object { $bytes=$_.Address.GetAddressBytes(); $_.Port -eq 39443 -and $bytes.Length -eq 4 -and $bytes[0] -eq 100 -and $bytes[1] -ge 64 -and $bytes[1] -le 127 })
+    $properties=[Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties()
+    $listening=[bool](@($properties.GetActiveTcpListeners() | Where-Object Port -eq 39443).Count -or @($properties.GetActiveTcpConnections() | Where-Object {$_.LocalEndPoint.Port -eq 39443 -and $_.State -eq 'Established'}).Count)
     $running=[bool]($control.Process -and -not $control.Process.HasExited)
     $phase=if($running){'starting'}else{'stopped'}
     $count=0

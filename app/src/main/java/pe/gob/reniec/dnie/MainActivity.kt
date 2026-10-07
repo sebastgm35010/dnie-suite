@@ -21,7 +21,7 @@ import pe.gob.reniec.dnie.core.nfc.DnieTransceiver
 import pe.gob.reniec.dnie.core.nfc.IsoDepCardChannel
 import pe.gob.reniec.dnie.core.nfc.NfcReaderManager
 import pe.gob.reniec.dnie.ui.certificates.CertificatesViewModel
-import pe.gob.reniec.dnie.ui.console.ConsoleViewModel
+import pe.gob.reniec.dnie.development.DevelopmentController
 import pe.gob.reniec.dnie.ui.navigation.NavGraph
 import pe.gob.reniec.dnie.ui.signer.SignerUiState
 import pe.gob.reniec.dnie.ui.signer.SignerViewModel
@@ -42,7 +42,7 @@ class MainActivity : ComponentActivity() {
     private val batchSignerViewModel: SignerViewModel by lazy {
         androidx.lifecycle.ViewModelProvider(this).get("batchSigner", SignerViewModel::class.java)
     }
-    private val consoleViewModel: ConsoleViewModel by viewModels()
+    private val consoleViewModel: DevelopmentController by viewModels()
     private val identityViewModel: IdentityViewModel by viewModels()
     private val vaultViewModel: VaultViewModel by viewModels()
     private var currentRoute: String? = null

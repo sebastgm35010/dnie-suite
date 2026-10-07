@@ -18,20 +18,12 @@ import pe.gob.reniec.dnie.bridge.BridgeMode
 import pe.gob.reniec.dnie.data.bridge.BridgeAndroidAdapter
 import pe.gob.reniec.dnie.data.preferences.CanStorage
 import pe.gob.reniec.dnie.diagnostics.DiagnosticLog
-data class BridgeUiState(
-    val peer: String = "", val fingerprint: String = "", val can: String = "",
-    val armed: Boolean = false, val busy: Boolean = false,
-    val traceAvailable: Boolean = false, val mode: BridgeMode = BridgeMode.TRANSLATED_ANDROID_PACE,
-    val tailscale: Boolean = false,
-    val tailnetHost: String = "sebas-laptop.tail2752e9.ts.net",
-    val message: String = "Escanea el QR mostrado en la PC o importa el emparejamiento."
-) {
-    val windowsPace get() = mode.windowsPace
-    val translatePace get() = mode.translatePace
-}
 /** Coordinates import and exclusive foreground sessions; secrets never enter Compose state. */
 class BridgeViewModel(application: Application) : AndroidViewModel(application) {
-    private val mutable = MutableStateFlow(BridgeUiState(can = CanStorage.getSavedCan(application)))
+    private val preferences = pe.gob.reniec.dnie.data.bridge.BridgePreferences(application)
+    private val mutable = MutableStateFlow(BridgeUiState(can = CanStorage.getSavedCan(application),
+        method = preferences.method(), settings = preferences.settings(),
+        tailnetHost = preferences.host().ifEmpty { pe.gob.reniec.dnie.development.defaultTailnetHost() }))
     val state = mutable.asStateFlow()
     private var pairing: BridgePairing? = null
     private val adapter = BridgeAndroidAdapter(application)
@@ -39,12 +31,25 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
     private var task: Job? = null
     @Volatile private var connection: BridgeConnection? = null
     @Volatile private var generation = 0
-    fun translatePace(value: Boolean) { if (!mutable.value.busy && !mutable.value.armed && !mutable.value.windowsPace) mutable.update { it.copy(mode = if (value) BridgeMode.TRANSLATED_ANDROID_PACE else BridgeMode.LOGICAL_ANDROID_PACE) } }
-    fun windowsPace(value: Boolean) { if (!mutable.value.busy && !mutable.value.armed) mutable.update { it.copy(mode = if (value) BridgeMode.DIRECT_WINDOWS_PACE else BridgeMode.TRANSLATED_ANDROID_PACE) } }
-    fun can(value: String) { if (!mutable.value.busy) mutable.update { it.copy(can = value.filter(Char::isDigit).take(6)) } }
-    fun tailnetHost(value: String) { if (!mutable.value.busy && !mutable.value.armed) mutable.update { it.copy(tailnetHost = value.trim().take(253)) } }
-    fun connectTailnet() {
+    private fun savePreferences() { mutable.value.let { preferences.save(it.method, it.tailnetHost, it.settings) } }
+    fun settings(value: pe.gob.reniec.dnie.bridge.BridgeRuntimeSettings) {
         if (mutable.value.busy || mutable.value.armed) return
+        mutable.update { it.copy(settings = value) }; savePreferences()
+    }
+    fun method(value: pe.gob.reniec.dnie.bridge.BridgeConnectionMethod) {
+        if (mutable.value.busy || mutable.value.armed || value == mutable.value.method) return
+        ++generation; task?.cancel(); task = null
+        pairing?.close(); pairing = null
+        mutable.update { it.copy(method = value, peer = "", fingerprint = "", tailscale = false,
+            message = if (value.usesPairing) "En la PC selecciona la red correspondiente, inicia el host y escanea su QR." else "Activa Tailscale en ambos equipos y conecta con el nombre de la PC.") }
+        savePreferences()
+    }
+    fun translatePace(value: Boolean) { if (pe.gob.reniec.dnie.BuildConfig.DEBUG && !mutable.value.busy && !mutable.value.armed && !mutable.value.windowsPace) mutable.update { it.copy(mode = if (value) BridgeMode.TRANSLATED_ANDROID_PACE else BridgeMode.LOGICAL_ANDROID_PACE) } }
+    fun windowsPace(value: Boolean) { if (pe.gob.reniec.dnie.BuildConfig.DEBUG && !mutable.value.busy && !mutable.value.armed) mutable.update { it.copy(mode = if (value) BridgeMode.DIRECT_WINDOWS_PACE else BridgeMode.TRANSLATED_ANDROID_PACE) } }
+    fun can(value: String) { if (!mutable.value.busy) mutable.update { it.copy(can = value.filter(Char::isDigit).take(6)) } }
+    fun tailnetHost(value: String) { if (!mutable.value.busy && !mutable.value.armed) { mutable.update { it.copy(tailnetHost = value.trim().take(253)) }; savePreferences() } }
+    fun connectTailnet() {
+        if (mutable.value.busy || mutable.value.armed || mutable.value.method.usesPairing) return
         val next = try { adapter.tailnet(mutable.value.tailnetHost) } catch (_: Exception) {
             mutable.update { it.copy(message = "Introduce el nombre Tailscale de la PC o su IP 100.x.") }; return
         }
@@ -80,6 +85,7 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
             try {
                 withContext(Dispatchers.IO) {
                     imported = read()
+                    require(mutable.value.method.accepts(checkNotNull(imported).transport))
                 }
                 if (epoch != generation) return@launch
                 pairing = imported
@@ -87,7 +93,7 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
                 val p = checkNotNull(pairing)
                 DiagnosticLog.event("bridge", "pairing_imported")
                 mutable.update { it.copy(peer = "${p.host}:${p.port}",
-                    fingerprint = p.fingerprint(), busy = false, tailscale = p.transport == "tailscale_tcp",
+                    fingerprint = p.fingerprint(), busy = false, tailscale = p.transport.startsWith("tailscale_"),
                     message = if (p.transport == "tailscale_tcp") "Tailscale directo listo. Activa Tailscale y autoriza el DNI." else "Comprueba esta huella con la PC antes de autorizar.") }
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) {
@@ -109,7 +115,7 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
         val current = mutable.value
         val p = pairing ?: return
         if (!current.armed || current.busy) return
-        val prepared = adapter.prepare(p, tag, current.mode)
+        val prepared = adapter.prepare(p, tag, current.mode, current.settings)
         if (prepared == null) {
             mutable.update { it.copy(message = "Esta conexión NFC no ofrece los datos ISO 14443-A necesarios.") }; return
         }
@@ -129,8 +135,8 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
                         if (epoch == generation) mutable.update { it.copy(message = when (phase) {
                             BridgeConnection.Phase.AUTHENTICATING_PC -> if (current.tailscale) "Sincronizando con la PC por Tailscale…" else "Validando la PC por TLS…"
                             BridgeConnection.Phase.OPENING_PACE -> "Abriendo PACE con tu DNI…"
-                            BridgeConnection.Phase.RAW_ACTIVE -> "Puente directo activo. Windows gestiona PACE; registro APDU activo."
-                            BridgeConnection.Phase.PACE_ACTIVE -> if (current.translatePace) "Puente con traducción PACE activo. Sesiones PC y DNI independientes." else "Puente PACE activo. Instrucciones de la PC habilitadas; registro APDU activo."
+                            BridgeConnection.Phase.RAW_ACTIVE -> "Puente directo activo. Windows gestiona PACE."
+                            BridgeConnection.Phase.PACE_ACTIVE -> if (current.translatePace) "Puente con traducción PACE activo. Sesiones PC y DNI independientes." else "Puente PACE activo. Instrucciones de la PC habilitadas."
                         }) }
                     }
                 }
@@ -141,7 +147,7 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
                 DiagnosticLog.failure("bridge", "session", failure)
                 if (!opened) withContext(Dispatchers.IO) { adapter.recordOpeningFailure(failure, current.windowsPace, current.translatePace) }
                 DiagnosticLog.event("bridge", "session_closed", "state" to "transport_or_card_failed")
-                if (epoch == generation) mutable.update { it.copy(message = "La conexión se cerró. Revisa el registro, el host de la PC y el contacto NFC.") }
+                if (epoch == generation) mutable.update { it.copy(message = "La conexión se cerró. Revisa el host de la PC, la red y el contacto NFC.") }
             } finally {
                 atr.fill(0)
                 if (connection === session) connection = null

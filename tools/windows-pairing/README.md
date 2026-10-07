@@ -1,3 +1,11 @@
+# Flujo actual 2.0.0-rc2
+
+El gestor Windows permite Tailscale, LAN TLS y USB TLS mediante Compartir Internet por USB. LAN/USB usan una IPv4 privada concreta de la PC y QR, sin depuración ni ADB. `network-session.ps1` genera el emparejamiento e inicia el backend temporal; no modifica firewall. La conexión por cable es red USB, no un accesorio USB nativo. El flujo `pair-phone.ps1` que se describe abajo se conserva como herramienta histórica de desarrollo y queda fuera del paquete de producción.
+
+Consulta [transportes y pruebas](../../docs/architecture/TRANSPORTES_Y_DEBUG_2_0_RC2.md) y `tools/windows-desktop/package-desktop.ps1 -Configuration Release` para generar un paquete sin herramientas debug. Las limitaciones antiguas de loopback/ADB que aparecen debajo ya no describen el flujo principal del gestor.
+
+## Flujo historico
+
 # Emparejamiento móvil mediante QR
 
 Ejecutar `emparejar-pc.bat` en la raíz del fork. Compila la presentación Windows separada del motor, crea una carpeta NTFS privada nueva en D:, genera un QR local, prepara ADB reverse si hay un teléfono autorizado conectado y abre la página local. Desde 1.8.2 inicia por defecto el host con backend PC/SC integrado. Windows solicita elevación para la sesión temporal SYSTEM porque la interfaz privada del controlador instalado exige esa identidad; no se amplía su ACL ni se modifica el firewall. `-AdbDevice <serial>` selecciona el teléfono si hay varios; `-NoOpen -NoServer` genera solamente el QR y `-TransportOnly` conserva el modo anterior sin backend.

@@ -27,6 +27,7 @@ class DnieApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
+        pe.gob.reniec.dnie.core.logging.ApduLogger.configureDefault(BuildConfig.DEBUG)
         pe.gob.reniec.dnie.diagnostics.AppDiagnostics.initialize(this)
         pe.gob.reniec.dnie.data.vault.VaultPreviewFiles(this).clear()
         // Remove plaintext left by process death before any vault screen is opened.

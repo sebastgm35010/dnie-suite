@@ -56,7 +56,6 @@
         <activity android:name=".ui.bridge.BridgeActivity" android:exported="false" android:excludeFromRecents="true" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ui.passkeys.PasskeySettingsActivity" android:exported="false" />
         <activity android:name=".ui.passkeys.PasskeyToolsActivity" android:exported="false" android:excludeFromRecents="true" android:windowSoftInputMode="adjustResize" />
-        <activity android:name=".ui.diagnostics.DiagnosticsActivity" android:exported="false" android:excludeFromRecents="true" />
         <activity android:name=".ui.passkeys.PasskeyCeremonyActivity" android:exported="false"
             android:excludeFromRecents="true" android:windowSoftInputMode="adjustResize" />
 
