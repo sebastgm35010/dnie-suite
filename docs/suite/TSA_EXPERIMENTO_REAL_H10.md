@@ -30,3 +30,23 @@ La integridad del sello RENIEC y su correspondencia se verificaron. No se declar
 Validador del Estado pendiente: recoger formato/nivel, fecha TSA, algoritmo, serie/ruta TSA y reconocimiento TSL. Firmante sintético sin confianza RENIEC; puede afectar el resultado global independientemente de la integridad/nivel y confianza TSA. No prometer que la interfaz mostrará todos los campos ante certificado desconocido.
 
 Después de la validación externa: módulo TimestampClient/TokenValidator independiente de UI y NFC, política TSA propia (EKU exclusivo/crítico, políticas admitidas, confianza de servicio, ruta/revocación), orígenes públicos acotados para ROOT5 y decisión expresa de sello obligatorio/opcional. Un fallo TSA no repite la firma privada ni etiqueta B como T. Confirmar condiciones del proveedor y disponibilidad desde móvil antes de habilitarlo para producción.
+
+## Confirmación externa aportada por el usuario
+
+Firma Perú 1.1.0 / DSS5.11.1, validaciones del 2026-10-07 a las 17:48:07 y 17:49:19 UTC-05. Resultado reportado por el usuario, no ejecución local nueva del portal.
+
+| Evidencia | FreeTSA | RENIEC |
+| --- | --- | --- |
+| Integridad PDF y firma | Se mantiene | Se mantiene |
+| Formato reconocido | PAdES_BASELINE_T | PAdES_BASELINE_T |
+| Raíz del firmante sintético en TSL | No | No |
+| Raíz TSA en TSL | No | Sí |
+| Fecha TSA UTC-05 | 17:41:47 | 17:46:05 |
+| Algoritmo de firma TSA | ECDSA with SHA512 | RSA with SHA256 |
+| Resultado global | INDETERMINADO | INDETERMINADO |
+
+En ambos aparece NO_CERTIFICATE_CHAIN_FOUND / BBB_XCV_CCCBB_SIG_ANS referido a la cadena de la firma: no contiene un ancla de confianza. Es consistente con el certificado documental autofirmado sintético. El informe no muestra rechazo de integridad ni de formato TSA.
+
+Ruta TSA RENIEC reconocida por el portal: PSVA-TSA-RENIEC TSU-2026-01 -> EC-PSVA CA ROOT 5 -> ECERNEP PERU CA ROOT 5. Certificado TSA válido hasta 2038-01-17 11:47:17 UTC-05. La prueba externa de estructura PAdES-T y reconocimiento de raíz TSA RENIEC queda superada. No se interpreta el reconocimiento de raíz como demostración de todos los controles de revocación TSA, autorización contractual, disponibilidad futura ni validación local completa.
+
+Queda pendiente integrar el módulo TSA en Android con verificación propia de ruta/revocación ROOT5 y firmar con DNI real, esperando confirmar integridad, PAdES_BASELINE_T y confianza de ambas raíces en el portal. El APK62 y su motor no cambian en esta actualización documental.
