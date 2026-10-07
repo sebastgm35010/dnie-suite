@@ -1,4 +1,8 @@
-# Flujo actual 2.0.0-rc3
+# Gestor actual Windows rc4
+
+El punto de entrada actual es `DNIeBridge.exe`, con servicio SYSTEM persistente y una instalación elevada única. La interfaz ya no usa la cadena BAT/PowerShell. Ver [gestor nativo](../windows-manager/README.md). Este directorio conserva herramientas históricas de emparejamiento/diagnóstico, no es el lanzador cotidiano.
+
+## Transportes 2.0.0-rc3 conservados
 
 El gestor ofrece Tailscale, Wi-Fi local con TCP iniciado por Windows y TLS fijado a la identidad permanente de la PC, y USB directo Android Open Accessory con TLS sobre datos USB. Ya no se utiliza Compartir Internet por USB. El host puede atender sesiones sucesivas sin límite de inactividad; Android conserva los perfiles cifrados y vuelve a esperar el DNI después de terminar una sesión abierta.
 

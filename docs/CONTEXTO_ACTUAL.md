@@ -1,3 +1,11 @@
+## Actualización 2026-10-06 · Windows nativo rc4
+
+La cadena de interfaz BAT/PowerShell se reemplazó por `DNIeBridge.exe` (WinForms, asInvoker) y `DNIeBridgeAgent` (servicio SYSTEM automático, solo broker al arrancar). Instalación administrativa única, control desde el SID inscrito por pipe local restringido y verificación de PID contra SCM. Inicio idempotente, parada con limpieza y host independiente de la vida de la ventana. El instalador crea el acceso **DNIe Bridge** del escritorio; el BAT raíz anterior solo redirige al acceso si existe, sin PowerShell ni elevación. Los scripts permanecen para diagnóstico histórico.
+
+Compilaciones Debug/Release sin advertencias. Pruebas nuevas: 31 controles sintéticos de vida del host/IPC; prueba real Release: 10 comprobaciones desde cuenta no administrativa, mismo PID del servicio durante inicio/reinicio/parada y rechazo de comando debug enviado directamente. Motor Windows: 123 comprobaciones pasan. Identidad anterior migrada sin alterar certificado/token/huella; ACL del estado restringida a SYSTEM/administradores. No se usó tarjeta ni PIN para estas pruebas. Se corrigieron dos fallos detectados con SYSTEM real: carga de assemblies bajo token de identificación y pérdida de respuesta al desconectar el pipe antes de recepción.
+
+Artefactos nativos en `D:/DNIeToolchain/DesktopPackages/Native-Release-rc4-final` y `Native-Debug-rc4-final`; instalación versionada en `D:/DNIeBridgeApp`. Android permanece rc3 (51), sin cambios de protocolo, y APK Debug/Release compilados. USB real tras reinicio PnP y LAN real siguen pendientes; esta iteración no los declara resueltos. No se alteraron firewall ni servicios Windows de tarjetas. Detalle: `docs/architecture/GESTOR_NATIVO_WINDOWS_RC4.md` y `tools/windows-manager/README.md`.
+
 ## Actualización 2026-10-06 · 2.0.0-rc3
 
 El usuario confirmó Tailscale y reportó fallo de LAN TLS y USB por RNDIS de rc2. Nueva iteración: identidad TLS estable por PC, perfiles Android cifrados por transporte, conexión LAN inversa PC→Android manteniendo servidor TLS en PC, y USB directo AOA con API UsbDk propia. Se retiraron los límites de inactividad/30 minutos y el selector UI; el host atiende sesiones nuevas y Android vuelve a esperar el DNI después de cerrar una sesión abierta. No se repiten operaciones y no se alteró el motor de firma/PACE.

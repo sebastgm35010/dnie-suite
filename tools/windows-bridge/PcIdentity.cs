@@ -1,4 +1,4 @@
-using System.Diagnostics;
+using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -9,19 +9,19 @@ namespace DniBridge;
 [System.Runtime.Versioning.SupportedOSPlatform("windows")]
 public sealed record PcIdentity(string Password, string Token, string Id)
 {
-    public static async Task RestrictAsync(string directory)
+    public static Task RestrictAsync(string directory)
     {
         Directory.CreateDirectory(directory);
         if ((File.GetAttributes(directory) & FileAttributes.ReparsePoint) != 0)
             throw new IOException("Identity directory cannot be a link.");
         string sid = WindowsIdentity.GetCurrent().User!.Value;
-        var command = new ProcessStartInfo("icacls.exe") { UseShellExecute=false, CreateNoWindow=true,
-            RedirectStandardOutput=true, RedirectStandardError=true };
-        foreach (string arg in new[] { directory, "/inheritance:r", "/grant:r", $"*{sid}:(OI)(CI)F", "*S-1-5-18:(OI)(CI)F" }) command.ArgumentList.Add(arg);
-        using var process = Process.Start(command)!;
-        await Task.WhenAll(process.StandardOutput.ReadToEndAsync(), process.StandardError.ReadToEndAsync());
-        await process.WaitForExitAsync();
-        if (process.ExitCode != 0) throw new IOException("Cannot protect PC identity.");
+        var acl = new DirectorySecurity();
+        acl.SetAccessRuleProtection(true, false);
+        foreach (string allowed in new[] {sid, "S-1-5-18", "S-1-5-32-544"}.Distinct())
+            acl.AddAccessRule(new FileSystemAccessRule(new SecurityIdentifier(allowed), FileSystemRights.FullControl,
+                InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, PropagationFlags.None, AccessControlType.Allow));
+        new DirectoryInfo(directory).SetAccessControl(acl);
+        return Task.CompletedTask;
     }
     public static async Task<PcIdentity> LoadOrCreateAsync(string directory)
     {

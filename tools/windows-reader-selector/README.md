@@ -4,7 +4,11 @@ La seleccion de Ciudadano Digital ya fue validada con el puente en Android22. Es
 
 `selector_engine.py` posee los enganches y sus hijos suspendidos. `selector_service.py` posee duracion (hasta8h), estado/IPC por archivos y registro limitado a dos archivos de aproximadamente1MB. `pcsc-bridge-selector.js` posee el filtro de lista PCSC. El panel PowerShell Windows Forms solo inicia, consulta estado y solicita parada.
 
-## Uso
+## Uso actual
+
+Abrir `DNIeBridge.exe` desde el acceso **DNIe Bridge** del escritorio y activar el selector opcional antes de abrir Ciudadano Digital. La GUI y este adaptador funcionan sin elevación; el servicio instalado conserva los permisos del host. Detener el selector o cerrar la GUI solicita retirar sus enganches. Ver [gestor nativo](../windows-manager/README.md).
+
+## Uso histórico del panel anterior
 
 Abrir `ABRIR-PUENTE-PC.bat`. Iniciar host requiere elevacion de Windows; el selector y el panel funcionan en la cuenta del usuario que ejecuta RENIEC. Si el host ya escucha no se reinicia. Activar selector antes de lanzar Ciudadano Digital, conectar Android por Tailscale y mantener el DNI apoyado. Retirar selector al acabar. Cerrar el panel solicita retirar los enganches; el host permanece hasta su boton Detener. No hay nuevo QR/JSON para Tailscale.
 

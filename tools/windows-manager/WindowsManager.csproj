@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+<PropertyGroup><OutputType>WinExe</OutputType><TargetFramework>net8.0-windows</TargetFramework><UseWindowsForms>true</UseWindowsForms><AssemblyName>DNIeBridge</AssemblyName><ApplicationManifest>app.manifest</ApplicationManifest><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><UseAppHost>true</UseAppHost></PropertyGroup>
+<ItemGroup><ProjectReference Include="../windows-control/WindowsControl.csproj" /><PackageReference Include="QRCoder" Version="1.7.0" /></ItemGroup>
+</Project>

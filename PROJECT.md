@@ -1,5 +1,7 @@
 # Project: Peru DNIe v2/v3 Native Android App (IsoDep NFC & PAdES Digital Signer)
 
+> Windows usa ahora `DNIeBridge.exe` y el servicio persistente `DNIeBridgeAgent`. Abrir el acceso **DNIe Bridge** del escritorio; el BAT anterior queda solo como compatibilidad para ese acceso, sin PowerShell ni elevación. Uso y compilación en [tools/windows-manager/README.md](tools/windows-manager/README.md).
+
 > Fork de evolución: la arquitectura actual, las responsabilidades de los módulos y los comandos de compilación están en [ARQUITECTURA_FORK.md](ARQUITECTURA_FORK.md). Las secciones originales siguientes describen la base anterior a la modularización.
 
 ## Architecture

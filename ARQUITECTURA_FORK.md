@@ -1,5 +1,7 @@
 # DNIe Evolucion: organización del fork
 
+Windows separa ahora la interfaz nativa (`tools/windows-manager`), control/vida del host (`tools/windows-control`), servicio SYSTEM (`tools/windows-agent`) y motor (`tools/windows-bridge`). Uso del ejecutable y permisos: [gestor Windows](tools/windows-manager/README.md).
+
 ## Origen y aislamiento
 
 Este repositorio es una copia Git independiente de la versión 1.0.8 funcional. El commit de origen es `0138298e078183a4b729f3f7ca758c3a591d1e9a`, conservado en el tag `dnie-v1.0.8-validated`.
