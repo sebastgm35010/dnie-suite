@@ -1,5 +1,7 @@
 # Estado vigente · corrección USB tras reinicio
 
+2026-10-07 · H3 físico validado: trabajo `ed878567-300a-4a38-aeba-e56cd47eb640` 3/3 (dos PDF integrados y un CMS DOCX), verificados .NET con certificado DNI coincidente y rechazo de alteración. Cierre posterior de CLI sin causa identificable; pendiente diagnóstico de cierre por fase y dos lotes consecutivos en mismo TLS. [Evidencia y límites](suite/PDF_INVISIBLE_H3.md).
+
 2026-10-07 · H3: PDF integrado invisible de escritorio implementado en módulo JVM `dnie-pdf-desktop` (PDFBox 3.0.8). Por defecto PDF → `_firmado.pdf`, otros → `.p7s`; `--pdf-mode detached` conserva el modo anterior. Simulación del ejecutable verificada independientemente .NET; prueba física con DNI pendiente. APK instalado 56 y transporte/motor NFC sin cambios funcionales. [Arquitectura, límites y procedimiento](suite/PDF_INVISIBLE_H3.md).
 
 2026-10-07, suite rc8 física: PC recordada conserva huella, reconexión reportada sin QR y lote nuevo de tres archivos 3/3 con PIN único. Tres CMS verificados .NET (integridad, certificado DNI, rechazo de alteración). Usuario finalizó después con Ctrl+C. No confundir transcript de intentos anteriores con nuevos trabajos. [Detalle](suite/SESION_CONTINUA_H2.md).

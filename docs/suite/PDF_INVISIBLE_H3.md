@@ -39,3 +39,13 @@ $env:JAVA_HOME='C:/Program Files/Microsoft/jdk-17.0.20.101-hotspot'
 En Android 56, Conectar PC guardada; enviar un PDF técnico y opcionalmente otro archivo, PIN único desde terminal, mantener DNI. Comprobar `_firmado.pdf` y ejecutar `tools/verify-job.ps1 -JobDirectory <UUID>` o un verificador externo. No hace falta nuevo enrolamiento ni APK para este incremento. El APK se recompila como regresión de los contratos compartidos.
 
 Siguiente orden: prueba física del PDF invisible, corpus documental y después apariencia visible; visor/editor queda detrás del contrato del motor.
+
+## Validación física H3 completada
+
+2026-10-07: nuevo trabajo `ed878567-300a-4a38-aeba-e56cd47eb640`, backend PRIVATE_ANDROID, 3/3 con PIN único desde Windows: dos PDF integrados invisibles y un DOCX con CMS separado. El trabajo anterior `129a7109-55b5-4e5f-94be-2c103a0ef342` del transcript es histórico y no evidencia adicional de PDF integrado.
+
+`verify-job.ps1` verificó independientemente con .NET las tres firmas, coincidencia del certificado del trabajo y rechazo del contenido alterado. Los PDF conservan el original como prefijo y su ByteRange final cubre la revisión completa salvo Contents. Certificado coincidente con el DNI previamente validado y presente en CurrentUser/My. No se comprobó revocación ni confianza completa. Evidencia privada fuera de Git: `D:/DNIeToolchain/SuiteContinuousJobs/ed878567-300a-4a38-aeba-e56cd47eb640/independent-verification.json`.
+
+Después de informar 3/3 aparece el mensaje genérico «Suite continua finalizada o solicitud invalida» y el prompt de cierre BAT. `result.json` declara `complete:true`, `sessionError:null`. Las firmas están completas, pero el motivo del cierre posterior no consta: el catch exterior de CLI omite tipo/fase. No atribuirlo sin evidencia a NFC, TLS, PIN o Ctrl+C. Pendiente diagnóstico de cierre por fase sin secretos y prueba de dos lotes consecutivos exitosos en la misma sesión.
+
+Próximo hito documental: apariencia visible mediante contrato del motor PDF; visor/editor después.
