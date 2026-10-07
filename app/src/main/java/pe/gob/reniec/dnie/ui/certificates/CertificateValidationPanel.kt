@@ -50,6 +50,8 @@ fun CertificateValidationPanel(certificate: CertificateInfo) {
                     TrustStatus.UNKNOWN -> "Cadena de confianza: indeterminada"
                 })
                 Text(report.trustDetail, style = MaterialTheme.typography.bodySmall)
+                if (pe.gob.reniec.dnie.BuildConfig.DEBUG && report.trustFailureCode.isNotEmpty())
+                    Text("Diagnóstico: ${report.trustFailureCode}", style = MaterialTheme.typography.bodySmall)
                 if (report.trust == TrustStatus.TRUSTED) Text(when (report.chainRevocation) {
                     RevocationStatus.GOOD -> "Titular y CA intermedias: sin revocación en evidencia verificada"
                     RevocationStatus.REVOKED -> "La cadena contiene un certificado revocado"

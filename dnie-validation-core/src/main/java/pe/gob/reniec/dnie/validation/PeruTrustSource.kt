@@ -61,27 +61,40 @@ class PeruTrustedListProvider(private val source: TrustResourceSource = Indecopi
     private var validUntil = 0L
     @Synchronized override fun current(now: Date): VerifiedTrustedList {
         cached?.let { if (now.time < validUntil && !now.before(it.issued)) return it }
+        val root = trustStep(TrustStage.AAC_RESOURCE) {
+            val factory = CertificateFactory.getInstance("X.509")
+            val rootBytes = requireNotNull(javaClass.getResourceAsStream("/trust/indecopi-aac-root.der")).use { it.readBytes() }
+            val rootHash = MessageDigest.getInstance("SHA-256").digest(rootBytes).hex()
+            require(rootHash == "6cf85e75ca1cf9d560fdc5ebaff30cea157cde223a068c3e1e051d123d5f9375")
+            val root = factory.generateCertificate(rootBytes.inputStream()) as java.security.cert.X509Certificate
+            require(CertificateChecks.inspect(root, now, false).acceptable)
+            root
+        }
         val factory = CertificateFactory.getInstance("X.509")
-        val rootBytes = requireNotNull(javaClass.getResourceAsStream("/trust/indecopi-aac-root.der")).use { it.readBytes() }
-        val rootHash = MessageDigest.getInstance("SHA-256").digest(rootBytes).hex()
-        require(rootHash == "6cf85e75ca1cf9d560fdc5ebaff30cea157cde223a068c3e1e051d123d5f9375")
-        val root = factory.generateCertificate(rootBytes.inputStream()) as java.security.cert.X509Certificate
-        require(CertificateChecks.inspect(root, now, false).acceptable)
-        val previous = records.read()
+        val previous = trustStep(TrustStage.TSL_STATE) { records.read() }
+        val xml = trustStep(TrustStage.TSL_DOWNLOAD) { source.download(IndecopiTrustSource.TSL_URL) }
         val list = TrustedListVerifier(setOf(TrustAnchor(root, null))).verify(
-            source.download(IndecopiTrustSource.TSL_URL), now, maxOf(25, previous?.sequence ?: 25))
+            xml, now, maxOf(25, previous?.sequence ?: 25))
         // Authorize the current TSL role, not every certificate issued by the AAC root.
         // Bootstrap: independently published root -> verified signer certificate -> explicit signer pin.
         // Rotation requires a reviewed application trust-policy update; no learning keys from new XML.
-        require(MessageDigest.getInstance("SHA-256").digest(list.signer.encoded).hex() ==
-            "bc32323c7ba0af62bdef9ca7e7f499bb71eeb4fa092b9017e15acc4d0bf612ed")
+        trustStep(TrustStage.TSL_SIGNER_PIN) {
+            require(MessageDigest.getInstance("SHA-256").digest(list.signer.encoded).hex() ==
+                "bc32323c7ba0af62bdef9ca7e7f499bb71eeb4fa092b9017e15acc4d0bf612ed")
+        }
         val record = TrustedListRecord(list.sequence, list.digest.hex())
-        TrustedListRollbackPolicy.check(previous, record)
-        require(IndecopiTrustSource.SIGNER_CRL_URL in CertificateLocations.completeCrlUrls(list.signer))
-        val crl = factory.generateCRL(source.download(IndecopiTrustSource.SIGNER_CRL_URL).inputStream()) as java.security.cert.X509CRL
-        val state = DirectCrlValidator.evaluate(list.signer, root, crl, now)
-        require(state.status == RevocationStatus.GOOD) { "Firmante de TSL sin estado verificable" }
-        records.save(record)
+        trustStep(TrustStage.TSL_ROLLBACK) { TrustedListRollbackPolicy.check(previous, record) }
+        trustStep(TrustStage.SIGNER_CRL_DOWNLOAD) {
+            require(IndecopiTrustSource.SIGNER_CRL_URL in CertificateLocations.completeCrlUrls(list.signer))
+        }
+        val crlBytes = trustStep(TrustStage.SIGNER_CRL_DOWNLOAD) { source.download(IndecopiTrustSource.SIGNER_CRL_URL) }
+        val state = trustStep(TrustStage.SIGNER_CRL_VALIDATION) {
+            val crl = factory.generateCRL(crlBytes.inputStream()) as java.security.cert.X509CRL
+            DirectCrlValidator.evaluate(list.signer, root, crl, now).also {
+                require(it.status == RevocationStatus.GOOD) { "Firmante de TSL sin estado verificable" }
+            }
+        }
+        trustStep(TrustStage.TSL_STATE) { records.save(record) }
         validUntil = minOf(list.expires.time, requireNotNull(state.nextUpdate).time, now.time + 3600000L, list.signer.notAfter.time)
         val authenticated = list.copy(authorityEvidenceUntil = Date(validUntil))
         cached = authenticated

@@ -10,8 +10,12 @@ class CertificateTrustInspector(private val lists: TrustedListSource = PeruTrust
         val revocation = OnlineRevocationInspector(source).inspect(der, forDocumentSignature)
         if (!revocation.certificate.acceptable) return revocation
         val now = Date()
-        val list = try { lists.current(now) } catch (_: Exception) {
-            return revocation.copy(trustDetail = "TSL no autenticada o no disponible; confianza indeterminada")
+        val list = try { lists.current(now) } catch (failure: TrustValidationFailure) {
+            return revocation.copy(trustDetail = failure.stage.description + "; confianza indeterminada",
+                trustFailureCode = failure.safeCode)
+        } catch (failure: Exception) {
+            return revocation.copy(trustDetail = "TSL no autenticada o no disponible; confianza indeterminada",
+                trustFailureCode = "TSL_SOURCE:${failure.javaClass.simpleName}")
         }
         val factory = CertificateFactory.getInstance("X.509")
         val leaf = factory.generateCertificate(der.inputStream()) as X509Certificate
@@ -41,8 +45,9 @@ class CertificateTrustInspector(private val lists: TrustedListSource = PeruTrust
                 addCertStore(CertStore.getInstance("Collection", CollectionCertStoreParameters(candidates + leaf)))
             }
             CertPathBuilder.getInstance("PKIX").build(parameters) as PKIXCertPathBuilderResult
-        } catch (_: Exception) {
-            return revocation.copy(trustDetail = "No se pudo verificar una ruta hasta una raíz admitida por la TSL")
+        } catch (failure: Exception) {
+            return revocation.copy(trustDetail = "No se pudo verificar una ruta hasta una raíz admitida por la TSL",
+                trustFailureCode = "PKIX_PATH:${failure.javaClass.simpleName}")
         }
         val chain = path.certPath.certificates.map { it as X509Certificate } + requireNotNull(path.trustAnchor.trustedCert)
         val admitted = list.currentCertificateAuthorities(now)

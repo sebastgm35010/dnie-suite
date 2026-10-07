@@ -46,3 +46,5 @@ SHA256: F40053F575E00E7019D0265200C358034EA938C49063A582E160150F4DD2C512.
 229 pruebas finales sin fallas; Debug y Release compilados, BUILD SUCCESSFUL 4m28s en trust-h9-final-release.log. Root público y cinco archivos de licencias/avisos presentes en APK Debug. Release se conserva como candidato de compilación, no instalado ni sustituye Debug.
 
 Solicitado envío único mediante mensajero vigente; confirmar entrega por separado. No se instaló por ADB. Prueba: leer DNI, seleccionar certificado Firma y pulsar Comprobar confianza y revocación. Esperado con red disponible: cadena verificada con TSL Perú y titular/CA intermedias sin revocación en evidencia verificada. Si no se obtiene evidencia verificable se informa indeterminado.
+
+2026-10-07: usuario confirma APK60 sin revocación pero confianza UNKNOWN, detalle TSL no autenticada/no disponible. H9 no validado físicamente; corrección y nueva prueba en TSL_ANDROID_COMPATIBILIDAD_H9A.md. APK60 entregado una sola vez, Telegram mensaje3730.

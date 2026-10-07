@@ -11,4 +11,5 @@ data class CertificateValidationReport(val certificate: CertificateAssessment,
     val revocation: RevocationAssessment, val trust: TrustStatus, val checkedAt: Date,
     val trustDetail: String = "Confianza de cadena y TSL aún no comprobadas",
     val chainRevocation: RevocationStatus = RevocationStatus.UNKNOWN,
-    val chainValidUntil: Date? = null)
+    val chainValidUntil: Date? = null,
+    val trustFailureCode: String = "")

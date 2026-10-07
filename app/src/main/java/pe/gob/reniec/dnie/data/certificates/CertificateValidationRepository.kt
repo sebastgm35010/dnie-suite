@@ -9,7 +9,13 @@ fun interface CertificateValidationRepository {
 }
 class OnlineCertificateValidationRepository(private val inspector: CertificateTrustInspector = CertificateTrustInspector()) : CertificateValidationRepository {
     override suspend fun inspect(der: ByteArray, forDocumentSignature: Boolean): CertificateValidationReport =
-        runInterruptible(Dispatchers.IO) { inspector.inspect(der, forDocumentSignature) }
+        runInterruptible(Dispatchers.IO) {
+            inspector.inspect(der, forDocumentSignature).also { report ->
+                pe.gob.reniec.dnie.diagnostics.DiagnosticLog.event("certificate_validation", "completed",
+                    "status" to report.trust.name, "state" to report.chainRevocation.name,
+                    "code" to report.trustFailureCode.ifEmpty { "NONE" })
+            }
+        }
     companion object {
         private var shared: OnlineCertificateValidationRepository? = null
         @Synchronized fun create(context: android.content.Context): OnlineCertificateValidationRepository {
