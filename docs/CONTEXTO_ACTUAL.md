@@ -1,5 +1,7 @@
 # Estado vigente · corrección USB tras reinicio
 
+2026-10-07, suite H2 implementado e instalado: APK 55 / rc7-continuous-suite. PC recordada (DPAPI/Keystore), conexión privada continua, trabajos individuales/lotes y PIN desde Windows por trabajo. 113 pruebas pasan, incluyendo TLS continuo de dos trabajos, rechazo sin reintento y persistencia DPAPI. Evidencia física H2 pendiente; H1b sigue validado. [Uso y límites](suite/SESION_CONTINUA_H2.md).
+
 2026-10-07, suite H1b: lote físico remoto de tres archivos completado (3/3 TXT/CSV/binario, PRIVATE_ANDROID). Tres CMS verificados independientemente .NET con certificado DNI coincidente y rechazo de contenido alterado. Sin cambio de APK/motor; pendientes cancelación/pérdida física, identidad permanente y PDF integrado. [Evidencia](suite/FIRMA_REMOTA_H1B.md).
 
 2026-10-07, suite H1b: implementados comando `remote`, TLS inverso (PC inicia TCP y es servidor TLS), huella/token de un trabajo y pantalla Android Certificados → Suite con PIN local y NFC. APK 54 / rc6-remote-signing. Tests TLS con tarjeta simulada, huella/token erróneos y CMS pasan; primera firma física LAN completada (1/1 CMS, backend PRIVATE_ANDROID) y verificada con .NET: integridad, certificado del DNI y rechazo al alterar contenido. Revocación no comprobada. Sin cambios al servicio/lector compatible. [Procedimiento](suite/FIRMA_REMOTA_H1B.md).

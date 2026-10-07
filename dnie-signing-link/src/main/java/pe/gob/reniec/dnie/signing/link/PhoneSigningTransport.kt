@@ -16,7 +16,8 @@ import javax.net.ssl.X509TrustManager
  * Owns listener and socket immediately, so close can cancel accept/handshake/read.
  */
 class PhoneSigningTransport(private val provision: SigningProvision,
-                            private val port: Int = SigningProvision.PHONE_PORT) : AutoCloseable {
+                            private val port: Int = SigningProvision.PHONE_PORT,
+                            private val continuous: Boolean = false) : AutoCloseable {
     init { require(port in 1024..65535) }
     private val closed = AtomicBoolean()
     private val used = AtomicBoolean()
@@ -59,7 +60,7 @@ class PhoneSigningTransport(private val provision: SigningProvision,
             tls.outputStream.write(provision.token); tls.outputStream.flush()
             check(tls.inputStream.read() == 1) { "Suite authorization rejected" }
             // Idle input is bounded in this one-job prototype; never replay after timeout.
-            tls.soTimeout = 300_000
+            tls.soTimeout = if (continuous) 0 else 300_000
             return object : SigningDuplex {
                 override val input = tls.inputStream
                 override val output = tls.outputStream

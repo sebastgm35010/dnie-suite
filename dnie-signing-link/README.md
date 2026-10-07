@@ -42,3 +42,8 @@ consentimiento móvil y primera firma real. No publicar tarjeta PC/SC para ese r
 
 El PIN se copia a un buffer borrable de sesión; la API heredada del transceptor todavía
 requiere convertirlo a String para VERIFY. No se promete borrado de esas Strings del heap.
+
+
+## Extensión H2
+
+`SuitePairing` y `SuitePackets` separan confianza persistente del trabajo. `ContinuousSigningClient`/`ContinuousSigningConnection` multiplexan trabajos secuenciales dentro de un TLS autenticado; el PIN desde PC solo aparece en BEGIN y se destruye al finalizar el lote. Los frames H1a y `PrivateSigningCard` siguen requiriendo PIN vacío en el motor CMS: autorización se resuelve en el endpoint Android. `SuiteCardSlot` posee NFC/PACE entre trabajos y descarta tarjeta al fallar. [Contrato completo](../docs/suite/SESION_CONTINUA_H2.md). Sin reconexión/reenvío automático ni APDU libres.

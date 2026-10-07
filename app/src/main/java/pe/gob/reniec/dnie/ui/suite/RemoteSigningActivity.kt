@@ -39,7 +39,7 @@ class RemoteSigningActivity : ComponentActivity() {
             RemoteSigningScreen(state, enabled.value, addresses,
                 onImport = { importer.launch(arrayOf("text/plain", "application/octet-stream")) },
                 onScan = { scanner.scan(model::import, model::status) }, onCan = model::can,
-                onAuthorize = model::authorize, onStop = model::stop, onBack = ::finish)
+                onAuthorize = model::authorize, onConnect = model::connectRemembered, onForget = model::forgetPc, onStop = model::stop, onBack = ::finish)
         } }
     }
     override fun onResume() { super.onResume(); enabled.value = reader.isNfcEnabled; reader.enableReaderMode(this) }

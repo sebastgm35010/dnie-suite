@@ -15,7 +15,8 @@ import pe.gob.reniec.dnie.signing.link.*
 
 class ReverseTlsExchange(private val phone: String, private val provision: SigningProvision,
                          private val identity: JobTlsIdentity,
-                         private val port: Int = SigningProvision.PHONE_PORT) : SigningExchange {
+                         private val port: Int = SigningProvision.PHONE_PORT,
+                         private val continuous: Boolean = false) : SigningExchange {
     init { require(SigningProvision.privateAddress(phone) && port in 1024..65535) }
     private val closed = AtomicBoolean()
     private val lifecycle = Any()
@@ -23,10 +24,10 @@ class ReverseTlsExchange(private val phone: String, private val provision: Signi
     private var exchange: StreamSigningExchange? = null
     override suspend fun exchange(request: SigningFrame): SigningFrame = withContext(Dispatchers.IO) {
         check(!closed.get())
-        val current = exchange ?: connect().also { exchange = it }
+        val current = exchange ?: StreamSigningExchange(openChannel()).also { exchange = it }
         current.exchange(request)
     }
-    private suspend fun connect(): StreamSigningExchange {
+    suspend fun openChannel(): SigningDuplex {
         val pc = InetAddress.getByName(provision.pcAddress)
         val address = InetAddress.getByName(phone)
         while (System.currentTimeMillis() < provision.expiresAt) {
@@ -57,12 +58,12 @@ class ReverseTlsExchange(private val phone: String, private val provision: Signi
                     check(System.currentTimeMillis() < provision.expiresAt && MessageDigest.isEqual(token, provision.token))
                 } finally { token.fill(0) }
                 tls.outputStream.write(1); tls.outputStream.flush()
-                tls.soTimeout = 300_000 // Wait for explicit NFC presentation; one job only.
-                return StreamSigningExchange(object : SigningDuplex {
+                tls.soTimeout = if (continuous) 0 else 300_000
+                return object : SigningDuplex {
                     override val input = tls.inputStream
                     override val output = tls.outputStream
                     override fun close() { tls.close() }
-                })
+                }
             } catch (failure: Exception) { close(); throw failure }
         }
         close(); error("Suite request expired")

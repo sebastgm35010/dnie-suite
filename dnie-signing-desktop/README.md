@@ -33,3 +33,8 @@ El comando `remote` conecta con Android por TLS inverso y utiliza el DNI real ex
 después de autorizar el lote/PIN en Certificados → Suite. No usa PC/SC ni fallback a demo.
 Solicitud TXT/QR efímera por trabajo; documentos, CMS y resultados permanecen en PC.
 Primera firma física LAN completada (1/1 CMS), con integridad/certificado DNI y rechazo de contenido alterado verificados mediante .NET; tests TLS con tarjeta simulada también pasan. [Procedimiento](../docs/suite/FIRMA_REMOTA_H1B.md).
+
+
+## H2: Suite continua
+
+Comando `suite --pc <IPv4 PC> --phone <IPv4 teléfono> --workspace <carpeta> --identity <archivo DPAPI>` desde terminal interactiva. Identidad PC persistente protegida por cuenta Windows; Android recuerda huella/token con Keystore. QR una vez, conexión foreground con varios trabajos, PIN sin eco en Windows por trabajo. No PC/SC, SYSTEM ni PIN por argv; sin PDF integrado. [Uso, arquitectura y límites](../docs/suite/SESION_CONTINUA_H2.md).

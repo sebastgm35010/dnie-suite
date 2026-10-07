@@ -6,7 +6,7 @@ $assembly=Join-Path $installed.directory 'QRCoder.dll'
 if(-not (Test-Path -LiteralPath $assembly)){throw 'QRCoder no disponible; importa el TXT en Android.'}
 [Reflection.Assembly]::LoadFrom($assembly) | Out-Null
 $payload=Get-Content -LiteralPath $PairingFile -Encoding utf8 -Raw
-if(-not $payload.StartsWith('DNISUITE1|') -or $payload.Length -gt 1024){throw 'Solicitud inválida'}
+if((-not $payload.StartsWith('DNISUITE1|') -and -not $payload.StartsWith('DNISUITE2|')) -or $payload.Length -gt 1024){throw 'Solicitud inválida'}
 $qr=[QRCoder.QRCodeGenerator]::GenerateQrCode($payload.Trim(),[QRCoder.QRCodeGenerator+ECCLevel]::M)
 $renderer=[QRCoder.PngByteQRCode]::new($qr)
 try {

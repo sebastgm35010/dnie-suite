@@ -12,8 +12,8 @@ android {
         applicationId = "pe.gob.reniec.dnie.evolution"
         minSdk = 24
         targetSdk = 34
-        versionCode = 54
-        versionName = "2.0.0-rc6-remote-signing"
+        versionCode = 55
+        versionName = "2.0.0-rc7-continuous-suite"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

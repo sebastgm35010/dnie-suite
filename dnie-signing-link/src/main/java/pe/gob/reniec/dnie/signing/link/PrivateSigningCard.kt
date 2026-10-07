@@ -20,7 +20,7 @@ interface SigningExchange : AutoCloseable {
 }
 
 /** Adapter for existing CMS/batch engine. Pass an EMPTY PIN to that engine; authorization
- * invokes the phone's session-local PIN. Neither a fake PIN nor a real PIN crosses the link.
+ * invokes the phone's session-local PIN. H1b uses local phone PIN; H2 supplies a PC PIN in the separate authenticated BEGIN envelope.
  */
 class PrivateSigningCard(private val sessionId: UUID, private val transport: SigningExchange) : DnieTransceiverInterface {
     private val mutex = Mutex()

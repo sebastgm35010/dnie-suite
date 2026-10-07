@@ -13,7 +13,7 @@ import pe.gob.reniec.dnie.domain.model.PinVerificationResult
 
 /** Create ONLY after authenticated peer + explicit phone approval of this batch.
  * Owns an already prepared transceiver; never negotiates PC-PACE or exposes arbitrary APDU.
- * PIN belongs to the phone. A session cannot be resumed, extended or retried after failure.
+ * PIN is owned by this job endpoint (phone input in H1b, authenticated PC input in H2). A session cannot be resumed, extended or retried after failure.
  * This protocol is not encryption/authentication: caller must supply the trusted transport.
  */
 class AuthorizedSigningEndpoint(

@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun RemoteSigningScreen(state: RemoteSigningState, nfcEnabled: Boolean, addresses: String,
     onImport: () -> Unit, onScan: () -> Unit, onCan: (String) -> Unit,
-    onAuthorize: (String) -> Unit, onStop: () -> Unit, onBack: () -> Unit) {
+    onAuthorize: (String) -> Unit, onConnect: () -> Unit, onForget: () -> Unit, onStop: () -> Unit, onBack: () -> Unit) {
     var pin by remember { mutableStateOf("") } // Not saveable, never stored in ViewModel UI state.
     LaunchedEffect(state.pc) { if (state.pc.isEmpty()) pin = "" }
     DisposableEffect(Unit) { onDispose { pin = "" } }
@@ -28,7 +28,7 @@ fun RemoteSigningScreen(state: RemoteSigningState, nfcEnabled: Boolean, addresse
             Button(onClick = onScan, enabled = !state.busy && !state.armed) { Text("Escanear solicitud de la PC") }
             OutlinedButton(onClick = onImport, enabled = !state.busy && !state.armed) { Text("Importar solicitud TXT") }
             if (state.pc.isNotEmpty()) {
-                Text("PC: ${state.pc} · hasta ${state.count} documento(s)")
+                Text(if (state.continuous) "PC: ${state.pc} · conexión continua" else "PC: ${state.pc} · hasta ${state.count} documento(s)")
                 Text("Compara esta huella con la que muestra tu PC:")
                 Text(state.fingerprint, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall)
                 Text("Autoriza solo solicitudes que hayas iniciado. El teléfono autoriza el lote y no muestra los documentos guardados en PC.")
@@ -36,15 +36,22 @@ fun RemoteSigningScreen(state: RemoteSigningState, nfcEnabled: Boolean, addresse
             OutlinedTextField(state.can, onCan, label = { Text("CAN del DNI") }, singleLine = true,
                 enabled = !state.busy && !state.armed, visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword))
-            OutlinedTextField(pin, { pin = it.filter { c -> c in '0'..'9' }.take(8) }, label = { Text("PIN de firma") }, singleLine = true,
+            if (!state.continuous) OutlinedTextField(pin, { pin = it.filter { c -> c in '0'..'9' }.take(8) }, label = { Text("PIN de firma") }, singleLine = true,
                 enabled = !state.busy && !state.armed, visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword))
             Text(state.message)
             if (!nfcEnabled) Text("Activa NFC para firmar.")
-            Button(onClick = { onAuthorize(pin); pin = "" }, enabled = nfcEnabled && state.pc.isNotEmpty() &&
+            if (!state.continuous) Button(onClick = { onAuthorize(pin); pin = "" }, enabled = nfcEnabled && state.pc.isNotEmpty() &&
                 state.can.length == 6 && pin.length in 4..8 && !state.busy && !state.armed) { Text("Autorizar este lote") }
+            if (state.continuous) {
+                Text("El PIN se introduce en Windows y viaja cifrado. Autorizar esta conexión permite a la PC enviar lotes mientras Suite está abierta; no guarda el PIN.")
+                Button(onClick = onConnect, enabled = nfcEnabled && state.can.length == 6 && !state.busy && !state.armed) {
+                    Text(if (state.remembered) "Conectar PC guardada" else "Recordar PC y conectar")
+                }
+                OutlinedButton(onClick = onForget, enabled = !state.busy && !state.armed) { Text("Olvidar PC") }
+            }
             if (state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
-            OutlinedButton(onClick = { pin = ""; onStop() }, enabled = state.busy || state.armed) { Text("Cancelar") }
+            OutlinedButton(onClick = { pin = ""; onStop() }, enabled = state.busy || state.armed) { Text(if (state.continuous) "Cerrar conexión Suite" else "Cancelar") }
             Text("Salir o bloquear el teléfono termina la autorización. Nunca se reenvía una firma fallida.", style = MaterialTheme.typography.bodySmall)
             TextButton(onClick = onBack) { Text("Volver") }
         }

@@ -14,9 +14,13 @@ fun runCli(args: Array<String>, output: PrintStream = System.out, errors: PrintS
         output.println("Suite DNIe - Hito 0 (laboratorio local)")
         output.println("demo --workspace <carpeta> --input <archivo> [--input <otro>]")
         output.println("remote --pc <IP privada PC> --phone <IP teléfono> --workspace <carpeta> --input <archivo> [--input <otro>]")
+        output.println("suite --pc <IP PC> --phone <IP telefono> --workspace <carpeta> --identity <archivo DPAPI> (terminal interactiva)")
         output.println("SIMULACION: certificado y clave temporales; no utiliza el DNI ni PC/SC.")
         return 0
     }
+    if (args.firstOrNull() == "suite") return try {
+        pe.gob.reniec.dnie.desktop.continuous.ContinuousSuiteCommand.execute(args, output)
+    } catch (_: Exception) { errors.println("Suite continua finalizada o solicitud invalida; no se repite ninguna firma."); 1 }
     val remote = try { if (args.firstOrNull() == "remote") pe.gob.reniec.dnie.desktop.remote.RemoteOptions.parse(args) else null } catch (_: Exception) {
         errors.println("Solicitud remota inválida. No se aceptan PIN/CAN como argumentos.")
         return 2

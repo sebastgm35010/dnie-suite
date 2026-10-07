@@ -1,0 +1,79 @@
+package pe.gob.reniec.dnie.desktop.continuous
+
+import java.io.Console
+import java.io.PrintStream
+import java.nio.file.*
+import java.util.UUID
+import kotlinx.coroutines.runBlocking
+import pe.gob.reniec.dnie.desktop.application.DesktopSigningService
+import pe.gob.reniec.dnie.desktop.model.*
+import pe.gob.reniec.dnie.desktop.remote.ReverseTlsExchange
+import pe.gob.reniec.dnie.desktop.storage.DesktopWorkspace
+import pe.gob.reniec.dnie.signing.link.*
+
+/** Interactive adapter only; PIN uses Console.readPassword, never argv, echo or persisted queue. */
+object ContinuousSuiteCommand {
+    fun execute(args: Array<String>, output: PrintStream): Int {
+        require(args.size == 9 && args[0] == "suite" && args[1] == "--pc" && args[3] == "--phone" &&
+            args[5] == "--workspace" && args[7] == "--identity")
+        val pc = args[2]; val phone = args[4]
+        require(SigningProvision.privateAddress(pc) && SigningProvision.privateAddress(phone))
+        require(java.net.NetworkInterface.getByInetAddress(java.net.InetAddress.getByName(pc)) != null)
+        val workspace = Path.of(args[6]).toAbsolutePath()
+        val console: Console = System.console() ?: error("Use an interactive terminal; PIN is never read from redirected input")
+        SuitePcIdentity.open(Path.of(args[8]).toAbsolutePath(), pc).use { identity ->
+            Files.createDirectories(workspace)
+            val export = workspace.resolve("suite-emparejamiento.txt")
+            Files.deleteIfExists(export)
+            Files.createFile(export); WindowsPrivateStore.restrict(export)
+            Files.writeString(export, identity.pairing.encode())
+            output.println("Emparejamiento permanente TXT/QR: $export")
+            output.println("Huella TLS: ${identity.pairing.fingerprintText()}")
+            output.println("En Android, recuerda esta PC y abre Suite continua. En conexiones posteriores usa Conectar PC guardada.")
+            identity.pairing.provision().use { provision ->
+                val transport = ReverseTlsExchange(phone, provision, identity.tls, continuous = true)
+                val shutdown = Thread({ transport.close() }, "suite-continuous-shutdown")
+                Runtime.getRuntime().addShutdownHook(shutdown)
+                try {
+                    val client = runBlocking { ContinuousSigningClient(transport.openChannel()) }
+                    client.use {
+                        Files.deleteIfExists(export)
+                        Files.deleteIfExists(export.resolveSibling("suite-emparejamiento.png"))
+                        output.println("Suite conectada. Un archivo por linea; linea vacia completa lote; salir termina conexion.")
+                        while (true) {
+                            val paths = mutableListOf<Path>()
+                            while (true) {
+                                val line = console.readLine("Archivo: ") ?: return 0
+                                if (line == "salir") return 0
+                                if (line.isBlank()) break
+                                if (paths.size == 50) { output.println("Limite de 50 archivos."); continue }
+                                paths.add(Path.of(line.trim().removeSurrounding("\"")))
+                            }
+                            if (paths.isEmpty()) continue
+                            val request = DesktopSigningRequest(paths, workspace)
+                            try { DesktopWorkspace.validate(request) } catch (_: Exception) { output.println("Archivos no validos. Lote no enviado."); continue }
+                            val pin = console.readPassword("PIN de firma para %d archivo(s): ", paths.size) ?: return 0
+                            try {
+                                if (pin.size !in 4..8 || pin.any { it !in '0'..'9' }) { output.println("Formato PIN invalido; no enviado al DNI."); continue }
+                                val jobId = UUID.randomUUID()
+                                output.println("Lote enviado. Acerca el DNI si todavia no esta disponible.")
+                                val result = runBlocking {
+                                    val exchange = client.begin(jobId, paths.size, pin)
+                                    pin.fill('\u0000')
+                                    DesktopSigningService().execute(request, PrivateSigningCard(jobId, exchange), "", SigningBackend.PRIVATE_ANDROID)
+                                }
+                                output.println("Resultados: ${result.directory}")
+                                output.println("Completos: ${result.documents.count { it.signature != null }} / ${result.documents.size}")
+                                if (!result.complete) output.println("Lote incompleto: no se repite. Revisa resultados antes de iniciar otro.")
+                            } finally { pin.fill('\u0000') }
+                        }
+                    }
+                } finally {
+                    transport.close(); runCatching { Runtime.getRuntime().removeShutdownHook(shutdown) }
+                    Files.deleteIfExists(export); Files.deleteIfExists(export.resolveSibling("suite-emparejamiento.png"))
+                }
+            }
+        }
+        return 0
+    }
+}
