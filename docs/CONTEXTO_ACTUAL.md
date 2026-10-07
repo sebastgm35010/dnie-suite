@@ -1,5 +1,7 @@
 # Estado vigente · corrección USB tras reinicio
 
+2026-10-07, suite rc8 física: PC recordada conserva huella, reconexión reportada sin QR y lote nuevo de tres archivos 3/3 con PIN único. Tres CMS verificados .NET (integridad, certificado DNI, rechazo de alteración). Usuario finalizó después con Ctrl+C. No confundir transcript de intentos anteriores con nuevos trabajos. [Detalle](suite/SESION_CONTINUA_H2.md).
+
 2026-10-07, suite rc8: APK 56 instalado, estados de DNI separados de TLS, monitor NFC nativo sin APDU, espera de tag nuevo si el previo desaparece, timeout sin DNI conserva TLS, diagnóstico por fase sin secretos y QR automático al primer enrolamiento. 116 pruebas pasan. H2 físico previo: segundo trabajo 1/1 verificado .NET tras primero interrumpido en la misma conexión; causa del primero no identificada. Estados/retirada rc8 pendientes de ensayo físico. [Detalle](suite/SESION_CONTINUA_H2.md).
 
 2026-10-07, suite H2 implementado e instalado: APK 55 / rc7-continuous-suite. PC recordada (DPAPI/Keystore), conexión privada continua, trabajos individuales/lotes y PIN desde Windows por trabajo. 113 pruebas pasan, incluyendo TLS continuo de dos trabajos, rechazo sin reintento y persistencia DPAPI. Evidencia física H2 pendiente; H1b sigue validado. [Uso y límites](suite/SESION_CONTINUA_H2.md).

@@ -62,3 +62,12 @@ Primer enrolamiento PC nuevo intenta abrir QR automáticamente mediante helper e
 
 
 Validación rc8: 116 pruebas pasan sin fallos (23 link, 16 desktop, 10 core, 67 app). Nuevas pruebas: retirada en reposo visible y adquisición pendiente que espera nuevo tag, pérdida de respuesta después de firmar sin repetir operación, timeout sin DNI seguido por otro trabajo dentro del mismo TLS. Distribución JVM actualizada y helper QR incluido. APK 56 compilado e instalado por ADB, SHA256 `75F78B5F87E4CF515D5397A3CC450369AC8545B309AA4D9D3964E6D479462897`; artefacto `D:/DNIeToolchain/AndroidPackages/dnie-evolution-2.0.0-rc8-suite-nfc-debug.apk`, log `D:/DNIeToolchain/Temp/suite-nfc-validation.log`. Retirada/reaproximación física con estados rc8 aún pendiente. Para probar: mismo comando CLI, Conectar PC guardada, acercar/retirar DNI antes de enviar trabajo y confirmar que PC permanece conectada mientras cambia estado DNI.
+
+
+## Reconexión física con PC recordada y lote rc8 — 2026-10-07
+
+Nueva ejecución CLI muestra la misma huella TLS que la anterior y «PC ya recordada. No necesitas un QR nuevo». El usuario confirma éxito y conexión usando confianza persistente. Trabajo nuevo `129a7109-55b5-4e5f-94be-2c103a0ef342`: PPTX, PNG y PDF, una entrada PIN para tres archivos, `PRIVATE_ANDROID`, `complete=true`, 3/3 CMS separados. La sesión terminó por Ctrl+C del usuario después de completar el lote; no atribuirlo a una desconexión espontánea.
+
+Verificación independiente .NET de las tres firmas: integridad válida, certificado coincide con el trabajo y con el DNI previamente verificado, rechazo al alterar cada original. Revocación no comprobada. Artefactos privados: `D:/DNIeToolchain/SuiteContinuousJobs/129a7109-55b5-4e5f-94be-2c103a0ef342/`, incluyendo `independent-verification.json` y `signed-documents.zip`. El PDF usa CMS separado: esta evidencia no demuestra PDF integrado.
+
+El texto del usuario incluye las dos pruebas anteriores; sus UUID no constituyen nuevos intentos. Queda comprobado el lote físico de tres archivos y persistencia de identidad/reconexión reportada sin QR. La confirmación «éxito» responde a la prueba propuesta de presencia, pero no detalla estados durante retirada/reaproximación: conservar pendiente esa secuencia documentada y dos trabajos exitosos sucesivos dentro del mismo TLS.
