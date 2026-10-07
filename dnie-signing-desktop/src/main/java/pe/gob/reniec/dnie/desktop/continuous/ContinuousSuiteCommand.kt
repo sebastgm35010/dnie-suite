@@ -47,6 +47,7 @@ object ContinuousSuiteCommand {
                     client.use {
                         Files.deleteIfExists(export)
                         Files.deleteIfExists(export.resolveSibling("suite-emparejamiento.png"))
+                        if (pdfOptions.reniecTimestamp) output.println("TSA RENIEC: sello verificado obligatorio. Si falla, no se publica el PDF ni se repite la firma del DNI.")
                         output.println(if (pdfMode == DesktopPdfMode.VISIBLE) "PDF: firma integrada con sello visible (_firmado.pdf). Otros archivos: CMS separado (.p7s)." else if (pdfMode == DesktopPdfMode.INVISIBLE) "PDF: firma integrada invisible (_firmado.pdf). Otros archivos: CMS separado (.p7s)." else "PDF: CMS separado (.p7s).")
                         output.println("Suite conectada. Un archivo por linea; linea vacia completa lote; salir termina conexion.")
                         while (true) {

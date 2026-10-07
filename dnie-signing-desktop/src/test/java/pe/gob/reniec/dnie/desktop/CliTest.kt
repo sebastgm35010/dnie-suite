@@ -50,4 +50,14 @@ class CliTest {
             assertEquals(2,runCli(base+options,PrintStream(ByteArrayOutputStream()),PrintStream(ByteArrayOutputStream())))
         }
     }
+    @Test fun timestampOptionIsExplicitAndRejectsUnsupportedOrDetachedModes() {
+        val base=arrayOf("demo","--workspace","jobs","--input","prueba.pdf")
+        assertFalse(CliOptions.parse(base).pdfOptions.reniecTimestamp)
+        assertTrue(CliOptions.parse(base+arrayOf("--pdf-tsa","reniec")).pdfOptions.reniecTimestamp)
+        for(flags in listOf(arrayOf("--pdf-tsa","unknown"),arrayOf("--pdf-tsa","reniec","--pdf-mode","detached"),
+            arrayOf("--pdf-tsa","reniec","--pdf-tsa","none"))) {
+            assertEquals(2,runCli(base+flags,PrintStream(ByteArrayOutputStream()),PrintStream(ByteArrayOutputStream())))
+        }
+    }
+
 }

@@ -12,4 +12,5 @@ distributions { main { contents {
     from("../dnie-signing-desktop/tools/make-pairing-qr.ps1") { into("tools") }
     from("../dnie-signing-desktop/tools/verify-job.ps1") { into("tools") }
     from("../dnie-pdf-desktop/third-party") { into("licenses/pdf") }
+    from("../THIRD_PARTY_VALIDATION.md") { into("licenses/validation") }
 } } }

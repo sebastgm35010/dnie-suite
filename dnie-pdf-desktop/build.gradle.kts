@@ -3,6 +3,7 @@ kotlin { jvmToolchain(17) }
 providers.gradleProperty("desktopBuildDir").orNull?.let { layout.buildDirectory.set(file(it).resolveSibling("pdf-desktop")) }
 dependencies {
     api(project(":dnie-signing-core"))
+    implementation(project(":dnie-validation-core"))
     implementation("org.apache.pdfbox:pdfbox:3.0.8")
     testImplementation("junit:junit:4.13.2")
 }

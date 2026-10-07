@@ -15,9 +15,11 @@ import org.apache.pdfbox.pdmodel.interactive.digitalsignature.PDSignature
 import org.apache.pdfbox.pdmodel.interactive.digitalsignature.SignatureOptions
 import pe.gob.reniec.dnie.crypto.*
 import pe.gob.reniec.dnie.pdf.*
+import pe.gob.reniec.dnie.timestamp.CmsTimestampService
 
 /** PDFBox JVM adapter. CMS and RSA verification stay in the shared, proven crypto engine. */
-class JvmPdfSigner(private val temporaryRoot: Path) : PadesSignerEngineInterface {
+class JvmPdfSigner(private val temporaryRoot: Path,
+    private val timestamps: CmsTimestampService = DesktopTimestampServices.service) : PadesSignerEngineInterface {
     companion object {
         const val SIGNATURE_RESERVE = 32768
         const val MAX_INPUT_BYTES = 256L * 1024 * 1024
@@ -67,13 +69,16 @@ class JvmPdfSigner(private val temporaryRoot: Path) : PadesSignerEngineInterface
                         Files.newOutputStream(signed).use { stream ->
                             val signing = document.saveIncrementalForExternalSigning(stream)
                             val context = coroutineContext
-                            val cms = signing.content.use { content -> CmsSignatureBuilder.buildDetachedSignatureFromStream(
+                            val baseline = signing.content.use { content -> CmsSignatureBuilder.buildDetachedSignatureFromStream(
                                 inputStream = content, signerCertificate = signer,
                                 profile = CmsSignatureProfile.PADES_BASELINE_B,
                                 cardSigner = { hash ->
                                     context.ensureActive()
                                     runBlocking(context) { CardSignatureVerifier.verify(signer, hash, cardSigner(hash).getOrThrow()) }
                                 }) }
+                            context.ensureActive()
+                            val cms = if (options.reniecTimestamp) timestamps.stamp(baseline) else baseline
+                            context.ensureActive()
                             require(cms.size <= SIGNATURE_RESERVE) { "La firma excede el espacio PDF reservado" }
                             size = cms.size; signing.setSignature(cms)
                         }

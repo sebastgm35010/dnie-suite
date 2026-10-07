@@ -1,5 +1,7 @@
 # Estado vigente · corrección USB tras reinicio
 
+2026-10-07 · H12 Windows: TSA RENIEC opcional integrada en PDF visible/invisible de GUI y consola (--pdf-tsa reniec), reutilizando el motor Android verificado. 76 pruebas pasan y ejecutable distribuido produce PDF sintético con TSA real verificado. Distribuciones nuevas en D:/DNIeToolchain/Builds/tsa-reniec-h12; APK63 no cambia. Pendiente firma Windows con DNI real y validación externa. [Arquitectura, uso y prueba](suite/TSA_RENIEC_WINDOWS_H12.md).
+
 2026-10-07 · H11 físico superado: usuario aporta resultado de Firma Perú del PDF firmado con APK63 y DNI real: VÁLIDO, integridad conservada, PAdES_BASELINE_T y raíces del firmante y TSA en TSL Sí. TSA RENIEC TSU-2026-02, hora 18:13:47 UTC-05. Quedan LT/LTA, recuperación de solo sellado e integración Windows. [Evidencia y alcance](suite/ANDROID_TSA_RENIEC_H11.md).
 
 2026-10-07 · H10 externo superado: Firma Perú reconoce ambos PDF sintéticos como PAdES_BASELINE_T e íntegros; raíz TSA RENIEC en TSL Sí, FreeTSA No. Resultado global indeterminado con error de cadena del firmante sintético, como corresponde a esta prueba. Pendientes módulo TSA Android, confianza/revocación local ROOT5, disponibilidad/condiciones y PDF con DNI real. APK62 sin cambios. [Evidencia y límites](suite/TSA_EXPERIMENTO_REAL_H10.md).

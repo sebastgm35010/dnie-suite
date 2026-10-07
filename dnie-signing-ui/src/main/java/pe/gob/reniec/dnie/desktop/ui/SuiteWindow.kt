@@ -29,6 +29,7 @@ class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite Â
     private val page=JSpinner(SpinnerNumberModel(1,1,10000,1))
     private val pageInfo=JLabel("Sin PDF seleccionado")
     private val mode=JComboBox(arrayOf("Sello visible","PDF invisible","Firma separada (.p7s)"))
+    private val tsa=JCheckBox("Sello RENIEC Â· PAdES-T")
     private val style=JComboBox(arrayOf("Tarjeta","Minimalista"))
     private val reason=JTextField("Doy conformidad")
     private val location=JTextField()
@@ -67,6 +68,9 @@ class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite Â
         val options=JPanel().apply { layout=BoxLayout(this,BoxLayout.Y_AXIS);border=EmptyBorder(8,12,8,18);preferredSize=Dimension(255,500) }
         fun option(label: String,component: JComponent) { options.add(JLabel(label));component.maximumSize=Dimension(230,32);options.add(component);options.add(Box.createVerticalStrut(12)) }
         option("Formato PDF",mode);option("Apariencia",style);option("Motivo",reason);option("Lugar",location)
+        options.add(tsa)
+        options.add(JLabel("<html>Requiere internet. Si no se verifica<br>el sello, no se publica el PDF.</html>"))
+        options.add(Box.createVerticalStrut(12))
         options.add(JLabel("Datos incluidos"));fields.values.forEach { options.add(it) }
         options.add(Box.createVerticalStrut(22));options.add(JLabel("Nombre siempre incluido."))
         options.add(Box.createVerticalStrut(10));options.add(JLabel("<html>Misma configuraciÃ³n para<br>los PDF del lote.</html>"))
@@ -74,7 +78,7 @@ class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite Â
         val body=JPanel(BorderLayout(10,10));body.add(split,BorderLayout.CENTER);body.add(options,BorderLayout.EAST);add(body,BorderLayout.CENTER)
         val footer=JPanel(BorderLayout(10,10)).apply { border=EmptyBorder(8,22,18,22) }
         footer.add(status,BorderLayout.CENTER);footer.add(JPanel(FlowLayout()).apply { add(open);add(sign) },BorderLayout.EAST);add(footer,BorderLayout.SOUTH)
-        mutableControls.addAll(listOf(pc,phone,workspace,identity,add,remove,list,page,mode,style,reason,location)+fields.values)
+        mutableControls.addAll(listOf(pc,phone,workspace,identity,add,remove,list,page,mode,style,reason,location,tsa)+fields.values)
         files.addListDataListener(object: javax.swing.event.ListDataListener {
             private fun update() { sign.isEnabled=connected && !busy && !files.isEmpty }
             override fun intervalAdded(e: javax.swing.event.ListDataEvent) = update()
@@ -93,7 +97,7 @@ class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite Â
         remove.addActionListener { list.selectedIndices.sortedDescending().forEach(files::remove) }
         list.addListSelectionListener { if(!it.valueIsAdjusting) loadPreview() }
         page.addChangeListener { loadPreview() }
-        mode.addActionListener { canvas.visibleStamp=mode.selectedIndex==0 }
+        mode.addActionListener { canvas.visibleStamp=mode.selectedIndex==0;tsa.isEnabled=!busy && mode.selectedIndex!=2 }
         sign.addActionListener { sign() }
         open.addActionListener { resultDirectory?.let { Desktop.getDesktop().open(it.toFile()) } }
         addWindowListener(object: WindowAdapter() { override fun windowClosing(e: WindowEvent) {
@@ -134,7 +138,7 @@ class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite Â
         if(pin.size !in 4..8 || pin.any { it !in '0'..'9' }) { pin.fill('\u0000');status.text="PIN invÃ¡lido; no enviado al DNI.";return }
         try {
             val pdfMode=when(mode.selectedIndex) { 0->DesktopPdfMode.VISIBLE;1->DesktopPdfMode.INVISIBLE;else->DesktopPdfMode.DETACHED }
-            val options=PdfSigningOptions(pageNumber=(page.value as Number).toInt(),visible=pdfMode==DesktopPdfMode.VISIBLE,
+            val options=PdfSigningOptions(reniecTimestamp=tsa.isSelected && pdfMode!=DesktopPdfMode.DETACHED,pageNumber=(page.value as Number).toInt(),visible=pdfMode==DesktopPdfMode.VISIBLE,
                 placement=canvas.placement,reason=reason.text,location=location.text,appearance=SignatureAppearance(
                     style=if(style.selectedIndex==0) StampStyle.CARD else StampStyle.MINIMAL,
                     showDni=fields.getValue("DNI").isSelected,showDate=fields.getValue("Fecha").isSelected,showTime=fields.getValue("Hora").isSelected,
@@ -151,6 +155,7 @@ class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite Â
     private fun setBusy(value: Boolean) {
         busy=value;mutableControls.forEach { it.isEnabled=!value };canvas.interactive=!value
         connect.isEnabled=!connected && !value;disconnect.isEnabled=connected || value;sign.isEnabled=connected && !value && !files.isEmpty
+        tsa.isEnabled=!value && mode.selectedIndex!=2
         if(!value) qr.isEnabled=false
         open.isEnabled=resultDirectory!=null
     }

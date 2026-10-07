@@ -12,6 +12,8 @@ class DesktopPdfOptions {
     }
     val mode get() = values["--pdf-mode"]?.let(CliOptions::parsePdfMode) ?: DesktopPdfMode.INVISIBLE
     fun build(): PdfSigningOptions {
+        val tsa=when(values["--pdf-tsa"] ?: "none") { "none" -> false; "reniec" -> true; else -> error("TSA PDF invalida") }
+        require(!tsa || mode != DesktopPdfMode.DETACHED) { "TSA requiere PDF integrado" }
         val page=values["--pdf-page"]?.toInt() ?: 1; require(page>0)
         val box=values["--pdf-box"]?.split(',')?.map { it.toFloat() }
         require(box==null || box.size==4)
@@ -21,10 +23,10 @@ class DesktopPdfOptions {
         val style=when(values["--pdf-style"] ?: "card") { "card" -> StampStyle.CARD; "minimal" -> StampStyle.MINIMAL; else -> error("Estilo PDF invalido") }
         val placement=if(box==null) NormalizedStampPlacement(0.36f,0.82f,0.60f,0.14f)
             else NormalizedStampPlacement(box[0],box[1],box[2],box[3])
-        return PdfSigningOptions(pageNumber=page,visible=mode==DesktopPdfMode.VISIBLE,placement=placement,
+        return PdfSigningOptions(reniecTimestamp=tsa,pageNumber=page,visible=mode==DesktopPdfMode.VISIBLE,placement=placement,
             appearance=SignatureAppearance(style=style,showDni="dni" in fields,showDate="date" in fields,
                 showTime="time" in fields,showReason="reason" in fields,showLocation="location" in fields),
             reason=values["--pdf-reason"] ?: "",location=values["--pdf-location"] ?: "")
     }
-    companion object { val FLAGS=setOf("--pdf-mode","--pdf-page","--pdf-box","--pdf-fields","--pdf-reason","--pdf-location","--pdf-style") }
+    companion object { val FLAGS=setOf("--pdf-mode","--pdf-page","--pdf-box","--pdf-fields","--pdf-reason","--pdf-location","--pdf-style","--pdf-tsa") }
 }

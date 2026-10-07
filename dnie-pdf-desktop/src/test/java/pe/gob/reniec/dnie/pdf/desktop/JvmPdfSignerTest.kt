@@ -87,4 +87,40 @@ class JvmPdfSignerTest {
             identity.certificate.encoded, { Result.success(ByteArray(256)) }, PdfSigningOptions(visible=false))
         assertTrue(result.isFailure); assertEquals(0, out.size()); assertTrue(folder.root.listFiles()!!.isEmpty())
     }
+    @Test fun timestampFailureDoesNotPublishOrRepeatPrivateOperation() = runBlocking<Unit> {
+        var requests=0
+        val out=ByteArrayOutputStream()
+        val engine=JvmPdfSigner(folder.root.toPath()) { requests++; throw java.io.IOException("TSA offline") }
+        val result=engine.signConfiguredPdf(source().inputStream(),out,identity.certificate.encoded,
+            { Result.success(identity.sign(it)) },PdfSigningOptions(visible=false,reniecTimestamp=true))
+        assertTrue(result.isFailure);assertEquals(0,out.size());assertEquals(1,identity.operations)
+        assertEquals(1,requests);assertTrue(folder.root.listFiles()!!.isEmpty())
+    }
+    @Test fun timestampDisabledDoesNotContactService() = runBlocking<Unit> {
+        val out=ByteArrayOutputStream()
+        JvmPdfSigner(folder.root.toPath()) { error("Must not contact TSA") }.signConfiguredPdf(
+            source().inputStream(),out,identity.certificate.encoded,{ Result.success(identity.sign(it)) },
+            PdfSigningOptions(visible=false)).getOrThrow()
+        verify(out.toByteArray(),1)
+    }
+    @Test fun verifiedTimestampPreservesVisibleAndInvisibleDocumentSignatures() = runBlocking<Unit> {
+        val service=TestTimestampAuthority.service()
+        for(visible in listOf(false,true)) {
+            val out=ByteArrayOutputStream()
+            JvmPdfSigner(folder.root.toPath(),service).signConfiguredPdf(source().inputStream(),out,
+                identity.certificate.encoded,{ Result.success(identity.sign(it)) },
+                PdfSigningOptions(visible=visible,reniecTimestamp=true)).getOrThrow()
+            val bytes=out.toByteArray();verify(bytes,1)
+            Loader.loadPDF(bytes).use { doc ->
+                val sig=doc.signatureDictionaries.single()
+                val cms=CMSSignedData(CMSProcessableByteArray(sig.getSignedContent(bytes)),sig.getContents(bytes))
+                val signer=cms.signerInfos.signers.single()
+                val attribute=signer.unsignedAttributes.get(org.bouncycastle.asn1.ASN1ObjectIdentifier("1.2.840.113549.1.9.16.2.14"))
+                val token=org.bouncycastle.tsp.TimeStampToken(CMSSignedData(attribute.attrValues.getObjectAt(0).toASN1Primitive().encoded))
+                assertArrayEquals(java.security.MessageDigest.getInstance("SHA-256").digest(signer.signature),token.timeStampInfo.messageImprintDigest)
+            }
+        }
+        assertEquals(2,identity.operations);assertTrue(folder.root.listFiles()!!.isEmpty())
+    }
+
 }
