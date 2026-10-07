@@ -58,6 +58,19 @@ fun CertificateValidationPanel(certificate: CertificateInfo) {
                     RevocationStatus.UNKNOWN -> "Revocación de la cadena: indeterminada"
                 }, style = MaterialTheme.typography.bodySmall)
                 report.chainValidUntil?.let { Text("Evidencias de cadena válidas hasta: $it", style = MaterialTheme.typography.bodySmall) }
+                if (report.chainRevocationDetail.isNotEmpty())
+                    Text(report.chainRevocationDetail, style = MaterialTheme.typography.bodySmall)
+                report.caRevocationEvidence.forEach { evidence ->
+                    val caState = when (evidence.assessment.status) {
+                        RevocationStatus.GOOD -> "sin revocación en evidencia verificada"
+                        RevocationStatus.REVOKED -> "revocada"
+                        RevocationStatus.UNKNOWN -> "estado indeterminado"
+                    }
+                    Text("CA intermedia ${evidence.depth}: $caState", style = MaterialTheme.typography.bodySmall)
+                    Text(evidence.assessment.detail, style = MaterialTheme.typography.bodySmall)
+                    if (pe.gob.reniec.dnie.BuildConfig.DEBUG && evidence.diagnosticCode.isNotEmpty())
+                        Text("Diagnóstico: ${evidence.diagnosticCode}", style = MaterialTheme.typography.bodySmall)
+                }
             }
         }
     }

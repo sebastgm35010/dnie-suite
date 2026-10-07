@@ -64,27 +64,28 @@ class CertificateTrustInspector(private val lists: TrustedListSource = PeruTrust
         var aggregate = revocation.revocation.status
         var expires = minOf(list.expires.time, list.authorityEvidenceUntil?.time ?: list.expires.time,
             chain.minOf { it.notAfter.time }, revocation.revocation.nextUpdate?.time ?: now.time)
+        val caEvidence = mutableListOf<CaRevocationEvidence>()
+        val caInspector = CaRevocationInspector(source)
         for (index in 1 until chain.lastIndex) {
             val cert = chain[index]; val issuer = chain[index + 1]
-            var evidence = RevocationAssessment(RevocationStatus.UNKNOWN, "Sin evidencia de CA")
-            if (source is OcspResponseSource) for (url in CertificateLocations.ocspUrls(cert)) {
-                if (Thread.currentThread().isInterrupted || System.nanoTime() > deadline) break
-                evidence = runCatching { OcspValidator.evaluate(cert, issuer, (source as OcspResponseSource).query(url, OcspValidator.request(cert, issuer)), Date()) }
-                    .getOrDefault(evidence)
-                if (evidence.status != RevocationStatus.UNKNOWN) break
-            }
-            if (evidence.status == RevocationStatus.UNKNOWN) for (url in CertificateLocations.completeCrlUrls(cert)) {
-                if (Thread.currentThread().isInterrupted || System.nanoTime() > deadline) break
-                evidence = runCatching { DirectCrlValidator.evaluate(cert, issuer,
-                    factory.generateCRL(source.download(url).inputStream()) as X509CRL, Date()) }.getOrDefault(evidence)
-                if (evidence.status != RevocationStatus.UNKNOWN) break
-            }
+            val result = caInspector.inspect(index, cert, issuer, deadline)
+            caEvidence += result
+            val evidence = result.assessment
             if (evidence.status == RevocationStatus.REVOKED) aggregate = RevocationStatus.REVOKED
             else if (evidence.status == RevocationStatus.UNKNOWN && aggregate != RevocationStatus.REVOKED) aggregate = RevocationStatus.UNKNOWN
             evidence.nextUpdate?.let { expires = minOf(expires, it.time) }
         }
-        if (aggregate == RevocationStatus.GOOD && System.currentTimeMillis() >= expires) aggregate = RevocationStatus.UNKNOWN
+        var detail = when (aggregate) {
+            RevocationStatus.GOOD -> "Titular y CA intermedias con evidencias verificadas"
+            RevocationStatus.REVOKED -> "Una evidencia verificada indica revocación en la ruta"
+            RevocationStatus.UNKNOWN -> "No se pudo completar la revocación de toda la ruta; consulta los resultados de cada CA"
+        }
+        if (aggregate == RevocationStatus.GOOD && System.currentTimeMillis() >= expires) {
+            aggregate = RevocationStatus.UNKNOWN
+            detail = "Una evidencia caducó durante la consulta; vuelve a comprobar el estado"
+        }
         return revocation.copy(trust = TrustStatus.TRUSTED, chainRevocation = aggregate,
+            caRevocationEvidence = caEvidence.toList(), chainRevocationDetail = detail,
             chainValidUntil = if (aggregate == RevocationStatus.GOOD) Date(expires) else null,
             trustDetail = "Cadena PKIX a raíz admitida por TSL Perú autenticada, secuencia ${list.sequence}. Estado actual; no clasificación eIDAS.")
     }

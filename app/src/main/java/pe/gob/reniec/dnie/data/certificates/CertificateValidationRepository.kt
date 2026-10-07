@@ -14,6 +14,11 @@ class OnlineCertificateValidationRepository(private val inspector: CertificateTr
                 pe.gob.reniec.dnie.diagnostics.DiagnosticLog.event("certificate_validation", "completed",
                     "status" to report.trust.name, "state" to report.chainRevocation.name,
                     "code" to report.trustFailureCode.ifEmpty { "NONE" })
+                report.caRevocationEvidence.forEach { evidence ->
+                    pe.gob.reniec.dnie.diagnostics.DiagnosticLog.event("certificate_validation", "ca_revocation",
+                        "stage" to "CA_${evidence.depth}", "state" to evidence.assessment.status.name,
+                        "mode" to evidence.method.name, "code" to evidence.diagnosticCode.ifEmpty { "NONE" })
+                }
             }
         }
     companion object {

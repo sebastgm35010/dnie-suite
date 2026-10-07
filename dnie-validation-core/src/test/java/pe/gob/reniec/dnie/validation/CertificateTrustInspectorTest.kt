@@ -58,16 +58,39 @@ class CertificateTrustInspectorTest {
         assertEquals(TrustStatus.TRUSTED, report.trust)
         assertEquals(RevocationStatus.GOOD, report.revocation.status)
         assertEquals(RevocationStatus.GOOD, report.chainRevocation)
+        assertEquals(1, report.caRevocationEvidence.size)
+        assertEquals(RevocationMethod.CRL, report.caRevocationEvidence.single().method)
+        assertEquals(RevocationStatus.GOOD, report.caRevocationEvidence.single().assessment.status)
     }
     @Test fun revokedIntermediateCannotAppearAsNonRevokedChain() {
         val report = CertificateTrustInspector(lists(), source(revokedCa = true)).inspect(leaf.encoded)
         assertEquals(RevocationStatus.GOOD, report.revocation.status)
         assertEquals(RevocationStatus.REVOKED, report.chainRevocation)
+        assertEquals(RevocationStatus.REVOKED, report.caRevocationEvidence.single().assessment.status)
     }
     @Test fun unavailableIntermediateEvidenceIsIndeterminate() {
         val report = CertificateTrustInspector(lists(), source(missingCaCrl = true)).inspect(leaf.encoded)
         assertEquals(TrustStatus.TRUSTED, report.trust)
         assertEquals(RevocationStatus.UNKNOWN, report.chainRevocation)
+        assertEquals("CA_CRL_FETCH:IOException", report.caRevocationEvidence.single().diagnosticCode)
+    }
+    @Test fun expiredDeadlineDoesNotStartCaDownloads() {
+        val inspector = CaRevocationInspector(PublicCertificateSource { error("Must not download") })
+        val evidence = inspector.inspect(1, ca, root, System.nanoTime() - 1)
+        assertEquals(RevocationStatus.UNKNOWN, evidence.assessment.status)
+        assertEquals("CA_DEADLINE", evidence.diagnosticCode)
+    }
+    @Test fun downloadFailureDoesNotExposeExceptionContents() {
+        val inspector = CaRevocationInspector(PublicCertificateSource { throw java.io.IOException("private-identity") })
+        val evidence = inspector.inspect(1, ca, root, System.nanoTime() + 1000000000L)
+        assertEquals("CA_CRL_FETCH:IOException", evidence.diagnosticCode)
+        assertFalse(evidence.toString().contains("private-identity"))
+    }
+    @Test fun malformedCaCrlIsDistinctFromNetworkFailure() {
+        val inspector = CaRevocationInspector(PublicCertificateSource { byteArrayOf(1, 2, 3) })
+        val evidence = inspector.inspect(1, ca, root, System.nanoTime() + 1000000000L)
+        assertEquals(RevocationStatus.UNKNOWN, evidence.assessment.status)
+        assertTrue(evidence.diagnosticCode.startsWith("CA_CRL_PARSE:"))
     }
     @Test fun unavailableTslDoesNotDiscardVerifiedLeafEvidenceOrInferTrust() {
         val report = CertificateTrustInspector(TrustedListSource { throw java.io.IOException("Offline") }, source()).inspect(leaf.encoded)

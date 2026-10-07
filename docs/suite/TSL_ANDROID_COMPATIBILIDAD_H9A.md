@@ -28,3 +28,7 @@ D:/DNIeToolchain/AndroidPackages/dnie-evolution-2.0.0-rc13-trust-android-debug.a
 SHA256 2B2F1218F60E4BFDCD1BE39A8C7370CC6DE3F9E58F6A25A9354A937EA66A3892.
 
 Solicitado envío único al mensajero Telegram vigente; confirmar entrega por separado. No instalado por ADB. Prueba pendiente: leer DNI -> Firma -> Comprobar confianza y revocación; si UNKNOWN, copiar código de Diagnóstico o exportar registro, sin borrar datos de emparejamiento/bóveda. Preflight automático, validación histórica y TSA siguen pendientes.
+
+## Confirmación física posterior
+
+El usuario confirma en APK61: TSL Perú autenticada secuencia25, ruta PKIX verificada y titular sin revocación en OCSP firmado/vigente. La revocación de toda la cadena sigue UNKNOWN; se investiga por separado en H9b. Esta confirmación sustituye el pendiente físico de confianza TSL, pero no completa validación de todas las CA.
