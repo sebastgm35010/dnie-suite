@@ -21,7 +21,7 @@ $bindAllowed = if ($tailnet) {
     $bytes = [Net.IPAddress]::Parse($config.host).GetAddressBytes()
     $private = $bytes.Length -eq 4 -and ($bytes[0] -eq 127 -or $bytes[0] -eq 10 -or ($bytes[0] -eq 172 -and $bytes[1] -ge 16 -and $bytes[1] -le 31) -or ($bytes[0] -eq 192 -and $bytes[1] -eq 168))
     $localAddresses = @(Get-NetIPAddress -AddressFamily IPv4 | Select-Object -ExpandProperty IPAddress)
-    $config.transport -eq 'tls' -and $private -and ($bytes[0] -eq 127 -or $localAddresses -contains $config.host)
+    $config.transport -in @('tls','tls_reverse','usb_accessory') -and $private -and ($bytes[0] -eq 127 -or $localAddresses -contains $config.host)
 }
 if (-not $bindAllowed -or $config.port -ne 39443 -or [IO.Path]::GetFullPath($config.certificatePath) -ne (Join-Path $Session 'bridge.pfx')) { throw 'Configuracion fuera del perfil autorizado.' }
 $protectedRoot = 'D:\DNIeBridgePrivileged'
@@ -53,13 +53,17 @@ $command = '/c ""C:\Program Files\dotnet\dotnet.exe" ' + $stage + '\WindowsBridg
 Import-Module ScheduledTasks
 $action = New-ScheduledTaskAction -Execute (Join-Path $env:SystemRoot 'System32/cmd.exe') -Argument $command
 $system = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest
-# Finite single session. Remove the registration after starting: the running process continues.
-$settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 35)
+# Reusable host. Registration is removed after starting; explicit Stop ends the process.
+$settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit ([TimeSpan]::Zero)
 try {
     Register-ScheduledTask -TaskName $taskName -Action $action -Principal $system -Settings $settings | Out-Null
     Start-ScheduledTask -TaskName $taskName
     Start-Sleep -Milliseconds 900
     if ((Get-ScheduledTask -TaskName $taskName).State -ne 'Running') { throw 'El host PC/SC no arranco; revisar registros protegidos.' }
+    $nativeHost=Get-CimInstance Win32_Process -Filter "Name='dotnet.exe'" | Where-Object {$_.CommandLine -like "*$stage\WindowsBridge.dll serve-pcsc*"} | Select-Object -First 1
+    if(-not $nativeHost){throw 'No se encontro el proceso del host.'}
+    New-Item -ItemType Directory -Path 'D:\DNIeToolchain\Desktop' -Force | Out-Null
+    @{pid=$nativeHost.ProcessId;stage=$stage;transport=$config.transport;startedUtc=[DateTimeOffset]::UtcNow.ToString('O')} | ConvertTo-Json | Set-Content -LiteralPath 'D:\DNIeToolchain\Desktop\host-state.json' -Encoding UTF8
     @{task=$taskName;stage=$stage;mode='serve-pcsc'} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $Session 'session.json') -Encoding UTF8
     Write-Host "Host PC/SC iniciado. Registros: $stage"
 } finally {

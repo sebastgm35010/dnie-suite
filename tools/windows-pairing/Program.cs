@@ -27,7 +27,7 @@ byte[] token = Convert.FromBase64String(config.PairingTokenBase64);
 byte[]? png = null;
 try
 {
-    string payload = BridgePairingQr.Encode(config.AdvertisedHost ?? config.Host, config.Port, pin, token, expires, DateTimeOffset.UtcNow, config.Transport);
+    string payload = BridgePairingQr.Encode(config.AdvertisedHost ?? config.Host, config.Port, pin, token, expires, DateTimeOffset.UtcNow, config.Transport, config.Persistent);
     using var data = QRCodeGenerator.GenerateQrCode(payload, QRCodeGenerator.ECCLevel.M);
     using var renderer = new PngByteQRCode(data);
     png = renderer.GetGraphic(6);
@@ -41,9 +41,9 @@ try
     <article><h1>Emparejar el teléfono</h1><p>En la app abre <b>Puente NFC · PC → Escanear QR de la PC</b>.</p>
     <img id="qr" alt="QR privado de emparejamiento" src="data:image/png;base64,{{Convert.ToBase64String(png)}}">
     <p>Equipo: {{WebUtility.HtmlEncode(config.AdvertisedHost ?? config.Host)}}:{{config.Port}}</p><p>Transporte: {{WebUtility.HtmlEncode(config.Transport)}}. {{(config.Transport == "tailscale_tcp" ? "Tailscale directo, sin TLS adicional." : "Compara esta huella con la mostrada en el teléfono:")}}</p><code>{{(config.Transport == "tailscale_tcp" ? "Autorización por token de sesión" : fingerprint)}}</code>
-    <p id="expiry">Válido hasta {{expires.LocalDateTime:HH:mm:ss}}. Este QR autoriza el emparejamiento; muéstralo solo a tu teléfono.</p>
+    <p id="expiry">Identidad válida hasta {{expires.LocalDateTime:yyyy-MM-dd}}. Este QR autoriza el emparejamiento; muéstralo solo a tu teléfono.</p>
     <button onclick="hide()">Ocultar QR</button><p>Escanear configura el cliente. El DNI se autoriza después desde la app.</p></article>
-    <script>function hide(){document.getElementById('qr').removeAttribute('src');document.getElementById('qr').hidden=true}setTimeout(()=>{hide();document.getElementById('expiry').textContent='QR vencido. Genera otro emparejamiento.'},{{Math.Max(0, (long)(expires-DateTimeOffset.UtcNow).TotalMilliseconds)}});</script></html>
+    <script>function hide(){document.getElementById('qr').removeAttribute('src');document.getElementById('qr').hidden=true}if(!{{(config.Persistent ? "true" : "false")}})setTimeout(()=>{hide();document.getElementById('expiry').textContent='QR vencido. Genera otro emparejamiento.'},{{(config.Persistent ? 0 : Math.Max(0, (long)(expires-DateTimeOffset.UtcNow).TotalMilliseconds))}});</script></html>
     """;
     string page = Path.Combine(directory, "pairing-qr.html");
     await File.WriteAllTextAsync(page, html);

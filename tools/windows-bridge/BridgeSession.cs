@@ -37,9 +37,16 @@ public static class BridgeSession
         byte[] token, Func<CancellationToken, Task<Stream>> connectLocal,
         TimeSpan idleTimeout, CancellationToken cancellation)
     {
-        if (token.Length != 32) throw new ArgumentException("Token must be 32 bytes.");
         using (android)
-        using (Stream tls = certificate == null ? android.GetStream() : new SslStream(android.GetStream(), false))
+            await RunAsync(android.GetStream(), certificate, token, connectLocal, idleTimeout, cancellation);
+    }
+
+    public static async Task RunAsync(Stream transport, X509Certificate2? certificate,
+        byte[] token, Func<CancellationToken, Task<Stream>> connectLocal,
+        TimeSpan idleTimeout, CancellationToken cancellation)
+    {
+        if (token.Length != 32) throw new ArgumentException("Token must be 32 bytes.");
+        using (Stream tls = certificate == null ? transport : new SslStream(transport, false))
         using (var session = CancellationTokenSource.CreateLinkedTokenSource(cancellation))
         {
             using (var handshake = CancellationTokenSource.CreateLinkedTokenSource(session.Token))
@@ -87,8 +94,11 @@ public static class BridgeSession
         while (true)
         {
             using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
+            // An authenticated, idle card is allowed to wait indefinitely. A partial
+            // frame remains bounded; stopping the host always cancels this read.
+            await source.ReadExactlyAsync(header.AsMemory(0, 1), cancellation);
             deadline.CancelAfter(timeout);
-            await source.ReadExactlyAsync(header, deadline.Token);
+            await source.ReadExactlyAsync(header.AsMemory(1, 1), deadline.Token);
             int length = (header[0] << 8) | header[1];
             if (length == 0) throw new InvalidDataException("Empty VPCD frame.");
             byte[] payload = new byte[length];

@@ -16,7 +16,7 @@ fun BridgeScreen(state: BridgeUiState, nfcEnabled: Boolean, onImport: () -> Unit
     onExportTrace: () -> Unit, onClearTrace: () -> Unit, onWindowsPace: (Boolean) -> Unit, onTranslatePace: (Boolean) -> Unit,
     onTailnetHost: (String) -> Unit, onConnectTailnet: () -> Unit,
     onMethod: (pe.gob.reniec.dnie.bridge.BridgeConnectionMethod) -> Unit,
-    onSettings: (pe.gob.reniec.dnie.bridge.BridgeRuntimeSettings) -> Unit, development: Boolean = false) {
+    onSettings: (pe.gob.reniec.dnie.bridge.BridgeRuntimeSettings) -> Unit, development: Boolean = false, onForgetPc: () -> Unit = {}) {
     var settings by remember { mutableStateOf(false) }
     var advanced by remember { mutableStateOf(false) }
     if (advanced) BridgeAdvancedSettings(state.settings, onSettings) { advanced = false }
@@ -32,6 +32,8 @@ fun BridgeScreen(state: BridgeUiState, nfcEnabled: Boolean, onImport: () -> Unit
                     label = { Text("PC en Tailscale") },singleLine = true,modifier = Modifier.fillMaxWidth(), enabled = !state.busy && !state.armed)
                 Button(onClick = onConnectTailnet, enabled = !state.busy && !state.armed) { Text("Conectar por Tailscale") }
             }
+            if(state.method == pe.gob.reniec.dnie.bridge.BridgeConnectionMethod.LOCAL_NETWORK)
+                Text("IP Wi-Fi del teléfono: ${state.localWifiAddress.ifEmpty { "Conecta a Wi-Fi" }} · puerto 39444")
             Text(if (state.tailscale) "Conexión cifrada por Tailscale." else "Conexión cifrada con la PC mediante TLS.")
             Text(if (state.translatePace) "Traducción PACE · modo recomendado" else if (state.windowsPace) "Modo directo · PACE gestionado por Windows" else "PACE en Android · instrucciones lógicas")
             Text("El teléfono mantiene protegido el acceso NFC al DNI y lo presenta como tarjeta inteligente a la PC.")
@@ -42,6 +44,7 @@ fun BridgeScreen(state: BridgeUiState, nfcEnabled: Boolean, onImport: () -> Unit
             if (state.method.usesPairing) OutlinedButton(onClick = onImport, enabled = !state.busy && !state.armed) { Text("Importar archivo de emparejamiento") }
             if (state.peer.isNotEmpty()) {
                 Text("PC: ${state.peer}", style = MaterialTheme.typography.titleMedium)
+                if (!state.tailscale) TextButton(onClick=onForgetPc, enabled=!state.busy && !state.armed) {Text("Olvidar PC") }
                 if (!state.tailscale) {
                 Text("Huella SHA-256 del servidor")
                 Text(state.fingerprint, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall)
@@ -60,7 +63,7 @@ fun BridgeScreen(state: BridgeUiState, nfcEnabled: Boolean, onImport: () -> Unit
             }
             if (state.busy) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             OutlinedButton(onClick = onStop, enabled = state.busy || state.armed) { Text("Detener sesión") }
-            Text("Solo permanece activo en esta pantalla. Al salir, bloquear el teléfono o perder la tarjeta se cierra la sesión.",
+            Text("Solo permanece activo en esta pantalla. Al salir o bloquear el teléfono se detiene. Retirar el DNI cierra la sesión de tarjeta y permite iniciar otra al acercarlo.",
                 style = MaterialTheme.typography.bodySmall)
             TextButton(onClick = onBack) { Text("Volver") }
         }

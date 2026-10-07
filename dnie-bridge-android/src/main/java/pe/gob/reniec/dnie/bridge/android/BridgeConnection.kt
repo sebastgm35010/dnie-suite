@@ -12,9 +12,10 @@ class BridgeConnection(
     private val decorate: (BridgeCard) -> BridgeCard = { it },
     private val smDiagnostic: (String, String) -> Unit = { _, _ -> },
     settings: pe.gob.reniec.dnie.bridge.BridgeRuntimeSettings = pe.gob.reniec.dnie.bridge.BridgeRuntimeSettings(),
+    transportSocket: (() -> java.net.Socket)? = null,
     private val physicalFactory: () -> DnieCardChannel
 ) : Closeable {
-    private val client = PinnedBridgeClient(pairing, settings)
+    private val client = PinnedBridgeClient(pairing, settings, transportSocket)
     private val closed = AtomicBoolean()
     @Volatile private var physical: DnieCardChannel? = null
 

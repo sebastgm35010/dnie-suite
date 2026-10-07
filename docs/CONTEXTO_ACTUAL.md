@@ -1,3 +1,13 @@
+## Actualización 2026-10-06 · 2.0.0-rc3
+
+El usuario confirmó Tailscale y reportó fallo de LAN TLS y USB por RNDIS de rc2. Nueva iteración: identidad TLS estable por PC, perfiles Android cifrados por transporte, conexión LAN inversa PC→Android manteniendo servidor TLS en PC, y USB directo AOA con API UsbDk propia. Se retiraron los límites de inactividad/30 minutos y el selector UI; el host atiende sesiones nuevas y Android vuelve a esperar el DNI después de cerrar una sesión abierta. No se repiten operaciones y no se alteró el motor de firma/PACE.
+
+Pruebas: 251 pasan en JVM/Android, 2 de integración opcional omitidas; Windows 123 comprobaciones sintéticas. APK debug/release y gestor Windows debug/release compilados; verificación de exclusión debug aprobada. APK debug rc3 (51) instalado por ADB. Tailscale actualizado en estado de espera, sin tarjeta activa durante el cambio.
+
+**Pendiente físico importante:** UsbDk se instaló con MSI/firma válida, pero todavía no enumera el teléfono. PnP devolvió 3010 al reiniciar únicamente su dispositivo: requiere reiniciar Windows. No se reinició la PC. USB con DNI real y LAN real no están validados todavía; sí el TLS inverso/formatos/control de sesiones mediante simulación. No cambiar firewall ni servicios de tarjetas para resolverlo.
+
+Detalle y procedimiento: `docs/architecture/TRANSPORTES_PERSISTENTES_2_0_RC3.md`. Artefactos en `D:/DNIeToolchain/Checkpoints/2.0.0-rc3`. Base rc2 preservada en `checkpoint/puente-2.0.0-rc2`.
+
 # Contexto vigente del proyecto
 
 Fork autorizado: modest-bose-evolution. Base modest-bose y Antigravity clausuradas; no modificarlas.

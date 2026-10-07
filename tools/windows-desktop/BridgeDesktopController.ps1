@@ -23,6 +23,8 @@ function Stop-BridgeSelector($control) {
 function Get-BridgeDesktopState($control) {
     $properties=[Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties()
     $listening=[bool](@($properties.GetActiveTcpListeners() | Where-Object Port -eq 39443).Count -or @($properties.GetActiveTcpConnections() | Where-Object {$_.LocalEndPoint.Port -eq 39443 -and $_.State -eq 'Established'}).Count)
+    $hostState='D:\DNIeToolchain\Desktop\host-state.json'
+    if(Test-Path -LiteralPath $hostState){try{$record=Get-Content -LiteralPath $hostState -Raw -Encoding UTF8|ConvertFrom-Json;$listening=$listening -or [bool](Get-Process -Id $record.pid -ErrorAction SilentlyContinue)}catch{}}
     $running=[bool]($control.Process -and -not $control.Process.HasExited)
     $phase=if($running){'starting'}else{'stopped'}
     $count=0

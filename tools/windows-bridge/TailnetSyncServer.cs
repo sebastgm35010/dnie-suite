@@ -40,7 +40,6 @@ public static class TailnetSyncServer
                 using var phone = await listener.AcceptTcpClientAsync(stop);
                 byte[] token = RandomNumberGenerator.GetBytes(32);
                 using var session = CancellationTokenSource.CreateLinkedTokenSource(stop);
-                session.CancelAfter(TimeSpan.FromMinutes(30));
                 try {
                     verifyPeer(phone);
                     log("tailnet_peer_verified");

@@ -24,6 +24,7 @@ class BridgeActivity : ComponentActivity() {
     private val model: BridgeViewModel by viewModels()
     private lateinit var reader: NfcReaderManager
     private val nfcEnabled = mutableStateOf(false)
+    private lateinit var usb: pe.gob.reniec.dnie.data.bridge.BridgeUsbPermission
     private lateinit var scanner: BridgeQrScanner
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -31,6 +32,7 @@ class BridgeActivity : ComponentActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_SECURE or WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         reader = NfcReaderManager(NfcAdapter.getDefaultAdapter(this))
         scanner = BridgeQrScanner(this)
+        usb = pe.gob.reniec.dnie.data.bridge.BridgeUsbPermission(this)
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.RESUMED) { reader.discoveredTags.collect(model::tag) }
         }
@@ -41,13 +43,16 @@ class BridgeActivity : ComponentActivity() {
             BridgeScreen(state, nfcEnabled.value,
                 onImport = { importer.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) },
                 onScan = { scanner.scan(model::importQr, model::scanStatus) },
-                onCan = model::can, onAuthorize = model::authorize, onStop = model::stop, onBack = ::finish,
+                onCan = model::can, onAuthorize = { if(state.method == pe.gob.reniec.dnie.bridge.BridgeConnectionMethod.USB_NETWORK) usb.authorize(model::authorize,model::scanStatus) else model.authorize() }, onStop = model::stop, onBack = ::finish,
                 onExportTrace = { exporter.launch("dnie-apdu-pace-android.jsonl") }, onClearTrace = model::clearTrace, onWindowsPace = model::windowsPace, onTranslatePace = model::translatePace,
                 onTailnetHost = model::tailnetHost, onConnectTailnet = model::connectTailnet,
                 onMethod = model::method, onSettings = model::settings,
+                onForgetPc = model::forgetPc,
                 development = pe.gob.reniec.dnie.BuildConfig.DEBUG && intent.getBooleanExtra("development", false))
         } }
     }
+
+    override fun onDestroy() { usb.close(); super.onDestroy() }
 
     override fun onResume() {
         super.onResume()

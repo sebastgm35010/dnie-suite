@@ -12,6 +12,7 @@
         android:name="android.hardware.nfc"
         android:required="true" />
 
+    <uses-feature android:name="android.hardware.usb.accessory" android:required="false" />
     <queries><package android:name="com.google.android.gms" /></queries>
     <application
         android:name=".DnieApplication"

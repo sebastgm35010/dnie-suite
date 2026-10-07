@@ -10,6 +10,11 @@ public static class PcscHostSession
     public static async Task RunAsync(TcpClient phone, X509Certificate2? certificate, byte[] token,
         DateTimeOffset expires, TimeSpan idle, CancellationToken cancellation,
         Func<IPcscDevice> openDevice, Action<string> log)
+        => await RunAsync(phone.GetStream(), certificate, token, expires, idle, cancellation, openDevice, log);
+
+    public static async Task RunAsync(Stream phone, X509Certificate2? certificate, byte[] token,
+        DateTimeOffset expires, TimeSpan idle, CancellationToken cancellation,
+        Func<IPcscDevice> openDevice, Action<string> log)
     {
         using var lifetime = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
         NamedPipeClientStream? backendPipe = null;

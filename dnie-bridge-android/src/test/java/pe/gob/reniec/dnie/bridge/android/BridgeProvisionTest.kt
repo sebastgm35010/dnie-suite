@@ -25,6 +25,20 @@ class BridgeProvisionTest {
         }
         assertThrows(IllegalArgumentException::class.java) { BridgeProvision.parse(valid, Long.MAX_VALUE) }
     }
+    @Test fun persistentUsbAndReverseLanRoundTrip() {
+        for (transport in listOf("usb_accessory", "tls_reverse")) {
+            val json = valid.replace("\"version\":1", "\"version\":2,\"persistent\":true,\"transport\":\"$transport\"")
+            BridgeProvision.parse(json, 0).use { original ->
+                assertTrue(original.persistent)
+                BridgeProvision.parse(BridgeProvision.serialize(original), 0).use { copy ->
+                    assertTrue(copy.persistent); assertEquals(transport, copy.transport)
+                    assertArrayEquals(original.pin, copy.pin); assertArrayEquals(original.secret, copy.secret)
+                }
+                val encoded = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(json.toByteArray())
+                BridgeProvision.parseQr("DNIEBRIDGE1:$encoded", 0).use { assertTrue(it.persistent) }
+            }
+        }
+    }
     @Test fun boundStopsAtLimit() {
         val stream = ByteArrayInputStream(ByteArray(100_000))
         assertThrows(IllegalArgumentException::class.java) { BridgeProvision.read(stream, 0) }

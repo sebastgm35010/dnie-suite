@@ -5,7 +5,7 @@ class BridgeConnectionMethodTest {
     @Test fun localAndUsbCannotUseClearTailnetTransport() {
         for (method in listOf(BridgeConnectionMethod.LOCAL_NETWORK, BridgeConnectionMethod.USB_NETWORK)) {
             assertTrue(method.usesPairing)
-            assertTrue(method.accepts("tls"))
+            assertTrue(method.accepts(if (method == BridgeConnectionMethod.USB_NETWORK) "usb_accessory" else "tls_reverse"))
             assertFalse(method.accepts("tailscale_tcp"))
             assertFalse(method.accepts("tailscale_sync"))
         }
@@ -15,5 +15,7 @@ class BridgeConnectionMethodTest {
         assertTrue(BridgeConnectionMethod.TAILSCALE.accepts("tailscale_sync"))
         assertTrue(BridgeConnectionMethod.TAILSCALE.accepts("tailscale_tcp"))
         assertFalse(BridgeConnectionMethod.TAILSCALE.accepts("tls"))
+        assertFalse(BridgeConnectionMethod.USB_NETWORK.accepts("tls"))
+        assertFalse(BridgeConnectionMethod.LOCAL_NETWORK.accepts("usb_accessory"))
     }
 }

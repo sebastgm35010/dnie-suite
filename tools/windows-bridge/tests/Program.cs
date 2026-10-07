@@ -46,6 +46,10 @@ await TestWrongPin();
 await TestFramesAndDisconnect();
 await TestMalformedFrame();
 await TestTimeout();
+await TestIdleDoesNotExpire();
+passed += UsbTransportTests.Run();
+passed += await PcIdentityTests.RunAsync();
+await TestReverseTls();
 passed += await PrivateCardPipeTests.RunAsync();
 passed += await PcscBackendTests.RunAsync();
 await TestPrivatePipeRelay();
@@ -157,6 +161,46 @@ async Task TestMalformedFrame()
             await fixture.tls.WriteAsync(new byte[] { 0, 0 }); await ExpectClosed(fixture.server);
             Assert(await host.stream.ReadAsync(new byte[1]) == 0, "Empty frame closes driver connection.");
         }
+    }
+    fixture.host.Stop();
+}
+async Task TestReverseTls()
+{
+    var phoneListener=Listen();var localListener=Listen();
+    using var pc=new TcpClient();
+    await pc.ConnectAsync(IPAddress.Loopback,((IPEndPoint)phoneListener.LocalEndpoint).Port);
+    using var phone=await phoneListener.AcceptTcpClientAsync();phoneListener.Stop();
+    using var stop=new CancellationTokenSource(TimeSpan.FromSeconds(10));
+    var readiness=TransportReadiness.WaitAsync(pc.GetStream(),stop.Token);
+    foreach(byte b in "DNIREADY1"u8.ToArray())await phone.GetStream().WriteAsync(new byte[]{b},stop.Token);
+    await readiness;Assert(true,"Fragmented nine-byte readiness accepted.");
+    var server=BridgeSession.RunAsync(pc.GetStream(),certificate,token,ct=>Task.FromResult<Stream>(new MemoryStream()),TimeSpan.FromSeconds(2),stop.Token);
+    using var tls=new SslStream(phone.GetStream(),false,(_,cert,_,_)=>cert!=null && CryptographicOperations.FixedTimeEquals(SHA256.HashData(cert.GetRawCertData()),pin));
+    await tls.AuthenticateAsClientAsync(new SslClientAuthenticationOptions{TargetHost="bridge-test",EnabledSslProtocols=SslProtocols.Tls12 | SslProtocols.Tls13},stop.Token);
+    await tls.WriteAsync("DNIBRDG1"u8.ToArray(),stop.Token);await tls.WriteAsync(token,stop.Token);
+    byte[] ack=new byte[1];await tls.ReadExactlyAsync(ack,stop.Token);
+    Assert(ack[0]==1,"PC initiates TCP, Android remains the pinned TLS client.");
+    await ExpectClosed(server);
+    localListener.Stop();
+    await AssertBadReadiness();
+}
+async Task AssertBadReadiness() {
+    try {await TransportReadiness.WaitAsync(new MemoryStream("BADREADY1"u8.ToArray()),CancellationToken.None);throw new Exception("Invalid readiness accepted.");}
+    catch(InvalidDataException){Assert(true,"Invalid readiness rejected before TLS/card.");}
+}
+async Task TestIdleDoesNotExpire()
+{
+    var fixture = await Start(timeoutSeconds: 1);
+    using (fixture.client) using (fixture.tls) {
+        var host=await HostConnection(fixture.host,fixture.tls);
+        using(host.peer) using(host.stream) {
+            await Task.Delay(1300);
+            Assert(!fixture.server.IsCompleted,"Authenticated idle session stays alive beyond the frame timeout.");
+            await fixture.tls.WriteAsync(new byte[]{0,1,2});
+            var frame=new byte[3];await host.stream.ReadExactlyAsync(frame);
+            Assert(frame.SequenceEqual(new byte[]{0,1,2}),"Command after idle arrives unchanged.");
+        }
+        await ExpectClosed(fixture.server);
     }
     fixture.host.Stop();
 }

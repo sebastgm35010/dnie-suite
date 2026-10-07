@@ -29,12 +29,17 @@ function StopSelector {
     Stop-BridgeSelector $control
 }
 function StartHost([bool]$stopHost) {
+    if ($stopHost) {
+        $script:networkOperation=Start-BridgeDesktopNetwork $networkEntry 'LAN' '127.0.0.1' '' $true
+        return
+    }
     if ($method.SelectedItem -eq 'Tailscale') {
         Start-BridgeDesktopHost $hostEntry $pcName.Text.Trim() $phoneName.Text.Trim() $stopHost
     } else {
-        if (-not $addresses.SelectedItem) { throw 'Actualiza la lista y elige una interfaz de red.' }
+        if (-not $addresses.SelectedItem) { throw $(if($method.SelectedItem -eq 'USB directo'){'Reconecta el cable y actualiza la lista. Si UsbDk acaba de instalarse, Windows puede requerir reiniciar.'}else{'Actualiza la lista y elige la interfaz LAN.'}) }
         $kind=if($method.SelectedItem -eq 'LAN TLS'){'LAN'}else{'USB'}
-        $script:networkOperation=Start-BridgeDesktopNetwork $networkEntry $kind $addresses.SelectedItem.Address ([int]$idle.Value) $stopHost
+        $peer=if($kind -eq 'USB'){$addresses.SelectedItem.Serial}else{$phoneName.Text.Trim()}
+        $script:networkOperation=Start-BridgeDesktopNetwork $networkEntry $kind $addresses.SelectedItem.Address $peer $stopHost
     }
 }
 $form = New-Object Windows.Forms.Form
@@ -54,32 +59,32 @@ $title.Font=New-Object Drawing.Font('Segoe UI',15,[Drawing.FontStyle]::Bold)
 $null=Label '1. Mantiene el host activo. 2. Activa el selector para Ciudadano Digital.' 65
 $method=New-Object Windows.Forms.ComboBox
 $method.DropDownStyle='DropDownList';$method.SetBounds(210,106,440,28)
-$method.Items.AddRange(@('Tailscale','LAN TLS','USB TLS'));$method.SelectedIndex=0;$form.Controls.Add($method)
+$method.Items.AddRange(@('Tailscale','LAN TLS','USB directo'));$method.SelectedIndex=0;$form.Controls.Add($method)
 $null=Label 'Conexion' 106
 $null=Label 'PC Tailscale' 146
 $pcName=New-Object Windows.Forms.TextBox
 $pcName.Text='sebas-laptop.tail2752e9.ts.net';$pcName.SetBounds(210,148,440,28);$form.Controls.Add($pcName)
-$null=Label 'Telefono Tailscale' 186
+$phoneLabel=Label 'Telefono Tailscale' 186
 $phoneName=New-Object Windows.Forms.TextBox
 $phoneName.Text='sebas-poco.tail2752e9.ts.net';$phoneName.SetBounds(210,188,440,28);$form.Controls.Add($phoneName)
 $null=Label 'Interfaz LAN / USB' 226
 $addresses=New-Object Windows.Forms.ComboBox
 $addresses.DropDownStyle='DropDownList';$addresses.DisplayMember='Display';$addresses.SetBounds(210,228,440,28);$form.Controls.Add($addresses)
-$idle=New-Object Windows.Forms.NumericUpDown
-$idle.Minimum=5;$idle.Maximum=300;$idle.Value=120;$idle.SetBounds(460,268,100,28);$form.Controls.Add($idle)
-$null=Label 'Avanzado: inactividad TLS (segundos)' 268
+$null=Label 'Identidad permanente de la PC. Sin cierre por inactividad.' 268
 function RefreshAddresses {
     $selected=if($addresses.SelectedItem){$addresses.SelectedItem.Address}else{$preferences.Address}
     $addresses.Items.Clear()
-    foreach($item in @(Get-BridgeNetworkInterfaces)) { $null=$addresses.Items.Add($item); if($item.Address -eq $selected){$addresses.SelectedItem=$item} }
+    try{$items=if($method.SelectedItem -eq 'USB directo'){@(Get-BridgeUsbDevices)}else{@(Get-BridgeNetworkInterfaces)}}catch{$items=@();if(-not $LayoutTest){[Windows.Forms.MessageBox]::Show($_.Exception.Message,'USB directo')|Out-Null}}
+    foreach($item in $items) { $null=$addresses.Items.Add($item); if($item.Address -eq $selected){$addresses.SelectedItem=$item} }
     if ($addresses.SelectedIndex -lt 0 -and $addresses.Items.Count) {$addresses.SelectedIndex=0}
 }
 RefreshAddresses
-if($preferences.Method -in @('Tailscale','LAN TLS','USB TLS')) {$method.SelectedItem=$preferences.Method}
+if($preferences.Method -in @('Tailscale','LAN TLS','USB directo')) {$method.SelectedItem=$preferences.Method}
+RefreshAddresses
 if($preferences.Pc) {$pcName.Text=$preferences.Pc};if($preferences.Phone){$phoneName.Text=$preferences.Phone}
-if($preferences.Idle -ge 5 -and $preferences.Idle -le 300){$idle.Value=$preferences.Idle}
-$method.Add_SelectedIndexChanged({$network=$method.SelectedItem -ne 'Tailscale';$addresses.Enabled=$network;$idle.Enabled=$network;$pcName.Enabled=-not $network;$phoneName.Enabled=-not $network})
-$network=$method.SelectedItem -ne 'Tailscale';$addresses.Enabled=$network;$idle.Enabled=$network;$pcName.Enabled=-not $network;$phoneName.Enabled=-not $network
+$method.Add_SelectedIndexChanged({$network=$method.SelectedItem -ne 'Tailscale';$addresses.Enabled=$network;$pcName.Enabled=-not $network;$phoneName.Enabled=$method.SelectedItem -ne 'USB directo';$phoneLabel.Text=if($network){'IP Wi-Fi del telefono'}else{'Telefono Tailscale'};RefreshAddresses})
+$network=$method.SelectedItem -ne 'Tailscale';$addresses.Enabled=$network;$pcName.Enabled=-not $network;$phoneName.Enabled=$method.SelectedItem -ne 'USB directo'
+$phoneLabel.Text=if($method.SelectedItem -eq 'LAN TLS'){'IP Wi-Fi del telefono'}elseif($method.SelectedItem -eq 'USB directo'){'USB sin compartir red'}else{'Telefono Tailscale'}
 function Button([string]$text,[int]$x,[int]$y,[scriptblock]$action) {
     $control=New-Object Windows.Forms.Button
     $control.Text=$text;$control.SetBounds($x,$y,200,36)
@@ -92,7 +97,9 @@ function Button([string]$text,[int]$x,[int]$y,[scriptblock]$action) {
 $hostStart=Button 'Iniciar host' 24 310 { StartHost $false }
 $hostStop=Button 'Detener host' 240 310 { StartHost $true }
 $refresh=Button 'Actualizar interfaces' 456 310 { RefreshAddresses }
-$null=Label 'LAN: misma red. USB: activar Compartir Internet por USB en Android. Ambos usan QR y TLS, sin ADB. Permite la conexion en red privada si Windows lo solicita.' 570
+$usbInstall=Button 'Instalar soporte USB' 456 226 {Start-Process powershell.exe -WindowStyle Hidden -Verb RunAs -ArgumentList ('-NoProfile -File '+(ConvertTo-BridgeArgument (Join-Path $repo 'tools/windows-pairing/install-usb-support.ps1')))}
+$usbInstall.Visible=$false
+$null=Label 'LAN: introduce la IP Wi-Fi del telefono y autoriza Android. USB directo: selecciona el telefono y acepta el accesorio USB. Si no aparece, reconecta el cable. QR una sola vez por PC.' 570
 $hostStatus=Label 'Comprobando host...' 365
 $selectorStart=Button 'Activar selector RENIEC' 24 420 {
     Start-BridgeSelector $control
@@ -113,12 +120,15 @@ $timer.Add_Tick({
         $hostStart.Enabled=-not $listening -and -not $preparing; $hostStop.Enabled=$listening -and -not $preparing
         $method.Enabled=-not $listening -and -not $preparing
         $network=$method.SelectedItem -ne 'Tailscale'
+        $usbInstall.Visible=$method.SelectedItem -eq 'USB directo' -and -not(Test-Path 'C:\Program Files\UsbDk Runtime Library\UsbDkHelper.dll')
+        $usbInstall.Enabled=-not $listening -and -not $preparing
+        $addresses.Width=if($usbInstall.Visible){230}else{440}
         $addresses.Enabled=$network -and -not $listening -and -not $preparing
-        $idle.Enabled=$addresses.Enabled;$refresh.Enabled=-not $listening -and -not $preparing
+        $refresh.Enabled=-not $listening -and -not $preparing
         $pcName.Enabled=-not $network -and -not $listening -and -not $preparing
-        $phoneName.Enabled=$pcName.Enabled
+        $phoneName.Enabled=$method.SelectedItem -ne 'USB directo' -and -not $listening -and -not $preparing
         if($script:networkOperation -and $script:networkOperation.HasExited) {
-            if($script:networkOperation.ExitCode -ne 0){[Windows.Forms.MessageBox]::Show('No se pudo iniciar o detener el host de red. Revisa la interfaz, el puerto y acepta la elevacion del backend.','Puente DNIe') | Out-Null}
+            if($script:networkOperation.ExitCode -ne 0){[Windows.Forms.MessageBox]::Show($(if(Test-Path $script:networkOperation.ErrorLog){[IO.File]::ReadAllText($script:networkOperation.ErrorLog)}else{'No se pudo iniciar el transporte.'}),'Puente DNIe') | Out-Null}
             $script:networkOperation.Dispose();$script:networkOperation=$null
         }
         $running=$snapshot.SelectorRunning
@@ -134,7 +144,7 @@ $timer.Add_Tick({
 })
 $form.Add_FormClosing({
     StopSelector
-    Save-BridgeDesktopPreferences $preferencePath ([pscustomobject]@{Method=[string]$method.SelectedItem;Pc=$pcName.Text.Trim();Phone=$phoneName.Text.Trim();Address=$(if($addresses.SelectedItem){$addresses.SelectedItem.Address}else{''});Idle=[int]$idle.Value})
+    Save-BridgeDesktopPreferences $preferencePath ([pscustomobject]@{Method=[string]$method.SelectedItem;Pc=$pcName.Text.Trim();Phone=$phoneName.Text.Trim();Address=$(if($addresses.SelectedItem){$addresses.SelectedItem.Address}else{''})})
 })
 # Production packages contain neither this module nor any diagnostic scripts.
 $debugEntry=Join-Path $PSScriptRoot 'debug\BridgeDebugMenu.ps1'

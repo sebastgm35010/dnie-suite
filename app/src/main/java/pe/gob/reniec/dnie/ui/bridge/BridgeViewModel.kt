@@ -20,6 +20,7 @@ import pe.gob.reniec.dnie.data.preferences.CanStorage
 import pe.gob.reniec.dnie.diagnostics.DiagnosticLog
 /** Coordinates import and exclusive foreground sessions; secrets never enter Compose state. */
 class BridgeViewModel(application: Application) : AndroidViewModel(application) {
+    private val trustedPc = pe.gob.reniec.dnie.data.bridge.TrustedPcStorage(application)
     private val preferences = pe.gob.reniec.dnie.data.bridge.BridgePreferences(application)
     private val mutable = MutableStateFlow(BridgeUiState(can = CanStorage.getSavedCan(application),
         method = preferences.method(), settings = preferences.settings(),
@@ -27,10 +28,28 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
     val state = mutable.asStateFlow()
     private var pairing: BridgePairing? = null
     private val adapter = BridgeAndroidAdapter(application)
-    init { mutable.update { it.copy(traceAvailable = adapter.hasTrace()) } }
+    init { mutable.update { it.copy(traceAvailable = adapter.hasTrace(), localWifiAddress = runCatching { pe.gob.reniec.dnie.data.bridge.BridgeTransportAdapter.localAddresses().joinToString(", ") }.getOrDefault("")) } }
     private var task: Job? = null
     @Volatile private var connection: BridgeConnection? = null
     @Volatile private var generation = 0
+    init {
+        viewModelScope.launch {
+            val initialGeneration = generation
+            val saved = withContext(Dispatchers.IO) { runCatching { trustedPc.load(mutable.value.method) }.getOrNull() }
+            if (saved != null) {
+                if (generation == initialGeneration && pairing == null && !mutable.value.busy && mutable.value.method.accepts(saved.transport)) {
+                    pairing = saved
+                    mutable.update { it.copy(peer = "${saved.host}:${saved.port}", fingerprint = saved.fingerprint(), message = "PC recordada. Autoriza el puente para conectar el DNI.") }
+                } else saved.close()
+            }
+        }
+    }
+    fun forgetPc() {
+        if (mutable.value.busy || mutable.value.armed) return
+        ++generation; pairing?.close(); pairing = null
+        viewModelScope.launch { withContext(Dispatchers.IO) {trustedPc.forget()} }
+        mutable.update {it.copy(peer="",fingerprint="",message="PC olvidada. Escanea su QR para volver a autorizarla.")}
+    }
     private fun savePreferences() { mutable.value.let { preferences.save(it.method, it.tailnetHost, it.settings) } }
     fun settings(value: pe.gob.reniec.dnie.bridge.BridgeRuntimeSettings) {
         if (mutable.value.busy || mutable.value.armed) return
@@ -43,6 +62,20 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
         mutable.update { it.copy(method = value, peer = "", fingerprint = "", tailscale = false,
             message = if (value.usesPairing) "En la PC selecciona la red correspondiente, inicia el host y escanea su QR." else "Activa Tailscale en ambos equipos y conecta con el nombre de la PC.") }
         savePreferences()
+        val epoch=generation
+        mutable.update {it.copy(busy=true)}
+        task=viewModelScope.launch {
+            var saved: BridgePairing?=null
+            try {
+                saved=withContext(Dispatchers.IO) {runCatching {trustedPc.load(value)}.getOrNull()}
+                if(epoch==generation) {
+                    pairing=saved;saved=null
+                    val remembered=pairing
+                    mutable.update {it.copy(busy=false, peer=remembered?.let {pc -> "${pc.host}:${pc.port}"} ?: "",
+                        fingerprint=remembered?.fingerprint() ?: "", message=if(remembered!=null) "PC recordada para este transporte. Autoriza el puente." else it.message)}
+                }
+            } finally {saved?.close()}
+        }
     }
     fun translatePace(value: Boolean) { if (pe.gob.reniec.dnie.BuildConfig.DEBUG && !mutable.value.busy && !mutable.value.armed && !mutable.value.windowsPace) mutable.update { it.copy(mode = if (value) BridgeMode.TRANSLATED_ANDROID_PACE else BridgeMode.LOGICAL_ANDROID_PACE) } }
     fun windowsPace(value: Boolean) { if (pe.gob.reniec.dnie.BuildConfig.DEBUG && !mutable.value.busy && !mutable.value.armed) mutable.update { it.copy(mode = if (value) BridgeMode.DIRECT_WINDOWS_PACE else BridgeMode.TRANSLATED_ANDROID_PACE) } }
@@ -108,8 +141,19 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
         if (System.currentTimeMillis() >= p.expiresAtEpochMillis) {
             mutable.update { it.copy(message = "Emparejamiento vencido. Genera otro en la PC.") }; return
         }
-        mutable.update { it.copy(armed = true, message = if (it.windowsPace) "Acerca el DNI. Windows gestionará PACE; Android retransmitirá las APDU por TLS." else "Acerca el DNI y mantenlo apoyado. PACE se ejecutará en el teléfono; la PC podrá enviar instrucciones al DNI.") }
-        DiagnosticLog.event("bridge", "nfc_authorized")
+        val epoch = ++generation
+        mutable.update { it.copy(busy = true, message = "Preparando conexión…") }
+        task = viewModelScope.launch {
+            try {
+                val endpoint = withContext(Dispatchers.IO) { adapter.arm(p).also { trustedPc.save(p) } }
+                if (epoch == generation) mutable.update {it.copy(busy=false,armed=true,message="${if(endpoint.isNotEmpty()) "$endpoint · " else ""}Acerca el DNI. Sin cierre por inactividad; puedes volver a acercarlo después de retirarlo.")}
+                DiagnosticLog.event("bridge", "nfc_authorized")
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (failure: Exception) {
+                DiagnosticLog.failure("bridge","transport_prepare",failure)
+                if (epoch == generation) mutable.update {it.copy(busy=false,armed=false,message=failure.message ?: "No se pudo preparar el transporte.")}
+            }
+        }
     }
     fun tag(tag: Tag) {
         val current = mutable.value
@@ -151,7 +195,11 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
             } finally {
                 atr.fill(0)
                 if (connection === session) connection = null
-                if (epoch == generation) mutable.update { it.copy(busy = false, traceAvailable = adapter.hasTrace()) }
+                if (epoch == generation) {
+                    val ready = withContext(Dispatchers.IO) { adapter.closeTransport(); if(opened) runCatching {adapter.arm(p)}.isSuccess else false }
+                    mutable.update {it.copy(busy=false, armed=ready, traceAvailable=adapter.hasTrace(),
+                        message=if(ready) "Tarjeta retirada o sesión finalizada. Acerca el DNI para abrir una sesión nueva; la PC sigue autorizada." else it.message)}
+                }
             }
         }
     }
@@ -163,7 +211,7 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
         previous?.cancel(); task = null
         mutable.update { it.copy(armed = false, busy = true, message = "Cerrando sesión…") }
         viewModelScope.launch {
-            withContext(Dispatchers.IO) { active?.close() }
+            withContext(Dispatchers.IO) { adapter.closeTransport(); active?.close() }
             previous?.join()
             if (connection === active) connection = null
             if (epoch == generation) mutable.update { it.copy(busy = false, traceAvailable = adapter.hasTrace(), message = "Sesión detenida. Autoriza de nuevo para conectar.") }
@@ -173,6 +221,7 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
         ++generation
         connection?.let { active -> Thread({ active.close() }, "bridge-close").start() }
         connection = null
+        adapter.closeTransport()
         pairing?.close(); pairing = null
         super.onCleared()
     }

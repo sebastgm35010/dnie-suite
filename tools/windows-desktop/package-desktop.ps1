@@ -12,11 +12,12 @@ $pairing=Join-Path $package 'tools/windows-pairing'
 $selector=Join-Path $package 'tools/windows-reader-selector'
 foreach($directory in @($desktop,$pairing,$selector)){New-Item -ItemType Directory -Path $directory -Force | Out-Null}
 foreach($name in @('BridgeDesktop.ps1','BridgeDesktopController.ps1','BridgeNetworkController.ps1')){Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination (Join-Path $desktop $name)}
-foreach($name in @('network-session.ps1','start-pcsc-session.ps1','start-tailnet-host.ps1')){Copy-Item -LiteralPath (Join-Path $repo "tools/windows-pairing/$name") -Destination (Join-Path $pairing $name)}
+foreach($name in @('network-session.ps1','start-pcsc-session.ps1','start-tailnet-host.ps1','install-usb-support.ps1')){Copy-Item -LiteralPath (Join-Path $repo "tools/windows-pairing/$name") -Destination (Join-Path $pairing $name)}
 foreach($name in @('selector_service.py','selector_engine.py','pcsc-bridge-selector.js','README.md')){Copy-Item -LiteralPath (Join-Path $repo "tools/windows-reader-selector/$name") -Destination (Join-Path $selector $name)}
 $licenses=Join-Path $package 'licenses'
 New-Item -ItemType Directory -Path $licenses | Out-Null
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'licenses/QRCoder-LICENSE.txt') -Destination $licenses
+Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'licenses/UsbDk-LICENSE.txt') -Destination $licenses
 $assets=Get-Content 'D:/DNIeToolchain/BuildArtifacts/desktop/obj/WindowsPairing/project.assets.json' -Raw -Encoding UTF8 | ConvertFrom-Json
 $packageCache=$assets.packageFolders.PSObject.Properties | Select-Object -First 1 -ExpandProperty Name
 foreach($dependency in @('System.Drawing.Common/8.0.31','Microsoft.Win32.SystemEvents/8.0.0')) {
@@ -52,7 +53,7 @@ if($Configuration -eq 'Debug') {
     if(Get-ChildItem -LiteralPath $package -Recurse -File | Where-Object {$_.FullName -match 'host-diagnostics|BridgeDebugMenu|pair-phone'}){throw 'Hay herramientas debug en el paquete Release.'}
 }
 [IO.File]::WriteAllText((Join-Path $package 'ABRIR-GESTOR.bat'),('@echo off'+[Environment]::NewLine+'powershell.exe -NoProfile -WindowStyle Hidden -File "%~dp0tools\windows-desktop\BridgeDesktop.ps1"'),[Text.Encoding]::ASCII)
-$manifest=[pscustomobject]@{configuration=$Configuration;createdUtc=[DateTimeOffset]::UtcNow.ToString('O');debugIncluded=($Configuration -eq 'Debug');requires=@('.NET 8','lector DNIe PC/SC instalado','Python y Frida para selector RENIEC opcional');files=@(Get-ChildItem $package -Recurse -File | ForEach-Object {[pscustomobject]@{path=$_.FullName.Substring($package.Length+1);sha256=(Get-FileHash $_.FullName -Algorithm SHA256).Hash}})}
+$manifest=[pscustomobject]@{configuration=$Configuration;createdUtc=[DateTimeOffset]::UtcNow.ToString('O');debugIncluded=($Configuration -eq 'Debug');requires=@('UsbDk x64 para USB directo (opcional)','.NET 8','lector DNIe PC/SC instalado','Python y Frida para selector RENIEC opcional');files=@(Get-ChildItem $package -Recurse -File | ForEach-Object {[pscustomobject]@{path=$_.FullName.Substring($package.Length+1);sha256=(Get-FileHash $_.FullName -Algorithm SHA256).Hash}})}
 $manifest | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $package 'package-manifest.json') -Encoding UTF8
 Compress-Archive -Path (Join-Path $package '*') -DestinationPath ($package+'.zip')
 Write-Output $package

@@ -14,6 +14,9 @@ import pe.gob.reniec.dnie.core.nfc.IsoDepCardChannel
 
 /** Android file/NFC APIs stay here; no cryptography or UI policy in this adapter. */
 class BridgeAndroidAdapter(private val context: Context) {
+    private val transport = BridgeTransportAdapter(context)
+    fun arm(pairing: BridgePairing) = transport.arm(pairing)
+    fun closeTransport() = transport.close()
     private val trace = BridgeTraceSupport(context)
     fun hasTrace() = trace.hasTrace()
     fun recordOpeningFailure(failure: Throwable, windowsPace: Boolean = false, translatePace: Boolean = false) = trace.openingFailure(failure, if (windowsPace) "pace_windows_raw" else if (translatePace) "pace_android_translated" else "pace_android_logical")
@@ -34,6 +37,7 @@ class BridgeAndroidAdapter(private val context: Context) {
         val atr = ContactlessAtr.fromTypeAHistory(history)
         return Prepared(BridgeConnection(pairing,
             settings = settings,
+            transportSocket = transport.socketFactory(pairing),
             smDiagnostic = { event, context -> pe.gob.reniec.dnie.diagnostics.DiagnosticLog.event("bridge",event,"flow" to context) },
             decorate = { card -> trace.decorate(ContactlessReaderCard(card, tag.id ?: byteArrayOf()), if (windowsPace) "pace_windows_raw" else if (translatePace) "pace_android_translated" else "pace_android_logical") }) {
             IsoDepCardChannel(iso, settings.nfcTimeoutMs)

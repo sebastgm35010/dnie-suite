@@ -1,8 +1,10 @@
-# Flujo actual 2.0.0-rc2
+# Flujo actual 2.0.0-rc3
 
-El gestor Windows permite Tailscale, LAN TLS y USB TLS mediante Compartir Internet por USB. LAN/USB usan una IPv4 privada concreta de la PC y QR, sin depuración ni ADB. `network-session.ps1` genera el emparejamiento e inicia el backend temporal; no modifica firewall. La conexión por cable es red USB, no un accesorio USB nativo. El flujo `pair-phone.ps1` que se describe abajo se conserva como herramienta histórica de desarrollo y queda fuera del paquete de producción.
+El gestor ofrece Tailscale, Wi-Fi local con TCP iniciado por Windows y TLS fijado a la identidad permanente de la PC, y USB directo Android Open Accessory con TLS sobre datos USB. Ya no se utiliza Compartir Internet por USB. El host puede atender sesiones sucesivas sin límite de inactividad; Android conserva los perfiles cifrados y vuelve a esperar el DNI después de terminar una sesión abierta.
 
-Consulta [transportes y pruebas](../../docs/architecture/TRANSPORTES_Y_DEBUG_2_0_RC2.md) y `tools/windows-desktop/package-desktop.ps1 -Configuration Release` para generar un paquete sin herramientas debug. Las limitaciones antiguas de loopback/ADB que aparecen debajo ya no describen el flujo principal del gestor.
+USB requiere el componente UsbDk x64 firmado. El gestor permite instalarlo y selecciona el teléfono de forma explícita. En esta PC PnP indicó reinicio requerido: la prueba física USB sigue pendiente. Wi-Fi real también requiere prueba; las pruebas de TLS inverso son sintéticas.
+
+Consulta [implementación, requisitos y pendientes](../../docs/architecture/TRANSPORTES_PERSISTENTES_2_0_RC3.md). `package-desktop.ps1 -Configuration Release` genera el gestor sin módulos debug. Los flujos antiguos ADB/red USB de abajo son históricos y no describen rc3.
 
 ## Flujo historico
 

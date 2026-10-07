@@ -1,6 +1,7 @@
 package pe.gob.reniec.dnie.ui.bridge
 import pe.gob.reniec.dnie.bridge.BridgeMode
 data class BridgeUiState(
+    val localWifiAddress: String = "",
     val peer: String = "", val fingerprint: String = "", val can: String = "",
     val armed: Boolean = false, val busy: Boolean = false,
     val traceAvailable: Boolean = false, val mode: BridgeMode = BridgeMode.TRANSLATED_ANDROID_PACE,

@@ -20,7 +20,7 @@ object BridgeProvision {
                 it + "=".repeat((4 - it.length % 4) % 4)
             })
             val pairing = parse(decoded.toString(Charsets.UTF_8), now)
-            if (pairing.expiresAtEpochMillis - now > 15 * 60_000L) {
+            if (!pairing.persistent && pairing.expiresAtEpochMillis - now > 15 * 60_000L) {
                 pairing.close(); error("QR validity too long")
             }
             return pairing
@@ -39,7 +39,10 @@ object BridgeProvision {
         try {
             require(text.toByteArray(Charsets.UTF_8).size <= 8192)
             val json = JSONObject(text)
-            require(json.get("version") == 1)
+            val version = json.getInt("version")
+            require(version == 1 || version == 2)
+            val persistent = version == 2 && json.optBoolean("persistent", false)
+            require(version == 1 || persistent)
             val host = json.getString("host")
             val transport = json.optString("transport", "tls")
             // Provisioning comes from the Windows setup command, which uses a literal IP.
@@ -56,11 +59,19 @@ object BridgeProvision {
             require(token.size == 32)
             val expires = utcDate(json.getString("expiresAt"))
             require(expires > now)
-            return BridgePairing(host, port, pin, token, expires, transport)
+            return BridgePairing(host, port, pin, token, expires, transport, persistent)
         } catch (_: Exception) {
             throw IllegalArgumentException("Emparejamiento inválido o vencido")
         } finally { token?.fill(0); pin?.fill(0) }
     }
+
+    fun serialize(pairing: BridgePairing): String = JSONObject().apply {
+        put("version", if (pairing.persistent) 2 else 1); put("persistent", pairing.persistent)
+        put("host", pairing.host); put("port", pairing.port); put("transport", pairing.transport)
+        put("certificateSha256", pairing.pin.joinToString("") { "%02X".format(it) })
+        put("pairingTokenBase64", Base64.toBase64String(pairing.secret))
+        put("expiresAt", SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply { timeZone=TimeZone.getTimeZone("UTC") }.format(java.util.Date(pairing.expiresAtEpochMillis)))
+    }.toString()
 
     private fun utcDate(value: String): Long {
         val match = Regex("(\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2})(?:\\.(\\d{1,7}))?Z").matchEntire(value)

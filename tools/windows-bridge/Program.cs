@@ -61,7 +61,11 @@ else if (args[0] == "pcsc-relay")
 }
 else
 #endif
-if (args[0] == "serve-tailnet")
+if (args[0] == "usb-devices")
+{
+    foreach (string phone in UsbAccessoryStream.ListPhones()) Console.WriteLine(phone);
+}
+else if (args[0] == "serve-tailnet")
 {
     var address = TailnetTransport.Resolve(Option("--host", "sebas-laptop.tail2752e9.ts.net"));
     string peer = Option("--peer", "sebas-poco.tail2752e9.ts.net");
@@ -81,7 +85,7 @@ else if (args[0] == "setup")
     string directory = Path.GetFullPath(Option("--output"));
     if (Directory.Exists(directory)) throw new IOException("Use a new private output directory.");
     string transport = Option("--transport", "tls");
-    if (transport is not ("tls" or "tailscale_tcp")) throw new ArgumentException("Unknown transport.");
+    if (transport is not ("tls" or "tailscale_tcp" or "tls_reverse" or "usb_accessory")) throw new ArgumentException("Unknown transport.");
     bool tailnet = transport == "tailscale_tcp";
     string advertisedHost = Option("--host", "127.0.0.1");
     IPAddress host = tailnet ? TailnetTransport.Resolve(advertisedHost) : IPAddress.Parse(advertisedHost);
@@ -91,34 +95,20 @@ else if (args[0] == "setup")
     if (host.Equals(IPAddress.Any) || host.Equals(IPAddress.IPv6Any)) throw new ArgumentException("Specify one local interface address.");
     int port = int.Parse(Option("--port", "39443"));
     if (port is < 1024 or > 65535) throw new ArgumentException("Invalid TLS port.");
-    Directory.CreateDirectory(directory);
-    string sid = WindowsIdentity.GetCurrent().User!.Value;
-    var acl = new ProcessStartInfo("icacls.exe") { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
-    foreach (string item in new[] { directory, "/inheritance:r", "/grant:r", $"*{sid}:(OI)(CI)F", "*S-1-5-18:(OI)(CI)F" }) acl.ArgumentList.Add(item);
-    using (var process = Process.Start(acl)!)
-    {
-        await Task.WhenAll(process.StandardOutput.ReadToEndAsync(), process.StandardError.ReadToEndAsync());
-        await process.WaitForExitAsync();
-        if (process.ExitCode != 0) throw new IOException("Could not restrict provisioning ACLs; no secrets generated.");
-    }
-    using var key = RSA.Create(3072);
-    var request = new CertificateRequest("CN=DNI Android PC Bridge", key, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-    request.CertificateExtensions.Add(new X509BasicConstraintsExtension(false, false, 0, true));
-    request.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.DigitalSignature | X509KeyUsageFlags.KeyEncipherment, true));
-    var usages = new OidCollection { new Oid("1.3.6.1.5.5.7.3.1") };
-    request.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(usages, true));
-    var san = new SubjectAlternativeNameBuilder(); san.AddIpAddress(host); request.CertificateExtensions.Add(san.Build());
-    using var certificate = request.CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-5), DateTimeOffset.UtcNow.AddDays(90));
-    byte[] token = RandomNumberGenerator.GetBytes(32);
-    string password = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
-    string certificatePath = Path.Combine(directory, "bridge.pfx");
-    await File.WriteAllBytesAsync(certificatePath, certificate.Export(X509ContentType.Pfx, password));
-    string pin = Convert.ToHexString(SHA256.HashData(certificate.RawData));
-    int idleTimeout = int.Parse(Option("--idle-seconds", "120"));
-    if (idleTimeout is < 5 or > 300) throw new ArgumentException("Invalid idle timeout.");
-    string pairingExpiresAt = DateTime.UtcNow.AddMinutes(10).ToString("O");
-    await File.WriteAllTextAsync(Path.Combine(directory, "server-private.json"), JsonSerializer.Serialize(new ServerConfig(host.ToString(), port, 35963, certificatePath, password, Convert.ToBase64String(token), idleTimeout, pairingExpiresAt, transport, advertisedHost, peerHost), jsonOptions));
-    await File.WriteAllTextAsync(Path.Combine(directory, "android-provision.json"), JsonSerializer.Serialize(new { version = 1, host = advertisedHost, port, certificateSha256 = pin, transport, pairingTokenBase64 = Convert.ToBase64String(token), expiresAt = pairingExpiresAt }, jsonOptions));
+    await PcIdentity.RestrictAsync(directory);
+    string identityDirectory=Path.GetFullPath(Option("--identity", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DNIeBridge", "Identity")));
+    var identity=await PcIdentity.LoadOrCreateAsync(identityDirectory);
+    string certificatePath=Path.Combine(directory,"bridge.pfx");
+    File.Copy(Path.Combine(identityDirectory,"bridge.pfx"),certificatePath);
+    using var certificate=new X509Certificate2(certificatePath,identity.Password,X509KeyStorageFlags.EphemeralKeySet);
+    byte[] token=Convert.FromBase64String(identity.Token);
+    string pin=Convert.ToHexString(SHA256.HashData(certificate.RawData));
+    string pairingExpiresAt=certificate.NotAfter.ToUniversalTime().ToString("O");
+    string? phoneHost=args.Contains("--phone") ? Option("--phone") : null;
+    if (transport == "tls_reverse" && (phoneHost == null || !LocalNetworkPolicy.IsPrivateAddress(IPAddress.Parse(phoneHost))))
+        throw new ArgumentException("Reverse LAN requires a private phone IP.");
+    await File.WriteAllTextAsync(Path.Combine(directory, "server-private.json"), JsonSerializer.Serialize(new ServerConfig(host.ToString(), port, 35963, certificatePath, identity.Password, identity.Token, 120, pairingExpiresAt, transport, advertisedHost, peerHost, true, phoneHost), jsonOptions));
+    await File.WriteAllTextAsync(Path.Combine(directory, "android-provision.json"), JsonSerializer.Serialize(new { version=2, persistent=true, host=advertisedHost, port, certificateSha256=pin, transport, pairingTokenBase64=identity.Token, expiresAt=pairingExpiresAt }, jsonOptions));
     CryptographicOperations.ZeroMemory(token);
     Console.WriteLine("Private provisioning created. Import android-provision.json through a trusted channel; it is a credential.");
     Console.WriteLine($"Server SHA-256: {string.Join(":", Enumerable.Range(0, 32).Select(i => pin.Substring(i * 2, 2)))}");
@@ -132,7 +122,7 @@ else if (args[0] == "serve-pcsc"
     bool nativePcsc = args[0] == "serve-pcsc";
     bool privateLocal = args[0] is "serve-local" or "serve-pcsc";
     var config = JsonSerializer.Deserialize<ServerConfig>(await File.ReadAllTextAsync(Option("--config")), jsonOptions) ?? throw new InvalidDataException("Invalid config.");
-    if (config.Transport is not ("tls" or "tailscale_tcp")) throw new InvalidDataException("Unknown transport.");
+    if (config.Transport is not ("tls" or "tailscale_tcp" or "tls_reverse" or "usb_accessory")) throw new InvalidDataException("Unknown transport.");
     bool tailnet = config.Transport == "tailscale_tcp";
     if (tailnet && (!nativePcsc || config.PeerHost == null || !TailnetTransport.IsHost(config.PeerHost))) throw new InvalidDataException("Tailscale requires PC/SC and an explicit peer.");
     DateTimeOffset expires = config.PairingExpiresAt == null ? DateTimeOffset.MaxValue : DateTimeOffset.Parse(config.PairingExpiresAt);
@@ -155,29 +145,27 @@ else if (args[0] == "serve-pcsc"
     if (!tailnet) LocalNetworkPolicy.VerifyBinding(bindAddress);
     using var stop = new CancellationTokenSource();
     using var pairingDeadline = CancellationTokenSource.CreateLinkedTokenSource(stop.Token);
-    if (config.PairingExpiresAt != null) pairingDeadline.CancelAfter(expires - DateTimeOffset.UtcNow);
+    if (!config.Persistent && config.PairingExpiresAt != null) pairingDeadline.CancelAfter(expires - DateTimeOffset.UtcNow);
     Console.CancelKeyPress += (_, e) => { e.Cancel = true; stop.Cancel(); };
     var listener = new TcpListener(bindAddress, config.Port);
     string pipeName = "DNIeBridge-" + Guid.NewGuid().ToString("N");
     try
     {
-        listener.Start(1);
+        if (config.Transport is not ("tls_reverse" or "usb_accessory")) listener.Start(1);
         Console.WriteLine($"{config.Transport} bridge waiting. Ctrl+C closes the bridge and card session.");
         if (privateLocal && !nativePcsc) Console.WriteLine($"Session-local provider endpoint: {pipeName}. This is not a system PC/SC reader.");
         if (nativePcsc) Console.WriteLine("PC/SC integrated mode: native backend attaches after authenticated NFC ATR.");
-        // One approved card session per invocation. No remote cleartext socket.
+        if (nativePcsc && config.Persistent)
+        {
+            await PersistentPcscHost.RunAsync(listener, config, certificate, token, expires, stop.Token);
+            return;
+        }
         using var client = await listener.AcceptTcpClientAsync(pairingDeadline.Token);
         if (tailnet) TailnetTransport.VerifyPeer(client, config.PeerHost!);
-        stop.CancelAfter(TimeSpan.FromMinutes(30)); // Hard cap independent of mobile or task registration.
         listener.Stop();
         if (nativePcsc)
         {
-            await PcscHostSession.RunAsync(client, tailnet ? null : certificate, token, expires, TimeSpan.FromSeconds(config.IdleTimeoutSeconds), stop.Token,
-                () => {
-                    var devices = WindowsPcscDevice.Enumerate();
-                    if (devices.Length != 1) throw new InvalidOperationException("Exactly one DNIe reader required.");
-                    return new WindowsPcscDevice(devices[0]);
-                }, phase => Console.WriteLine($"{DateTimeOffset.UtcNow:O} bridge_phase={phase}"));
+            await PersistentPcscHost.RunSessionAsync(client.GetStream(), config, certificate, token, expires, stop.Token);
         }
         else if (privateLocal)
         {
@@ -197,4 +185,4 @@ else if (args[0] == "serve-pcsc"
 }
 else { Console.Error.WriteLine("Unknown command for this build."); Environment.ExitCode = 2; }
 
-public sealed record ServerConfig(string Host, int Port, int VpcdPort, string CertificatePath, string CertificatePassword, string PairingTokenBase64, int IdleTimeoutSeconds, string? PairingExpiresAt = null, string Transport = "tls", string? AdvertisedHost = null, string? PeerHost = null);
+public sealed record ServerConfig(string Host, int Port, int VpcdPort, string CertificatePath, string CertificatePassword, string PairingTokenBase64, int IdleTimeoutSeconds, string? PairingExpiresAt = null, string Transport = "tls", string? AdvertisedHost = null, string? PeerHost = null, bool Persistent = false, string? PhoneHost = null);

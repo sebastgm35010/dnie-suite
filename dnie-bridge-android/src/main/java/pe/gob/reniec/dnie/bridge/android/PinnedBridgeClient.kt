@@ -24,14 +24,15 @@ class BridgePairing(
     certificateSha256: ByteArray,
     token: ByteArray,
     val expiresAtEpochMillis: Long,
-    val transport: String = "tls"
+    val transport: String = "tls",
+    val persistent: Boolean = false
 ) : Closeable {
     internal val pin = certificateSha256.copyOf()
     internal val secret = token.copyOf()
     init {
         require(host.isNotBlank() && host.length <= 253 && port in 1024..65535)
         require(pin.size == 32 && secret.size == 32)
-        require(transport in setOf("tls", "tailscale_tcp", "tailscale_sync"))
+        require(transport in setOf("tls", "tailscale_tcp", "tailscale_sync", "tls_reverse", "usb_accessory"))
         if (transport.startsWith("tailscale_")) require(TailnetAddress.validHost(host))
     }
     fun fingerprint(): String = pin.joinToString(":") { "%02X".format(it) }
@@ -53,7 +54,8 @@ internal class PinnedTrust(private val pin: ByteArray) : X509TrustManager {
 
 /** Blocking IO adapter: run off Main, and close() from cancellation/disconnect owner. No logging. */
 class PinnedBridgeClient(private val pairing: BridgePairing,
-    private val settings: pe.gob.reniec.dnie.bridge.BridgeRuntimeSettings = pe.gob.reniec.dnie.bridge.BridgeRuntimeSettings()) : Closeable {
+    private val settings: pe.gob.reniec.dnie.bridge.BridgeRuntimeSettings = pe.gob.reniec.dnie.bridge.BridgeRuntimeSettings(),
+    private val transportSocket: (() -> Socket)? = null) : Closeable {
     private val lifecycle = Any()
     private var closed = false
     private var used = false
@@ -61,9 +63,12 @@ class PinnedBridgeClient(private val pairing: BridgePairing,
 
     fun run(event: (String) -> Unit = {}, restricted: Boolean = true, authorizedCard: () -> BridgeCard) {
         val direct = pairing.transport.startsWith("tailscale_")
-        val connection = if (direct) Socket() else SSLContext.getInstance("TLS").apply {
+        val factory = if (direct) null else SSLContext.getInstance("TLS").apply {
             init(null, arrayOf<TrustManager>(PinnedTrust(pairing.pin)), null)
-        }.socketFactory.createSocket()
+        }.socketFactory
+        val raw = transportSocket?.invoke()
+        val connection = if (raw != null) checkNotNull(factory).createSocket(raw, pairing.host, pairing.port, true)
+            else if (direct) Socket() else checkNotNull(factory).createSocket()
         synchronized(lifecycle) {
             if (closed || used) {
                 connection.close()
@@ -80,7 +85,7 @@ class PinnedBridgeClient(private val pairing: BridgePairing,
                 InetAddress.getAllByName(pairing.host).firstOrNull(TailnetAddress::isTailnet)
                     ?: error("Tailscale address unavailable")
             } else InetAddress.getByName(pairing.host)
-            connection.connect(InetSocketAddress(address, pairing.port), settings.connectTimeoutMs)
+            if (raw == null) connection.connect(InetSocketAddress(address, pairing.port), settings.connectTimeoutMs)
             if (connection is SSLSocket) {
                 connection.enabledProtocols = connection.supportedProtocols.filter { it in setOf("TLSv1.2", "TLSv1.3") }.toTypedArray()
                 connection.startHandshake()
@@ -98,14 +103,23 @@ class PinnedBridgeClient(private val pairing: BridgePairing,
             } finally { sessionToken.fill(0) }
             check(input.read() == 1) { "Bridge authentication rejected" }
             event("peer_authorized")
-            connection.soTimeout = settings.readTimeoutMs
-            val sessionDeadline = System.nanoTime() + 30L * 60 * 1_000_000_000
+            connection.soTimeout = 0 // Authenticated idle sessions have no lifetime cap.
             val card = authorizedCard()
             val processor: BridgeProcessor = if (restricted) ReadOnlyBridge(card) else TransparentBridge(card)
             processor.use { bridge ->
                 while (!connection.isClosed) {
-                    check(System.nanoTime() < sessionDeadline) { "Bridge session expired" }
-                    val frame = VpcdFrames.read(input) ?: break
+                    // Wait for the first byte indefinitely; bound incomplete frames.
+                    val first = input.read()
+                    if (first < 0) break
+                    connection.soTimeout = settings.readTimeoutMs
+                    val frame = VpcdFrames.read(object : java.io.InputStream() {
+                        var pending = true
+                        override fun read(): Int = if (pending) { pending = false; first } else input.read()
+                        override fun read(b: ByteArray, off: Int, len: Int): Int =
+                            if (pending) { if (len == 0) 0 else { b[off] = first.toByte(); pending = false; 1 } }
+                            else input.read(b, off, len)
+                    }) ?: break
+                    connection.soTimeout = 0
                     try {
                         val response = bridge.process(frame)
                         if (response != null) {

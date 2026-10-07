@@ -9,13 +9,10 @@ import pe.gob.reniec.dnie.bridge.BridgeRuntimeSettings
             Text("Espera al conectar con la PC")
             Row { listOf(5, 15, 30).forEach { seconds -> FilterChip(value.connectTimeoutMs == seconds * 1000,
                 { change(value.copy(connectTimeoutMs = seconds * 1000)) }, label = { Text("${seconds}s") }) } }
-            Text("Inactividad del canal con la PC")
-            Row { listOf(60, 120, 300).forEach { seconds -> FilterChip(value.readTimeoutMs == seconds * 1000,
-                { change(value.copy(readTimeoutMs = seconds * 1000)) }, label = { Text("${seconds}s") }) } }
             Text("Espera de respuesta NFC")
             Row { listOf(5, 10, 20, 30).forEach { seconds -> FilterChip(value.nfcTimeoutMs == seconds * 1000,
                 { change(value.copy(nfcTimeoutMs = seconds * 1000)) }, label = { Text("${seconds}s") }) } }
-            Text("Se aplican a la próxima sesión. El host también puede cerrar por su límite de inactividad. Recomendado: 15 / 120 / 10 segundos.")
+            Text("No hay cierre por inactividad. Estos límites solo afectan a la conexión y a cada respuesta NFC.")
             TextButton(onClick = { change(BridgeRuntimeSettings()) }) { Text("Restablecer valores") }
         }
     }, confirmButton = { TextButton(close) { Text("Listo") } })
