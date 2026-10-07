@@ -39,7 +39,8 @@ sealed interface CertificatesUiState {
 
     data class Loaded(
         val certificates: Map<CertificateType, CertificateInfo>,
-        val selectedType: CertificateType = CertificateType.SIGNATURE
+        val selectedType: CertificateType = CertificateType.SIGNATURE,
+        val scanMessage: String? = null
     ) : CertificatesUiState
 
     data class Error(
@@ -57,6 +58,11 @@ class CertificatesViewModel(private val closeDispatcher: CoroutineDispatcher = D
 
     private val _uiState = MutableStateFlow<CertificatesUiState>(CertificatesUiState.Idle)
     val uiState: StateFlow<CertificatesUiState> = _uiState.asStateFlow()
+
+    data class IdentitySnapshot(val generation: Long=0,val document: pe.gob.reniec.dnie.icao.IcaoDocument?=null,val message: String?=null,val reading: Boolean=false)
+    private var activeScan: pe.gob.reniec.dnie.domain.scan.UnifiedDniScan?=null
+    private val _identitySnapshot=MutableStateFlow(IdentitySnapshot())
+    val identitySnapshot=_identitySnapshot.asStateFlow()
 
     var enteredCan: String? = null
         private set
@@ -100,7 +106,7 @@ class CertificatesViewModel(private val closeDispatcher: CoroutineDispatcher = D
      */
     fun cancelReading() {
         readingJob?.cancel()
-        activeReader?.let { reader -> viewModelScope.launch(closeDispatcher) { runCatching { reader.close() } } }
+        activeScan?.let { scan -> viewModelScope.launch(closeDispatcher) { runCatching { scan.close() } } }
         if (_uiState.value is CertificatesUiState.ReadingCard) {
             _uiState.value = CertificatesUiState.Idle
         }
@@ -109,12 +115,14 @@ class CertificatesViewModel(private val closeDispatcher: CoroutineDispatcher = D
     /**
      * Procesa la tarjeta detectada a través del transceptor APDU.
      */
-    fun onCardDetected(transceiver: DnieTransceiverInterface) {
+    fun onCardDetected(transceiver: DnieTransceiverInterface, identityFactory: (() -> pe.gob.reniec.dnie.icao.IcaoReader)? = null) {
         if (busy) {
             viewModelScope.launch(closeDispatcher) { runCatching { transceiver.close() } }
             return
         }
         activeReader = transceiver
+        val inspection=pe.gob.reniec.dnie.domain.scan.DniePublicCertificateReader(transceiver)
+        val scan=pe.gob.reniec.dnie.domain.scan.UnifiedDniScan(inspection);activeScan=scan
         if (transceiver is pe.gob.reniec.dnie.core.nfc.DnieTransceiver && transceiver.can.isNullOrBlank() && !enteredCan.isNullOrBlank()) {
             transceiver.can = enteredCan
         }
@@ -122,40 +130,36 @@ class CertificatesViewModel(private val closeDispatcher: CoroutineDispatcher = D
         _uiState.value = CertificatesUiState.ReadingCard("Conectando con Applet del DNIe...")
 
         readingJob = viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
+            var retained: pe.gob.reniec.dnie.domain.scan.CertificateSnapshot?=null
             try {
-                // 1. Seleccionar Applet PKI / ICAO de RENIEC
-                val selectResult = transceiver.selectPkiApplet()
+                val generation=_identitySnapshot.value.generation+1
+                _identitySnapshot.value=IdentitySnapshot(generation)
+                val result=withContext(closeDispatcher) { scan.read(
+                    { inspection },identityFactory,
+                    progress={ message -> _uiState.value=CertificatesUiState.ReadingCard(message) },
+                    onCertificates={ retained=it },onIdentityProgress={ document ->
+                        _identitySnapshot.value=IdentitySnapshot(generation,document,"Leyendo identidad ICAO…",true)
+                    }) }
                 kotlin.coroutines.coroutineContext.ensureActive()
-                selectResult.getOrThrow()
-
-                // 2. Extraer certificados secuencialmente
-                val certMap = mutableMapOf<CertificateType, CertificateInfo>()
-
-                for (type in CertificateType.entries) {
-                    _uiState.value = CertificatesUiState.ReadingCard("Leyendo certificado de ${type.displayName}...")
-                    val readResult = transceiver.readCertificate(type)
-                    kotlin.coroutines.coroutineContext.ensureActive()
-
-                    readResult.onSuccess { bytes ->
-                        val certInfo = X509CertificateParser.parse(bytes, type)
-                        certMap[type] = certInfo
-                    }.onFailure { ex ->
-                        if (type.isMandatory) {
-                            throw ex
-                        }
-                        // Certificados opcionales (ej. cifrado) no interrumpen el flujo
-                    }
-                }
-
-                if (certMap.isEmpty()) {
-                    _uiState.value = CertificatesUiState.Error("No se encontraron certificados digitales en el chip.")
-                } else {
-                    _uiState.value = CertificatesUiState.Loaded(
-                        certificates = certMap,
-                        selectedType = CertificateType.SIGNATURE
-                    )
-                }
+                _identitySnapshot.value=IdentitySnapshot(generation,result.identity,result.identityIssue)
+                val certMap=result.certificates?.certificates.orEmpty()
+                _uiState.value=if(certMap.isEmpty()) CertificatesUiState.Error(
+                    result.certificateIssue ?: "No se encontraron certificados; revisa Identidad para los datos ICAO disponibles.")
+                else CertificatesUiState.Loaded(certMap,
+                    if(CertificateType.SIGNATURE in certMap) CertificateType.SIGNATURE else certMap.keys.first(),
+                    if(identityFactory==null) null else result.identityIssue ?: "Certificados e identidad leídos. Consulta la pestaña Identidad.")
             } catch (cancelled: CancellationException) {
+                retained?.certificates?.takeIf { it.isNotEmpty() }?.let { certs ->
+                    _uiState.value=CertificatesUiState.Loaded(certs,
+                        if(CertificateType.SIGNATURE in certs) CertificateType.SIGNATURE else certs.keys.first(),
+                        "Lectura cancelada; se conservan los certificados completos.")
+                }
+                val previous=_identitySnapshot.value
+                _identitySnapshot.value=previous.copy(reading=false,message="Lectura cancelada; se conservan los bloques completos.",
+                    document=previous.document?.copy(completed=true,blocks=previous.document.blocks.mapValues { (_,block) ->
+                        if(block.status in setOf(pe.gob.reniec.dnie.icao.BlockStatus.PENDING,pe.gob.reniec.dnie.icao.BlockStatus.READING))
+                            block.copy(status=pe.gob.reniec.dnie.icao.BlockStatus.INTERRUPTED) else block
+                    }))
                 throw cancelled
             } catch (e: Exception) {
                 if (!kotlin.coroutines.coroutineContext[kotlinx.coroutines.Job]!!.isActive) return@launch
@@ -165,16 +169,16 @@ class CertificatesViewModel(private val closeDispatcher: CoroutineDispatcher = D
                 )
             } finally {
                 try {
-                    withContext(NonCancellable + closeDispatcher) { runCatching { transceiver.close() } }
+                    withContext(NonCancellable + closeDispatcher) { runCatching { scan.close() } }
                 } finally {
-                    if (activeReader === transceiver) activeReader = null
+                    if (activeReader === transceiver) { activeReader = null;activeScan=null }
                 }
             }
         }
     }
 
     override fun onCleared() {
-        activeReader?.let { reader -> Thread({ reader.close() }, "certificates-close").start() }
+        activeScan?.let { scan -> Thread({ scan.close() }, "certificates-close").start() }
         super.onCleared()
     }
 

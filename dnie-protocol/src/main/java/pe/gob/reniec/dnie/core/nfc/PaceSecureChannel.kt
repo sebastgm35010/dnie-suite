@@ -228,7 +228,7 @@ class PaceSecureChannel(
 
             val expectedMac = PaceProtocol.computeCmac(kMac, padIso7816(macStream.toByteArray()))
             if (!MessageDigest.isEqual(expectedMac, do8e)) {
-                throw CardProtocolException("Fallo de integridad criptográfica: MAC de Secure Messaging no coincide")
+                throw SecureMessagingIntegrityException("Fallo de integridad criptográfica: MAC de Secure Messaging no coincide")
             }
         }
 

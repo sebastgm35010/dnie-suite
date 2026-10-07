@@ -98,7 +98,7 @@ fun CertificatesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Certificados DNIe", style = MaterialTheme.typography.titleMedium,
+                title = { Text("Mi DNIe", style = MaterialTheme.typography.titleMedium,
                     maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -118,7 +118,7 @@ fun CertificatesScreen(
                         Spacer(Modifier.width(6.dp))
                         Text("Bóveda", color = MaterialTheme.colorScheme.onPrimary)
                     }
-                    IconButton(onClick = { viewModel.requestCanEntry() }) {
+                    IconButton(onClick = { viewModel.requestCanEntry() }, enabled=uiState !is CertificatesUiState.ReadingCard) {
                         Icon(
                             imageVector = Icons.Default.Nfc,
                             contentDescription = "Leer DNIe con NFC"
@@ -159,6 +159,9 @@ fun CertificatesScreen(
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState())
                     ) {
+                        state.scanMessage?.let { message ->
+                            Text(message, modifier=Modifier.padding(16.dp),style=MaterialTheme.typography.bodyMedium)
+                        }
                         // Barra de Pestañas (Firma, Autenticación, Cifrado)
                         TabRow(
                             selectedTabIndex = CertificateType.entries.indexOf(state.selectedType)

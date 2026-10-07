@@ -82,7 +82,7 @@ class CertificatesViewModelTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
-        viewModel = CertificatesViewModel()
+        viewModel = CertificatesViewModel(testDispatcher)
     }
 
     @After
@@ -213,5 +213,35 @@ class CertificatesViewModelTest {
         assertTrue("State should be Error but was $state", state is CertificatesUiState.Error)
         val err = state as CertificatesUiState.Error
         assertTrue(err.message.contains("Tarjeta no es un DNIe"))
+    }
+    @Test fun unifiedCancellationRetainsCertificatesAndCompleteIdentityBlocks()=runTest(testDispatcher) {
+        var cardCloses=0;var identityCloses=0
+        val card=object: DnieTransceiverInterface {
+            override suspend fun selectPkiApplet()=Result.success(Unit)
+            override suspend fun readCertificate(type: CertificateType)=Result.success(sampleCertBytes)
+            override suspend fun verifyPin(pin:String): Result<PinVerificationResult> = error("No PIN in scan")
+            override suspend fun signSha256Hash(hash32Bytes:ByteArray): Result<ByteArray> = error("No signing in scan")
+            override fun close() { cardCloses++ }
+        }
+        viewModel.onCardDetected(card) {
+            assertEquals(1,cardCloses)
+            object: pe.gob.reniec.dnie.icao.IcaoReader {
+                override suspend fun read(onProgress:(pe.gob.reniec.dnie.icao.IcaoDocument)->Unit): pe.gob.reniec.dnie.icao.IcaoDocument {
+                    onProgress(pe.gob.reniec.dnie.icao.IcaoDocument(blocks=mapOf(
+                        pe.gob.reniec.dnie.icao.IcaoFile.DG1 to pe.gob.reniec.dnie.icao.IcaoBlock(pe.gob.reniec.dnie.icao.IcaoFile.DG1,pe.gob.reniec.dnie.icao.BlockStatus.AVAILABLE))))
+                    kotlinx.coroutines.awaitCancellation()
+                }
+                override fun close() { identityCloses++ }
+            }
+        }
+        advanceUntilIdle();assertTrue(viewModel.busy)
+        viewModel.cancelReading();advanceUntilIdle()
+        assertFalse(viewModel.busy)
+        val loaded=viewModel.uiState.value as CertificatesUiState.Loaded
+        assertTrue(loaded.certificates.containsKey(CertificateType.SIGNATURE))
+        assertFalse(viewModel.identitySnapshot.value.reading)
+        assertEquals(pe.gob.reniec.dnie.icao.BlockStatus.AVAILABLE,
+            viewModel.identitySnapshot.value.document!!.blocks.getValue(pe.gob.reniec.dnie.icao.IcaoFile.DG1).status)
+        assertEquals(1,cardCloses);assertEquals(1,identityCloses)
     }
 }

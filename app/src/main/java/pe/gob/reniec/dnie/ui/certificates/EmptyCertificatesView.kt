@@ -46,12 +46,12 @@ internal fun EmptyCertificatesView(
                 tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
             )
             Text(
-                text = "Sin Certificados Cargados",
+                text = "Lee tu DNIe",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = "Aproxime su DNIe al sensor NFC para inspeccionar los certificados públicos de Firma, Autenticación y Cifrado.\n\nEsta operación no requiere PIN.",
+                text = "Aproxime su DNIe al sensor NFC para leer sus certificados públicos y los datos de identidad ICAO disponibles, manteniéndolo inmóvil durante ambas etapas.\n\nEsta operación no requiere PIN.",
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -60,7 +60,7 @@ internal fun EmptyCertificatesView(
             Button(onClick = onScanClicked) {
                 Icon(imageVector = Icons.Default.Nfc, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Escanear DNIe con NFC")
+                Text("Leer identidad y certificados")
             }
         }
     }

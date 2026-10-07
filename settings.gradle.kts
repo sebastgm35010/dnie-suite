@@ -34,3 +34,5 @@ include(":dnie-signing-desktop")
 include(":dnie-signing-link")
 
 include(":dnie-pdf-desktop")
+
+include(":dnie-signing-ui")

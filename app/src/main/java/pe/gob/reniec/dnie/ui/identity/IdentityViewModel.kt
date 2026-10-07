@@ -28,6 +28,12 @@ class IdentityViewModel : ViewModel() {
     private var reader: IcaoReader? = null
     private var generation = 0
 
+    /** UI result projection only; independent reader and standalone ICAO flow remain available. */
+    fun acceptUnifiedReading(document: IcaoDocument?, message: String?,reading: Boolean=false) {
+        if(job?.isActive==true) return
+        _uiState.value=IdentityUiState(document=document,message=message,reading=reading)
+    }
+
     fun requestReading() {
         cancelReading()
         _uiState.value = _uiState.value.copy(enteringCan = true, message = null)

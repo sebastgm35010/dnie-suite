@@ -62,3 +62,6 @@ class CertificateReadException(
     statusWord: Int? = null,
     cause: Throwable? = null
 ) : CardProtocolException(message, statusWord, cause)
+
+/** Integrity loss invalidates the whole physical scan, including subsequent independent branches. */
+class SecureMessagingIntegrityException(message: String) : CardProtocolException(message)

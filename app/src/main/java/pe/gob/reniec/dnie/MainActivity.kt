@@ -70,6 +70,14 @@ class MainActivity : ComponentActivity() {
             pe.gob.reniec.dnie.data.preferences.CanStorage.getSavedCan(this).ifBlank { null }
         }
 
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                certificatesViewModel.identitySnapshot.collect { snapshot ->
+                    if(snapshot.generation>0) identityViewModel.acceptUnifiedReading(snapshot.document,snapshot.message,snapshot.reading)
+                }
+            }
+        }
+
         // Escucha reactiva de tags NFC descubiertos
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.RESUMED) {
@@ -181,6 +189,7 @@ class MainActivity : ComponentActivity() {
      */
     private fun dispatchNfcTag(tag: Tag) {
         pe.gob.reniec.dnie.diagnostics.DiagnosticLog.event("nfc", "tag_detected", "state" to currentRoute)
+        if (certificatesViewModel.busy || identityViewModel.uiState.value.reading) return
         if (vaultViewModel.uiState.value.running) return
         if (signerViewModel.uiState.value is SignerUiState.Signing || batchSignerViewModel.uiState.value is SignerUiState.Signing) return
         if (currentRoute == Screen.Vault.route) {
@@ -220,7 +229,11 @@ class MainActivity : ComponentActivity() {
                 channel = channel,
                 can = certificatesViewModel.enteredCan
             )
-            certificatesViewModel.onCardDetected(transceiver)
+            val can=certificatesViewModel.enteredCan
+            certificatesViewModel.onCardDetected(transceiver, if(can?.length==6) ({
+                val fresh=IsoDepCardChannel.fromTag(tag) ?: error("No hay canal NFC ICAO disponible")
+                IcaoDocumentReader(fresh,can)
+            }) else null)
         }
     }
 }
