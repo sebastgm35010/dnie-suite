@@ -6,6 +6,7 @@ Actualizado 2026-10-07 tras validación física del motor compartido de firma. E
 
 | Prioridad | Trabajo | Estado / criterio de cierre |
 | --- | --- | --- |
+| P1 | Primer prototipo de suite propia | Plan revisado en [suite propia](architecture/PLAN_SUITE_FIRMA_PROPIA.md). Cliente PC/SC y política de sesión primero; ensayar suite limpia y ReFirma → suite → ReFirma. Motor JVM existente, PDF escritorio simulado y GUI .NET separada después. Proyectos MIT son candidatos, no dependencias adoptadas. |
 | P1 | Ampliar regresión física de lotes Android rc5 | Lote físico de cuatro archivos y ZIP verificados: dos PDF, dos CMS y una firma PDF anterior conservada; mismo certificado instalado Windows. Una entrada de PIN, una apertura PACE, 3.721 s, sin fallas. Pendientes: lotes mayores, interrupción/cancelación física y perfilado de frames lentos. Ver MOTOR_FIRMA_LOTES_RC5.md. |
 | P0 | Arranque real después del reinicio | Comprobar servicio automático y lector PnP, sin host/red hasta pulsar Iniciar. Abrir dos veces el gestor y comprobar una ventana; iniciar/parar sin UAC. No asumir que la prueba previa de SCM acredita un reinicio real. |
 | P0 | Identificar y retirar el listener legado | Antes del reinicio hay `0.0.0.0:35963` bajo WUDFHost. Identificar su dispositivo/controlador; retirar únicamente el componente legado si se confirma. No matar WUDFHost genéricamente, ni tocar SCardSvr/Hello. El lector propio no usa red/VPCD. Cierre: sin listener legado y lector propio operativo. |
