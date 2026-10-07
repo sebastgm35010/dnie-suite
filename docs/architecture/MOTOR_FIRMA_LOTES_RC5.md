@@ -51,3 +51,13 @@ Gradle offline completó pruebas de core, protocolo, motor compartido, PDF Andro
 Además de la sesión con autorización consumida, el lote mixto genera y verifica criptográficamente cuatro resultados (dos PDF y dos CMS separados). Hay cobertura de rechazo de PIN entre archivos, detención sin reintento, pérdida de conexión, temporales incompletos, protección de resultados previos y cancelación de lectura. Las pruebas puras de importación se trasladaron al módulo JVM.
 
 Logs fuera de Git: `D:/DNIeToolchain/Temp/signing-core-rc5-build.log` y `signing-core-rc5-regression.log`. APK candidato: `D:/DNIeToolchain/AndroidPackages/dnie-evolution-2.0.0-rc5-signing-debug.apk`. No se instaló durante este incremento ni se manipuló una sesión física activa.
+
+## Primera validación física del lote, 2026-10-07
+
+El usuario entregó ZIP de resultados y diagnóstico acumulado. Se analizaron exclusivamente los diez minutos anteriores al último evento del archivo: 2026-10-06 23:59:07.696 a 2026-10-07 00:09:07.696, America/Bogota, 205 eventos. El proceso identifica versión `2.0.0-rc5-signing`.
+
+Un lote de cuatro archivos terminó en 3.721 segundos: dos PDF integrados y dos CMS separados con originales. Verificación independiente mediante .NET `SignedCms`, sin usar el constructor Bouncy Castle de la app: cuatro resultados válidos y una firma anterior adicional en uno de los PDF también válida. Las cinco firmas coinciden exactamente con el certificado del ZIP, que coincide con uno del almacén personal Windows. Las firmas nuevas PDF cubren sus archivos completos; la anterior cubre su revisión original. Las pruebas con contenido alterado en memoria fueron rechazadas. No se comprobó revocación en línea ni se emitió una validación de confianza completa.
+
+Registro: una entrada de PIN en UI, una apertura PACE, cuatro autorizaciones y cuatro operaciones de firma. Las cabeceras lógicas y protegidas aparecen ambas en APDU: ocho entradas VERIFY/PSO no significan ocho operaciones físicas. No hay eventos de falla en la ventana. Persiste rendimiento UI pendiente: 34 frames lentos en la ventana (máximo 513 ms en arranque); 14 en Lotes, máximo 173 ms. No atribuirlos al motor sin perfilado adicional.
+
+Evidencia privada y script reproducible fuera de Git: `D:/DNIeToolchain/Diagnostics/signing-rc5-real/verification.json` y `verify-signatures.ps1`. La causa original de «solo el primero» sigue siendo una hipótesis por falta del registro de aquel fallo; la ejecución física corregida del lote sí está acreditada. Faltan regresiones físicas de interrupción/cancelación y lotes mayores.

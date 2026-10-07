@@ -1,12 +1,12 @@
 # Pendientes actuales · Windows rc4 USB / Android rc4-usb
 
-Actualizado 2026-10-07 tras el primer incremento del motor compartido de firma. Android instalado continúa en 52; candidato compilado rc5-signing / 53. Este listado sustituye los encabezados de pendientes de versiones anteriores. Diferenciar implementación, simulación y validación con dispositivo real.
+Actualizado 2026-10-07 tras validación física del motor compartido de firma. El diagnóstico del teléfono confirma `2.0.0-rc5-signing`, correspondiente al candidato compilado 53. Este listado sustituye los encabezados de pendientes de versiones anteriores. Diferenciar implementación, simulación y validación con dispositivo real.
 
 ## Siguiente secuencia
 
 | Prioridad | Trabajo | Estado / criterio de cierre |
 | --- | --- | --- |
-| P0 | Regresión de firma por lotes Android rc5 | El usuario reporta varios archivos juntos y solo el primero firmado. Motor compartido renueva autorización PIN dentro de la misma sesión sin diálogo por archivo. Probar lote físico PDF/binarios, exportación y diagnóstico; no declarar causa confirmada solo por simulación. Ver MOTOR_FIRMA_LOTES_RC5.md. |
+| P1 | Ampliar regresión física de lotes Android rc5 | Lote físico de cuatro archivos y ZIP verificados: dos PDF, dos CMS y una firma PDF anterior conservada; mismo certificado instalado Windows. Una entrada de PIN, una apertura PACE, 3.721 s, sin fallas. Pendientes: lotes mayores, interrupción/cancelación física y perfilado de frames lentos. Ver MOTOR_FIRMA_LOTES_RC5.md. |
 | P0 | Arranque real después del reinicio | Comprobar servicio automático y lector PnP, sin host/red hasta pulsar Iniciar. Abrir dos veces el gestor y comprobar una ventana; iniciar/parar sin UAC. No asumir que la prueba previa de SCM acredita un reinicio real. |
 | P0 | Identificar y retirar el listener legado | Antes del reinicio hay `0.0.0.0:35963` bajo WUDFHost. Identificar su dispositivo/controlador; retirar únicamente el componente legado si se confirma. No matar WUDFHost genéricamente, ni tocar SCardSvr/Hello. El lector propio no usa red/VPCD. Cierre: sin listener legado y lector propio operativo. |
 | P0 | Regresión Tailscale con gestor nativo | Sesión física, lectura y una firma ReFirma/Firma Perú con verificación independiente; manualmente retirar/volver a presentar el DNI y reconectar. Evidencia histórica funciona, pero no valida la GUI/servicio recién instalados. |
