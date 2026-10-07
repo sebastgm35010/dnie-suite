@@ -33,3 +33,11 @@ Referencia primaria del API consultada: https://github.com/apache/pdfbox/blob/3.
 Regresión final: 128 pruebas, cero fallos/errores/omisiones entre PDF desktop, signing desktop/core/link y app. `:app:assembleDebug` satisfactorio, sin cambios Android ni nueva instalación. Logs `D:/DNIeToolchain/Temp/suite-visible-final-checks.log` y `suite-visible-packaging.log`. Distribución actualizada en la ruta habitual.
 
 Ejecutable demo generó un PDF visible integrado, trabajo `dc2a799e-5152-499c-86f6-0bfafd32f167` en `D:/DNIeToolchain/PdfVisibleEvidence/jobs`; .NET verificó integridad, certificado sintético y rechazo de alteración. Render final a 144 DPI inspeccionado, sin recortes de texto; no confundir con firma personal DNI. Checkpoint final `checkpoint/suite-pdf-visible`.
+
+## Primera firma visible física validada
+
+2026-10-07: trabajo `b9b8c2f6-18c2-4a86-bab4-3e9dc173eb65`, PRIVATE_ANDROID, un PDF con sello card, motivo y lugar, 1/1. .NET verificó integridad, certificado coincidente con el DNI previamente validado y rechazo del contenido alterado. Original conservado como prefijo. Evidencia privada en el directorio del trabajo, `independent-verification.json`; no se comprobó confianza/revocación.
+
+Render de primera página inspeccionado: sello legible, campos sin recortes. Posición predeterminada superpone texto original de este documento: priorizar selector/preview para escoger área libre. El nombre del certificado conserva su sufijo técnico de rol; pendiente separar presentación de nombre e identificación técnica del certificado sin alterar identidad verificada. No cambiar el documento ni su firma ya emitida.
+
+La advertencia FontBox «Format 14 cmap» corresponde a una subtabla de secuencias de variación Unicode ignorada por la biblioteca; no es error de NFC/firma. Fuente primaria `fontbox/src/main/java/org/apache/fontbox/ttf/CmapSubtable.java`, versión 3.0.8, processSubtype14. Render/firma del resultado comprobados. La mojibake en la hora del logger sigue siendo detalle de consola, no corrupción PDF.
