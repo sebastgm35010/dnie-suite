@@ -1,6 +1,6 @@
 # Contexto vigente de la suite propia de firma
 
-2026-10-07 · H5: GUI aislada `dnie-signing-ui`, preview/selector y firma privada sin consola; APK 57 implementa escaneo combinado certificados→ICAO con sesiones independientes y cancelación que conserva completos. 265 pruebas pasan. GUI inspeccionada sin DNI; firma GUI y transición física a ICAO pendientes. APK compilado, no instalado. DNI Bridge/inspección pública Windows son próximos adaptadores, no funciones ya integradas. [Contexto, rutas y límites](INTERFAZ_AISLADA_Y_ESCANEO_UNIFICADO_H5.md).
+2026-10-07 · H5: GUI aislada `dnie-signing-ui`, preview/selector y firma privada sin consola; APK 57 implementa escaneo combinado certificados→ICAO con sesiones independientes y cancelación que conserva completos. 265 pruebas pasan. GUI inspeccionada sin DNI; firma GUI pendiente. APK 57 instalado por ADB y versión verificada el 2026-10-07; usuario confirma que funciona el escaneo unificado, sin desglose de bloques ni prueba de cancelación. DNI Bridge/inspección pública Windows son próximos adaptadores, no funciones ya integradas. [Contexto, rutas y límites](INTERFAZ_AISLADA_Y_ESCANEO_UNIFICADO_H5.md).
 
 2026-10-07 · H4 físico validado: trabajo `b9b8c2f6-18c2-4a86-bab4-3e9dc173eb65`, PDF visible 1/1, verificado .NET/certificado DNI y render legible. Posición fija tapa contenido original; siguiente prioridad selector/preview y presentación del nombre del certificado. [Detalle](PDF_VISIBLE_H4.md).
 
@@ -97,3 +97,7 @@ Después: lotes reales y PDF JVM con corpus Android compartido. Visor/GUI solo d
 ## Deuda explícita del prototipo
 
 Recovery/catalogación de trabajos incompletos al morir el proceso, ACL/endurecimiento del workspace y reparse points de ancestros, espacio libre, política de actualización, códigos de error públicos estables y cancelación interactiva son pendientes. Los límites por streaming y separación UUID no acreditan todo ese endurecimiento. El overload legado Android sigue como deuda separada. El teléfono autoriza cantidad de operaciones; no puede comprobar visualmente documentos que permanecen exclusivamente en la PC. Strings del PIN requeridas por el transceptor heredado no tienen garantía de borrado de heap.
+
+## Investigación de conformidad PAdES
+
+2026-10-07: PDF válido en validador peruano pero PDF_NOT_ETSI. Hallazgos y pasos B → T → LT → LTA en [plan de conformidad](PADES_CONFORMIDAD_PLAN.md). Investigación normativa delegada; motor aún sin modificación. La confirmación del usuario del escaneo unificado APK 57 queda registrada en H5.
