@@ -12,7 +12,9 @@ import pe.gob.reniec.dnie.pdf.*
 
 /** Isolated user-mode frontend. No bridge service, driver or reader registration. */
 class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite Â· firma privada") {
-    private val controller=SuiteController()
+    private val product=DesktopIntegration.coordinator()
+    private val controller=SuiteController(product)
+    private val bridgePanel=if(DesktopIntegration.helper()!=null) BridgePanel(product) else null
     private val prefs=Preferences.userRoot().node("pe/gob/reniec/dnie/suite-ui")
     private val pc=JTextField(prefs.get("pc","192.168.1.5"),12)
     private val phone=JTextField(prefs.get("phone","192.168.1.11"),12)
@@ -54,6 +56,7 @@ class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite Â
         })
         connection.add(JPanel(FlowLayout(FlowLayout.LEFT)).apply { add(JLabel("Resultados"));add(workspace);add(JLabel("Identidad PC"));add(identity) })
         connection.add(fingerprint)
+        bridgePanel?.let(connection::add)
         header.add(connection,BorderLayout.SOUTH);add(header,BorderLayout.NORTH)
         val add=JButton("AÃ±adir archivos"); val remove=JButton("Quitar")
         val filePanel=JPanel(BorderLayout(8,8)).apply { border=EmptyBorder(0,18,0,0);preferredSize=Dimension(260,500) }
@@ -102,7 +105,7 @@ class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite Â
         open.addActionListener { resultDirectory?.let { Desktop.getDesktop().open(it.toFile()) } }
         addWindowListener(object: WindowAdapter() { override fun windowClosing(e: WindowEvent) {
             if(!busy || JOptionPane.showConfirmDialog(this@SuiteWindow,"Hay una operaciÃ³n activa. Cerrar interrumpe la conexiÃ³n; no se repetirÃ¡.","Cerrar Suite",JOptionPane.OK_CANCEL_OPTION)==JOptionPane.OK_OPTION) {
-                controller.close();dispose()
+                controller.close();bridgePanel?.close();dispose()
             }
         } })
         initialFiles.filter(Files::isRegularFile).forEach(files::addElement)
@@ -153,6 +156,7 @@ class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite Â
         } catch(_: Exception) { pin.fill('\u0000');setBusy(false);status.text="No se pudo preparar el lote." }
     }
     private fun setBusy(value: Boolean) {
+        bridgePanel?.setSuiteActive(connected || value)
         busy=value;mutableControls.forEach { it.isEnabled=!value };canvas.interactive=!value
         connect.isEnabled=!connected && !value;disconnect.isEnabled=connected || value;sign.isEnabled=connected && !value && !files.isEmpty
         tsa.isEnabled=!value && mode.selectedIndex!=2

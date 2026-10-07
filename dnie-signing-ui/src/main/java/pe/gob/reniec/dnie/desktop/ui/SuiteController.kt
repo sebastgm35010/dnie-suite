@@ -1,6 +1,7 @@
 package pe.gob.reniec.dnie.desktop.ui
 
 import java.nio.file.Path
+import pe.gob.reniec.dnie.desktop.orchestration.*
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicLong
 import javax.swing.SwingUtilities
@@ -11,11 +12,12 @@ import pe.gob.reniec.dnie.pdf.desktop.DesktopPdfPreview
 import pe.gob.reniec.dnie.signing.link.SuiteCardUnavailableException
 
 /** Schedules use cases off EDT. No PDF commands, APDU, TLS or signing logic in Swing views. */
-class SuiteController : AutoCloseable {
+class SuiteController(private val product: DesktopProductCoordinator = DesktopIntegration.coordinator()) : AutoCloseable {
     private val jobs=Executors.newSingleThreadExecutor { Thread(it,"suite-ui-jobs") }
     private val previews=Executors.newSingleThreadExecutor { Thread(it,"suite-ui-preview") }
     private val generation=AtomicLong()
     private val connections=AtomicLong()
+    @Volatile private var permit: AutoCloseable?=null
     @Volatile private var session: DesktopSuiteSession?=null
     @Volatile private var closed=false
     private fun ui(action: ()->Unit) { SwingUtilities.invokeLater { if(!closed) action() } }
@@ -24,10 +26,15 @@ class SuiteController : AutoCloseable {
         val version=connections.incrementAndGet()
         val own=DesktopSuiteSession(); session=own
         jobs.submit {
+            var acquired: AutoCloseable?=null
             try {
+                acquired=product.acquirePrivateSuite()
+                if(closed || version!=connections.get()) { acquired.close();return@submit }
+                permit=acquired
                 runBlocking { own.connect(pc,phone,workspace,identity) { info -> ui { if(version==connections.get()) pairing(info) } } }
                 ui { if(version==connections.get()) done(true,"PC y Android conectados. Mantén el DNI disponible al firmar.") }
-            } catch(e: Exception) { own.close(); ui { if(version==connections.get()) done(false,"No se pudo conectar (${e.javaClass.simpleName}). Revisa Android, IP y emparejamiento.") } }
+            } catch(e: Exception) { own.close();acquired?.close();if(permit===acquired)permit=null
+                ui { if(version==connections.get()) done(false,if(e is ProductModeConflict) e.message ?: "Modo ocupado." else "No se pudo conectar (${e.javaClass.simpleName}). Revisa Android, IP y emparejamiento.") } }
         }
     }
     fun sign(request: DesktopSigningRequest,pin: CharArray,done: (DesktopSigningResult?,String)->Unit) {
@@ -37,7 +44,7 @@ class SuiteController : AutoCloseable {
                 ui { done(result, "Completos: ${result.documents.count { it.signature!=null }} / ${result.documents.size}. No se repiten firmas automáticamente.") }
             } catch(e: SuiteCardUnavailableException) {
                 ui { done(null,"DNI no disponible; no empezó la firma. Acércalo y envía una solicitud nueva.") }
-            } catch(e: Exception) { session?.close(); ui { done(null,"Operación interrumpida (${e.javaClass.simpleName}). Revisa resultados antes de reconectar.") } }
+            } catch(e: Exception) { session?.close();permit?.close();permit=null; ui { done(null,"Operación interrumpida (${e.javaClass.simpleName}). Revisa resultados antes de reconectar.") } }
             finally { pin.fill('\u0000') }
         }
     }
@@ -49,6 +56,6 @@ class SuiteController : AutoCloseable {
         }
     }
     fun invalidatePreview() { generation.incrementAndGet() }
-    fun disconnect() { connections.incrementAndGet();session?.close(); session=null }
+    fun disconnect() { connections.incrementAndGet();session?.close(); session=null;permit?.close();permit=null }
     override fun close() { closed=true;generation.incrementAndGet();disconnect();jobs.shutdownNow();previews.shutdownNow() }
 }
