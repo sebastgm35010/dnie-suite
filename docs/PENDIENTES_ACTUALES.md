@@ -17,7 +17,7 @@ Actualizado 2026-10-06 tras reinicio y corrección USB. Este listado sustituye l
 
 - USB P0: identificado `UsbDk_StartRedirect` en `usb_redirect_initial`. Implementado aislamiento en auxiliar, Job Object, cancelación acotada y cuarentena si no termina. Reconectar el cable liberó el auxiliar físico. Usuario confirma funcionamiento/firma; continúa pendiente eliminar el bloqueo nativo y validar ciclos/artefactos. Ver AISLAMIENTO_USB_USBDK.md; una firma no acredita estabilidad en reconexión.
 
-- Escalabilidad: evaluación de API propia/PKCS#11 portable, KSP/CSP, UMDF, CCID, UDE/USB-IP y RDP en VIABILIDAD_DISTRIBUCION_SIN_CONTROLADOR.md. Próximo candidato: prueba de firma por LAN TLS desde usuario normal sin lector propio/UsbDk en una máquina limpia. Es una propuesta, no implementación ni autorización para cambiar el driver actual.
+- Escalabilidad: conservar el lector funcional y simplificar su instalación. El usuario prioriza una suite propia de firma sobre la propuesta portable LAN. Revisión y secuencia de extracción en [núcleo de firma](architecture/NUCLEO_FIRMA_SUITE_PROPIA.md): contratos JVM neutrales, casos de uso compartidos, consolidación Android y adaptador PDF/PCSC de escritorio. No se cambió el driver ni el motor durante la revisión. Las alternativas anteriores siguen documentadas en VIABILIDAD_DISTRIBUCION_SIN_CONTROLADOR.md.
 
 | Trabajo | Pendiente concreto |
 | --- | --- |
