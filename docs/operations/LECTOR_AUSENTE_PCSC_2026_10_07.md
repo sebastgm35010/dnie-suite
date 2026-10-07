@@ -9,3 +9,7 @@ No se reinstaló el minidriver ni se modificaron Hello, CertPropSvc, SCardSvr, f
 Pendiente: reinicio manual, comprobar primero enumeración PC/SC con `tools/host-diagnostics/pcsc-presence.ps1`, después abrir una nueva sesión NFC y validar presencia/lectura/firma. Si no vuelve el lector, capturar arranque/reconocimiento de su interfaz por SCardSvr antes de reinstalar. La compatibilidad abierta sigue en el código; H1a de suite no sustituyó este puente ni se desplegó en Windows.
 
 Deuda de observabilidad: diferenciar lector privado accesible, lector enumerado por PC/SC y tarjeta presente para clientes. Evitar presentar CardPresent del backend como garantía de compatibilidad. Evidencia operativa local: `D:/DNIeToolchain/Diagnostics/reader-enumeration/restart-result.txt`.
+
+Actualización 2026-10-07: el usuario confirma que volvió a funcionar después del reinicio. Recuperación confirmada por el usuario; no demuestra causa raíz ni que sea un incidente aislado. Mantener pendiente captura de enumeración al arranque y correlación PnP/UMDF/SCardSvr si vuelve a ocurrir. No reinstalar componentes preventivamente ni atribuirlo al canal privado H1a sin evidencia.
+
+Consulta posterior de solo lectura: último arranque Windows 2026-10-07 09:35:10 America/Bogota; `SCardListReaders` vuelve a enumerar `DNIe Bridge Android NFC Private Reader 0`, junto al lector legado y Windows Hello. En esa instantánea el lector propio no tenía tarjeta presente. Esto acredita recuperación de enumeración, no una firma nueva.

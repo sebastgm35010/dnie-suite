@@ -6,6 +6,7 @@ Actualizado 2026-10-07 tras validación física del motor compartido de firma. E
 
 | Prioridad | Trabajo | Estado / criterio de cierre |
 | --- | --- | --- |
+| P1 | Causa de lector ausente de PC/SC pese a backend conectado | Usuario confirma recuperación tras reiniciar. Falta determinar causa y reproducibilidad: capturar enumeración/arranque PnP, UMDF y SCardSvr si se repite, distinguiendo estado privado del backend y visibilidad real. No reinstalar minidriver sin evidencia. [Diagnóstico](operations/LECTOR_AUSENTE_PCSC_2026_10_07.md). |
 | P1 | Canal privado de suite propia, sin PC/SC | H0 CLI y H1a contrato/endpoint/cliente/streams implementados con simulación. Sigue autenticación propia de usuario y transporte, aprobación Android/PIN local y primera firma CMS real sin publicar lector. Después lotes/PDF. No compartir SSC con puente activo ni ampliar servicio SYSTEM. [Contexto de suite](suite/CONTEXTO_SUITE_FIRMA.md). |
 | P1 | Ampliar regresión física de lotes Android rc5 | Lote físico de cuatro archivos y ZIP verificados: dos PDF, dos CMS y una firma PDF anterior conservada; mismo certificado instalado Windows. Una entrada de PIN, una apertura PACE, 3.721 s, sin fallas. Pendientes: lotes mayores, interrupción/cancelación física y perfilado de frames lentos. Ver MOTOR_FIRMA_LOTES_RC5.md. |
 | P0 | Arranque real después del reinicio | Comprobar servicio automático y lector PnP, sin host/red hasta pulsar Iniciar. Abrir dos veces el gestor y comprobar una ventana; iniciar/parar sin UAC. No asumir que la prueba previa de SCM acredita un reinicio real. |
