@@ -21,7 +21,9 @@ object ContinuousSuiteCommand {
         require(java.net.NetworkInterface.getByInetAddress(java.net.InetAddress.getByName(pc)) != null)
         val workspace = Path.of(args[6]).toAbsolutePath()
         val console: Console = System.console() ?: error("Use an interactive terminal; PIN is never read from redirected input")
-        SuitePcIdentity.open(Path.of(args[8]).toAbsolutePath(), pc).use { identity ->
+        val identityPath = Path.of(args[8]).toAbsolutePath()
+        val firstEnrollment = !Files.exists(identityPath)
+        SuitePcIdentity.open(identityPath, pc).use { identity ->
             Files.createDirectories(workspace)
             val export = workspace.resolve("suite-emparejamiento.txt")
             Files.deleteIfExists(export)
@@ -29,6 +31,9 @@ object ContinuousSuiteCommand {
             Files.writeString(export, identity.pairing.encode())
             output.println("Emparejamiento permanente TXT/QR: $export")
             output.println("Huella TLS: ${identity.pairing.fingerprintText()}")
+            if (firstEnrollment) {
+                if (!SuitePairingPresenter.openQr(export)) output.println("No se pudo abrir QR automaticamente; puedes importar el TXT.")
+            } else output.println("PC ya recordada. No necesitas un QR nuevo; usa Conectar PC guardada en Android.")
             output.println("En Android, recuerda esta PC y abre Suite continua. En conexiones posteriores usa Conectar PC guardada.")
             identity.pairing.provision().use { provision ->
                 val transport = ReverseTlsExchange(phone, provision, identity.tls, continuous = true)
@@ -65,6 +70,8 @@ object ContinuousSuiteCommand {
                                 output.println("Resultados: ${result.directory}")
                                 output.println("Completos: ${result.documents.count { it.signature != null }} / ${result.documents.size}")
                                 if (!result.complete) output.println("Lote incompleto: no se repite. Revisa resultados antes de iniciar otro.")
+                            } catch (_: SuiteCardUnavailableException) {
+                                output.println("DNI no disponible. No se inició ninguna firma; Suite sigue conectada. Acerca el DNI y envía una solicitud nueva.")
                             } finally { pin.fill('\u0000') }
                         }
                     }

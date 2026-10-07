@@ -40,3 +40,25 @@ Pruebas sintéticas H2: dos trabajos sucesivos y dos CMS por la misma conexión 
 
 
 Validación final del incremento: build offline satisfactorio, 113 pruebas sin fallos/omisiones (21 link, 15 desktop, 10 signing-core, 67 app), distribución JVM y APK compilados. APK 55 instalado por ADB; SHA256 `760F6BFAD4174B04782212216D961ACAD7FF6441F1BC5F1E6BF44D650A07CDD6`. Ruta: `D:/DNIeToolchain/AndroidPackages/dnie-evolution-2.0.0-rc7-continuous-suite-debug.apk`. Log técnico: `D:/DNIeToolchain/Temp/suite-continuous-final-build.log`. Sin artefactos privados en Git. La prueba física de sesión continua sigue pendiente.
+
+
+## Evidencia física H2 — 2026-10-07
+
+Usuario ejecutó APK 55 y CLI `suite`, emparejó mediante TXT e introdujo PIN en Windows. Dentro de la misma conexión, primer trabajo `1c8b4261-4718-40c8-b87e-6ec7f8ed5ee3` terminó INTERRUPTED (0/1, `Private signing session ended`), sin firma publicada. Segundo trabajo explícito `e14af241-7f9d-4022-ba05-a4299dcbf33b` terminó SIGNED (1/1 CMS sobre PPTX), backend PRIVATE_ANDROID. .NET SignedCms confirmó integridad, coincidencia de certificado con el trabajo y rechazo al alterar el original; certificado coincide con el DNI previamente verificado. Revocación no comprobada. Evidencia privada en `D:/DNIeToolchain/SuiteContinuousJobs/<UUID>/`, fuera de Git. No abrir/copiar el contenido del documento para diagnosticar.
+
+El registro del primer trabajo no identifica fase física ni causa: no atribuirlo automáticamente a PIN/NFC/CAN. Añadir diagnóstico de fase sin secretos y distinguir conexión PC de conexión DNI. Reconexión posterior sin QR y dos trabajos físicos exitosos seguidos aún pendientes de evidencia.
+
+## Resiliencia NFC y presencia — APK 56 / rc8-suite-nfc
+
+Estado de conexión PC↔Android independiente de `SuiteCardState`: sin NFC, detectado (IsoDep conectado, PACE aún pendiente), preparando PACE, en uso, listo, retirado o fallido. El adaptador abre IsoDep en IO al descubrir tag; una factoría tardía se descarta si Suite fue cerrada. Monitor cada 750 ms consulta conexión nativa, sin APDU, reset, VERIFY ni modificar SSC; no interviene mientras hay operación activa. La API nativa puede demorar en informar una retirada: el estado es el último observado, no una garantía de próxima operación.
+
+Si la tarjeta desaparece en reposo, descartar solo NFC/PACE, conservar TLS e identidad y esperar una nueva aproximación. `acquire` vuelve a esperar si el tag previo ya no está conectado; nunca prestar el transceptor obsoleto a un nuevo trabajo. Si se pierde durante una operación, detener lote y descartar tarjeta, conservar resultados y admitir otro trabajo explícito tras nuevo tag; no repetir operación ambigua.
+
+BEGIN sin tarjeta espera hasta dos minutos; vencimiento devuelve `NOT_READY`, borra PIN y conserva TLS para otra solicitud explícita. Windows informa que no inició ninguna firma. La nueva distribución JVM y APK 56 deben usarse juntos para esta respuesta nueva. Terminar un lote libera presupuesto/PIN y conserva sesión física solo si sigue conectada.
+
+Diagnóstico móvil persistente añade únicamente `card_state`, `job_requested` (cantidad), `operation_result` (OPEN/AUTHORIZE/CERTIFICATE/SIGN_SHA256 y status) y `nfc_connect_failed`; no guarda PIN/CAN/APDU ni nombres/contenido de documentos. UI conserva el mensaje de fase fallida al terminar el lote.
+
+Primer enrolamiento PC nuevo intenta abrir QR automáticamente mediante helper empaquetado en la distribución; si QRCoder no está disponible admite TXT. Identidad PC existente no abre QR repetidamente: usar Conectar PC guardada; el helper manual sigue disponible para reimportar tras Olvidar PC. No requiere elevación ni inicia servicio del puente.
+
+
+Validación rc8: 116 pruebas pasan sin fallos (23 link, 16 desktop, 10 core, 67 app). Nuevas pruebas: retirada en reposo visible y adquisición pendiente que espera nuevo tag, pérdida de respuesta después de firmar sin repetir operación, timeout sin DNI seguido por otro trabajo dentro del mismo TLS. Distribución JVM actualizada y helper QR incluido. APK 56 compilado e instalado por ADB, SHA256 `75F78B5F87E4CF515D5397A3CC450369AC8545B309AA4D9D3964E6D479462897`; artefacto `D:/DNIeToolchain/AndroidPackages/dnie-evolution-2.0.0-rc8-suite-nfc-debug.apk`, log `D:/DNIeToolchain/Temp/suite-nfc-validation.log`. Retirada/reaproximación física con estados rc8 aún pendiente. Para probar: mismo comando CLI, Conectar PC guardada, acercar/retirar DNI antes de enviar trabajo y confirmar que PC permanece conectada mientras cambia estado DNI.

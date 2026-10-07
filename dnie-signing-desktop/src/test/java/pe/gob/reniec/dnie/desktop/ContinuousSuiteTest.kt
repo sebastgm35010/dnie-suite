@@ -111,4 +111,32 @@ class ContinuousSuiteTest {
             assertTrue(runCatching { WindowsPrivateStore().unprotect(damaged) }.isFailure)
         } finally { Files.deleteIfExists(path); Files.deleteIfExists(root) }
     }
+    @Test fun absentCardTimeoutKeepsSameTlsForNextExplicitJob() = runBlocking<Unit> {
+        val ip = address(); val port = ServerSocket(0).use { it.localPort }
+        val identity = JobTlsIdentity(); val pair = SuitePairing(UUID.randomUUID(), ip, identity.fingerprint, ByteArray(32))
+        val provision = pair.provision(); val phone = PhoneSigningTransport(provision, port, continuous = true)
+        val pc = ReverseTlsExchange(ip, provision, identity, port, continuous = true)
+        val slot = SuiteCardSlot(); val card = SimulatedSigningCard()
+        val executor = Executors.newSingleThreadExecutor()
+        val worker = executor.submit { runBlocking {
+            ContinuousSigningConnection(phone.accept(), slot::acquire, slot::invalidate,
+                finishJob = slot::finishJob, cardWaitMillis = 75).run()
+        } }
+        try {
+            ContinuousSigningClient(pc.openChannel()).use { client ->
+                val absent = UUID.randomUUID()
+                val missing = runCatching { client.begin(absent, 1, "0000".toCharArray()) }.exceptionOrNull()
+                assertTrue(missing is SuiteCardUnavailableException)
+                assertEquals(0, card.verifications); assertEquals(0, card.signatures)
+                assertTrue(slot.offer { card to { true } })
+                val next = UUID.randomUUID(); val signer = PrivateSigningCard(next, client.begin(next, 1, "0000".toCharArray()))
+                signer.selectPkiApplet().getOrThrow(); signer.verifyPin("").getOrThrow()
+                signer.readCertificate(pe.gob.reniec.dnie.domain.model.CertificateType.SIGNATURE).getOrThrow()
+                signer.signSha256Hash(ByteArray(32)).getOrThrow(); signer.close()
+                assertEquals(1, card.signatures)
+            }
+            worker.get(10, TimeUnit.SECONDS)
+        } finally { pc.close(); phone.close(); slot.close(); provision.close(); pair.close(); executor.shutdownNow() }
+    }
+
 }

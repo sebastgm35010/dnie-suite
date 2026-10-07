@@ -21,7 +21,9 @@ class RemoteSigningAndroidAdapter(private val context: Context) {
         output.toString("UTF-8")
     }
     fun continuousCard(tag: Tag, can: String): Pair<pe.gob.reniec.dnie.core.nfc.DnieTransceiverInterface, () -> Boolean> {
-        val channel = IsoDepCardChannel.fromTag(tag) ?: error("Not an ISO DEP card")
+        val iso = android.nfc.tech.IsoDep.get(tag) ?: error("Not an ISO DEP card")
+        try { iso.connect() } catch (failure: Exception) { runCatching { iso.close() }; throw failure }
+        val channel = IsoDepCardChannel(iso)
         return DnieTransceiver(channel, logger = ApduLogger(enabled = false), can = can) to channel::isConnected
     }
     fun card(tag: Tag, can: String): DnieTransceiver? = IsoDepCardChannel.fromTag(tag)?.let {

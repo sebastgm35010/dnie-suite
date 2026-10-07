@@ -3,7 +3,7 @@ package pe.gob.reniec.dnie.signing.link
 import java.io.*
 import java.util.UUID
 
-enum class SuitePacketKind { BEGIN, READY, FRAME, REPLY, END, ENDED }
+enum class SuitePacketKind { BEGIN, READY, FRAME, REPLY, END, ENDED, NOT_READY }
 class SuitePacket(val kind: SuitePacketKind, val bytes: ByteArray = byteArrayOf()) {
     override fun toString() = "SuitePacket($kind)"
 }

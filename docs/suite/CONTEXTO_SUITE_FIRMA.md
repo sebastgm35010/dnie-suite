@@ -2,7 +2,7 @@
 
 Actualizado: 2026-10-07, America/Bogota. Este archivo es la entrada de contexto para el nuevo extremo documental Windows. Diferenciar motor probado, simulación de escritorio y conexión real al DNI.
 
-H2 implementado: confianza persistente DPAPI/Keystore, canal continuo y PIN desde Windows por trabajo; APK 55 instalado, 113 pruebas pasan. Implementación y ensayos sintéticos en [SESION_CONTINUA_H2.md](SESION_CONTINUA_H2.md). Evidencia física H2 aún pendiente; H1b comprobado se conserva.
+H2 implementado: confianza persistente DPAPI/Keystore, canal continuo y PIN desde Windows por trabajo; APK 55 instalado, 113 pruebas pasan. Implementación y ensayos sintéticos en [SESION_CONTINUA_H2.md](SESION_CONTINUA_H2.md). H2 físico confirmado: 1/1 CMS válido tras un trabajo interrumpido dentro de la misma conexión; causa del primer fallo desconocida. APK 56 instalado añade presencia NFC y recuperación, 116 pruebas pasan; pendiente de ensayo físico rc8. H1b comprobado se conserva.
 
 Estado más reciente: **H1b implementado**: comando `remote`, TLS inverso autenticado, solicitud de un trabajo con huella/token, pantalla Android Certificados → Suite y autorización/PIN local/NFC. APK 54 / `2.0.0-rc6-remote-signing`; primera firma física LAN completada: 1/1 CMS con DNI y verificación independiente .NET, certificado coincidente con el previamente validado y rechazo al alterar contenido. Revocación no comprobada. [Procedimiento y límites](FIRMA_REMOTA_H1B.md).
 

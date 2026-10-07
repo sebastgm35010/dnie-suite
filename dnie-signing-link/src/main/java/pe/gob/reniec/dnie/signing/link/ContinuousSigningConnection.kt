@@ -15,7 +15,11 @@ class ContinuousSigningConnection(private val channel: SigningDuplex,
     private val onJob: (Int) -> Unit = {},
     private val onStatus: (SigningStatus) -> Unit = {},
     private val onIdle: () -> Unit = {},
-    private val finishJob: () -> Unit = {}) : AutoCloseable {
+    private val finishJob: () -> Unit = {},
+    private val onOperation: (SigningOperation, SigningStatus) -> Unit = { _, _ -> },
+    private val cardWaitMillis: Long = 120_000,
+    private val onUnavailable: () -> Unit = {}) : AutoCloseable {
+    init { require(cardWaitMillis in 1..120_000) }
     private val closed = AtomicBoolean()
     private val used = AtomicBoolean()
     @Volatile private var endpoint: AuthorizedSigningEndpoint? = null
@@ -27,10 +31,15 @@ class ContinuousSigningConnection(private val channel: SigningDuplex,
                 val begin = SuitePackets.read(channel.input) ?: break
                 check(endpoint == null)
                 val job = try { SuitePackets.job(begin) } finally { begin.bytes.fill(0) }
-                job.use {
-                    check(seen.size < 4096 && seen.add(job.id)) // Connection rotates before unbounded history.
-                    onJob(job.count)
-                    endpoint = AuthorizedSigningEndpoint(job.id, kotlinx.coroutines.withTimeout(120_000) { acquireCard() }, job.pin, job.count)
+                try {
+                    job.use {
+                        check(seen.size < 4096 && seen.add(job.id))
+                        onJob(job.count)
+                        endpoint = AuthorizedSigningEndpoint(job.id, kotlinx.coroutines.withTimeout(cardWaitMillis) { acquireCard() }, job.pin, job.count)
+                    }
+                } catch (_: kotlinx.coroutines.TimeoutCancellationException) {
+                    SuitePackets.write(channel.output, SuitePacket(SuitePacketKind.NOT_READY))
+                    onIdle(); onUnavailable(); continue // No card/PIN/signature operation was started.
                 }
                 SuitePackets.write(channel.output, SuitePacket(SuitePacketKind.READY))
                 var failed = false
@@ -45,6 +54,7 @@ class ContinuousSigningConnection(private val channel: SigningDuplex,
                     check(!failed && packet.kind == SuitePacketKind.FRAME)
                     val response = endpoint!!.process(SuitePackets.frame(packet))
                     onStatus(response.status)
+                    onOperation(response.operation, response.status)
                     SuitePackets.write(channel.output, SuitePackets.frame(SuitePacketKind.REPLY, response))
                     if (response.status != SigningStatus.OK || response.operation == SigningOperation.CLOSE) {
                         failed = true
@@ -56,10 +66,12 @@ class ContinuousSigningConnection(private val channel: SigningDuplex,
     }
     override fun close() {
         if (closed.compareAndSet(false, true)) {
-            channel.close(); endpoint?.close(); endpoint = null; invalidateCard()
+            try { channel.close() } finally { endpoint?.close(); endpoint = null; invalidateCard() }
         }
     }
 }
+
+class SuiteCardUnavailableException : IllegalStateException("DNI not available; no signature started")
 
 /** One job borrows the channel. Ending it does not end TLS; a transport failure does. */
 class ContinuousSigningClient(private val channel: SigningDuplex) : AutoCloseable {
@@ -72,9 +84,13 @@ class ContinuousSigningClient(private val channel: SigningDuplex) : AutoCloseabl
         try {
             try { SuitePackets.write(channel.output, packet) } finally { packet.bytes.fill(0) }
             val ready = SuitePackets.read(channel.input) ?: error("Peer closed")
+            if (ready.kind == SuitePacketKind.NOT_READY) {
+                require(ready.bytes.isEmpty()); throw SuiteCardUnavailableException()
+            }
             require(ready.kind == SuitePacketKind.READY && ready.bytes.isEmpty())
             active = true
-        } catch (e: Exception) { close(); throw e } finally { packet.bytes.fill(0) }
+        } catch (e: SuiteCardUnavailableException) { throw e }
+        catch (e: Exception) { close(); throw e } finally { packet.bytes.fill(0) }
         object : SigningExchange {
             private var ended = false
             override suspend fun exchange(request: SigningFrame): SigningFrame = withContext(Dispatchers.IO) {

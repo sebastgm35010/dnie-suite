@@ -23,3 +23,7 @@ tasks.test {
     doFirst { temporary.get().asFile.mkdirs() }
     systemProperty("java.io.tmpdir", temporary.get().asFile.absolutePath)
 }
+
+
+// Optional pairing UI helper shipped with the user-mode distribution; no service installer.
+distributions { main { contents { from("tools/make-pairing-qr.ps1") { into("tools") } } } }

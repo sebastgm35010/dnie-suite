@@ -14,7 +14,7 @@ import pe.gob.reniec.dnie.diagnostics.DiagnosticLog
 import pe.gob.reniec.dnie.signing.link.*
 
 data class RemoteSigningState(val can: String = "", val pc: String = "", val fingerprint: String = "",
-    val count: Int = 0, val continuous: Boolean = false, val connected: Boolean = false, val remembered: Boolean = false, val busy: Boolean = false, val armed: Boolean = false,
+    val cardState: SuiteCardState = SuiteCardState.ABSENT, val count: Int = 0, val continuous: Boolean = false, val connected: Boolean = false, val remembered: Boolean = false, val busy: Boolean = false, val armed: Boolean = false,
     val message: String = "Importa la solicitud de la suite PC. El puente para ReFirma sigue siendo independiente.")
 
 /** Owns one foreground job. Socket/card/PIN never enter Compose state or another ViewModel. */
@@ -25,6 +25,8 @@ class RemoteSigningViewModel(application: Application) : AndroidViewModel(applic
     private val trust = pe.gob.reniec.dnie.data.suite.SuiteTrustStorage(application)
     private var pairing: SuitePairing? = null
     @Volatile private var continuousConnection: ContinuousSigningConnection? = null
+    private var presenceTask: Job? = null
+    private var cardStateTask: Job? = null
     @Volatile private var slot: SuiteCardSlot? = null
     init {
         viewModelScope.launch {
@@ -54,11 +56,34 @@ class RemoteSigningViewModel(application: Application) : AndroidViewModel(applic
                 channel = stream
                 mutable.update { it.copy(busy = false, connected = true, armed = true, remembered = true,
                     message = "Suite conectada. Puedes acercar el DNI; envía archivos y PIN desde Windows.") }
+                cardStateTask = viewModelScope.launch {
+                    cardSlot.state.collect { state -> if (generation == epoch) {
+                        mutable.update { it.copy(cardState = state) }
+                        DiagnosticLog.event("suite", "card_state", "state" to state.name)
+                    } }
+                }
+                presenceTask = viewModelScope.launch {
+                    while (isActive && generation == epoch) {
+                        withContext(Dispatchers.IO) { cardSlot.pollPresence() }
+                        delay(750)
+                    }
+                }
                 var jobFailed = false
                 val session = ContinuousSigningConnection(stream, cardSlot::acquire, cardSlot::invalidate,
-                    onJob = { count -> jobFailed = false; if (generation == epoch) mutable.update { it.copy(count = count, busy = true, message = "Windows solicitó $count firma(s). Mantén el DNI junto al teléfono.") } },
+                    onJob = { count -> jobFailed = false; DiagnosticLog.event("suite", "job_requested", "count" to count); if (generation == epoch) mutable.update { it.copy(count = count, busy = true, message = "Windows solicitó $count firma(s). Si no hay DNI conectado, acércalo; luego mantenlo junto al teléfono.") } },
                     onStatus = { status -> if (status != SigningStatus.OK) jobFailed = true; if (generation == epoch && status != SigningStatus.OK) mutable.update { it.copy(message = "El lote fue rechazado o interrumpido. No se reintenta. Revisa Windows y vuelve a presentar el DNI.") } },
-                    onIdle = { if (generation == epoch) mutable.update { it.copy(busy = false, count = 0, message = if (jobFailed) "Lote incompleto. Revisa Windows y vuelve a presentar el DNI para una solicitud nueva." else "Lote terminado. Suite permanece conectada para la siguiente solicitud desde Windows.") } }, finishJob = cardSlot::finishJob)
+                    onIdle = { if (generation == epoch) mutable.update { it.copy(busy = false, count = 0, message = if (jobFailed) it.message else "Lote terminado. Suite permanece conectada para la siguiente solicitud desde Windows.") } }, finishJob = cardSlot::finishJob,
+                    onOperation = { operation, result ->
+                        DiagnosticLog.event("suite", "operation_result", "operation" to operation.name, "status" to result.name)
+                        if (generation == epoch && result != SigningStatus.OK) mutable.update { it.copy(message = when {
+                            result == SigningStatus.INVALID_PIN -> "PIN rechazado. Lote detenido sin reintentar; Suite permanece conectada."
+                            result == SigningStatus.BLOCKED -> "El DNI informa PIN bloqueado. No se realizan más intentos."
+                            operation == SigningOperation.OPEN -> "Falló la apertura NFC/PACE. Retira y acerca el DNI; revisa el lote incompleto en Windows."
+                            operation == SigningOperation.SIGN_SHA256 -> "Respuesta de firma fallida. Conserva los resultados de Windows; no se repite la operación."
+                            else -> "La sesión del DNI falló en ${operation.name}. Suite permanece conectada; revisa Windows antes de enviar otro lote."
+                        }) }
+                    },
+                    onUnavailable = { if (generation == epoch) mutable.update { it.copy(message = "No se presentó un DNI conectado a tiempo. No se inició ninguna firma y Suite sigue conectada.") } })
                 continuousConnection = session
                 withContext(Dispatchers.IO) { session.run() }
             } catch (_: TimeoutCancellationException) {
@@ -135,7 +160,16 @@ class RemoteSigningViewModel(application: Application) : AndroidViewModel(applic
     }
     fun tag(tag: Tag) {
         if (mutable.value.continuous && mutable.value.connected) {
-            runCatching { slot?.offer { adapter.continuousCard(tag, mutable.value.can) } }
+            val generation = epoch
+            val current = slot ?: return
+            val can = mutable.value.can
+            viewModelScope.launch {
+                val outcome = withContext(Dispatchers.IO) { runCatching { current.offer { adapter.continuousCard(tag, can) } } }
+                if (generation == epoch && outcome.isFailure) {
+                    DiagnosticLog.event("suite", "nfc_connect_failed")
+                    mutable.update { it.copy(message = "No se pudo estabilizar la conexión NFC. Retira y vuelve a acercar el DNI; Suite sigue conectada.") }
+                }
+            }
             return
         }
         if (!mutable.value.armed || mutable.value.busy) return
@@ -169,6 +203,9 @@ class RemoteSigningViewModel(application: Application) : AndroidViewModel(applic
         }
     }
     private fun release() {
+        presenceTask?.cancel(); presenceTask = null
+        cardStateTask?.cancel(); cardStateTask = null
+        mutable.update { it.copy(cardState = SuiteCardState.ABSENT) }
         continuousConnection?.close(); continuousConnection = null
         slot?.close(); slot = null
         transport?.close(); transport = null

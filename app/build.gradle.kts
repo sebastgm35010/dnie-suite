@@ -12,8 +12,8 @@ android {
         applicationId = "pe.gob.reniec.dnie.evolution"
         minSdk = 24
         targetSdk = 34
-        versionCode = 55
-        versionName = "2.0.0-rc7-continuous-suite"
+        versionCode = 56
+        versionName = "2.0.0-rc8-suite-nfc"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
