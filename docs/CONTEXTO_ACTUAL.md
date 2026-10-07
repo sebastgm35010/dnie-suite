@@ -1,5 +1,7 @@
 # Estado vigente · corrección USB tras reinicio
 
+Actualización posterior: Windows aísla el motor USB en un auxiliar con Job Object, cancelación y límite exclusivo para llamadas nativas de preparación. Se identificó bloqueo físico en `UsbDk_StartRedirect` antes de AOA/PACE; reconectar liberó el auxiliar. Registro y límites en [aislamiento USB](architecture/AISLAMIENTO_USB_USBDK.md). Android sigue en 52. USB todavía necesita validación TLS y firma; no declarar transporte estable por tener aislamiento.
+
 Actualización 2026-10-06: Android `2.0.0-rc4-usb` (52) instalado y gestor/servicio Windows Release actualizado. Tailscale y LAN parecen funcionar según el usuario; no se documenta una nueva firma de regresión. Se corrigió el registro Android de accesorio AOA, el permiso USB y la espera/estado Windows. Prueba física sin DNI: host llegó a `usb_waiting_android` y Android ofreció abrir DNIe Evolución, confirmado por el usuario. Falta la conexión TLS y firma por USB. Detalles y pruebas en [corrección USB AOA](architecture/CORRECCION_USB_AOA_RC4.md). El host se detuvo tras la prueba, sin tarjeta publicada; servicio permanece activo. Distribuciones/evidencia en `D:/DNIeToolchain/Checkpoints/usb-aoa-rc4`.
 
 ## Registro previo conservado: antes del reinicio

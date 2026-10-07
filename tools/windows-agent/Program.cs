@@ -3,6 +3,21 @@ using DniBridge.Control;
 using DniBridge.Agent;
 
 if(!OperatingSystem.IsWindows())throw new PlatformNotSupportedException();
+if(args.Length==2 && args[0]=="--usb-worker") {
+    var profile=new ConnectionProfile("USB","",args[1]);ControlRules.Validate(profile);
+    string root=Path.GetFullPath(Path.Combine(AppContext.BaseDirectory,"..",".."));
+    using var stop=new CancellationTokenSource();
+    // No secrets in arguments or stdout. The same protected identity is read locally.
+    _=Task.Run(async()=>{await Console.In.ReadLineAsync();stop.Cancel();});
+    try {
+        await new BridgeHostRuntime(Path.Combine(root,"state","identity")).RunLocalAsync(profile,phase=> {
+            if(UsbWorkerProcess.SafePhase(phase) is { } name)Console.WriteLine(name);
+        },stop.Token);
+    } catch(OperationCanceledException) when(stop.IsCancellationRequested) { }
+    catch(IOException) when(stop.IsCancellationRequested) { }
+    catch(Exception) {Environment.ExitCode=1;}
+    return;
+}
 // SCM passes no untrusted configuration paths; service config resides beside protected binaries.
 new WindowsServiceLifetime().Run(async stop=> {
     string root=Path.GetFullPath(Path.Combine(AppContext.BaseDirectory,"..",".."));

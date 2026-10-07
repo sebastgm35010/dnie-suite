@@ -15,7 +15,7 @@ Actualizado 2026-10-06 tras reinicio y corrección USB. Este listado sustituye l
 
 ## Seguridad y distribución
 
-- USB P0: segunda apertura atascada en `usb_switching_accessory`, parada agotada (25 s), sin tarjeta. Investigar bloqueo de llamada UsbDk y aislamiento/cancelación; la corrección de descubrimiento Android no cierra este pendiente. Registrar nueva prueba antes de declarar estable el método USB.
+- USB P0: identificado `UsbDk_StartRedirect` en `usb_redirect_initial`. Implementado aislamiento en auxiliar, Job Object, cancelación acotada y cuarentena si no termina. Reconectar el cable liberó el auxiliar físico. Continúa pendiente eliminar el bloqueo nativo y validar ciclos, AOA/TLS y firma. Ver AISLAMIENTO_USB_USBDK.md; aislamiento no equivale a USB estable.
 
 | Trabajo | Pendiente concreto |
 | --- | --- |

@@ -110,7 +110,9 @@ public sealed class BridgeHostRuntime {
             return new(qr,string.Join(":",Enumerable.Range(0,32).Select(i=>pin.Substring(i*2,2))),certificate.NotAfter.ToUniversalTime().ToString("O"));
         }finally{CryptographicOperations.ZeroMemory(token);}
     }
-    public async Task RunAsync(ConnectionProfile profile,Action<string> log,CancellationToken stop) {
+    public Task RunAsync(ConnectionProfile profile,Action<string> log,CancellationToken stop) =>
+        profile.Method=="USB" ? UsbWorkerProcess.RunAsync(UsbWorkerProcess.StartInfo(profile),log,stop) : RunLocalAsync(profile,log,stop);
+    public async Task RunLocalAsync(ConnectionProfile profile,Action<string> log,CancellationToken stop) {
         ControlRules.Validate(profile);
         if(WindowsPcscDevice.Enumerate().Length!=1)throw new IOException("No se encontro un unico lector DNIe Bridge instalado.");
         if(profile.Method=="Tailscale") {

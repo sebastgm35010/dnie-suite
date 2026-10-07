@@ -101,6 +101,13 @@ public sealed partial class MainForm {
             "Running"=>last.Phase switch {
                 "usb_waiting_phone"=>"USB: esperando el teléfono conectado",
                 "usb_switching_accessory"=>"USB: preparando modo accesorio Android",
+                "usb_redirect_initial"=>"USB: tomando control del teléfono",
+                "usb_query_protocol"=>"USB: comprobando protocolo del accesorio",
+                "usb_send_identity"=>"USB: anunciando aplicación Android",
+                "usb_start_accessory"=>"USB: solicitando cambio a accesorio",
+                "usb_release_initial"=>"USB: liberando conexión anterior",
+                "usb_read_configuration"=>"USB: leyendo configuración del accesorio",
+                "usb_redirect_accessory"=>"USB: abriendo conexión con el accesorio",
                 "usb_waiting_accessory"=>"USB: esperando que el teléfono reaparezca",
                 "usb_accessory_open" or "usb_waiting_android"=>"USB: abre DNIe Evolución y autoriza el puente",
                 "usb_retry"=>"USB: reconectando · comprueba el permiso y la app Android",

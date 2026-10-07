@@ -1,9 +1,16 @@
 using DniBridge.Control;
 using System.IO.Pipes;
 using System.Security.Principal;
+using System.Diagnostics;
 [assembly:System.Runtime.Versioning.SupportedOSPlatform("windows")]
 
 int passed=0;
+if(args.Contains("--synthetic-usb-hang")) {
+    Console.WriteLine("host_ready");Console.WriteLine("usb_redirect_initial");
+    Console.WriteLine("pcsc_apdu_requested payload=synthetic-private");
+    Thread.Sleep(Timeout.Infinite);return;
+}
+if(args.Contains("--synthetic-usb-crash")) {Console.WriteLine("host_ready");Environment.ExitCode=2;return;}
 void Check(bool value,string message){if(!value)throw new Exception(message);passed++;}
 var profile=new ConnectionProfile("Tailscale","100.104.106.125","100.68.70.85");
 #if DEBUG
@@ -77,6 +84,28 @@ await using(var cancelledUsb=new HostController(async(_,log,token)=> {
     Check(cancelledUsb.Snapshot.State=="Stopped" && cancelledUsb.Snapshot.Error==null,"Cancelled USB I/O does not become a spurious failure");
 }
 if(OperatingSystem.IsWindows()) {
+    Check(UsbWorkerProcess.SafePhase("pcsc_apdu_received payload=private")==null,"Worker IPC excludes APDU events");
+    Check(UsbWorkerProcess.SafePhase("usb_redirect_initial detail=private")=="usb_redirect_initial","Worker IPC keeps phase only");
+    var info=UsbWorkerProcess.StartInfo(new("USB","","synthetic-serial"));
+    Check(info.ArgumentList.SequenceEqual(new[]{"--usb-worker","synthetic-serial"}),"Worker arguments contain only command and selected device");
+    ProcessStartInfo SyntheticWorker(string mode) {
+        var worker=new ProcessStartInfo("dotnet") {UseShellExecute=false,CreateNoWindow=true,RedirectStandardInput=true,RedirectStandardOutput=true};
+        worker.ArgumentList.Add(typeof(HostController).Assembly.Location.Replace("WindowsControl.dll","WindowsControl.Tests.dll"));worker.ArgumentList.Add(mode);return worker;
+    }
+    using(var cancel=new CancellationTokenSource()) {
+        var ready=new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var phases=new List<string>();
+        var task=UsbWorkerProcess.RunAsync(SyntheticWorker("--synthetic-usb-hang"),phase=>{lock(phases)phases.Add(phase);if(phase=="usb_redirect_initial")ready.TrySetResult();},cancel.Token);
+        await ready.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        var elapsed=Stopwatch.StartNew();cancel.Cancel();
+        try {await task.WaitAsync(TimeSpan.FromSeconds(10));throw new Exception("Worker ignored cancellation");}
+        catch(OperationCanceledException){Check(elapsed.Elapsed<TimeSpan.FromSeconds(9),"A noncooperative USB worker is stopped within a bounded time");}
+        Check(phases.Contains("usb_worker_cancelled") && !phases.Any(p=>p.Contains("apdu")),"Forced worker cleanup records only safe phases");
+    }
+    try {await UsbWorkerProcess.RunAsync(SyntheticWorker("--synthetic-usb-crash"),_=>{},CancellationToken.None);throw new Exception("Worker exit accepted");}
+    catch(IOException){Check(true,"Unexpected USB worker exit is surfaced instead of reporting running");}
+    try {await UsbWorkerProcess.RunAsync(SyntheticWorker("--synthetic-usb-hang"),_=>{},CancellationToken.None,TimeSpan.FromMilliseconds(500));throw new Exception("Driver hang accepted");}
+    catch(IOException failure){Check(failure.Message.Contains("usb_redirect_initial"),"Native driver watchdog names the blocked stage and terminates its worker");}
     string owner=WindowsIdentity.GetCurrent().User!.Value;
     string name="DNIeBridge.Test."+Guid.NewGuid().ToString("N");
     await using var controller=new HostController((_,_,_)=>throw new Exception("No real host in IPC test"),_=>throw new Exception(),()=>[]);
