@@ -69,6 +69,7 @@ object CmsSignatureBuilder {
             "El hash del documento debe tener exactamente 32 bytes (recibido ${documentHash.size})"
         }
 
+        pe.gob.reniec.dnie.validation.CertificateChecks.requireForSigning(signerCertificate)
         val cmsGenerator = CMSSignedDataGenerator()
 
         // Generador de SignedAttributes con atributos obligatorios de PAdES / CAdES

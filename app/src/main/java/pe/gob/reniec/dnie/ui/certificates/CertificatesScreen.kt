@@ -185,6 +185,7 @@ fun CertificatesScreen(
                         val activeCert = state.certificates[state.selectedType]
 
                         if (activeCert != null) {
+                            CertificateValidationPanel(activeCert)
                             Box(modifier = Modifier.padding(16.dp)) {
                                 CertificateCard(
                                     certificate = activeCert,

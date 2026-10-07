@@ -36,3 +36,5 @@ include(":dnie-signing-link")
 include(":dnie-pdf-desktop")
 
 include(":dnie-signing-ui")
+
+include(":dnie-validation-core")

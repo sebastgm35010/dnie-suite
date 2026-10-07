@@ -1,5 +1,7 @@
 # Contexto vigente de la suite propia de firma
 
+2026-10-07 · H8: módulo JVM dnie-validation-core, control local previo a CMS, consulta Android manual OCSP/CRL y rechazo de revocación conocida. 215 pruebas pasan y OCSP real firmado devuelve GOOD con confianza UNKNOWN. APK 59 compilado; UI física pendiente. Confianza TSL, cadena completa y preflight online automático siguen pendientes. [Arquitectura, límites y rutas](VALIDACION_CERTIFICADOS_H8.md).
+
 2026-10-07 · H7: usuario confirma PDF Android 58 VÁLIDO y PAdES_BASELINE_B. Perfil DER sin signingTime y /M UTC trasladado a PDF desktop; 104 pruebas y demo sintético .NET pasan. GUI/CLI nuevas en D:/DNIeToolchain/Builds/pades-baseline-b, distribuciones anteriores preservadas. Pendiente clasificación externa de PDF Windows con DNI, revocación/TSL integradas y TSA. [Estado y rutas](PADES_BASELINE_DESKTOP_H7.md).
 
 2026-10-07 · H6 Android: perfil PAdES explícito sin signingTime CMS, DER y /M UTC; CMS .p7s y Windows conservan perfil previo. 189 pruebas finales pasan, APK 58 compilado y pendiente de instalar (ADB sin dispositivo). Checkpoint previo de código/APK 57 en D:. Siguiente: PDF físico firmado en Android y clasificación Baseline B en validador antes de portar a Windows. [Detalle y evidencia](ANDROID_PADES_BASELINE_H6.md).

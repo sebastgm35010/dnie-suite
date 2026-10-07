@@ -173,4 +173,18 @@ class CmsSignatureBuilderTest {
         } catch (expected: org.bouncycastle.cms.CMSSignerDigestMismatchException) { }
     }
 
+    @Test fun expiredCertificateNeverInvokesCardSigner() {
+        val now = System.currentTimeMillis()
+        val holder = X509v3CertificateBuilder(X500Name("CN=Test Issuer"), BigInteger.TEN,
+            Date(now - 100000), Date(now - 1000), X500Name("CN=Expired Test Holder"),
+            SubjectPublicKeyInfo.getInstance(keyPair.public.encoded)).build(
+                JcaContentSignerBuilder("SHA256withRSA").build(keyPair.private))
+        val expired = JcaX509CertificateConverter().getCertificate(holder)
+        var operations = 0
+        val failure = runCatching { CmsSignatureBuilder.buildDetachedSignature(ByteArray(32),expired,
+            cardSigner = { operations++; simulateDnieCardSigning(it) }) }.exceptionOrNull()
+        assertTrue(failure is IllegalArgumentException)
+        assertEquals(0,operations)
+    }
+
 }
