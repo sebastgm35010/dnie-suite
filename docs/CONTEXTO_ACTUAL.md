@@ -1,5 +1,7 @@
 # Estado vigente · corrección USB tras reinicio
 
+2026-10-07 · Recuperación R2: 23 pruebas ejecutadas sin fallos; incluye límites, errores de almacenamiento/proveedor, cancelación con progreso y concurrencia. Corregido cierre de entrada ante staging inválido y cancelación previa a operación de tarjeta. Android y pruebas físicas pendientes. [Detalle](architecture/PRUEBAS_RECUPERACION_WINDOWS_R2.md).
+
 2026-10-07 · Recuperación R1: módulo JVM aislado y 12 pruebas nuevas Windows superadas; formato actual preservado. No habilitado en APK/Suite. Pendientes Android, cruces, cobertura y CIF hard físico; passkeys no modificadas. [Resultados](architecture/PRUEBAS_RECUPERACION_WINDOWS_R1.md).
 
 2026-10-07 · Investigación de riesgos de recuperación: Cryptomator/Bitwarden distinguen reenvolver y rotar claves; contraseñas anteriores siguen útiles en copias viejas. age prohíbe mezclar su destinatario password con otros. Se recomienda evaluar paquete separado para preservar CIF hard portable; diseño/parametrización e implementación siguen pendientes. [Análisis y controles](architecture/RIESGOS_RECUPERACION_PASSWORD_Y_DNI.md).

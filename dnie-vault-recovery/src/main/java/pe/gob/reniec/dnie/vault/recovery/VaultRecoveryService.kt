@@ -13,7 +13,9 @@ class VaultRecoveryService(private val container: VaultContainer = VaultContaine
                 checkCancelled: () -> Unit = {}): RecoveryEntry {
         val digest = MessageDigest.getInstance("SHA-256")
         DigestInputStream(input, digest).use { stream ->
+            checkCancelled()
             val header = container.readHeader(stream)
+            checkCancelled()
             val secret = unwrap(header)
             try {
                 container.openPayload(stream, discard(), header, secret, checkCancelled)
@@ -26,12 +28,12 @@ class VaultRecoveryService(private val container: VaultContainer = VaultContaine
     /** Only invokes publish after every segment AND exact ciphertext digest have authenticated. */
     fun restore(input: InputStream, entry: RecoveryEntry, privateStaging: File,
                 publish: (InputStream, VaultMetadata) -> Unit,
-                checkCancelled: () -> Unit = {}): VaultMetadata {
+                checkCancelled: () -> Unit = {}): VaultMetadata = input.use { source ->
         require(privateStaging.isDirectory)
         val temporary = File.createTempFile("recovery-", ".plain", privateStaging)
         val digest = MessageDigest.getInstance("SHA-256")
         try {
-            val metadata = DigestInputStream(input, digest).use { stream ->
+            val metadata = DigestInputStream(source, digest).use { stream ->
                 val header = container.readHeader(stream)
                 require(header.id == entry.id && entry.matchesRecipient(header.recipient)) { "Entrada de otro archivo" }
                 val secret = entry.secret()
@@ -44,7 +46,7 @@ class VaultRecoveryService(private val container: VaultContainer = VaultContaine
             require(entry.matchesFile(digest.digest())) { "El archivo no coincide con el paquete" }
             checkCancelled()
             FileInputStream(temporary).use { publish(it, metadata) }
-            return metadata
+            metadata
         } finally { check(temporary.delete() || !temporary.exists()) { "No se pudo retirar staging privado" } }
     }
 

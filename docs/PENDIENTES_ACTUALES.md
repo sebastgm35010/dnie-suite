@@ -1,5 +1,7 @@
 # Pendientes actuales · Windows rc4 USB / Android rc4-usb
 
+2026-10-07 · Recuperación R2: 23 pruebas ejecutadas sin fallos; incluye límites, errores de almacenamiento/proveedor, cancelación con progreso y concurrencia. Corregido cierre de entrada ante staging inválido y cancelación previa a operación de tarjeta. Android y pruebas físicas pendientes. [Detalle](architecture/PRUEBAS_RECUPERACION_WINDOWS_R2.md).
+
 2026-10-07 · Recuperación R1: módulo JVM aislado y 12 pruebas nuevas Windows superadas; formato actual preservado. No habilitado en APK/Suite. Pendientes Android, cruces, cobertura y CIF hard físico; passkeys no modificadas. [Resultados](architecture/PRUEBAS_RECUPERACION_WINDOWS_R1.md).
 
 2026-10-07 · P0 conceptual de bóveda/passkeys: renovación puede sustituir la privada aun en el mismo chip. Respaldos actuales siguen ligados a la clave anterior y no recuperan tras su eliminación; migración actual exige abrir con clave vieja y nueva después. Recuperación independiente/asistente previo todavía sin implementar ni activar. [Auditoría y alternativas](architecture/RECUPERACION_Y_RENOVACION_DNI.md).

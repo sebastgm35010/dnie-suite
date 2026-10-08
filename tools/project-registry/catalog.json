@@ -17,7 +17,8 @@
     "docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md": "identity_research_not_implemented",
     "docs/architecture/RIESGOS_RECUPERACION_PASSWORD_Y_DNI.md": "current_recovery_risk_analysis",
     "docs/architecture/CICLO_ARCHIVO_Y_PLAN_PRUEBAS_RECUPERACION.md": "proposed_lifecycle_and_test_plan",
-    "docs/architecture/PRUEBAS_RECUPERACION_WINDOWS_R1.md": "synthetic_validation_recovery_windows"
+    "docs/architecture/PRUEBAS_RECUPERACION_WINDOWS_R1.md": "synthetic_validation_recovery_windows",
+    "docs/architecture/PRUEBAS_RECUPERACION_WINDOWS_R2.md": "synthetic_validation_recovery_windows"
   },
   "features": [
     {
@@ -368,8 +369,8 @@
       "id": "vault_recovery",
       "name": "Recuperación portable con paquete separado",
       "status": "prototype_windows_tested",
-      "note": "12 pruebas nuevas; no integrada en APK/Suite. Contexto recibido, identidad entre certificados no implementada.",
-      "evidence": "docs/architecture/PRUEBAS_RECUPERACION_WINDOWS_R1.md",
+      "note": "23 pruebas ejecutadas; límites, fallos de I/O, cancelación tardía y concurrencia. No integrada en APK/Suite.",
+      "evidence": "docs/architecture/PRUEBAS_RECUPERACION_WINDOWS_R2.md",
       "files": {
         "engine": [
           "dnie-vault-recovery/src/main/"
@@ -554,8 +555,8 @@
     {
       "id": "password_recovery_requested",
       "category": "prototype_not_deployed",
-      "value": "Paquete separado Argon2id/AES-GCM: 12 pruebas Windows superadas; APK y Suite conservan comportamiento anterior.",
-      "evidence": "docs/architecture/PRUEBAS_RECUPERACION_WINDOWS_R1.md"
+      "value": "Prototipo Windows JVM con paquete separado: 23 pruebas sin fallos; cierre de entrada y cancelación previa corregidos. Android/cruces/CIF físico pendientes; APK y Suite sin cambios.",
+      "evidence": "docs/architecture/PRUEBAS_RECUPERACION_WINDOWS_R2.md"
     },
     {
       "id": "recovery_copy_and_rotation_limits",
@@ -566,8 +567,8 @@
     {
       "id": "vault_lifecycle_windows_first",
       "category": "prototype_windows_tested",
-      "value": "Primera fase Windows JVM: 12 pruebas sin fallos. Siguiente Android, cruces y CIF físico. No adaptador remoto de descifrado implementado.",
-      "evidence": "docs/architecture/PRUEBAS_RECUPERACION_WINDOWS_R1.md"
+      "value": "Prototipo Windows JVM con paquete separado: 23 pruebas sin fallos; cierre de entrada y cancelación previa corregidos. Android/cruces/CIF físico pendientes; APK y Suite sin cambios.",
+      "evidence": "docs/architecture/PRUEBAS_RECUPERACION_WINDOWS_R2.md"
     }
   ]
 }
