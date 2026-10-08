@@ -69,7 +69,10 @@ class VaultContainer(private val random: SecureRandom = SecureRandom()) {
     }
 
     fun seal(input: InputStream, output: OutputStream, key: RSAPublicKey, metadata: VaultMetadata,
-             checkCancelled: () -> Unit = {}): Long {
+             checkCancelled: () -> Unit = {}): Long = sealWithId(input, output, key, metadata, UUID.randomUUID(), checkCancelled)
+
+    fun sealWithId(input: InputStream, output: OutputStream, key: RSAPublicKey, metadata: VaultMetadata,
+                   contentId: UUID, checkCancelled: () -> Unit = {}): Long {
         require(key.modulus.bitLength() == 2048) { "Se requiere la pública de cifrado RSA-2048" }
         validateMetadata(metadata)
         val secret = ByteArray(32).also(random::nextBytes)
@@ -81,7 +84,7 @@ class VaultContainer(private val random: SecureRandom = SecureRandom()) {
                 .also { serialized = it }
             val rsa = Cipher.getInstance("RSA/ECB/PKCS1Padding")
             rsa.init(Cipher.ENCRYPT_MODE, key, random)
-            val header = VaultHeader(UUID.randomUUID(), MessageDigest.getInstance("SHA-256").digest(key.encoded),
+            val header = VaultHeader(contentId, MessageDigest.getInstance("SHA-256").digest(key.encoded),
                 rsa.doFinal(secret), ByteArray(12).also(random::nextBytes), byteArrayOf())
             val cipher = Cipher.getInstance("AES/GCM/NoPadding")
             cipher.init(Cipher.ENCRYPT_MODE, SecretKeySpec(secret, "AES"), GCMParameterSpec(128, header.nonce))

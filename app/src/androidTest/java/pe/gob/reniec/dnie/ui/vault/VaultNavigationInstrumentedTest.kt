@@ -20,19 +20,26 @@ class VaultNavigationInstrumentedTest {
             encryptIncoming = {}, dismissIncoming = {}, inspect = {}, closeDetails = {},
             trashMany = { ids, value -> batches += ids to value }, organizeMany = { _, _, _ -> })
         compose.setContent {
-            VaultScreen(VaultUiState(riskAcknowledged = true, pairedFingerprint = "fixture", items = listOf(
+            VaultScreen(VaultUiState(riskAcknowledged = true, pairedFingerprint = "fixture", allItems = 2, items = listOf(
                 VaultItemUi("a", 20, "uno.txt"), VaultItemUi("b", 40, "dos.pdf"))),
                 onCanChange = {}, onPinChange = {}, onRememberCan = {}, onRun = {}, onBack = {}, onCancel = {},
                 onImportArchive = {}, onExportEncrypted = { _, _ -> }, onRequestOpen = { _, _ -> }, onStartOpen = {},
                 onClearSelection = {}, onDelete = {}, onAcknowledgeRisk = {}, library = actions,
-                recovery = VaultRecoveryActions({ _, _, _ -> }, { _, _, _, _ -> }, { _, _ -> }, { _, _, _ -> }))
+                recovery = VaultRecoveryActions({ _, _ -> }, { _, _ -> }))
         }
         compose.onNodeWithText("CAN").assertDoesNotExist()
         compose.onNodeWithText("Guardar respaldo ZIP").assertDoesNotExist()
         click("Seleccionar varios"); click("Todos los visibles")
         compose.onNodeWithText("2 seleccionado(s)").assertExists()
-        click("Copias"); click("Vincular o cambiar DNI"); compose.onNodeWithText("CAN").assertExists()
-        click("Mis archivos"); compose.onNodeWithText("2 seleccionado(s)").assertExists()
+        click("Exportar bóveda")
+        compose.onNodeWithText("DNI que abre tus archivos").assertExists()
+        compose.onNodeWithText("Guardar respaldo ZIP").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Volver").performClick()
+        click("Importar cifrados"); click("Bóveda completa (.dniebackup)")
+        compose.onNodeWithText("DNI de destino").assertExists()
+        compose.onNodeWithContentDescription("Volver").performClick()
+        compose.onNodeWithContentDescription("Opciones de bóveda").performClick(); click("Vincular o cambiar DNI"); compose.onNodeWithText("CAN").assertExists()
+        compose.onNodeWithContentDescription("Volver").performClick(); compose.onNodeWithText("2 seleccionado(s)").assertExists()
         click("A papelera"); click("Continuar")
         compose.runOnIdle {
             assertEquals(1, batches.size)

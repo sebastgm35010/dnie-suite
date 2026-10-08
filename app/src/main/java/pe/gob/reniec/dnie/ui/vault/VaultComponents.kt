@@ -107,8 +107,7 @@ internal fun VaultFileCard(item: VaultItemUi, enabled: Boolean, selected: Boolea
                     DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                         fun run(action: () -> Unit) { menu = false; action() }
                         if (!item.trashed) {
-                            if (item.canPreview) DropdownMenuItem(text = { Text("Descifrar copia") }, onClick = { run(onRestore) })
-                            DropdownMenuItem(text = { Text("Exportar cifrado") }, onClick = { run(onExport) })
+                            if (item.canPreview) DropdownMenuItem(text = { Text("Vista previa con DNI") }, onClick = { run(onPreview) })
                             DropdownMenuItem(text = { Text("Carpeta y etiquetas") }, onClick = { run(onOrganize) })
                         }
                         DropdownMenuItem(text = { Text("Ficha del archivo") }, onClick = { run(onInspect) })
@@ -117,8 +116,8 @@ internal fun VaultFileCard(item: VaultItemUi, enabled: Boolean, selected: Boolea
                 }
             }
             if (!selectionMode) TextButton(onClick = when {
-                item.trashed -> onRecover; item.canPreview -> onPreview; else -> onRestore
-            }, enabled = enabled) { Text(when { item.trashed -> "Restaurar"; item.canPreview -> "Ver con DNI"; else -> "Descifrar copia" }) }
+                item.trashed -> onRecover; else -> onRestore
+            }, enabled = enabled) { Text(if (item.trashed) "Restaurar" else "Descifrar") }
         }
     }
 }

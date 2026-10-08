@@ -21,7 +21,8 @@
     "docs/architecture/PRUEBAS_RECUPERACION_WINDOWS_R2.md": "synthetic_validation_recovery_windows",
     "docs/architecture/RECUPERACION_ANDROID_R3.md": "historical_android_recovery_architecture",
     "docs/architecture/BOVEDA_UI_SIMPLE_R4.md": "historical_vault_ui_architecture",
-    "docs/architecture/RECUPERACION_COMPLETA_Y_FLUJO_R5.md": "current_whole_vault_recovery_architecture"
+    "docs/architecture/RECUPERACION_COMPLETA_Y_FLUJO_R5.md": "historical_whole_vault_recovery_architecture",
+    "docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md": "current_unified_vault_archive_architecture"
   },
   "features": [
     {
@@ -226,8 +227,8 @@
       "id": "vault",
       "name": "Bóveda personal cifrada",
       "status": "implemented_real_use",
-      "note": "APK67: Mis archivos/Protección/Copias. Protección y recuperación completa incl. papelera; ZIP descifrado sin modificar originales. Recifrado nuevo DNI manual.",
-      "evidence": "docs/architecture/RECUPERACION_COMPLETA_Y_FLUJO_R5.md",
+      "note": "2026-10-08 · Bóveda R6: APK68 instalada; biblioteca única con Cifrar/Descifrar/Importar/Exportar. Respaldo autosuficiente DNIEBKP2 comprimido y cifrado por contraseña. Importar verifica DNI destino y recifra todo, actualiza UUID coincidentes sin duplicarlos, conserva archivos ajenos y usa journal durable. 137 pruebas JVM y 4 instrumentadas Android pasan; NFC/SAF reales y cruce Windows pendientes.",
+      "evidence": "docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md",
       "files": {
         "engine": [
           "dnie-vault-core/src/main/"
@@ -372,8 +373,8 @@
       "id": "vault_recovery",
       "name": "Recuperación portable con paquete separado",
       "status": "android_integrated_physical_pending",
-      "note": "2026-10-08 · Bóveda R5: APK67 instalada. Mis archivos/Protección/Copias; protección y recuperación de toda la bóveda (incluida papelera), PIN introducido una vez, ZIP recuperado verificado antes de publicar. 79 pruebas app + 23 motor sin fallos; dos pruebas instrumentadas de recuperación pasan. Prueba visual superada en teléfono desbloqueado (1 test, 2.096 s). Recifrado con DNI nuevo manual y lote NFC/SAF real pendientes.",
-      "evidence": "docs/architecture/RECUPERACION_COMPLETA_Y_FLUJO_R5.md",
+      "note": "2026-10-08 · Bóveda R6: APK68 instalada; biblioteca única con Cifrar/Descifrar/Importar/Exportar. Respaldo autosuficiente DNIEBKP2 comprimido y cifrado por contraseña. Importar verifica DNI destino y recifra todo, actualiza UUID coincidentes sin duplicarlos, conserva archivos ajenos y usa journal durable. 137 pruebas JVM y 4 instrumentadas Android pasan; NFC/SAF reales y cruce Windows pendientes.",
+      "evidence": "docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md",
       "files": {
         "engine": [
           "dnie-vault-recovery/src/main/"
@@ -381,7 +382,8 @@
         "test": [
           "dnie-vault-recovery/src/test/",
           "app/src/androidTest/java/pe/gob/reniec/dnie/data/vault/VaultRecoveryInstrumentedTest.kt",
-          "app/src/test/java/pe/gob/reniec/dnie/domain/UnlockRecoveryBatchTest.kt"
+          "app/src/test/java/pe/gob/reniec/dnie/domain/UnlockRecoveryBatchTest.kt",
+          "app/src/androidTest/java/pe/gob/reniec/dnie/data/vault/VaultArchiveInstrumentedTest.kt"
         ],
         "adapter": [
           "app/src/main/java/pe/gob/reniec/dnie/data/vault/AndroidVaultRecoveryAdapter.kt",
@@ -395,7 +397,7 @@
           "app/src/main/java/pe/gob/reniec/dnie/domain/vault/UnlockRecoveryBatch.kt"
         ],
         "architecture": [
-          "docs/architecture/RECUPERACION_COMPLETA_Y_FLUJO_R5.md"
+          "docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md"
         ]
       },
       "depends_on": [
@@ -408,8 +410,8 @@
       "id": "destructive_renewal_recovery",
       "feature": "vault",
       "state": "android_integrated_physical_pending",
-      "description": "APK67 protección/recuperación completa instalada; dos pruebas instrumentadas backend pasan. Pendientes lote real NFC/SAF, cruces; navegación desbloqueada superada; recifrado nuevo DNI manual. Passkeys sin esta recuperación.",
-      "evidence": "docs/architecture/RECUPERACION_COMPLETA_Y_FLUJO_R5.md"
+      "description": "Android68 respaldo autosuficiente y recifrado al importar con otro DNI, journal durable, sin duplicar UUID coincidentes. Pruebas sintéticas pasan; NFC/SAF reales, cruce Windows y recuperación de passkeys pendientes.",
+      "evidence": "docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md"
     },
     {
       "id": "tsa_recovery",
@@ -514,8 +516,8 @@
     {
       "id": "android_current",
       "category": "artifact",
-      "value": "APK67 / 2.0.0-rc19-whole-vault instalado; D:/DNIeToolchain/AndroidPackages/dnie-evolution-2.0.0-rc19-whole-vault-debug.apk",
-      "evidence": "docs/architecture/RECUPERACION_COMPLETA_Y_FLUJO_R5.md"
+      "value": "APK68 / 2.0.0-rc20-unified-vault instalado; D:/DNIeToolchain/AndroidPackages/dnie-evolution-2.0.0-rc20-unified-vault-debug.apk",
+      "evidence": "docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md"
     },
     {
       "id": "desktop_current",
@@ -562,8 +564,8 @@
     {
       "id": "independent_keys_proposal",
       "category": "proposal_not_implemented",
-      "value": "Claves propias estables solo resuelven renovación si su protección sobrevive: vía independiente o DNI como política local. Passkeys independientes y bóveda recuperable están en evaluación, no activadas.",
-      "evidence": "docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md"
+      "value": "Passkeys independientes siguen como propuesta. Archivos disponen de respaldo autosuficiente DNIEBKP2 con contraseña e importación recifrada para DNI destino verificado.",
+      "evidence": "docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md"
     },
     {
       "id": "identity_hash_not_encryption_secret",
@@ -574,20 +576,20 @@
     {
       "id": "password_recovery_requested",
       "category": "android_integrated_physical_pending",
-      "value": "2026-10-08 · Bóveda R5: APK67 instalada. Mis archivos/Protección/Copias; protección y recuperación de toda la bóveda (incluida papelera), PIN introducido una vez, ZIP recuperado verificado antes de publicar. 79 pruebas app + 23 motor sin fallos; dos pruebas instrumentadas de recuperación pasan. Prueba visual superada en teléfono desbloqueado (1 test, 2.096 s). Recifrado con DNI nuevo manual y lote NFC/SAF real pendientes.",
-      "evidence": "docs/architecture/RECUPERACION_COMPLETA_Y_FLUJO_R5.md"
+      "value": "2026-10-08 · Bóveda R6: APK68 instalada; biblioteca única con Cifrar/Descifrar/Importar/Exportar. Respaldo autosuficiente DNIEBKP2 comprimido y cifrado por contraseña. Importar verifica DNI destino y recifra todo, actualiza UUID coincidentes sin duplicarlos, conserva archivos ajenos y usa journal durable. 137 pruebas JVM y 4 instrumentadas Android pasan; NFC/SAF reales y cruce Windows pendientes.",
+      "evidence": "docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md"
     },
     {
       "id": "recovery_copy_and_rotation_limits",
       "category": "design_constraint",
-      "value": "DNI OR password añade acceso offline por contraseña; cambiarla no revoca copias antiguas. Se evalúa paquete separado. age v1 no permite mezclar scrypt con otros destinatarios.",
-      "evidence": "docs/architecture/RIESGOS_RECUPERACION_PASSWORD_Y_DNI.md"
+      "value": "Archivo de respaldo + contraseña permite acceso independiente del DNI antiguo. Cambiar contraseña no revoca copias anteriores. DNIEBKP2 implementado; bóveda cotidiana continúa CIF hard + PIN.",
+      "evidence": "docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md"
     },
     {
       "id": "vault_lifecycle_windows_first",
       "category": "android_integrated_physical_pending",
-      "value": "2026-10-08 · Bóveda R5: APK67 instalada. Mis archivos/Protección/Copias; protección y recuperación de toda la bóveda (incluida papelera), PIN introducido una vez, ZIP recuperado verificado antes de publicar. 79 pruebas app + 23 motor sin fallos; dos pruebas instrumentadas de recuperación pasan. Prueba visual superada en teléfono desbloqueado (1 test, 2.096 s). Recifrado con DNI nuevo manual y lote NFC/SAF real pendientes.",
-      "evidence": "docs/architecture/RECUPERACION_COMPLETA_Y_FLUJO_R5.md"
+      "value": "2026-10-08 · Bóveda R6: APK68 instalada; biblioteca única con Cifrar/Descifrar/Importar/Exportar. Respaldo autosuficiente DNIEBKP2 comprimido y cifrado por contraseña. Importar verifica DNI destino y recifra todo, actualiza UUID coincidentes sin duplicarlos, conserva archivos ajenos y usa journal durable. 137 pruebas JVM y 4 instrumentadas Android pasan; NFC/SAF reales y cruce Windows pendientes.",
+      "evidence": "docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md"
     }
   ]
 }

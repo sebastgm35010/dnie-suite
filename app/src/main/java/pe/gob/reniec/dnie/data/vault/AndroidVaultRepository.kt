@@ -26,6 +26,35 @@ class AndroidVaultRepository(context: Context) {
     private val catalog by lazy { VaultCatalog(File(app.filesDir, "vault-preview/catalog")) }
     private val previews by lazy { VaultPreviewFiles(app) }
     private val recovery by lazy { AndroidVaultRecoveryAdapter(app) }
+    private val archives by lazy { pe.gob.reniec.dnie.vault.recovery.VaultArchiveService() }
+    private val archiveJournal get() = File(app.filesDir, "vault-preview/transactions")
+    suspend fun exportVaultArchive(batch: pe.gob.reniec.dnie.domain.vault.UnlockedRecoveryBatch,
+        password: CharArray, destination: Uri, progress: (Int, Int) -> Unit): Int = io {
+        val active = currentCoroutineContext()
+        val staging = File(app.cacheDir, "vault-private")
+        val encrypted = File.createTempFile("archive-publish-", ".encrypted", staging)
+        try {
+            val count = encrypted.outputStream().use {
+                archives.export(files, catalog, batch.headers, batch.secrets, password, it, staging,
+                    { active.ensureActive() }, progress)
+            }
+            active.ensureActive()
+            app.contentResolver.openOutputStream(destination, "wt")?.use { output ->
+                encrypted.inputStream().use { VaultContainer.copyBounded(it, output, { active.ensureActive() },
+                    pe.gob.reniec.dnie.vault.recovery.VaultArchiveCodec.MAX_BYTES + 10485760) }
+            } ?: error("No se pudo guardar la bóveda exportada.")
+            active.ensureActive()
+            count
+        } finally { encrypted.delete() }
+    }
+    suspend fun importVaultArchive(source: Uri, password: CharArray, key: RSAPublicKey,
+        progress: (Int, Int) -> Unit): Int = io {
+        val active = currentCoroutineContext()
+        app.contentResolver.openInputStream(source)?.use {
+            archives.import(it, password, key, files, catalog, File(app.cacheDir, "vault-private"),
+                { active.ensureActive() }, progress, archiveJournal)
+        } ?: error("No se pudo leer la bóveda exportada.")
+    }
     suspend fun recoveryHeaders(): Map<String, VaultHeader> = io {
         val items = files.list()
         require(items.size in 1..1000) { "La protección completa admite de 1 a 1000 archivos, incluida la papelera." }
@@ -56,6 +85,10 @@ class AndroidVaultRepository(context: Context) {
 
     suspend fun initialize(): Inventory = io {
         if (store == null) store = VaultFileStore(File(app.filesDir, "vault-preview/objects"), File(app.cacheDir, "vault-private"))
+        val staging = File(app.cacheDir, "vault-private")
+        archives.recoverInterruptedImport(files, catalog, archiveJournal)
+        staging.listFiles()?.filter { it.name.startsWith("archive-stage-") && it.isDirectory }?.forEach { it.deleteRecursively() }
+        staging.listFiles()?.filter { it.name.startsWith("archive-publish-") && it.name.endsWith(".encrypted") }?.forEach { it.delete() }
         val fingerprint = if (certificateFile.baseFile.exists()) {
             val certificate = probe.readEncryptionCertificate(certificateFile.readFully())
             probe.fingerprint(certificate.publicKey as RSAPublicKey)

@@ -26,15 +26,22 @@ class VaultFileStore(private val root: File, private val staging: File,
         .map { val id = it.name.removeSuffix(".dnievault"); VaultStoredItem(id, it.length(), readName(id), it.lastModified()) }
 
     fun seal(input: InputStream, key: RSAPublicKey, metadata: VaultMetadata,
-             checkCancelled: () -> Unit = {}): VaultStoredItem = commit(checkCancelled) { output ->
-        container.seal(input, output, key, metadata, checkCancelled)
+             checkCancelled: () -> Unit = {}): VaultStoredItem = sealWithId(input, key, metadata, UUID.randomUUID(), checkCancelled)
+
+    fun sealWithId(input: InputStream, key: RSAPublicKey, metadata: VaultMetadata,
+                   contentId: UUID, checkCancelled: () -> Unit = {}): VaultStoredItem = commit(checkCancelled) { output ->
+        container.sealWithId(input, output, key, metadata, contentId, checkCancelled)
     }.let { item ->
         rememberName(item.id, metadata.name)
         item.copy(displayName = readName(item.id))
     }
 
     /** Only syntax is checked here; authenticity is verified when the DNI opens it. */
-    fun importEncrypted(input: InputStream, checkCancelled: () -> Unit = {}, displayName: String? = null): VaultStoredItem = commit(checkCancelled) { output ->
+    fun importEncrypted(input: InputStream, checkCancelled: () -> Unit = {}, displayName: String? = null): VaultStoredItem =
+        importEncryptedAs(input, UUID.randomUUID().toString(), displayName, checkCancelled)
+
+    fun importEncryptedAs(input: InputStream, targetId: String, displayName: String? = null,
+                          checkCancelled: () -> Unit = {}): VaultStoredItem = commit(checkCancelled, targetId) { output ->
         VaultContainer.copyBounded(input, output, checkCancelled, VaultContainer.MAX_FILE_BYTES + 1048576)
     }.let { item ->
         if (displayName != null) rememberName(item.id, displayName)
@@ -74,8 +81,8 @@ class VaultFileStore(private val root: File, private val staging: File,
         File(root, "$id.name").delete()
     }
 
-    private fun commit(checkCancelled: () -> Unit, write: (FileOutputStream) -> Unit): VaultStoredItem {
-        val id = UUID.randomUUID().toString()
+    private fun commit(checkCancelled: () -> Unit, id: String = UUID.randomUUID().toString(), write: (FileOutputStream) -> Unit): VaultStoredItem {
+        require(validId(id) && !file(id).exists()) { "El destino cifrado ya existe." }
         val temporary = File(root, ".pending-$id")
         val target = file(id)
         try {
