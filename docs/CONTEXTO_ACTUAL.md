@@ -1,5 +1,7 @@
 # Estado vigente · corrección USB tras reinicio
 
+2026-10-07 · Recuperación R1: módulo JVM aislado y 12 pruebas nuevas Windows superadas; formato actual preservado. No habilitado en APK/Suite. Pendientes Android, cruces, cobertura y CIF hard físico; passkeys no modificadas. [Resultados](architecture/PRUEBAS_RECUPERACION_WINDOWS_R1.md).
+
 2026-10-07 · Investigación de riesgos de recuperación: Cryptomator/Bitwarden distinguen reenvolver y rotar claves; contraseñas anteriores siguen útiles en copias viejas. age prohíbe mezclar su destinatario password con otros. Se recomienda evaluar paquete separado para preservar CIF hard portable; diseño/parametrización e implementación siguen pendientes. [Análisis y controles](architecture/RIESGOS_RECUPERACION_PASSWORD_Y_DNI.md).
 
 2026-10-07 · Investigación de recuperación: casos KeePassXC/YubiKey y age, protección intermedia de claves Bitwarden y límites Keystore. Propuesta: passkeys con almacenamiento independiente opcional; bóveda con clave propia estable, DNI y recuperación alternativa. Ningún cambio de autorización/cifrado activado. [Fuentes y comparación](architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md).

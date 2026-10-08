@@ -1,5 +1,7 @@
 # Pendientes actuales · Windows rc4 USB / Android rc4-usb
 
+2026-10-07 · Recuperación R1: módulo JVM aislado y 12 pruebas nuevas Windows superadas; formato actual preservado. No habilitado en APK/Suite. Pendientes Android, cruces, cobertura y CIF hard físico; passkeys no modificadas. [Resultados](architecture/PRUEBAS_RECUPERACION_WINDOWS_R1.md).
+
 2026-10-07 · P0 conceptual de bóveda/passkeys: renovación puede sustituir la privada aun en el mismo chip. Respaldos actuales siguen ligados a la clave anterior y no recuperan tras su eliminación; migración actual exige abrir con clave vieja y nueva después. Recuperación independiente/asistente previo todavía sin implementar ni activar. [Auditoría y alternativas](architecture/RECUPERACION_Y_RENOVACION_DNI.md).
 
 2026-10-07 · Registro estable SQL: SQLite portable de archivos, módulos, símbolos, dependencias, mapa de funciones y pendientes revisados, con evidencia documental. Consulta/actualización offline por CLI Python; inventario verificable por SHA256 y exportación SQL versionable. [Uso y límites](project-registry/README.md).

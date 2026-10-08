@@ -40,3 +40,4 @@ include(":dnie-signing-ui")
 include(":dnie-validation-core")
 
 include(":dnie-desktop-orchestration")
+include(":dnie-vault-recovery")

@@ -1,6 +1,6 @@
 # Ciclo de vida del archivo y plan de pruebas de recuperación
 
-2026-10-07. Flujo presentado para revisión del usuario. No se inicia aún implementación del formato/motor nuevo. Continúa la arquitectura portable CIF hard con paquete separado opcional, sin biometría en bóveda ni privada permanente de app requerida para abrir archivos.
+2026-10-07. Usuario autoriza iniciar las pruebas. Prototipo JVM aislado implementado y 12 pruebas nuevas superadas en Windows: [resultados y límites](PRUEBAS_RECUPERACION_WINDOWS_R1.md). Android y cruces entre plataformas siguen pendientes. Continúa la arquitectura portable CIF hard con paquete separado opcional, sin biometría en bóveda ni privada permanente de app requerida para abrir archivos.
 
 ## Flujo propuesto
 

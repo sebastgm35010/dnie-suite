@@ -16,7 +16,8 @@
     "docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md": "research_recovery_proposal",
     "docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md": "identity_research_not_implemented",
     "docs/architecture/RIESGOS_RECUPERACION_PASSWORD_Y_DNI.md": "current_recovery_risk_analysis",
-    "docs/architecture/CICLO_ARCHIVO_Y_PLAN_PRUEBAS_RECUPERACION.md": "proposed_lifecycle_and_test_plan"
+    "docs/architecture/CICLO_ARCHIVO_Y_PLAN_PRUEBAS_RECUPERACION.md": "proposed_lifecycle_and_test_plan",
+    "docs/architecture/PRUEBAS_RECUPERACION_WINDOWS_R1.md": "synthetic_validation_recovery_windows"
   },
   "features": [
     {
@@ -362,15 +363,33 @@
         ]
       },
       "depends_on": []
+    },
+    {
+      "id": "vault_recovery",
+      "name": "Recuperación portable con paquete separado",
+      "status": "prototype_windows_tested",
+      "note": "12 pruebas nuevas; no integrada en APK/Suite. Contexto recibido, identidad entre certificados no implementada.",
+      "evidence": "docs/architecture/PRUEBAS_RECUPERACION_WINDOWS_R1.md",
+      "files": {
+        "engine": [
+          "dnie-vault-recovery/src/main/"
+        ],
+        "test": [
+          "dnie-vault-recovery/src/test/"
+        ]
+      },
+      "depends_on": [
+        "vault"
+      ]
     }
   ],
   "pending": [
     {
       "id": "destructive_renewal_recovery",
       "feature": "vault",
-      "state": "design_required_p0",
-      "description": "P0 bóveda/passkeys: especificar e implementar recuperación por contraseña solicitada; KDF con sal portable e identidad como contexto, conservar CIF hard habitual. Preparar antes de perder privada; versión actual no la incorpora.",
-      "evidence": "docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md"
+      "state": "prototype_windows_tested_android_pending",
+      "description": "Prototipo de paquete separado probado en JVM Windows; faltan adapter/UI Android, cruces, cobertura, prueba CIF hard real y recuperación de passkeys.",
+      "evidence": "docs/architecture/PRUEBAS_RECUPERACION_WINDOWS_R1.md"
     },
     {
       "id": "tsa_recovery",
@@ -534,9 +553,9 @@
     },
     {
       "id": "password_recovery_requested",
-      "category": "design_requested_not_implemented",
-      "value": "Usuario solicita contraseña de recuperación: candidata KDF Argon2id con sal portable e identidad como contexto; CIF hard cotidiano conservado. No hay formato/UI nuevos desplegados.",
-      "evidence": "docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md"
+      "category": "prototype_not_deployed",
+      "value": "Paquete separado Argon2id/AES-GCM: 12 pruebas Windows superadas; APK y Suite conservan comportamiento anterior.",
+      "evidence": "docs/architecture/PRUEBAS_RECUPERACION_WINDOWS_R1.md"
     },
     {
       "id": "recovery_copy_and_rotation_limits",
@@ -546,9 +565,9 @@
     },
     {
       "id": "vault_lifecycle_windows_first",
-      "category": "plan_for_review",
-      "value": "Flujo CIF hard portable con paquete separado. Orden propuesto: motor/pruebas Windows, Android, cruces sintéticos y físicos, recuperación. Suite de firma no se presupone adaptador de descifrado.",
-      "evidence": "docs/architecture/CICLO_ARCHIVO_Y_PLAN_PRUEBAS_RECUPERACION.md"
+      "category": "prototype_windows_tested",
+      "value": "Primera fase Windows JVM: 12 pruebas sin fallos. Siguiente Android, cruces y CIF físico. No adaptador remoto de descifrado implementado.",
+      "evidence": "docs/architecture/PRUEBAS_RECUPERACION_WINDOWS_R1.md"
     }
   ]
 }
