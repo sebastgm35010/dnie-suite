@@ -187,4 +187,24 @@ class CmsSignatureBuilderTest {
         assertEquals(0,operations)
     }
 
+    @Test fun bothProfilesBindSignedIssuerAndSerialToExactEmbeddedCertificate() {
+        val document="Synthetic strict certificate identity".toByteArray()
+        for(profile in CmsSignatureProfile.entries) {
+            val encoded=CmsSignatureBuilder.buildDetachedSignature(MessageDigest.getInstance("SHA-256").digest(document),
+                signerCert,profile=profile,cardSigner={ simulateDnieCardSigning(it) })
+            val cms=CMSSignedData(org.bouncycastle.cms.CMSProcessableByteArray(document),encoded)
+            val signer=cms.signerInfos.signers.single()
+            val binding=org.bouncycastle.asn1.ess.SigningCertificateV2.getInstance(
+                signer.signedAttributes.get(PKCSObjectIdentifiers.id_aa_signingCertificateV2).attrValues.getObjectAt(0)).certs.single()
+            val identity=binding.issuerSerial
+            assertNotNull(identity)
+            assertEquals(signerCert.serialNumber,identity.serial.value)
+            assertEquals(org.bouncycastle.asn1.x509.GeneralName.directoryName,identity.issuer.names.single().tagNo)
+            assertEquals(org.bouncycastle.cert.jcajce.JcaX509CertificateHolder(signerCert).issuer,
+                X500Name.getInstance(identity.issuer.names.single().name))
+            assertEquals(1,cms.certificates.getMatches(null).count { signer.sid.match(it) })
+            assertTrue(signer.verify(JcaSimpleSignerInfoVerifierBuilder().build(signerCert)))
+        }
+    }
+
 }

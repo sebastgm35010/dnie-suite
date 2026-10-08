@@ -1,5 +1,7 @@
 # Contexto vigente de la suite propia de firma
 
+2026-10-07 · H15: CMS compartido incluye issuerSerial exacto en ESSCertIDv2 para compatibilidad con política PE de ReFirma PCX. Sin cambios de UI, PACE o transporte; 247 pruebas y comparación sintética con DSS real satisfactorias. Validación física externa pendiente. Ver docs/suite/REFIRMA_ISSUER_SERIAL_H15.md.
+
 2026-10-07 · H14: batería sintética forzada (--rerun), 330 pruebas pasan, 2 opt-in externas omitidas, 0 fallos/errores. Nuevos casos TSA timeout/respuestas inválidas y lote PDF fallido con TXT posterior válido sin repetir firma. Sin DNI ni cambios de producción; recuperación persistente de solo TSA y preflight online automático siguen sin implementar. [Resultados y límites](VALIDACIONES_SINTETICAS_H14.md).
 
 2026-10-07 · Prioridad ajustada por el usuario: lote PC01 cerrado como satisfactorio; confirma también el segundo PDF validado. Integración visual completa Suite/Bridge pasa a 3.0 con rediseño. Distribución se pospone hasta pulir Android y Windows. Recuperación de solo TSA y validación online previa automática siguen sin implementar; no se confunde confianza del usuario con evidencia de funcionalidades ausentes. LT/LTA se conserva como evolución técnica, sin prioridad inmediata.

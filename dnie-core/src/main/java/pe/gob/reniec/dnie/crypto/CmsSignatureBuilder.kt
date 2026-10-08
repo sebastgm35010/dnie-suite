@@ -14,6 +14,9 @@ import org.bouncycastle.asn1.ess.SigningCertificateV2
 import org.bouncycastle.asn1.nist.NISTObjectIdentifiers
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
+import org.bouncycastle.asn1.x509.GeneralName
+import org.bouncycastle.asn1.x509.GeneralNames
+import org.bouncycastle.asn1.x509.IssuerSerial
 import org.bouncycastle.cert.X509CertificateHolder
 import org.bouncycastle.cert.jcajce.JcaX509CertificateHolder
 import org.bouncycastle.cms.CMSAttributeTableGenerator
@@ -112,7 +115,10 @@ object CmsSignatureBuilder {
             val certHash = MessageDigest.getInstance("SHA-256").digest(signerCertificate.encoded)
             val essCertIdV2 = ESSCertIDv2(
                 AlgorithmIdentifier(NISTObjectIdentifiers.id_sha256),
-                certHash
+                certHash,
+                // Explicit signed issuer/serial supports strict ReFirma PE policy (DSS 5.4.3).
+                IssuerSerial(GeneralNames(GeneralName(JcaX509CertificateHolder(signerCertificate).issuer)),
+                    signerCertificate.serialNumber)
             )
             val signingCertV2 = SigningCertificateV2(arrayOf(essCertIdV2))
             tableMap[PKCSObjectIdentifiers.id_aa_signingCertificateV2] = Attribute(
