@@ -22,7 +22,8 @@
     "docs/architecture/RECUPERACION_ANDROID_R3.md": "historical_android_recovery_architecture",
     "docs/architecture/BOVEDA_UI_SIMPLE_R4.md": "historical_vault_ui_architecture",
     "docs/architecture/RECUPERACION_COMPLETA_Y_FLUJO_R5.md": "historical_whole_vault_recovery_architecture",
-    "docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md": "current_unified_vault_archive_architecture"
+    "docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md": "current_unified_vault_archive_architecture",
+    "docs/architecture/BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md": "current_vault_picker_lifecycle_fix"
   },
   "features": [
     {
@@ -227,8 +228,8 @@
       "id": "vault",
       "name": "Bóveda personal cifrada",
       "status": "implemented_real_use",
-      "note": "2026-10-08 · Bóveda R6: APK68 instalada; biblioteca única con Cifrar/Descifrar/Importar/Exportar. Respaldo autosuficiente DNIEBKP2 comprimido y cifrado por contraseña. Importar verifica DNI destino y recifra todo, actualiza UUID coincidentes sin duplicarlos, conserva archivos ajenos y usa journal durable. 137 pruebas JVM y 4 instrumentadas Android pasan; NFC/SAF reales y cruce Windows pendientes.",
-      "evidence": "docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md",
+      "note": "2026-10-08 · Bóveda R7: corregido inicio tras SAF: selector primero, credenciales después y autorización explícita. onPause limpiaba PIN y R6 rechazaba el inicio automático, dejando destino vacío. APK69 compilada y 79 pruebas app pasan; nuevas pruebas instrumentadas compiladas. ADB desconectada: APK69 NO instalada, pruebas de selector/NFC pendientes; instalada conocida APK68.",
+      "evidence": "docs/architecture/BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md",
       "files": {
         "engine": [
           "dnie-vault-core/src/main/"
@@ -373,8 +374,8 @@
       "id": "vault_recovery",
       "name": "Recuperación portable con paquete separado",
       "status": "android_integrated_physical_pending",
-      "note": "2026-10-08 · Bóveda R6: APK68 instalada; biblioteca única con Cifrar/Descifrar/Importar/Exportar. Respaldo autosuficiente DNIEBKP2 comprimido y cifrado por contraseña. Importar verifica DNI destino y recifra todo, actualiza UUID coincidentes sin duplicarlos, conserva archivos ajenos y usa journal durable. 137 pruebas JVM y 4 instrumentadas Android pasan; NFC/SAF reales y cruce Windows pendientes.",
-      "evidence": "docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md",
+      "note": "2026-10-08 · Bóveda R7: corregido inicio tras SAF: selector primero, credenciales después y autorización explícita. onPause limpiaba PIN y R6 rechazaba el inicio automático, dejando destino vacío. APK69 compilada y 79 pruebas app pasan; nuevas pruebas instrumentadas compiladas. ADB desconectada: APK69 NO instalada, pruebas de selector/NFC pendientes; instalada conocida APK68.",
+      "evidence": "docs/architecture/BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md",
       "files": {
         "engine": [
           "dnie-vault-recovery/src/main/"
@@ -383,7 +384,8 @@
           "dnie-vault-recovery/src/test/",
           "app/src/androidTest/java/pe/gob/reniec/dnie/data/vault/VaultRecoveryInstrumentedTest.kt",
           "app/src/test/java/pe/gob/reniec/dnie/domain/UnlockRecoveryBatchTest.kt",
-          "app/src/androidTest/java/pe/gob/reniec/dnie/data/vault/VaultArchiveInstrumentedTest.kt"
+          "app/src/androidTest/java/pe/gob/reniec/dnie/data/vault/VaultArchiveInstrumentedTest.kt",
+          "app/src/androidTest/java/pe/gob/reniec/dnie/ui/vault/VaultArchivePickerInstrumentedTest.kt"
         ],
         "adapter": [
           "app/src/main/java/pe/gob/reniec/dnie/data/vault/AndroidVaultRecoveryAdapter.kt",
@@ -397,7 +399,8 @@
           "app/src/main/java/pe/gob/reniec/dnie/domain/vault/UnlockRecoveryBatch.kt"
         ],
         "architecture": [
-          "docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md"
+          "docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md",
+          "docs/architecture/BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md"
         ]
       },
       "depends_on": [
@@ -410,8 +413,8 @@
       "id": "destructive_renewal_recovery",
       "feature": "vault",
       "state": "android_integrated_physical_pending",
-      "description": "Android68 respaldo autosuficiente y recifrado al importar con otro DNI, journal durable, sin duplicar UUID coincidentes. Pruebas sintéticas pasan; NFC/SAF reales, cruce Windows y recuperación de passkeys pendientes.",
-      "evidence": "docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md"
+      "description": "APK69 corrige pausa SAF que borraba PIN antes de inicio automático. Compilada, no instalada; ADB desconectada. Pendientes pruebas selector, lote NFC/SAF, cruces Windows y recuperación passkeys.",
+      "evidence": "docs/architecture/BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md"
     },
     {
       "id": "tsa_recovery",
@@ -590,6 +593,12 @@
       "category": "android_integrated_physical_pending",
       "value": "2026-10-08 · Bóveda R6: APK68 instalada; biblioteca única con Cifrar/Descifrar/Importar/Exportar. Respaldo autosuficiente DNIEBKP2 comprimido y cifrado por contraseña. Importar verifica DNI destino y recifra todo, actualiza UUID coincidentes sin duplicarlos, conserva archivos ajenos y usa journal durable. 137 pruebas JVM y 4 instrumentadas Android pasan; NFC/SAF reales y cruce Windows pendientes.",
       "evidence": "docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md"
+    },
+    {
+      "id": "android_candidate_vault_picker",
+      "category": "compiled_not_installed",
+      "value": "APK69 / 2.0.0-rc21-vault-picker; D:/DNIeToolchain/AndroidPackages/dnie-evolution-2.0.0-rc21-vault-picker-debug.apk. 79 pruebas app pasan; instrumentadas compiladas, no ejecutadas.",
+      "evidence": "docs/architecture/BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md"
     }
   ]
 }
