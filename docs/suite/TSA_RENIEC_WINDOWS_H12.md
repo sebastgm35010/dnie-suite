@@ -39,3 +39,9 @@ Informes textuales aportados por el usuario el 2026-10-07 tras probar el lote pr
 - `03_constancia_prueba.txt` con `03_constancia_prueba.txt.p7s`: validación 21:10:54 UTC-05, VÁLIDO, una firma válida e integridad conservada, CAdES_BASELINE_B, RSA with SHA256, raíz del firmante en TSL Sí. Hora declarada 21:08:59 UTC-05. Sin TSA, acorde con la opción actual limitada a PDF integrado.
 
 Estos resultados confirman firma privada desde Windows con DNI real para PDF-T y CMS separado-B. Evidencia recibida: texto del validador Firma Perú/DSS5.11.1; los artefactos firmados no fueron adjuntados ni inspeccionados localmente en esta confirmación. No se copian identidad ni serie del titular al repositorio. No hay resultado aportado para `02_informe_prueba_firmado.pdf`, ni confirmación explícita de completos3/3 o PIN único; esos aspectos permanecen sin cerrar. Tampoco prueban cambio Bridge↔Suite, LT/LTA o acreditación del software.
+
+## Cierre del lote y prioridades actualizadas
+
+2026-10-07: el usuario confirma que el lote está bien y que el segundo PDF se verificó; se cierra el pendiente de validación del lote por confirmación del usuario. No se recibió informe adicional del segundo PDF ni detalle explícito del número de entradas de PIN; no se inventan esos metadatos. Integración visual completa a3.0 y distribución posterior al pulido. Recuperación de solo sellado y preflight online automático siguen pendientes reales de implementación.
+
+Soporte local de larga duración: la página oficial [ReFirma PCX](https://dsp.reniec.gob.pe/refirma_suite/pcx/web/main.jsf), consultada el2026-10-07, anuncia niveles T y LTA para entidades públicas con Convenio TSA RENIEC. Confirma soporte en ese producto, no disponibilidad universal o condiciones de nuestro acceso al servicio. LT/LTA se pospone mientras se consolida Android/Windows.

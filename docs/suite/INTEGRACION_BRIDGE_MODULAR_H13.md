@@ -53,3 +53,7 @@ Probar físicamente apertura del gestor desde GUI, detener un puente activo con 
 Checkpoint final `checkpoint/suite-bridge-modular-h13`, fuente/manifiesto en `D:/DNIeToolchain/Checkpoints/suite-bridge-modular-h13`.
 
 Distribución autónoma compilada y comprobada sin directorio bridge-integration: `D:/DNIeToolchain/Builds/suite-standalone-h13/signing-ui/install/dnie-signing-ui`. Log standalone correcto15s en `suite-bridge-h13-standalone.log`; el paquete integrado sí contiene el helper. Esta prueba confirma composición opcional, sin instalar o modificar Bridge.
+
+## Repriorización del usuario
+
+2026-10-07: lote validado también para el segundo PDF, cerrado por confirmación del usuario. La integración visual completa se difiere a3.0 junto al rediseño; distribución/instalador se difiere hasta pulir ambas plataformas. Cambio físico Bridge↔Suite sigue independiente de la prueba de firma. Recuperación TSA/preflight online automático y LT/LTA siguen pendientes, sin iniciar esas implementaciones en este ajuste.

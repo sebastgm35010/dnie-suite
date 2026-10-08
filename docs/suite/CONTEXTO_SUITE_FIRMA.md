@@ -1,5 +1,7 @@
 # Contexto vigente de la suite propia de firma
 
+2026-10-07 · Prioridad ajustada por el usuario: lote PC01 cerrado como satisfactorio; confirma también el segundo PDF validado. Integración visual completa Suite/Bridge pasa a 3.0 con rediseño. Distribución se pospone hasta pulir Android y Windows. Recuperación de solo TSA y validación online previa automática siguen sin implementar; no se confunde confianza del usuario con evidencia de funcionalidades ausentes. LT/LTA se conserva como evolución técnica, sin prioridad inmediata.
+
 2026-10-07 · H12 físico superado desde Windows: usuario aporta Firma Perú VÁLIDO para acta PDF PAdES_BASELINE_T (raíces firmante/TSA en TSL Sí, TSA RENIEC TSU-2026-01 21:08:57 UTC-05) y TXT/.p7s CAdES_BASELINE_B válido sin TSA. Falta resultado del segundo PDF, confirmación 3/3/PIN único y cambio Bridge↔Suite. [Evidencia y alcance](TSA_RENIEC_WINDOWS_H12.md).
 
 2026-10-07 · H13: integración inicial Suite + Bridge con módulo JVM de coordinación y adaptador .NET opcional al servicio autenticado. GUI integra estado, abrir gestor y detener puente; permiso local evita cambiar de modo durante suite, sin exclusión global entre procesos. 43 pruebas y smoke real de consulta pasan, APK63 recompilado sin cambio. Paquete en D:/DNIeToolchain/Builds/suite-bridge-h13; configuración Bridge conserva ventana nativa y ambas distribuciones autónomas. [Capas, distribución y pendientes](INTEGRACION_BRIDGE_MODULAR_H13.md).
