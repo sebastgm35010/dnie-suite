@@ -75,4 +75,19 @@ class TimestampServiceTest {
         assertTrue(runCatching { service.stamp(stamped) }.isFailure)
         assertEquals(1,calls)
     }
+    @Test fun networkTimeoutNeverRetriesTimestampRequestOrChangesOriginalCms() {
+        val original=cms();val retained=original.clone();var requests=0;var trustCalls=0
+        val service=ReniecCmsTimestampService(TimestampClient {
+            requests++;throw java.net.SocketTimeoutException("Synthetic TSA timeout")
+        },TimestampTokenValidator(TimestampCertificateTrust { _, _ -> trustCalls++ }))
+        assertTrue(runCatching { service.stamp(original) }.exceptionOrNull() is TimestampFailure)
+        assertEquals(1,requests);assertEquals(0,trustCalls);assertArrayEquals(retained,original)
+    }
+    @Test fun emptyMalformedAndOversizedResponsesNeverReachTrustValidation() {
+        var trusts=0;val validator=TimestampTokenValidator(TimestampCertificateTrust { _, _ -> trusts++ })
+        for(bytes in listOf(byteArrayOf(),byteArrayOf(1,2,3),ByteArray(ReniecTimestampClient.MAX_RESPONSE+1)))
+            assertTrue(runCatching { validator.validate(query(),bytes) }.isFailure)
+        assertEquals(0,trusts)
+    }
+
 }

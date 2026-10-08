@@ -16,6 +16,7 @@ dependencies {
     implementation(project(":dnie-pdf-desktop"))
     implementation(project(":dnie-signing-link"))
     testImplementation("junit:junit:4.13.2")
+    testImplementation(project(":dnie-validation-core"))
     testImplementation("org.apache.pdfbox:pdfbox:3.0.8")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
 }

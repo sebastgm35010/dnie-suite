@@ -59,4 +59,25 @@ class DesktopPdfSigningTest {
             assertNotNull(field.widgets.single().appearance.normalAppearance.appearanceStream)
         }
     }
+    @Test fun tsaTimeoutDoesNotReplaySignatureOrBlockFollowingDetachedDocument() = runBlocking<Unit> {
+        val pdf=folder.root.toPath().resolve("tsa-timeout.pdf")
+        PDDocument().use { doc -> doc.addPage(PDPage());doc.save(pdf.toFile()) }
+        val text=folder.root.toPath().resolve("next.txt");Files.writeString(text,"synthetic original")
+        val card=SimulatedSigningCard();var requests=0
+        val engine=pe.gob.reniec.dnie.pdf.desktop.JvmPdfSigner(folder.root.toPath().resolve("pdf-work")) {
+            requests++;throw java.net.SocketTimeoutException("Synthetic TSA timeout")
+        }
+        val result=DesktopSigningService(engine).execute(DesktopSigningRequest(listOf(pdf,text),
+            folder.root.toPath().resolve("jobs"),DesktopPdfMode.INVISIBLE,
+            pe.gob.reniec.dnie.pdf.PdfSigningOptions(visible=false,reniecTimestamp=true)),
+            card,"0000",SigningBackend.SIMULATED)
+        assertEquals(listOf(DocumentSignStatus.FAILED,DocumentSignStatus.SIGNED),result.documents.map { it.status })
+        assertNull(result.documents[0].signature);assertEquals(1,requests);assertEquals(2,card.signatures)
+        val bytes=Files.readAllBytes(result.documents[1].signature!!)
+        val cms=CMSSignedData(CMSProcessableByteArray(Files.readAllBytes(text)),bytes)
+        assertTrue(cms.signerInfos.signers.single().verify(JcaSimpleSignerInfoVerifierBuilder().build(card.certificate)))
+        assertTrue(Files.exists(result.directory.resolve("signed-documents.zip")))
+        Files.walk(result.directory).use { paths -> assertFalse(paths.anyMatch { it.fileName.toString().endsWith(".part") }) }
+    }
+
 }
