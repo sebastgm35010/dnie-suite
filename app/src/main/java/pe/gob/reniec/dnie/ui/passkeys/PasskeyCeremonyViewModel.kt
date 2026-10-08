@@ -17,7 +17,7 @@ data class PasskeyUiState(val title: String = "Passkeys con DNIe", val descripti
     val can: String = "", val pin: String = "", val ready: Boolean = false, val awaiting: Boolean = false,
     val busy: Boolean = false, val error: String? = null, val accounts: List<PasskeyAccount> = emptyList(),
     val result: Intent? = null, val managing: Boolean = false, val deleteId: String? = null,
-    val biometricAvailable: Boolean = false, val biometricCipher: javax.crypto.Cipher? = null) {
+    val independent: Boolean = false, val biometricAvailable: Boolean = false, val biometricCipher: javax.crypto.Cipher? = null) {
     override fun toString() = "PasskeyUiState(ready=$ready, awaiting=$awaiting, busy=$busy, privateData=redacted)"
 }
 
@@ -30,6 +30,8 @@ class PasskeyCeremonyViewModel(application: Application) : AndroidViewModel(appl
     private var initialized = false
     private var generation = 0
     private val device = PasskeyDeviceVault(application)
+    private val independent = IndependentPasskeyVault(application)
+    private var independentPending: IndependentPasskeyVault.Pending? = null
     private val repository = EncryptedPasskeyRepository(application)
     private var biometricPending: PasskeyDeviceVault.Pending? = null
     private val diagnosticFlow = java.util.UUID.randomUUID().toString()
@@ -55,11 +57,12 @@ class PasskeyCeremonyViewModel(application: Application) : AndroidViewModel(appl
                 }
                 val can = withContext(Dispatchers.IO) { CanStorage.getSavedCan(getApplication()) }
                     .takeIf { it.length == 6 && it.all { character -> character in '0'..'9' } }.orEmpty()
+                val independentActive = withContext(Dispatchers.IO) { independent.exists() }
                 val biometricAvailable = withContext(Dispatchers.IO) {
-                    (request is PasskeyCeremony.Get || request is PasskeyCeremony.Discover) && device.enabled()
+                    independentActive || ((request is PasskeyCeremony.Get || request is PasskeyCeremony.Discover) && device.enabled())
                 }
-                mutable.value = PasskeyUiState(title = request.title, can = can, ready = true, biometricAvailable = biometricAvailable, managing = request == PasskeyCeremony.Manage,
-                    description = when (request) {
+                mutable.value = PasskeyUiState(title = request.title, can = can, ready = true, independent = independentActive, biometricAvailable = biometricAvailable, managing = request == PasskeyCeremony.Manage,
+                    description = if (independentActive) "Almacén independiente: autoriza esta operación con tu huella. No necesitas el DNI." else when (request) {
                         is PasskeyCeremony.Create -> "Crear passkey para ${request.options.username}. La clave quedará cifrada para este DNI."
                         is PasskeyCeremony.Get -> "Autorizar el inicio de sesión con la passkey seleccionada."
                         is PasskeyCeremony.Discover -> "Autoriza con DNI y elige tu cuenta. La autorización sirve una sola vez y caduca en 60 segundos."
@@ -81,21 +84,32 @@ class PasskeyCeremonyViewModel(application: Application) : AndroidViewModel(appl
         mutable.value = state.value.copy(busy = true, pin = "", error = null)
         job = viewModelScope.launch {
             try {
+                if (state.value.independent) {
+                    val pending = withContext(Dispatchers.IO) { independent.prepare() }
+                    independentPending = pending
+                    mutable.value = state.value.copy(biometricCipher = pending.cipher)
+                    return@launch
+                }
                 val pending = withContext(Dispatchers.IO) { device.prepare(repository.revision()) }
                 biometricPending = pending
                 mutable.value = state.value.copy(biometricCipher = pending.cipher)
             } catch (e: CancellationException) { throw e }
             catch (e: Exception) { biometricPending = null; mutable.value = state.value.copy(busy = false, biometricAvailable = false,
-                error = "La autorización biométrica ya no está disponible. Usa el DNI y vuelve a habilitarla en configuración.") }
+                error = if (state.value.independent) "La clave local no está disponible. No se usará el catálogo antiguo. La recuperación portable aún no está implementada." else "La autorización biométrica ya no está disponible. Usa el DNI y vuelve a habilitarla en configuración.") }
         }
     }
     fun biometricCancelled() {
+        independentPending = null
         biometricPending = null
         mutable.value = state.value.copy(busy = false, biometricCipher = null)
     }
     fun biometric(cipher: javax.crypto.Cipher) {
-        val pending = biometricPending ?: return
+        val localPending = independentPending
+        val pending = biometricPending
+        if (localPending == null && pending == null) return
         val request = ceremony ?: return
+        val deleteId = state.value.deleteId
+        independentPending = null
         biometricPending = null
         mutable.value = state.value.copy(biometricCipher = null)
         val current = ++generation
@@ -103,23 +117,33 @@ class PasskeyCeremonyViewModel(application: Application) : AndroidViewModel(appl
             var token: String? = null
             try {
                 val result = withContext(Dispatchers.IO) {
-                    device.open(pending, cipher, repository.revision()).use { catalog ->
-                        PasskeyOperations(getApplication()).executeBiometric(request, catalog, pending.revision)
+                    if (localPending != null) {
+                        PasskeyOperations(getApplication()).executeIndependent(request, localPending, cipher, deleteId)
+                    } else {
+                        val legacy = requireNotNull(pending)
+                        device.open(legacy, cipher, repository.revision()).use { catalog ->
+                            PasskeyOperations(getApplication()).executeBiometric(request, catalog, legacy.revision)
+                        }
                     }
                 }
                 token = result.continuationToken
                 ensureActive()
-                if (current == generation) mutable.value = state.value.copy(busy = false, result = result.response)
+                if (current == generation) mutable.value = state.value.copy(busy = false, result = result.response, accounts = result.accounts, deleteId = null)
                 pe.gob.reniec.dnie.diagnostics.DiagnosticLog.event("passkeys", "biometric_completed", "flow" to diagnosticFlow)
             } catch (e: CancellationException) { throw e }
             catch (e: Exception) {
                 pe.gob.reniec.dnie.diagnostics.DiagnosticLog.failure("passkeys", "biometric", e, diagnosticFlow)
-                if (current == generation) mutable.value = state.value.copy(busy = false, error = "No se completó la autorización biométrica. Puedes usar el DNI.")
+                if (current == generation) mutable.value = state.value.copy(busy = false, error = if (state.value.independent) "No se completó la operación del almacén independiente. No se reintentó ni se usó el catálogo antiguo." else "No se completó la autorización biométrica. Puedes usar el DNI.")
             } finally { if (state.value.result == null || current != generation) token?.let { PasskeyAuthorizations.continuation.cancel(it) } }
         }
     }
     fun pin(value: String) { if (!state.value.busy && !state.value.awaiting) mutable.value = state.value.copy(pin = value.filter { it in '0'..'9' }.take(8)) }
     fun request(deleteId: String? = null) {
+        if (state.value.independent) {
+            if (!state.value.ready || state.value.busy || state.value.awaiting) return
+            mutable.value = state.value.copy(deleteId = deleteId)
+            requestBiometric(); return
+        }
         val value = state.value
         if (!value.ready || value.busy || value.awaiting || value.can.length != 6 || value.pin.length !in 4..8) return
         mutable.value = value.copy(awaiting = true, error = null, deleteId = deleteId, accounts = emptyList())
@@ -161,6 +185,7 @@ class PasskeyCeremonyViewModel(application: Application) : AndroidViewModel(appl
         pe.gob.reniec.dnie.diagnostics.DiagnosticLog.event("passkeys", "background_cancel", "flow" to diagnosticFlow)
         ++generation; job?.cancel(); card?.close(); card = null
         biometricPending = null
+        independentPending = null
         mutable.value = state.value.copy(pin = "", awaiting = false, busy = false, accounts = emptyList(), deleteId = null, biometricCipher = null)
         // Restart validation if Android paused us while the request was being verified.
         if (ceremony == null || (ceremony is PasskeyCeremony.Get && !state.value.ready && state.value.result == null)) {

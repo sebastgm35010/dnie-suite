@@ -12,8 +12,8 @@ android {
         applicationId = "pe.gob.reniec.dnie.evolution"
         minSdk = 24
         targetSdk = 34
-        versionCode = 69
-        versionName = "2.0.0-rc21-vault-picker"
+        versionCode = 70
+        versionName = "2.0.0-rc22-passkeys-local"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

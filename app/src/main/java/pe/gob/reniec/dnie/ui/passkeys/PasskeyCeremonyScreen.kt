@@ -37,7 +37,7 @@ fun PasskeyCeremonyScreen(state: PasskeyUiState, onCan: (String) -> Unit, onPin:
                 Button(onBiometric, Modifier.fillMaxWidth(), enabled = !busy) { Text("Autorizar con biometría") }
                 Text("Este teléfono fue autorizado previamente con tu DNI.")
             }
-            item {
+            if (!state.independent) item {
                 OutlinedTextField(state.can, onCan, Modifier.fillMaxWidth(), label = { Text("CAN") }, enabled = !busy,
                     singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword))
                 Spacer(Modifier.height(12.dp))
@@ -46,11 +46,11 @@ fun PasskeyCeremonyScreen(state: PasskeyUiState, onCan: (String) -> Unit, onPin:
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword))
             }
             item {
-                if (!nfcEnabled) Text("Activa NFC en los ajustes del teléfono.", color = MaterialTheme.colorScheme.error)
+                if (!state.independent && !nfcEnabled) Text("Activa NFC en los ajustes del teléfono.", color = MaterialTheme.colorScheme.error)
                 state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 if (state.awaiting) Text(if (state.deleteId == null) "Acerca el DNI y mantenlo hasta terminar." else "Acerca el DNI para eliminar la passkey confirmada.")
-                if (state.busy) { LinearProgressIndicator(Modifier.fillMaxWidth()); Text("Autorizando con DNI…") }
-                Button(onAuthorize, Modifier.fillMaxWidth(), enabled = state.ready && valid && !busy && nfcEnabled) {
+                if (state.busy) { LinearProgressIndicator(Modifier.fillMaxWidth()); Text(if (state.independent) "Autorizando operación…" else "Autorizando con DNI…") }
+                if (!state.independent) Button(onAuthorize, Modifier.fillMaxWidth(), enabled = state.ready && valid && !busy && nfcEnabled) {
                     Text(if (state.managing) "Ver cuentas con DNI" else "Autorizar con DNI")
                 }
                 TextButton(onCancel, Modifier.fillMaxWidth()) { Text("Cerrar") }
@@ -63,11 +63,11 @@ fun PasskeyCeremonyScreen(state: PasskeyUiState, onCan: (String) -> Unit, onPin:
                     }
                 }
             }
-            if (state.managing && state.accounts.isNotEmpty()) item { Text("Para eliminar, escribe de nuevo el PIN, confirma la cuenta y acerca el DNI. Eliminarla puede impedir el acceso al sitio; conserva otro método de recuperación.") }
+            if (state.managing && state.accounts.isNotEmpty()) item { Text(if (state.independent) "Cada eliminación requiere una nueva autorización biométrica. Conserva otro método de acceso al sitio." else "Para eliminar, escribe de nuevo el PIN, confirma la cuenta y acerca el DNI. Eliminarla puede impedir el acceso al sitio; conserva otro método de recuperación.") }
         }
     }
     deleting?.let { id -> AlertDialog(onDismissRequest = { deleting = null }, title = { Text("¿Eliminar esta passkey?") },
-        text = { Text("La eliminación es permanente. Debes autorizarla con este DNI. Conserva otro método de acceso a la cuenta.") },
-        confirmButton = { TextButton(onClick = { deleting = null; onDelete(id) }, enabled = valid) { Text("Eliminar con DNI") } },
+        text = { Text("La eliminación es permanente y requiere una nueva autorización. Conserva otro método de acceso a la cuenta.") },
+        confirmButton = { TextButton(onClick = { deleting = null; onDelete(id) }, enabled = valid || state.independent) { Text("Autorizar eliminación") } },
         dismissButton = { TextButton(onClick = { deleting = null }) { Text("Cancelar") } }) }
 }

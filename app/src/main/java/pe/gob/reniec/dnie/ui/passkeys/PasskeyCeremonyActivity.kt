@@ -41,12 +41,12 @@ class PasskeyCeremonyActivity : androidx.fragment.app.FragmentActivity() {
                     }).also { prompt -> prompt.authenticate(androidx.biometric.BiometricPrompt.PromptInfo.Builder()
                         .setTitle("Autorizar passkey").setSubtitle("Verifica tu identidad en este teléfono")
                         .setAllowedAuthenticators(androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG)
-                        .setNegativeButtonText("Usar DNI").build(), androidx.biometric.BiometricPrompt.CryptoObject(cipher)) }
+                        .setNegativeButtonText(if (state.independent) "Cancelar" else "Usar DNI").build(), androidx.biometric.BiometricPrompt.CryptoObject(cipher)) }
             } }
             LaunchedEffect(state.result) { state.result?.let { setResult(RESULT_OK, it); finish() } }
             DnieTheme { PasskeyCeremonyScreen(state, model::can, model::pin,
                 onAuthorize = { if (reader.isNfcEnabled) { model.request(); reader.enableReaderMode(this) } },
-                onDelete = { if (reader.isNfcEnabled) model.request(it) }, onCancel = { finish() }, nfcEnabled = reader.isNfcEnabled,
+                onDelete = { if (state.independent || reader.isNfcEnabled) model.request(it) }, onCancel = { finish() }, nfcEnabled = reader.isNfcEnabled,
                 onBiometric = model::requestBiometric) }
         }
     }

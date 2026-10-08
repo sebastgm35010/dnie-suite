@@ -52,6 +52,9 @@ class PasskeyToolsActivity : FragmentActivity() {
             Scaffold { padding -> Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("Configuración de passkeys", style = MaterialTheme.typography.headlineSmall)
                 Text("El vencimiento del DNI y de sus certificados son independientes. Un nuevo certificado puede usar una clave diferente.")
+                if (!s.independent) {
+                OutlinedButton(onClick = model::independentEnrollment, enabled = !s.busy && s.action == null && BiometricManager.from(this@PasskeyToolsActivity).canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS) { Text("Activar almacén independiente") }
+                Text("Requiere autorización inicial con DNI y huella. No dispone aún de recuperación portable; mantén otro método de acceso a tus sitios.")
                 Button(onClick = { export.launch("passkeys-dni.dnievault") }, enabled = !s.busy && s.action == null) { Text("Exportar respaldo cifrado") }
                 OutlinedButton(onClick = { restore.launch(arrayOf("application/octet-stream", "*/*")) }, enabled = !s.busy && s.action == null) { Text("Restaurar respaldo con DNI") }
                 OutlinedButton(model::migration, enabled = !s.busy && s.action == null) { Text("Migrar a otro DNI / certificado") }
@@ -64,6 +67,10 @@ class PasskeyToolsActivity : FragmentActivity() {
                     else if (BiometricManager.from(this@PasskeyToolsActivity).canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS) model.enrollment()
                 }, enabled = !s.busy && s.action == null && (s.biometric || BiometricManager.from(this@PasskeyToolsActivity).canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS)) }
                 Text("Opcional: DNI para habilitar; huella para iniciar sesión. Cambiar las huellas, restaurar, migrar o modificar el catálogo requiere volver a habilitarlo. La bóveda no usa esta opción.")
+                } else {
+                    Text("Almacén independiente activo", style = MaterialTheme.typography.titleMedium)
+                    Text("Huella por operación. El DNI ya no cifra este catálogo. Respaldo portable y recuperación pendientes; las herramientas del catálogo antiguo están deshabilitadas.")
+                }
                 Text(s.message)
                 if (s.action != null) {
                     OutlinedTextField(s.can, model::can, Modifier.fillMaxWidth(), label = { Text(if (s.newCard) "CAN del nuevo DNI" else "CAN") }, enabled = !s.busy && !s.awaiting, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword))

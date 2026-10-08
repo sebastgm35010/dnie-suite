@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Nfc
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -62,7 +63,8 @@ fun CertificatesScreen(
     modifier: Modifier = Modifier,
     onOpenVault: () -> Unit = {},
     onOpenBridge: () -> Unit = {},
-    onOpenSuite: () -> Unit = {}
+    onOpenSuite: () -> Unit = {},
+    onOpenPasskeys: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -106,6 +108,9 @@ fun CertificatesScreen(
                     actionIconContentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 actions = {
+                    IconButton(onClick = onOpenPasskeys, enabled = uiState !is CertificatesUiState.ReadingCard) {
+                        Icon(androidx.compose.material.icons.Icons.Default.Key, contentDescription = "Passkeys")
+                    }
                     TextButton(onClick = onOpenSuite, enabled = uiState !is CertificatesUiState.ReadingCard) {
                         Text("Suite", color = MaterialTheme.colorScheme.onPrimary)
                     }

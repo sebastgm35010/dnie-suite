@@ -24,7 +24,8 @@
     "docs/architecture/RECUPERACION_COMPLETA_Y_FLUJO_R5.md": "historical_whole_vault_recovery_architecture",
     "docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md": "current_unified_vault_archive_architecture",
     "docs/architecture/BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md": "current_vault_picker_lifecycle_fix",
-    "docs/architecture/PASSKEYS_ALMACEN_INDEPENDIENTE_R1.md": "user_selected_passkey_architecture_not_implemented"
+    "docs/architecture/PASSKEYS_ALMACEN_INDEPENDIENTE_R1.md": "user_selected_passkey_architecture_not_implemented",
+    "docs/architecture/PASSKEYS_ALMACEN_INDEPENDIENTE_R2.md": "current_independent_passkey_initial_deployment"
   },
   "features": [
     {
@@ -259,9 +260,9 @@
     {
       "id": "passkeys",
       "name": "Proveedor passkeys Android",
-      "status": "implemented_real_use_ui_regression",
-      "note": "Proveedor usado con Facebook/Google; APK69 conserva motor. R6 elimino acceso a configuracion desde Boveda sin reubicarlo. Usuario elige almacen independiente autorizado inicialmente con DNI: diseno registrado, no implementado. Catalogo actual sigue ligado a CIF; respaldo actual no recupera privada eliminada.",
-      "evidence": "docs/architecture/PASSKEYS_ALMACEN_INDEPENDIENTE_R1.md",
+      "status": "implemented_opt_in_physical_pending",
+      "note": "2026-10-08 · Passkeys R2: APK70 instalada; acceso propio restaurado en Mi DNIe. Almacén independiente opt-in con DNI inicial y huella fuerte por operación; conserva credenciales y BE/BS. 145 pruebas JVM y 2 de interfaz pasan; navegación real comprobada. Migración/biometría reales pendientes. Recuperación portable independiente todavía no implementada.",
+      "evidence": "docs/architecture/PASSKEYS_ALMACEN_INDEPENDIENTE_R2.md",
       "files": {
         "engine": [
           "dnie-passkeys-core/src/main/"
@@ -278,7 +279,13 @@
           "docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md",
           "docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md",
           "docs/architecture/RIESGOS_RECUPERACION_PASSWORD_Y_DNI.md",
-          "docs/architecture/PASSKEYS_ALMACEN_INDEPENDIENTE_R1.md"
+          "docs/architecture/PASSKEYS_ALMACEN_INDEPENDIENTE_R1.md",
+          "docs/architecture/PASSKEYS_ALMACEN_INDEPENDIENTE_R2.md"
+        ],
+        "test": [
+          "dnie-passkeys-core/src/test/",
+          "dnie-passkeys-android/src/test/",
+          "app/src/androidTest/java/pe/gob/reniec/dnie/ui/passkeys/"
         ]
       },
       "depends_on": [
@@ -470,9 +477,9 @@
     {
       "id": "dni_migration",
       "feature": "passkeys",
-      "state": "needs_design_and_implementation",
-      "description": "Migracion actual exige clave antigua disponible. Renovacion destructiva no resuelta para passkeys. Disenar almacen independiente opt-in y migracion transaccional conservando credenciales y BE/BS.",
-      "evidence": "docs/architecture/PASSKEYS_ALMACEN_INDEPENDIENTE_R1.md"
+      "state": "needs_physical_test",
+      "description": "APK70 puede abrir catálogo legado con DNI actual y pasarlo al almacén local independiente conservando credenciales/BE/BS. Pendiente prueba física y pruebas de fallo de commit; no recuperar catálogo cuya privada ya se perdió.",
+      "evidence": "docs/architecture/PASSKEYS_ALMACEN_INDEPENDIENTE_R2.md"
     },
     {
       "id": "refirma_issuer",
@@ -519,24 +526,31 @@
     {
       "id": "passkeys_navigation_regression",
       "feature": "passkeys",
-      "state": "open",
-      "description": "Restaurar entrada propia a Passkeys fuera de Boveda: ad6a34b elimino onPasskeys de VaultScreen. Actividad y proveedor permanecen.",
-      "evidence": "docs/architecture/PASSKEYS_ALMACEN_INDEPENDIENTE_R1.md"
+      "state": "resolved",
+      "description": "APK70 restablece acceso propio mediante llave en Mi DNIe; navegación real comprobada por ADB/UI Automator.",
+      "evidence": "docs/architecture/PASSKEYS_ALMACEN_INDEPENDIENTE_R2.md"
     },
     {
       "id": "passkeys_independent_store",
       "feature": "passkeys",
+      "state": "implemented_initial_physical_pending",
+      "description": "Primer almacén independiente opt-in desplegado en APK70; pruebas de motor/UI pasan. Activación DNI/biometría y uso en sitios pendientes; recuperación portable no implementada.",
+      "evidence": "docs/architecture/PASSKEYS_ALMACEN_INDEPENDIENTE_R2.md"
+    },
+    {
+      "id": "passkeys_independent_recovery",
+      "feature": "passkeys",
       "state": "needs_design_and_implementation",
-      "description": "Usuario eligio almacen independiente autorizado inicialmente con DNI. Definir desbloqueo local y recuperacion antes de implementar; no cambiar politica existente automaticamente.",
-      "evidence": "docs/architecture/PASSKEYS_ALMACEN_INDEPENDIENTE_R1.md"
+      "description": "Diseñar y autorizar respaldo/recuperación portable del almacén independiente; APK70 solo ofrece Keystore/biometría. No exportar BE=0 ni usar DNIEBKP2 de archivos para passkeys.",
+      "evidence": "docs/architecture/PASSKEYS_ALMACEN_INDEPENDIENTE_R2.md"
     }
   ],
   "facts": [
     {
       "id": "android_current",
       "category": "artifact",
-      "value": "APK69 / 2.0.0-rc21-vault-picker instalada y versión comprobada; D:/DNIeToolchain/AndroidPackages/dnie-evolution-2.0.0-rc21-vault-picker-debug.apk. 79 pruebas app pasan; 3 instrumentadas de interfaz pasan (8,537 s), con selector simulado. SAF real y DNI físico pendientes.",
-      "evidence": "docs/architecture/BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md"
+      "value": "APK70 / 2.0.0-rc22-passkeys-local instalada; D:/DNIeToolchain/AndroidPackages/dnie-evolution-2.0.0-rc22-passkeys-local-debug.apk. 145 JVM y 2 pruebas UI pasan; activación independiente física pendiente.",
+      "evidence": "docs/architecture/PASSKEYS_ALMACEN_INDEPENDIENTE_R2.md"
     },
     {
       "id": "desktop_current",
@@ -582,9 +596,9 @@
     },
     {
       "id": "independent_keys_proposal",
-      "category": "user_selected_not_implemented",
-      "value": "Passkeys: usuario elige almacen independiente autorizado inicialmente con DNI. Catalogo nuevo y migracion pendientes. DNIEBKP2 de archivos no respalda passkeys.",
-      "evidence": "docs/architecture/PASSKEYS_ALMACEN_INDEPENDIENTE_R1.md"
+      "category": "implemented_opt_in_physical_pending",
+      "value": "Passkeys independientes autorizadas inicialmente con DNI implementadas en APK70, con Keystore biométrico por operación. Recuperación portable pendiente; no modifica automáticamente catálogo legado.",
+      "evidence": "docs/architecture/PASSKEYS_ALMACEN_INDEPENDIENTE_R2.md"
     },
     {
       "id": "identity_hash_not_encryption_secret",

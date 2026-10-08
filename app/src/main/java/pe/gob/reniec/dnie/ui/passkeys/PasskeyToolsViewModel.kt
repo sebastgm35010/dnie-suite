@@ -15,13 +15,14 @@ import javax.crypto.Cipher
 data class PasskeyToolsState(val can: String = "", val pin: String = "", val busy: Boolean = false,
     val awaiting: Boolean = false, val message: String = "Respaldo, migración y autorización de este teléfono.",
     val action: String? = null, val biometric: Boolean = false, val cipher: Cipher? = null,
-    val newCard: Boolean = false, val previous: Boolean = false) {
+    val independent: Boolean = false, val newCard: Boolean = false, val previous: Boolean = false) {
     override fun toString() = "PasskeyToolsState(busy=$busy, privateData=redacted)"
 }
 
 class PasskeyToolsViewModel(app: Application) : AndroidViewModel(app) {
     private val maintenance = PasskeyMaintenance(app)
     private val device = PasskeyDeviceVault(app)
+    private val independent = IndependentPasskeyVault(app)
     private val repository = EncryptedPasskeyRepository(app)
     private val mutable = MutableStateFlow(PasskeyToolsState())
     val state = mutable.asStateFlow()
@@ -33,7 +34,7 @@ class PasskeyToolsViewModel(app: Application) : AndroidViewModel(app) {
     private var job: Job? = null
     private var expiry: Job? = null
     private val diagnosticFlow = java.util.UUID.randomUUID().toString()
-    init { viewModelScope.launch { mutable.value = state.value.copy(can = withContext(Dispatchers.IO) { CanStorage.getSavedCan(app) }, biometric = device.enabled(), previous = maintenance.hasPrevious()) } }
+    init { viewModelScope.launch { mutable.value = state.value.copy(can = withContext(Dispatchers.IO) { CanStorage.getSavedCan(app) }, independent = independent.exists(), biometric = device.enabled(), previous = maintenance.hasPrevious()) } }
     fun can(value: String) { if (!state.value.busy) mutable.value = state.value.copy(can = value.filter { it in '0'..'9' }.take(6)) }
     fun pin(value: String) { if (!state.value.busy) mutable.value = state.value.copy(pin = value.filter { it in '0'..'9' }.take(8)) }
     fun export(uri: Uri) {
@@ -47,10 +48,12 @@ class PasskeyToolsViewModel(app: Application) : AndroidViewModel(app) {
     }
     fun migration() { cancel(); mutable.value = state.value.copy(action = "migration", message = "Primero autoriza con el DNI que abre tus passkeys actuales.") }
     fun previous() { cancel(); mutable.value = state.value.copy(action = "previous", message = "Reemplazar el catálogo actual por el anterior guardado en este teléfono. Autoriza con el DNI que lo protegía.") }
+    fun independentEnrollment() { cancel(); if (!independent.exists()) mutable.value = state.value.copy(action = "independent", message = "Crear o migrar al almacén independiente. Autoriza con el DNI actual y después tu huella. El catálogo anterior se conserva, pero no se usará automáticamente. Esta primera versión no tiene recuperación portable: perder el teléfono o cambiar las huellas puede impedir el acceso a las cuentas nuevas.") }
     fun enrollment() { cancel(); mutable.value = state.value.copy(action = "enroll", message = "Autoriza con DNI y PIN para habilitar la huella en este teléfono. Luego podrás usar las passkeys sin presentar el DNI.") }
     fun disable() = work { device.disable(); PasskeyAuthorizations.continuation.cancel(); mutable.value = state.value.copy(biometric = false); "Acceso biométrico desactivado." }
     fun request() {
         val s = state.value
+        if (s.independent) return
         if (s.busy || s.action == null || s.can.length != 6 || s.pin.length !in 4..8) return
         mutable.value = s.copy(awaiting = true, message = if (s.newCard) "Acerca el nuevo DNI." else "Acerca el DNI.")
         pe.gob.reniec.dnie.diagnostics.DiagnosticLog.event("passkeys", "maintenance_awaiting_card", "stage" to s.action, "mode" to if (s.newCard) "destination" else "source", "flow" to diagnosticFlow)
@@ -92,11 +95,11 @@ class PasskeyToolsViewModel(app: Application) : AndroidViewModel(app) {
                         wipe()
                         mutable.value = state.value.copy(action = null, newCard = false, biometric = false, message = "Migración completada. Las passkeys conservan sus claves; ahora las protege el nuevo DNI.")
                     }
-                    "enroll" -> {
+                    "independent", "enroll" -> {
                         val snapshot = maintenance.open(detected, s.pin, enrollment = true)
                         pending = snapshot.bytes; revision = snapshot.revision
                         armExpiry()
-                        val cipher = withContext(Dispatchers.IO) { device.enrollmentCipher() }
+                        val cipher = withContext(Dispatchers.IO) { if (s.action == "independent") independent.enrollmentCipher() else device.enrollmentCipher() }
                         mutable.value = state.value.copy(cipher = cipher, message = "Confirma tu huella para habilitar este teléfono.")
                         pe.gob.reniec.dnie.diagnostics.DiagnosticLog.event("passkeys", "biometric_enrollment_prompt", "flow" to diagnosticFlow)
                     }
@@ -121,13 +124,19 @@ class PasskeyToolsViewModel(app: Application) : AndroidViewModel(app) {
         val bytes = requireNotNull(pending).copyOf()
         val version = requireNotNull(revision).copyOf()
         try { withContext(Dispatchers.IO) { PasskeyCardAccess.serialized {
-            require(java.security.MessageDigest.isEqual(version, repository.revision()))
+            require(java.security.MessageDigest.isEqual(version, if (repository.exists()) repository.revision() else ByteArray(32)))
             currentCoroutineContext().ensureActive()
-            device.enroll(cipher, bytes, version)
+            if (state.value.action == "independent") {
+                pe.gob.reniec.dnie.passkeys.PasskeyCatalog.decode(bytes).use { independent.initialize(cipher, it) }
+                // Activation is already committed; cleanup failure must not report it as uncommitted.
+                runCatching { device.disable() }
+                PasskeyAuthorizations.continuation.cancel()
+            } else device.enroll(cipher, bytes, version)
         } } } finally { bytes.fill(0) }
-        wipe(); mutable.value = state.value.copy(cipher = null, action = null, biometric = true)
+        val activated = independent.exists()
+        wipe(); mutable.value = state.value.copy(cipher = null, action = null, independent = activated, biometric = !activated)
         pe.gob.reniec.dnie.diagnostics.DiagnosticLog.event("passkeys", "biometric_enrollment_completed", "flow" to diagnosticFlow)
-        "Teléfono habilitado. Cada uso requiere huella; crear, restaurar o migrar sigue requiriendo DNI."
+        if (activated) "Almacén independiente activado. Crear, usar y gestionar passkeys requiere huella; renovar el certificado del DNI no cambia sus claves. Recuperación portable pendiente." else "Teléfono habilitado. Cada uso requiere huella; crear, restaurar o migrar sigue requiriendo DNI."
     }
     fun biometricCancelled() {
         pe.gob.reniec.dnie.diagnostics.DiagnosticLog.event("passkeys", "biometric_enrollment_cancelled", "flow" to diagnosticFlow)

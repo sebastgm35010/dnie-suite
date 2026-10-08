@@ -14,14 +14,14 @@ class DnieCredentialProviderService : CredentialProviderService() {
         if (cancellationSignal.isCanceled) return
         DiagnosticLog.event("passkeys", "provider_create_query", "state" to if (request is BeginCreatePublicKeyCredentialRequest) "public_key" else "unsupported_type")
         callback.onResult(if (request is BeginCreatePublicKeyCredentialRequest)
-            BeginCreateCredentialResponse(listOf(CreateEntry("DNIe · autorizar con NFC y PIN", PasskeyProviderIntents.pending(this, "create"))))
+            BeginCreateCredentialResponse(listOf(CreateEntry(if (IndependentPasskeyVault(this).exists()) "DNIe · almacén independiente con huella" else "DNIe · autorizar con NFC y PIN", PasskeyProviderIntents.pending(this, "create"))))
             else BeginCreateCredentialResponse())
     }
     override fun onBeginGetCredentialRequest(request: BeginGetCredentialRequest, cancellationSignal: CancellationSignal,
         callback: OutcomeReceiver<BeginGetCredentialResponse, GetCredentialException>) {
         if (cancellationSignal.isCanceled) return
         DiagnosticLog.event("passkeys", "provider_get_query", "count" to request.beginGetCredentialOptions.size)
-        val available = request.beginGetCredentialOptions.any { it is BeginGetPublicKeyCredentialOption } && EncryptedPasskeyRepository(this).exists()
+        val available = request.beginGetCredentialOptions.any { it is BeginGetPublicKeyCredentialOption } && (IndependentPasskeyVault(this).exists() || EncryptedPasskeyRepository(this).exists())
         callback.onResult(if (available) BeginGetCredentialResponse(authenticationActions = listOf(
             AuthenticationAction("Desbloquear passkeys con DNIe", PasskeyProviderIntents.pending(this, "discover")))) else BeginGetCredentialResponse())
     }

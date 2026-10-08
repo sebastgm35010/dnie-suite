@@ -43,7 +43,7 @@ class PasskeyMaintenance(private val context: Context,
         try { return withContext(Dispatchers.IO) {
             PasskeyCardAccess(repository).open(card, pin, enrollment).use {
                 owned = it.catalog.encode()
-                Snapshot(requireNotNull(owned), repository.revision())
+                Snapshot(requireNotNull(owned), if (enrollment && !repository.exists()) ByteArray(32) else repository.revision())
             }
         } } catch (e: Throwable) { owned?.fill(0); throw e }
     }
