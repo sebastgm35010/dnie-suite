@@ -337,6 +337,11 @@ INSERT INTO "document_sections" VALUES('docs/architecture/GESTOR_NATIVO_WINDOWS_
 INSERT INTO "document_sections" VALUES('docs/architecture/GESTOR_NATIVO_WINDOWS_RC4.md',5,'Autorización y control');
 INSERT INTO "document_sections" VALUES('docs/architecture/GESTOR_NATIVO_WINDOWS_RC4.md',15,'Vida del motor');
 INSERT INTO "document_sections" VALUES('docs/architecture/GESTOR_NATIVO_WINDOWS_RC4.md',21,'Diagnóstico y límites');
+INSERT INTO "document_sections" VALUES('docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md',1,'Identidad estable entre certificados frente a clave de descifrado');
+INSERT INTO "document_sections" VALUES('docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md',5,'Identificador encontrado');
+INSERT INTO "document_sections" VALUES('docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md',13,'Uso como clave de registro');
+INSERT INTO "document_sections" VALUES('docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md',31,'Por qué no recupera la bóveda');
+INSERT INTO "document_sections" VALUES('docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md',41,'Actualización: contraseña de recuperación solicitada por el usuario');
 INSERT INTO "document_sections" VALUES('docs/architecture/IDPLUG_EXPERIMENTOS_SINTETICOS.md',1,'IDplug: experimentos sintéticos sobre el lector propio');
 INSERT INTO "document_sections" VALUES('docs/architecture/IDPLUG_EXPERIMENTOS_SINTETICOS.md',7,'Método');
 INSERT INTO "document_sections" VALUES('docs/architecture/IDPLUG_EXPERIMENTOS_SINTETICOS.md',15,'Resultados medidos');
@@ -859,6 +864,7 @@ INSERT INTO "documents" VALUES('docs/architecture/DIAGNOSTICO_IDPLUG_APDU_2.md',
 INSERT INTO "documents" VALUES('docs/architecture/DIAGNOSTICO_PUENTE_QR_6.md','Revisión del diagnóstico 6: puente QR','historical_or_reference');
 INSERT INTO "documents" VALUES('docs/architecture/EMPAREJAMIENTO_QR_1_8_1.md','Emparejamiento QR 1.8.1','historical_or_reference');
 INSERT INTO "documents" VALUES('docs/architecture/GESTOR_NATIVO_WINDOWS_RC4.md','Gestor nativo Windows · rc4','historical_or_reference');
+INSERT INTO "documents" VALUES('docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md','Identidad estable entre certificados frente a clave de descifrado','identity_research_not_implemented');
 INSERT INTO "documents" VALUES('docs/architecture/IDPLUG_EXPERIMENTOS_SINTETICOS.md','IDplug: experimentos sintéticos sobre el lector propio','historical_or_reference');
 INSERT INTO "documents" VALUES('docs/architecture/IDPLUG_INSTALADO_Y_PRUEBAS_FIRMADORES.md','IDplug instalado y pruebas pendientes con firmadores','historical_or_reference');
 INSERT INTO "documents" VALUES('docs/architecture/INSPECCION_ESTATICA_CDDNIE.md','Inspección estática del componente Ciudadano Digital','historical_or_reference');
@@ -965,6 +971,8 @@ INSERT INTO "facts" VALUES('icao_independent','invariant','ICAO conexión/sesió
 INSERT INTO "facts" VALUES('historical_processes','operations','Los PIDs y sesiones históricos no representan estado vivo de Windows.','AGENTS.md');
 INSERT INTO "facts" VALUES('renewal_not_key_continuity','invariant','Mismo DNI físico/identidad no garantiza misma clave. Comparar pública; certificado viejo guardado no conserva privada.','docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md');
 INSERT INTO "facts" VALUES('independent_keys_proposal','proposal_not_implemented','Claves propias estables solo resuelven renovación si su protección sobrevive: vía independiente o DNI como política local. Passkeys independientes y bóveda recuperable están en evaluación, no activadas.','docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md');
+INSERT INTO "facts" VALUES('identity_hash_not_encryption_secret','invariant','Subject.serialNumber PNOPE es candidato a continuidad verificada del titular; hash de datos públicos no es clave secreta ni recupera CIF hard antiguo. Identificador aún sin implementar.','docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md');
+INSERT INTO "facts" VALUES('password_recovery_requested','design_requested_not_implemented','Usuario solicita contraseña de recuperación: candidata KDF Argon2id con sal portable e identidad como contexto; CIF hard cotidiano conservado. No hay formato/UI nuevos desplegados.','docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md');
 CREATE TABLE feature_dependencies(source TEXT REFERENCES features(id), target TEXT REFERENCES features(id),
  PRIMARY KEY(source,target));
 INSERT INTO "feature_dependencies" VALUES('pdf_android','cms');
@@ -1186,6 +1194,7 @@ INSERT INTO "feature_files" VALUES('vault','app/src/main/java/pe/gob/reniec/dnie
 INSERT INTO "feature_files" VALUES('vault','app/src/main/java/pe/gob/reniec/dnie/domain/vault/VaultPreviewPolicy.kt','application');
 INSERT INTO "feature_files" VALUES('vault','docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md','architecture');
 INSERT INTO "feature_files" VALUES('vault','docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md','architecture');
+INSERT INTO "feature_files" VALUES('vault','docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md','architecture');
 INSERT INTO "feature_files" VALUES('passkeys','dnie-passkeys-core/src/main/java/pe/gob/reniec/dnie/passkeys/FidoQrPayload.kt','engine');
 INSERT INTO "feature_files" VALUES('passkeys','dnie-passkeys-core/src/main/java/pe/gob/reniec/dnie/passkeys/PasskeyBackupPolicy.kt','engine');
 INSERT INTO "feature_files" VALUES('passkeys','dnie-passkeys-core/src/main/java/pe/gob/reniec/dnie/passkeys/PasskeyCatalog.kt','engine');
@@ -1224,6 +1233,7 @@ INSERT INTO "feature_files" VALUES('passkeys','app/src/main/java/pe/gob/reniec/d
 INSERT INTO "feature_files" VALUES('passkeys','app/src/main/java/pe/gob/reniec/dnie/ui/passkeys/PasskeyValidationMessages.kt','frontend');
 INSERT INTO "feature_files" VALUES('passkeys','docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md','architecture');
 INSERT INTO "feature_files" VALUES('passkeys','docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md','architecture');
+INSERT INTO "feature_files" VALUES('passkeys','docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md','architecture');
 INSERT INTO "feature_files" VALUES('bridge','dnie-bridge-core/src/main/java/pe/gob/reniec/dnie/bridge/BridgeConnectionMethod.kt','engine');
 INSERT INTO "feature_files" VALUES('bridge','dnie-bridge-core/src/main/java/pe/gob/reniec/dnie/bridge/BridgeMode.kt','engine');
 INSERT INTO "feature_files" VALUES('bridge','dnie-bridge-core/src/main/java/pe/gob/reniec/dnie/bridge/BridgeRuntimeSettings.kt','engine');
@@ -1909,6 +1919,7 @@ INSERT INTO "files" VALUES('docs/architecture/DIAGNOSTICO_IDPLUG_APDU_2.md',NULL
 INSERT INTO "files" VALUES('docs/architecture/DIAGNOSTICO_PUENTE_QR_6.md',NULL,'.md','documentation','b162f7e35453c35987b14805f709ce9da84cd20ea84b37b8cca94e6d812e2f3c',3609);
 INSERT INTO "files" VALUES('docs/architecture/EMPAREJAMIENTO_QR_1_8_1.md',NULL,'.md','documentation','72f10dc2686fde5db98b6c7ec0192eb77e3bcd433744d608733d3edebb51b799',2954);
 INSERT INTO "files" VALUES('docs/architecture/GESTOR_NATIVO_WINDOWS_RC4.md',NULL,'.md','documentation','b4e7455707236adcee0c06c336c3584a74023b374807e59ffdc0fc99ecc7b5c2',4133);
+INSERT INTO "files" VALUES('docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md',NULL,'.md','documentation','213d7c7acde562417a2ea474f8edb1404a73156f2244197f010b91d7d09444d3',7302);
 INSERT INTO "files" VALUES('docs/architecture/IDPLUG_EXPERIMENTOS_SINTETICOS.md',NULL,'.md','documentation','f2a5be5fa67ed9c0f54294d42184d0d3b61bde93f8f80cf437192b4d6f716b6a',4699);
 INSERT INTO "files" VALUES('docs/architecture/IDPLUG_INSTALADO_Y_PRUEBAS_FIRMADORES.md',NULL,'.md','documentation','fe63c9bd85e8dcd3f09522e5cdacafd65e33699443ea39be54ca7497d49173e5',4810);
 INSERT INTO "files" VALUES('docs/architecture/INSPECCION_ESTATICA_CDDNIE.md',NULL,'.md','documentation','12b86128fc809493945679a94d5c3cece571d457d0f2972b2e1349128d258c2f',5566);
@@ -1945,7 +1956,7 @@ INSERT INTO "files" VALUES('docs/architecture/PUENTE_PACE_ABIERTO_1_8_4.md',NULL
 INSERT INTO "files" VALUES('docs/architecture/PUENTE_PREVIEW_1_8.md',NULL,'.md','documentation','5657db10f60fba1dfdb6cbe27ae6162ffc325adea8819f474d3ead316db9a2f5',5651);
 INSERT INTO "files" VALUES('docs/architecture/PUENTE_TRANSPARENTE_1_8_3.md',NULL,'.md','documentation','19ed8b41c970bd3bdfe592a12c6aed283424634d6c80a283fddd69acf226fd92',5711);
 INSERT INTO "files" VALUES('docs/architecture/PUENTE_WINDOWS_PROTOCOLO.md',NULL,'.md','documentation','13852d4750d3d624baad7628f5627f68308325f4589467eb4ea0bb1d8a61a48c',19281);
-INSERT INTO "files" VALUES('docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md',NULL,'.md','documentation','53fdb67d18e1aeb5222fa451aed38aa6aeaa563f9c3e67ba5c3a203cba2417c6',7479);
+INSERT INTO "files" VALUES('docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md',NULL,'.md','documentation','0f687f2d00bcb52e9e2e38d3787d70286d99a71721e96bada20b9d3da959e0db',7980);
 INSERT INTO "files" VALUES('docs/architecture/RESULTADO_ANDROID14_SELECCION_JAVA.md',NULL,'.md','documentation','f81728b967c75ab845f380cb2215f433c9c96361b10541818d2faeb7eff8a3ae',3838);
 INSERT INTO "files" VALUES('docs/architecture/RESULTADO_ANDROID15_MSE_IMPLICITO.md',NULL,'.md','documentation','f977af36ef84462c595ecf72df2f067774ed7dda59f62312cb8e6b1c33cdc453',3903);
 INSERT INTO "files" VALUES('docs/architecture/RESULTADO_ANDROID16_TRANSICION_PKI.md',NULL,'.md','documentation','71c205a7ed590364137fd79ed255d363397481b350fc84edc21301f86d339b08',3780);
@@ -2155,7 +2166,7 @@ INSERT INTO "files" VALUES('tools/host-diagnostics/watch-tailnet-session.py',NUL
 INSERT INTO "files" VALUES('tools/passkey-verifier/package-lock.json',NULL,'.json','tool','5acf03ac62c4bb9bafe94f6d35d5d2132e158ca7aaba3079f2ce3e840bae20ef',13038);
 INSERT INTO "files" VALUES('tools/passkey-verifier/package.json',NULL,'.json','tool','8020c404b9830a8a17ba7f38f5635afd5f431fb878c926a58d9cf88ca15d85a9',191);
 INSERT INTO "files" VALUES('tools/passkey-verifier/verify.mjs',NULL,'.mjs','tool','db41e3ac10789bd35a31cbc752373d699c8a282965f9749b07baa2ed25a7a9ab',2043);
-INSERT INTO "files" VALUES('tools/project-registry/catalog.json',NULL,'.json','tool','851fc0f16caf84b0b12eddb6a8bbcf17b1c5184525c57410f09597c6d56d70eb',19145);
+INSERT INTO "files" VALUES('tools/project-registry/catalog.json',NULL,'.json','tool','7d65924257cfcf9224d9e0f55c5de539b41ae750e5fdcbdf160c7c79de13824e',20210);
 INSERT INTO "files" VALUES('tools/project-registry/registry.py',NULL,'.py','tool','34c9eeb70779c4c9968250b8542d94b4a29d35d048f87624679b2c5a879fa986',11521);
 INSERT INTO "files" VALUES('tools/project-registry/schema.sql',NULL,'.sql','tool','3ab4590979168acbb2e9b654cd5abc9a929fd97eac37f24bea142cd30647a2fb',2808);
 INSERT INTO "files" VALUES('tools/project-registry/test_registry.py',NULL,'.py','tool','df595b00d8a8bd25c579e1e6c41f81dc248a8511417ebf599a24b0d39682e289',4254);
@@ -5396,7 +5407,7 @@ INSERT INTO "metadata" VALUES('catalog_review_date','2026-10-07');
 INSERT INTO "metadata" VALUES('index_method','tracked files; lexical symbols/imports, not runtime call graph');
 INSERT INTO "metadata" VALUES('project','DnieSignerPeruEvolution');
 INSERT INTO "metadata" VALUES('schema_version','1');
-INSERT INTO "metadata" VALUES('source_commit','3eca6e73caedbc671e85a73e5f51c6c24bad512c');
+INSERT INTO "metadata" VALUES('source_commit','8896c2f78d4367ac7ace7e8dc51c2a7f40d9f362');
 CREATE TABLE module_dependencies(source TEXT REFERENCES modules(id), target TEXT REFERENCES modules(id),
  scope TEXT NOT NULL, line INTEGER NOT NULL, PRIMARY KEY(source,target,scope,line));
 INSERT INTO "module_dependencies" VALUES('app','dnie-core','implementation',99);
@@ -5470,7 +5481,7 @@ INSERT INTO "modules" VALUES('tools/windows-reader-selector','windows',NULL);
 INSERT INTO "modules" VALUES('tools/windows-suite-integration','windows',NULL);
 CREATE TABLE pending(id TEXT PRIMARY KEY, feature TEXT REFERENCES features(id), state TEXT NOT NULL,
  description TEXT NOT NULL, evidence TEXT REFERENCES documents(path));
-INSERT INTO "pending" VALUES('destructive_renewal_recovery','vault','design_required_p0','Bóveda y passkeys: diseñar vía independiente/preparación previa a sustitución de claves. Respaldos actuales no sobreviven a pérdida de privada; no activar nuevo modo sin elección expresa.','docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md');
+INSERT INTO "pending" VALUES('destructive_renewal_recovery','vault','design_required_p0','P0 bóveda/passkeys: especificar e implementar recuperación por contraseña solicitada; KDF con sal portable e identidad como contexto, conservar CIF hard habitual. Preparar antes de perder privada; versión actual no la incorpora.','docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md');
 INSERT INTO "pending" VALUES('tsa_recovery','tsa','open','Recuperación persistente de solo TSA sin repetir operación privada.','docs/suite/VALIDACIONES_SINTETICAS_H14.md');
 INSERT INTO "pending" VALUES('online_preflight','validation','open','Validación online automática previa a firma; actual consulta manual.','docs/suite/VALIDACIONES_SINTETICAS_H14.md');
 INSERT INTO "pending" VALUES('global_mode_lock','orchestration','open','Exclusión global Bridge/Suite entre procesos; guard actual local a GUI.','docs/suite/INTEGRACION_BRIDGE_MODULAR_H13.md');

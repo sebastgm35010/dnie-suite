@@ -49,3 +49,7 @@ No usar como clave de recuperación DNI, CAN, PIN, datos ICAO, nombre, fecha de 
 P0: diseñar y preparar continuidad antes de recomendar renovar o perder el DNI. La firma PDF/CMS existente no se modifica: verificar firmas antiguas usa pública/evidencias; no exige conservar la privada para validarlas.
 
 Investigación posterior: [casos de comunidad y comparación de claves propias/DNI](INVESTIGACION_RECUPERACION_COMUNIDAD.md). Incluye propuesta de almacenamiento de passkeys independiente, sin activar ningún cambio de política.
+
+Identidad entre emisiones: [Subject.serialNumber / PNOPE e identidad estable](IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md). Un ID público permite asociar titular; no derivar una clave secreta de recuperación.
+
+Elección de diseño posterior: usuario solicita contraseña de recuperación como secreto independiente; especificación candidata Argon2id + identidad + sal portable en IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md. No se ha desplegado cifrado/UX nueva ni convertido contenedores existentes.

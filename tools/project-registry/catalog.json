@@ -13,7 +13,8 @@
     "docs/suite/ANDROID_TSA_RENIEC_H11.md": "validation_or_architecture_reference",
     "docs/suite/INTEGRACION_BRIDGE_MODULAR_H13.md": "validation_or_architecture_reference",
     "docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md": "current_recovery_architecture",
-    "docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md": "research_recovery_proposal"
+    "docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md": "research_recovery_proposal",
+    "docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md": "identity_research_not_implemented"
   },
   "features": [
     {
@@ -235,7 +236,8 @@
         ],
         "architecture": [
           "docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md",
-          "docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md"
+          "docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md",
+          "docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md"
         ]
       },
       "depends_on": [
@@ -261,7 +263,8 @@
         ],
         "architecture": [
           "docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md",
-          "docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md"
+          "docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md",
+          "docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md"
         ]
       },
       "depends_on": [
@@ -361,7 +364,7 @@
       "id": "destructive_renewal_recovery",
       "feature": "vault",
       "state": "design_required_p0",
-      "description": "Bóveda y passkeys: diseñar vía independiente/preparación previa a sustitución de claves. Respaldos actuales no sobreviven a pérdida de privada; no activar nuevo modo sin elección expresa.",
+      "description": "P0 bóveda/passkeys: especificar e implementar recuperación por contraseña solicitada; KDF con sal portable e identidad como contexto, conservar CIF hard habitual. Preparar antes de perder privada; versión actual no la incorpora.",
       "evidence": "docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md"
     },
     {
@@ -517,6 +520,18 @@
       "category": "proposal_not_implemented",
       "value": "Claves propias estables solo resuelven renovación si su protección sobrevive: vía independiente o DNI como política local. Passkeys independientes y bóveda recuperable están en evaluación, no activadas.",
       "evidence": "docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md"
+    },
+    {
+      "id": "identity_hash_not_encryption_secret",
+      "category": "invariant",
+      "value": "Subject.serialNumber PNOPE es candidato a continuidad verificada del titular; hash de datos públicos no es clave secreta ni recupera CIF hard antiguo. Identificador aún sin implementar.",
+      "evidence": "docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md"
+    },
+    {
+      "id": "password_recovery_requested",
+      "category": "design_requested_not_implemented",
+      "value": "Usuario solicita contraseña de recuperación: candidata KDF Argon2id con sal portable e identidad como contexto; CIF hard cotidiano conservado. No hay formato/UI nuevos desplegados.",
+      "evidence": "docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md"
     }
   ]
 }
