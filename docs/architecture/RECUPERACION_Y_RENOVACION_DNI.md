@@ -47,3 +47,5 @@ No usar como clave de recuperación DNI, CAN, PIN, datos ICAO, nombre, fecha de 
 - Pruebas sintéticas: misma identidad/nueva pareja RSA; mismo certificado renovado con misma pública; clave vieja ausente; respaldo antiguo inaccesible; recuperación preparada; secreto incorrecto; corte antes/después del reenlace; invariantes BE/BS.
 
 P0: diseñar y preparar continuidad antes de recomendar renovar o perder el DNI. La firma PDF/CMS existente no se modifica: verificar firmas antiguas usa pública/evidencias; no exige conservar la privada para validarlas.
+
+Investigación posterior: [casos de comunidad y comparación de claves propias/DNI](INVESTIGACION_RECUPERACION_COMUNIDAD.md). Incluye propuesta de almacenamiento de passkeys independiente, sin activar ningún cambio de política.

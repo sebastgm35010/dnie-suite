@@ -241,12 +241,12 @@ INSERT INTO "document_sections" VALUES('dnie-signing-link/README.md',1,'Canal pr
 INSERT INTO "document_sections" VALUES('dnie-signing-link/README.md',47,'Extensión H2');
 INSERT INTO "document_sections" VALUES('dnie-signing-ui/README.md',1,'Interfaz aislada de DNIe Suite');
 INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',1,'Estado vigente · corrección USB tras reinicio');
-INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',81,'Registro previo conservado: antes del reinicio');
-INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',84,'Por dónde retomar');
-INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',91,'Versión y checkpoint');
-INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',99,'Estado comprobado');
-INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',107,'Evidencia y límites');
-INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',115,'Historia');
+INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',83,'Registro previo conservado: antes del reinicio');
+INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',86,'Por dónde retomar');
+INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',93,'Versión y checkpoint');
+INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',101,'Estado comprobado');
+INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',109,'Evidencia y límites');
+INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',117,'Historia');
 INSERT INTO "document_sections" VALUES('docs/PENDIENTES_ACTUALES.md',1,'Pendientes actuales · Windows rc4 USB / Android rc4-usb');
 INSERT INTO "document_sections" VALUES('docs/PENDIENTES_ACTUALES.md',53,'Siguiente secuencia');
 INSERT INTO "document_sections" VALUES('docs/PENDIENTES_ACTUALES.md',67,'Seguridad y distribución');
@@ -370,6 +370,12 @@ INSERT INTO "document_sections" VALUES('docs/architecture/INTEGRACION_VPCD_PACE_
 INSERT INTO "document_sections" VALUES('docs/architecture/INTEGRACION_VPCD_PACE_2_0.md',64,'Arquitectura propuesta');
 INSERT INTO "document_sections" VALUES('docs/architecture/INTEGRACION_VPCD_PACE_2_0.md',87,'Perfiles separados');
 INSERT INTO "document_sections" VALUES('docs/architecture/INTEGRACION_VPCD_PACE_2_0.md',95,'Orden de implementación y aceptación');
+INSERT INTO "document_sections" VALUES('docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md',1,'Claves estables de la app, DNI y recuperación: referencias de comunidad');
+INSERT INTO "document_sections" VALUES('docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md',5,'Casos encontrados');
+INSERT INTO "document_sections" VALUES('docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md',16,'Evaluación de la propuesta del usuario');
+INSERT INTO "document_sections" VALUES('docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md',27,'Recomendación propuesta para passkeys');
+INSERT INTO "document_sections" VALUES('docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md',35,'Recomendación propuesta para bóveda');
+INSERT INTO "document_sections" VALUES('docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md',47,'Decisiones aún abiertas');
 INSERT INTO "document_sections" VALUES('docs/architecture/LECTOR_PCSC_IMPLEMENTACION_INICIAL.md',1,'Lector PC/SC propio: implementación inicial');
 INSERT INTO "document_sections" VALUES('docs/architecture/LECTOR_PCSC_IMPLEMENTACION_INICIAL.md',5,'Separación de responsabilidades');
 INSERT INTO "document_sections" VALUES('docs/architecture/LECTOR_PCSC_IMPLEMENTACION_INICIAL.md',16,'ABI local');
@@ -858,6 +864,7 @@ INSERT INTO "documents" VALUES('docs/architecture/IDPLUG_INSTALADO_Y_PRUEBAS_FIR
 INSERT INTO "documents" VALUES('docs/architecture/INSPECCION_ESTATICA_CDDNIE.md','Inspección estática del componente Ciudadano Digital','historical_or_reference');
 INSERT INTO "documents" VALUES('docs/architecture/INSPECCION_HOST_RENIEC.md','Inspección del componente oficial y middleware RENIEC','historical_or_reference');
 INSERT INTO "documents" VALUES('docs/architecture/INTEGRACION_VPCD_PACE_2_0.md','Transporte VPCD y adaptación PACE para el puente 2.0','historical_or_reference');
+INSERT INTO "documents" VALUES('docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md','Claves estables de la app, DNI y recuperación: referencias de comunidad','research_recovery_proposal');
 INSERT INTO "documents" VALUES('docs/architecture/LECTOR_PCSC_IMPLEMENTACION_INICIAL.md','Lector PC/SC propio: implementación inicial','historical_or_reference');
 INSERT INTO "documents" VALUES('docs/architecture/LECTOR_PCSC_PRUEBAS_SINTETICAS.md','Lector PC/SC: firma e instalación de pruebas, 5 de octubre de 2026','historical_or_reference');
 INSERT INTO "documents" VALUES('docs/architecture/LECTOR_UID_1_8_5.md','Consulta UID del lector y cierre reproducible','historical_or_reference');
@@ -957,6 +964,7 @@ INSERT INTO "facts" VALUES('pace_invariant','invariant','IAS → PKI → PACE �
 INSERT INTO "facts" VALUES('icao_independent','invariant','ICAO conexión/sesión nueva; lectura por bloques, sin MRZ/imagen en consola.','AGENTS.md');
 INSERT INTO "facts" VALUES('historical_processes','operations','Los PIDs y sesiones históricos no representan estado vivo de Windows.','AGENTS.md');
 INSERT INTO "facts" VALUES('renewal_not_key_continuity','invariant','Mismo DNI físico/identidad no garantiza misma clave. Comparar pública; certificado viejo guardado no conserva privada.','docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md');
+INSERT INTO "facts" VALUES('independent_keys_proposal','proposal_not_implemented','Claves propias estables solo resuelven renovación si su protección sobrevive: vía independiente o DNI como política local. Passkeys independientes y bóveda recuperable están en evaluación, no activadas.','docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md');
 CREATE TABLE feature_dependencies(source TEXT REFERENCES features(id), target TEXT REFERENCES features(id),
  PRIMARY KEY(source,target));
 INSERT INTO "feature_dependencies" VALUES('pdf_android','cms');
@@ -1177,6 +1185,7 @@ INSERT INTO "feature_files" VALUES('vault','app/src/main/java/pe/gob/reniec/dnie
 INSERT INTO "feature_files" VALUES('vault','app/src/main/java/pe/gob/reniec/dnie/domain/vault/VaultNoteDraft.kt','application');
 INSERT INTO "feature_files" VALUES('vault','app/src/main/java/pe/gob/reniec/dnie/domain/vault/VaultPreviewPolicy.kt','application');
 INSERT INTO "feature_files" VALUES('vault','docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md','architecture');
+INSERT INTO "feature_files" VALUES('vault','docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md','architecture');
 INSERT INTO "feature_files" VALUES('passkeys','dnie-passkeys-core/src/main/java/pe/gob/reniec/dnie/passkeys/FidoQrPayload.kt','engine');
 INSERT INTO "feature_files" VALUES('passkeys','dnie-passkeys-core/src/main/java/pe/gob/reniec/dnie/passkeys/PasskeyBackupPolicy.kt','engine');
 INSERT INTO "feature_files" VALUES('passkeys','dnie-passkeys-core/src/main/java/pe/gob/reniec/dnie/passkeys/PasskeyCatalog.kt','engine');
@@ -1214,6 +1223,7 @@ INSERT INTO "feature_files" VALUES('passkeys','app/src/main/java/pe/gob/reniec/d
 INSERT INTO "feature_files" VALUES('passkeys','app/src/main/java/pe/gob/reniec/dnie/ui/passkeys/PasskeyToolsViewModel.kt','frontend');
 INSERT INTO "feature_files" VALUES('passkeys','app/src/main/java/pe/gob/reniec/dnie/ui/passkeys/PasskeyValidationMessages.kt','frontend');
 INSERT INTO "feature_files" VALUES('passkeys','docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md','architecture');
+INSERT INTO "feature_files" VALUES('passkeys','docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md','architecture');
 INSERT INTO "feature_files" VALUES('bridge','dnie-bridge-core/src/main/java/pe/gob/reniec/dnie/bridge/BridgeConnectionMethod.kt','engine');
 INSERT INTO "feature_files" VALUES('bridge','dnie-bridge-core/src/main/java/pe/gob/reniec/dnie/bridge/BridgeMode.kt','engine');
 INSERT INTO "feature_files" VALUES('bridge','dnie-bridge-core/src/main/java/pe/gob/reniec/dnie/bridge/BridgeRuntimeSettings.kt','engine');
@@ -1877,7 +1887,7 @@ INSERT INTO "files" VALUES('dnie-vault-core/src/test/java/pe/gob/reniec/dnie/vau
 INSERT INTO "files" VALUES('dnie-vault-core/src/test/java/pe/gob/reniec/dnie/vault/VaultContainerTest.kt','dnie-vault-core','.kt','test','a6b4f3c80bcc02a5f01782facb38f9c564270c41009f5ea470703cc91265995e',8902);
 INSERT INTO "files" VALUES('dnie-vault-core/src/test/java/pe/gob/reniec/dnie/vault/VaultInventoryIndexTest.kt','dnie-vault-core','.kt','test','c9ad9845f5df02993bc44fe7c8679306880ad010700aaccb6b5bf13457376aa7',1957);
 INSERT INTO "files" VALUES('dnie-vault-core/src/test/java/pe/gob/reniec/dnie/vault/VaultLibraryTest.kt','dnie-vault-core','.kt','test','6fc861c7a0c069c3fc2f8b6c1b6486a7b59ea2ce6ecbe509cebc115277b43170',9963);
-INSERT INTO "files" VALUES('docs/CONTEXTO_ACTUAL.md',NULL,'.md','documentation','75c4d53ddc8852ea416ee322a39145171cedc767bca08a2f8189574c58f67963',22289);
+INSERT INTO "files" VALUES('docs/CONTEXTO_ACTUAL.md',NULL,'.md','documentation','c0efaf8de0ea47b604ed734013ced75e6bf647a7e687041c8a1b0237e27c6779',22694);
 INSERT INTO "files" VALUES('docs/PENDIENTES_ACTUALES.md',NULL,'.md','documentation','16d403450f32ec5ebb6a11a28b309ac8ab05d0447b8792b12555844fc3961667',19135);
 INSERT INTO "files" VALUES('docs/README.md',NULL,'.md','documentation','f8a67f28622d75a7891437265bc3eae8228a7b295059225c5e7894c0a0384c6e',5012);
 INSERT INTO "files" VALUES('docs/architecture/AISLAMIENTO_USB_USBDK.md',NULL,'.md','documentation','dd2fd5c975277088907e2c70b9bca34c8d5fb8a13d4a51ae3abc58ff475b3477',4647);
@@ -1904,6 +1914,7 @@ INSERT INTO "files" VALUES('docs/architecture/IDPLUG_INSTALADO_Y_PRUEBAS_FIRMADO
 INSERT INTO "files" VALUES('docs/architecture/INSPECCION_ESTATICA_CDDNIE.md',NULL,'.md','documentation','12b86128fc809493945679a94d5c3cece571d457d0f2972b2e1349128d258c2f',5566);
 INSERT INTO "files" VALUES('docs/architecture/INSPECCION_HOST_RENIEC.md',NULL,'.md','documentation','dd2d58717f30fc0b45ac35685f8ab6c470ce9790fbc57a20f0fa4f677b110723',11520);
 INSERT INTO "files" VALUES('docs/architecture/INTEGRACION_VPCD_PACE_2_0.md',NULL,'.md','documentation','cf22e41ef109119960cc0e3f59354fa485eb80e231bcf98182bfe8ed6f0f6687',11001);
+INSERT INTO "files" VALUES('docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md',NULL,'.md','documentation','79f339b97b9488e18b30cd6204e40924adf46b1671e72274ce5d0a85d5726092',6876);
 INSERT INTO "files" VALUES('docs/architecture/LECTOR_PCSC_IMPLEMENTACION_INICIAL.md',NULL,'.md','documentation','e893c2e39d781b8568b52f216a110193106644444d01a3c1c7e79b53f9a1df64',9248);
 INSERT INTO "files" VALUES('docs/architecture/LECTOR_PCSC_PRUEBAS_SINTETICAS.md',NULL,'.md','documentation','b2d5d2d93f88cfabf12001782fff72b639486e9fb35a24678fdac3f4b5972867',4980);
 INSERT INTO "files" VALUES('docs/architecture/LECTOR_UID_1_8_5.md',NULL,'.md','documentation','d2cf818739538065db038376eb14ac001ed088fcc64a9e74f86fd66d11428162',5336);
@@ -1934,7 +1945,7 @@ INSERT INTO "files" VALUES('docs/architecture/PUENTE_PACE_ABIERTO_1_8_4.md',NULL
 INSERT INTO "files" VALUES('docs/architecture/PUENTE_PREVIEW_1_8.md',NULL,'.md','documentation','5657db10f60fba1dfdb6cbe27ae6162ffc325adea8819f474d3ead316db9a2f5',5651);
 INSERT INTO "files" VALUES('docs/architecture/PUENTE_TRANSPARENTE_1_8_3.md',NULL,'.md','documentation','19ed8b41c970bd3bdfe592a12c6aed283424634d6c80a283fddd69acf226fd92',5711);
 INSERT INTO "files" VALUES('docs/architecture/PUENTE_WINDOWS_PROTOCOLO.md',NULL,'.md','documentation','13852d4750d3d624baad7628f5627f68308325f4589467eb4ea0bb1d8a61a48c',19281);
-INSERT INTO "files" VALUES('docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md',NULL,'.md','documentation','0fef73be8cacd8de086abb86c7ad48c43407514ad9441fcdd529975bd1ff86a3',7197);
+INSERT INTO "files" VALUES('docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md',NULL,'.md','documentation','53fdb67d18e1aeb5222fa451aed38aa6aeaa563f9c3e67ba5c3a203cba2417c6',7479);
 INSERT INTO "files" VALUES('docs/architecture/RESULTADO_ANDROID14_SELECCION_JAVA.md',NULL,'.md','documentation','f81728b967c75ab845f380cb2215f433c9c96361b10541818d2faeb7eff8a3ae',3838);
 INSERT INTO "files" VALUES('docs/architecture/RESULTADO_ANDROID15_MSE_IMPLICITO.md',NULL,'.md','documentation','f977af36ef84462c595ecf72df2f067774ed7dda59f62312cb8e6b1c33cdc453',3903);
 INSERT INTO "files" VALUES('docs/architecture/RESULTADO_ANDROID16_TRANSICION_PKI.md',NULL,'.md','documentation','71c205a7ed590364137fd79ed255d363397481b350fc84edc21301f86d339b08',3780);
@@ -2144,7 +2155,7 @@ INSERT INTO "files" VALUES('tools/host-diagnostics/watch-tailnet-session.py',NUL
 INSERT INTO "files" VALUES('tools/passkey-verifier/package-lock.json',NULL,'.json','tool','5acf03ac62c4bb9bafe94f6d35d5d2132e158ca7aaba3079f2ce3e840bae20ef',13038);
 INSERT INTO "files" VALUES('tools/passkey-verifier/package.json',NULL,'.json','tool','8020c404b9830a8a17ba7f38f5635afd5f431fb878c926a58d9cf88ca15d85a9',191);
 INSERT INTO "files" VALUES('tools/passkey-verifier/verify.mjs',NULL,'.mjs','tool','db41e3ac10789bd35a31cbc752373d699c8a282965f9749b07baa2ed25a7a9ab',2043);
-INSERT INTO "files" VALUES('tools/project-registry/catalog.json',NULL,'.json','tool','ef85918da8f20ce2bd15885b8361ce8570211df8e43c213aee41006c026f9690',18493);
+INSERT INTO "files" VALUES('tools/project-registry/catalog.json',NULL,'.json','tool','851fc0f16caf84b0b12eddb6a8bbcf17b1c5184525c57410f09597c6d56d70eb',19145);
 INSERT INTO "files" VALUES('tools/project-registry/registry.py',NULL,'.py','tool','34c9eeb70779c4c9968250b8542d94b4a29d35d048f87624679b2c5a879fa986',11521);
 INSERT INTO "files" VALUES('tools/project-registry/schema.sql',NULL,'.sql','tool','3ab4590979168acbb2e9b654cd5abc9a929fd97eac37f24bea142cd30647a2fb',2808);
 INSERT INTO "files" VALUES('tools/project-registry/test_registry.py',NULL,'.py','tool','df595b00d8a8bd25c579e1e6c41f81dc248a8511417ebf599a24b0d39682e289',4254);
@@ -5385,7 +5396,7 @@ INSERT INTO "metadata" VALUES('catalog_review_date','2026-10-07');
 INSERT INTO "metadata" VALUES('index_method','tracked files; lexical symbols/imports, not runtime call graph');
 INSERT INTO "metadata" VALUES('project','DnieSignerPeruEvolution');
 INSERT INTO "metadata" VALUES('schema_version','1');
-INSERT INTO "metadata" VALUES('source_commit','4eabf7f8f7fbe295fdd113fef9b31abd68bf4d7d');
+INSERT INTO "metadata" VALUES('source_commit','3eca6e73caedbc671e85a73e5f51c6c24bad512c');
 CREATE TABLE module_dependencies(source TEXT REFERENCES modules(id), target TEXT REFERENCES modules(id),
  scope TEXT NOT NULL, line INTEGER NOT NULL, PRIMARY KEY(source,target,scope,line));
 INSERT INTO "module_dependencies" VALUES('app','dnie-core','implementation',99);

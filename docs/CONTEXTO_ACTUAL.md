@@ -1,5 +1,7 @@
 # Estado vigente · corrección USB tras reinicio
 
+2026-10-07 · Investigación de recuperación: casos KeePassXC/YubiKey y age, protección intermedia de claves Bitwarden y límites Keystore. Propuesta: passkeys con almacenamiento independiente opcional; bóveda con clave propia estable, DNI y recuperación alternativa. Ningún cambio de autorización/cifrado activado. [Fuentes y comparación](architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md).
+
 2026-10-07 · P0 conceptual de bóveda/passkeys: renovación puede sustituir la privada aun en el mismo chip. Respaldos actuales siguen ligados a la clave anterior y no recuperan tras su eliminación; migración actual exige abrir con clave vieja y nueva después. Recuperación independiente/asistente previo todavía sin implementar ni activar. [Auditoría y alternativas](architecture/RECUPERACION_Y_RENOVACION_DNI.md).
 
 2026-10-07 · Registro estable SQL: SQLite portable de archivos, módulos, símbolos, dependencias, mapa de funciones y pendientes revisados, con evidencia documental. Consulta/actualización offline por CLI Python; inventario verificable por SHA256 y exportación SQL versionable. [Uso y límites](project-registry/README.md).

@@ -12,7 +12,8 @@
     "docs/suite/REVOCACION_CA_DIAGNOSTICO_H9B.md": "validation_or_architecture_reference",
     "docs/suite/ANDROID_TSA_RENIEC_H11.md": "validation_or_architecture_reference",
     "docs/suite/INTEGRACION_BRIDGE_MODULAR_H13.md": "validation_or_architecture_reference",
-    "docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md": "current_recovery_architecture"
+    "docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md": "current_recovery_architecture",
+    "docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md": "research_recovery_proposal"
   },
   "features": [
     {
@@ -233,7 +234,8 @@
           "app/src/main/java/pe/gob/reniec/dnie/domain/vault/"
         ],
         "architecture": [
-          "docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md"
+          "docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md",
+          "docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md"
         ]
       },
       "depends_on": [
@@ -258,7 +260,8 @@
           "app/src/main/java/pe/gob/reniec/dnie/ui/passkeys/"
         ],
         "architecture": [
-          "docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md"
+          "docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md",
+          "docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md"
         ]
       },
       "depends_on": [
@@ -508,6 +511,12 @@
       "category": "invariant",
       "value": "Mismo DNI físico/identidad no garantiza misma clave. Comparar pública; certificado viejo guardado no conserva privada.",
       "evidence": "docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md"
+    },
+    {
+      "id": "independent_keys_proposal",
+      "category": "proposal_not_implemented",
+      "value": "Claves propias estables solo resuelven renovación si su protección sobrevive: vía independiente o DNI como política local. Passkeys independientes y bóveda recuperable están en evaluación, no activadas.",
+      "evidence": "docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md"
     }
   ]
 }
