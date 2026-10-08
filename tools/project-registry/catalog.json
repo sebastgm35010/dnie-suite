@@ -1,5 +1,5 @@
 {
-  "review_date": "2026-10-07",
+  "review_date": "2026-10-08",
   "document_roles": {
     "AGENTS.md": "operational_instructions",
     "docs/CONTEXTO_ACTUAL.md": "current_state",
@@ -19,8 +19,9 @@
     "docs/architecture/CICLO_ARCHIVO_Y_PLAN_PRUEBAS_RECUPERACION.md": "proposed_lifecycle_and_test_plan",
     "docs/architecture/PRUEBAS_RECUPERACION_WINDOWS_R1.md": "synthetic_validation_recovery_windows",
     "docs/architecture/PRUEBAS_RECUPERACION_WINDOWS_R2.md": "synthetic_validation_recovery_windows",
-    "docs/architecture/RECUPERACION_ANDROID_R3.md": "current_android_recovery_architecture",
-    "docs/architecture/BOVEDA_UI_SIMPLE_R4.md": "current_vault_ui_architecture"
+    "docs/architecture/RECUPERACION_ANDROID_R3.md": "historical_android_recovery_architecture",
+    "docs/architecture/BOVEDA_UI_SIMPLE_R4.md": "historical_vault_ui_architecture",
+    "docs/architecture/RECUPERACION_COMPLETA_Y_FLUJO_R5.md": "current_whole_vault_recovery_architecture"
   },
   "features": [
     {
@@ -225,8 +226,8 @@
       "id": "vault",
       "name": "Bóveda personal cifrada",
       "status": "implemented_real_use",
-      "note": "APK66 instalado: Archivos/DNI/Recuperar/Más, tarjetas compactas, selección múltiple carpeta-etiquetas/papelera/restaurar. Cifrado y autorización preservados.",
-      "evidence": "docs/architecture/BOVEDA_UI_SIMPLE_R4.md",
+      "note": "APK67: Mis archivos/Protección/Copias. Protección y recuperación completa incl. papelera; ZIP descifrado sin modificar originales. Recifrado nuevo DNI manual.",
+      "evidence": "docs/architecture/RECUPERACION_COMPLETA_Y_FLUJO_R5.md",
       "files": {
         "engine": [
           "dnie-vault-core/src/main/"
@@ -371,15 +372,16 @@
       "id": "vault_recovery",
       "name": "Recuperación portable con paquete separado",
       "status": "android_integrated_physical_pending",
-      "note": "APK65 instalado; 23 pruebas motor + 76 app sin fallos; instrumentación Android real OK (1 test). Paquete por archivo; DNI/SAF real y cruces pendientes.",
-      "evidence": "docs/architecture/RECUPERACION_ANDROID_R3.md",
+      "note": "2026-10-08 · Bóveda R5: APK67 instalada. Mis archivos/Protección/Copias; protección y recuperación de toda la bóveda (incluida papelera), PIN introducido una vez, ZIP recuperado verificado antes de publicar. 79 pruebas app + 23 motor sin fallos; dos pruebas instrumentadas de recuperación pasan. Prueba visual superada en teléfono desbloqueado (1 test, 2.096 s). Recifrado con DNI nuevo manual y lote NFC/SAF real pendientes.",
+      "evidence": "docs/architecture/RECUPERACION_COMPLETA_Y_FLUJO_R5.md",
       "files": {
         "engine": [
           "dnie-vault-recovery/src/main/"
         ],
         "test": [
           "dnie-vault-recovery/src/test/",
-          "app/src/androidTest/java/pe/gob/reniec/dnie/data/vault/VaultRecoveryInstrumentedTest.kt"
+          "app/src/androidTest/java/pe/gob/reniec/dnie/data/vault/VaultRecoveryInstrumentedTest.kt",
+          "app/src/test/java/pe/gob/reniec/dnie/domain/UnlockRecoveryBatchTest.kt"
         ],
         "adapter": [
           "app/src/main/java/pe/gob/reniec/dnie/data/vault/AndroidVaultRecoveryAdapter.kt",
@@ -389,7 +391,11 @@
           "app/src/main/java/pe/gob/reniec/dnie/ui/vault/VaultRecoveryControls.kt"
         ],
         "application": [
-          "app/src/main/java/pe/gob/reniec/dnie/ui/vault/VaultViewModel.kt"
+          "app/src/main/java/pe/gob/reniec/dnie/ui/vault/VaultViewModel.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/domain/vault/UnlockRecoveryBatch.kt"
+        ],
+        "architecture": [
+          "docs/architecture/RECUPERACION_COMPLETA_Y_FLUJO_R5.md"
         ]
       },
       "depends_on": [
@@ -402,8 +408,8 @@
       "id": "destructive_renewal_recovery",
       "feature": "vault",
       "state": "android_integrated_physical_pending",
-      "description": "Motor y UI Android65 instalados; paquete por archivo. Instrumentación sintética real superada. Falta flujo real SAF/CIF, cruces y recuperación de passkeys.",
-      "evidence": "docs/architecture/RECUPERACION_ANDROID_R3.md"
+      "description": "APK67 protección/recuperación completa instalada; dos pruebas instrumentadas backend pasan. Pendientes lote real NFC/SAF, cruces; navegación desbloqueada superada; recifrado nuevo DNI manual. Passkeys sin esta recuperación.",
+      "evidence": "docs/architecture/RECUPERACION_COMPLETA_Y_FLUJO_R5.md"
     },
     {
       "id": "tsa_recovery",
@@ -508,8 +514,8 @@
     {
       "id": "android_current",
       "category": "artifact",
-      "value": "APK66 / 2.0.0-rc18-vault-ui instalado; D:/DNIeToolchain/AndroidPackages/dnie-evolution-2.0.0-rc18-vault-ui-debug.apk",
-      "evidence": "docs/architecture/BOVEDA_UI_SIMPLE_R4.md"
+      "value": "APK67 / 2.0.0-rc19-whole-vault instalado; D:/DNIeToolchain/AndroidPackages/dnie-evolution-2.0.0-rc19-whole-vault-debug.apk",
+      "evidence": "docs/architecture/RECUPERACION_COMPLETA_Y_FLUJO_R5.md"
     },
     {
       "id": "desktop_current",
@@ -568,8 +574,8 @@
     {
       "id": "password_recovery_requested",
       "category": "android_integrated_physical_pending",
-      "value": "Paquete separado integrado Android65 e instalado. 125 resultados JVM sin fallos (parcial reutilización Gradle) y 1 prueba instrumentada real Android OK. DNI/SAF/cruces pendientes.",
-      "evidence": "docs/architecture/RECUPERACION_ANDROID_R3.md"
+      "value": "2026-10-08 · Bóveda R5: APK67 instalada. Mis archivos/Protección/Copias; protección y recuperación de toda la bóveda (incluida papelera), PIN introducido una vez, ZIP recuperado verificado antes de publicar. 79 pruebas app + 23 motor sin fallos; dos pruebas instrumentadas de recuperación pasan. Prueba visual superada en teléfono desbloqueado (1 test, 2.096 s). Recifrado con DNI nuevo manual y lote NFC/SAF real pendientes.",
+      "evidence": "docs/architecture/RECUPERACION_COMPLETA_Y_FLUJO_R5.md"
     },
     {
       "id": "recovery_copy_and_rotation_limits",
@@ -580,8 +586,8 @@
     {
       "id": "vault_lifecycle_windows_first",
       "category": "android_integrated_physical_pending",
-      "value": "Paquete separado integrado Android65 e instalado. 125 resultados JVM sin fallos (parcial reutilización Gradle) y 1 prueba instrumentada real Android OK. DNI/SAF/cruces pendientes.",
-      "evidence": "docs/architecture/RECUPERACION_ANDROID_R3.md"
+      "value": "2026-10-08 · Bóveda R5: APK67 instalada. Mis archivos/Protección/Copias; protección y recuperación de toda la bóveda (incluida papelera), PIN introducido una vez, ZIP recuperado verificado antes de publicar. 79 pruebas app + 23 motor sin fallos; dos pruebas instrumentadas de recuperación pasan. Prueba visual superada en teléfono desbloqueado (1 test, 2.096 s). Recifrado con DNI nuevo manual y lote NFC/SAF real pendientes.",
+      "evidence": "docs/architecture/RECUPERACION_COMPLETA_Y_FLUJO_R5.md"
     }
   ]
 }

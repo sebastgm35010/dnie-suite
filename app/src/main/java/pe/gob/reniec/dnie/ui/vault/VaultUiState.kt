@@ -26,6 +26,7 @@ data class VaultUiState(
     val sort: pe.gob.reniec.dnie.vault.VaultSort = pe.gob.reniec.dnie.vault.VaultSort.NEWEST,
     val showTrash: Boolean = false,
     val totalItems: Int = 0,
+    val allItems: Int = 0,
     val previewMode: Boolean = false,
     val preview: pe.gob.reniec.dnie.data.vault.VaultPreviewTicket? = null,
     val incomingFiles: Int = 0,

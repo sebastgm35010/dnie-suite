@@ -22,7 +22,7 @@ internal fun VaultAccessPanel(state: VaultUiState, onCanChange: (String) -> Unit
     val busy = state.awaitingCard || state.running
     val credentialsValid = state.can.length == 6 && state.pin.length in 4..8
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SectionLabel(if (state.selectedItemId == null) "01 / VINCULAR EL DNI" else "RECUPERAR TU ARCHIVO")
+        SectionLabel(if (state.selectedItemId == null) "VINCULAR O USAR DNI" else "RECUPERAR TU ARCHIVO")
         Text(if (state.selectedItemId == null)
             "Vincula el certificado de cifrado y comprueba su clave privada por NFC. Después podrás guardar archivos sin acercar el DNI."
         else if (state.previewMode) "Introduce CAN y PIN para ver el archivo dentro de la app. La vista se cerrará al salir."
@@ -34,6 +34,34 @@ internal fun VaultAccessPanel(state: VaultUiState, onCanChange: (String) -> Unit
             if (!state.previewMode) Text("La copia de destino quedará sin cifrar y fuera de la protección de la bóveda.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+        VaultCredentialFields(state, onCanChange, onPinChange, onRememberCan)
+        if (!busy) {
+            Button(onClick = if (state.selectedItemId == null) onRun else onStartOpen,
+                enabled = credentialsValid && (state.selectedItemId == null || state.riskAcknowledged),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp), shape = RoundedCornerShape(16.dp)) {
+                Icon(Icons.Default.Nfc, null)
+                Spacer(Modifier.width(10.dp))
+                Text(when {
+                    state.selectedItemId != null -> "Descifrar con DNI"
+                    state.pairedFingerprint != null -> "Volver a vincular DNI"
+                    else -> "Vincular DNI"
+                })
+            }
+            if (state.selectedItemId != null) {
+                TextButton(onClick = onClearSelection, modifier = Modifier.fillMaxWidth()) {
+                    Text("Descartar destino elegido")
+                }
+            }
+        }
+    }
+}
+
+/** Reusable credential form; does not start a probe or any operation. */
+@Composable
+internal fun VaultCredentialFields(state: VaultUiState, onCanChange: (String) -> Unit,
+    onPinChange: (String) -> Unit, onRememberCan: (Boolean) -> Unit) {
+    val busy = state.running || state.awaitingCard
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedTextField(value = state.can, onValueChange = onCanChange,
             label = { Text("CAN") }, supportingText = { Text("6 dígitos impresos en el DNI") },
             singleLine = true, enabled = !busy,
@@ -49,24 +77,6 @@ internal fun VaultAccessPanel(state: VaultUiState, onCanChange: (String) -> Unit
         Row {
             Checkbox(checked = state.rememberCan, onCheckedChange = onRememberCan, enabled = !busy)
             Text("Recordar CAN · compartido con la pantalla principal", modifier = Modifier.padding(top = 12.dp))
-        }
-        if (!busy) {
-            Button(onClick = if (state.selectedItemId == null) onRun else onStartOpen,
-                enabled = credentialsValid && (state.selectedItemId == null || state.riskAcknowledged),
-                modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp), shape = RoundedCornerShape(16.dp)) {
-                Icon(Icons.Default.Nfc, null)
-                Spacer(Modifier.width(10.dp))
-                Text(when {
-                    state.selectedItemId != null -> "Descifrar con DNI"
-                    state.pairedFingerprint != null -> "Comprobar DNI vinculado"
-                    else -> "Vincular DNI"
-                })
-            }
-            if (state.selectedItemId != null) {
-                TextButton(onClick = onClearSelection, modifier = Modifier.fillMaxWidth()) {
-                    Text("Descartar destino elegido")
-                }
-            }
         }
     }
 }

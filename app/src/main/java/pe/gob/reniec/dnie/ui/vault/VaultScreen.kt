@@ -16,7 +16,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-private enum class VaultPage(val title: String) { FILES("Archivos"), DNI("DNI"), RECOVERY("Recuperar"), TOOLS("Más") }
+private enum class VaultPage(val title: String) { FILES("Mis archivos"), DNI("Usar DNI"), RECOVERY("Protección"), TOOLS("Copias") }
 
 /** Navigation/pickers only; each page presents one task. Backend remains in repository/engines. */
 @Composable
@@ -53,7 +53,7 @@ fun VaultScreen(state: VaultUiState, onCanChange: (String) -> Unit, onPinChange:
     }
     val restore = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { uri ->
         val id = pendingOpen; pendingOpen = null
-        if (uri != null && id != null) onRequestOpen(id, uri)
+        if (uri != null && id != null) { onRequestOpen(id, uri); pageName = VaultPage.DNI.name }
     }
     val backup = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { it?.let(library.exportBackup) }
     val importBackup = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { it?.let(library.importBackup) }
@@ -65,11 +65,11 @@ fun VaultScreen(state: VaultUiState, onCanChange: (String) -> Unit, onPinChange:
     MaterialTheme(colorScheme = VaultColors) {
         Scaffold(containerColor = VaultBackground, topBar = {
             TopAppBar(title = { Text("Bóveda · ${page.title}") }, navigationIcon = {
-                IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver") }
+                IconButton(onClick = { if (page == VaultPage.FILES) onBack() else pageName = VaultPage.FILES.name }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver") }
             })
         }, bottomBar = {
             NavigationBar {
-                VaultPage.entries.forEach { target ->
+                listOf(VaultPage.FILES, VaultPage.RECOVERY, VaultPage.TOOLS).forEach { target ->
                     NavigationBarItem(selected = page == target, onClick = { pageName = target.name }, label = { Text(target.title) }, icon = {
                         Icon(when (target) { VaultPage.FILES -> Icons.Default.Folder; VaultPage.DNI -> Icons.Default.Nfc
                             VaultPage.RECOVERY -> Icons.Default.Key; VaultPage.TOOLS -> Icons.Default.MoreHoriz }, null)
@@ -99,18 +99,14 @@ fun VaultScreen(state: VaultUiState, onCanChange: (String) -> Unit, onPinChange:
                             VaultAccessPanel(state, onCanChange, onPinChange, onRememberCan, onRun, onStartOpen, onClearSelection, onCancel)
                         }
                         VaultPage.RECOVERY -> {
-                            item("credentials") {
-                                var expanded by remember { mutableStateOf(false) }
-                                TextButton(onClick = { expanded = !expanded }) { Text(if (expanded) "Ocultar acceso DNI" else "CAN y PIN para preparar paquete") }
-                                if (expanded) VaultAccessPanel(state, onCanChange, onPinChange, onRememberCan, onRun, onStartOpen, onClearSelection, onCancel)
-                            }
-                            item("recovery") { VaultRecoveryControls(state, recovery) }
+                            item("recovery") { VaultRecoveryControls(state, recovery, onCanChange, onPinChange, onRememberCan) }
                         }
                         VaultPage.TOOLS -> {
                             item("backup") { VaultToolsPanel(!busy && state.riskAcknowledged,
                                 onBackup = { backup.launch("boveda-completa.dniebackup.zip") },
                                 onImport = { importBackup.launch(arrayOf("application/zip", "application/octet-stream")) },
                                 onNote = { note = true }, canCreate = state.pairedFingerprint != null,
+                                onDni = { pageName = VaultPage.DNI.name },
                                 onPasskeys = { context.startActivity(android.content.Intent(context, pe.gob.reniec.dnie.ui.passkeys.PasskeySettingsActivity::class.java)) }) }
                         }
                         VaultPage.FILES -> {
@@ -152,7 +148,7 @@ fun VaultScreen(state: VaultUiState, onCanChange: (String) -> Unit, onPinChange:
                                 VaultFileCard(item, !busy && state.riskAcknowledged, state.selectedItemId == item.id,
                                     onRestore = { pendingOpen = item.id; restore.launch(item.displayName ?: "documento-restaurado") },
                                     onExport = { pendingExport = item.id; export.launch("${item.displayName ?: item.id}.dnievault") },
-                                    onDelete = { delete = item.id }, onPreview = { library.preview(item.id) },
+                                    onDelete = { delete = item.id }, onPreview = { library.preview(item.id); pageName = VaultPage.DNI.name },
                                     onOrganize = { organize = item }, onRecover = { library.recover(item.id) }, onInspect = { library.inspect(item.id) },
                                     selectionMode = selecting, checked = item.id in selection,
                                     onToggle = { selection = if (item.id in selection) selection - item.id else selection + item.id })

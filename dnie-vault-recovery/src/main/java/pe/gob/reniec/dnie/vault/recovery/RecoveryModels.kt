@@ -15,6 +15,8 @@ class RecoveryEntry(val id: UUID, recipient: ByteArray, fileHash: ByteArray, sec
     internal fun secret(): ByteArray { check(!closed); return secretBytes.copyOf() }
     internal fun matchesRecipient(bytes: ByteArray) = !closed && MessageDigest.isEqual(recipientBytes, bytes)
     internal fun matchesFile(bytes: ByteArray) = !closed && MessageDigest.isEqual(fileHashBytes, bytes)
+    fun coversSameCiphertext(other: RecoveryEntry): Boolean = !closed && !other.closed && id == other.id &&
+        MessageDigest.isEqual(recipientBytes, other.recipientBytes) && MessageDigest.isEqual(fileHashBytes, other.fileHashBytes)
     override fun close() { closed = true; recipientBytes.fill(0); fileHashBytes.fill(0); secretBytes.fill(0) }
     override fun toString() = "RecoveryEntry(secrets=redacted)"
 }

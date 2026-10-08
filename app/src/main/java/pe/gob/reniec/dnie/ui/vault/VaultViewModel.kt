@@ -33,7 +33,7 @@ class VaultViewModel(private val cryptoDispatcher: CoroutineDispatcher = Dispatc
     private var filterJob: Job? = null
     private var filterGeneration = 0
     private var incomingSources = emptyList<Uri>()
-    private class RecoveryPreparation(val id: String, val destination: Uri, val password: CharArray)
+    private class RecoveryPreparation(val id: String?, val destination: Uri, val password: CharArray, val whole: Boolean = false)
     private var pendingRecovery: RecoveryPreparation? = null
     // First use is in an IO/crypto block, keeping SecureRandom/class loading off startup UI.
     private val probe by lazy { VaultCapabilityProbe() }
@@ -120,6 +120,28 @@ class VaultViewModel(private val cryptoDispatcher: CoroutineDispatcher = Dispatc
         }
         job?.invokeOnCompletion { password.fill('\u0000') }
     }
+    fun prepareWholeRecovery(uri: Uri, password: CharArray) {
+        if (busy || !state.value.riskAcknowledged || !credentialsValid() || inventory.isEmpty() || password.size !in 16..1024) {
+            password.fill('\u0000'); return
+        }
+        clearSelection(); persistCan(); opening = false
+        pendingRecovery = RecoveryPreparation(null, uri, password, whole = true)
+        state.value = state.value.copy(awaitingCard = true, verified = false,
+            message = "Mantén el DNI original cerca. Se protegerán todos los archivos, incluida la papelera.")
+    }
+    fun restoreWholeRecovery(packageUri: Uri, password: CharArray, uri: Uri) {
+        if (busy || !state.value.riskAcknowledged) { password.fill('\u0000'); return }
+        var count = 0
+        launchDisk("Comprobando protección de toda la bóveda…", {
+            "$count archivos recuperados en ZIP sin cifrar. Conserva las copias cifradas. Para usar otro DNI, vincúlalo y cifra de nuevo estos archivos."
+        }) {
+            count = files.restoreWholeRecovery(packageUri, password, uri) { done, total ->
+                progress(generation, "Recuperando $done/$total; todavía no se ha publicado el ZIP.")
+            }
+            state.value = state.value.copy(verified = true)
+        }
+        job?.invokeOnCompletion { password.fill('\u0000') }
+    }
     fun requestOpen(id: String, uri: Uri) {
         if (busy) return
         if (!state.value.riskAcknowledged || state.value.items.none { it.id == id && !it.trashed }) return
@@ -160,6 +182,7 @@ class VaultViewModel(private val cryptoDispatcher: CoroutineDispatcher = Dispatc
             message = "Abriendo canal seguro PKI…")
         job = viewModelScope.launch {
             var secret: ByteArray? = null
+            var recoveryBatch: pe.gob.reniec.dnie.domain.vault.UnlockedRecoveryBatch? = null
             try {
                 VaultDebugTrace.measure("nfc.pki_open") { detected.selectPkiApplet().getOrThrow() }
                 ensureActive()
@@ -169,8 +192,12 @@ class VaultViewModel(private val cryptoDispatcher: CoroutineDispatcher = Dispatc
                 val certificate = VaultDebugTrace.measure("certificate.parse") { withContext(cryptoDispatcher) { probe.readEncryptionCertificate(der) } }
                 val key = certificate.publicKey as RSAPublicKey
                 val fingerprint = probe.fingerprint(key)
-                val header = if (restore || recovery != null) files.readHeader(requireNotNull(id)) else null
+                val allHeaders = if (recovery?.whole == true) files.recoveryHeaders() else null
+                val header = if (restore || (recovery != null && !recovery.whole)) files.readHeader(requireNotNull(id)) else null
                 val recipient = MessageDigest.getInstance("SHA-256").digest(key.encoded)
+                require(allHeaders == null || allHeaders.values.all { MessageDigest.isEqual(it.recipient, recipient) }) {
+                    "Hay archivos de otra clave o DNI. No se guardará una protección incompleta. No se verificó el PIN."
+                }
                 require(header == null || MessageDigest.isEqual(header.recipient, recipient)) { "Este archivo requiere otro DNI. No se verificó el PIN." }
                 ensureActive()
                 state.value = state.value.copy(certificateFingerprint = fingerprint, message = "Verificando PIN…")
@@ -180,7 +207,18 @@ class VaultViewModel(private val cryptoDispatcher: CoroutineDispatcher = Dispatc
                     PinVerificationResult.CardBlocked -> error("PIN bloqueado. La operación se detuvo.")
                 }
                 ensureActive()
-                if (header != null) {
+                if (allHeaders != null && recovery != null) {
+                    val batch = pe.gob.reniec.dnie.domain.vault.UnlockRecoveryBatch().run(detected, allHeaders, enteredPin) { done, total ->
+                        state.value = state.value.copy(message = "Mantén el DNI: autorizando $done/$total archivos…")
+                    }.also { recoveryBatch = it }
+                    detected.close(); ensureActive()
+                    val count = files.prepareWholeRecovery(batch, recovery.password, recovery.destination) { done, total ->
+                        progress(operation, "Ya puedes retirar el DNI. Verificando y protegiendo $done/$total archivos…")
+                    }
+                    ensureActive()
+                    state.value = state.value.copy(verified = true,
+                        message = "Protección completa guardada: $count archivos, incluida la papelera. Guarda también el respaldo ZIP y prueba recuperar antes de renovar. Los archivos que añadas después requieren actualizar esta protección.")
+                } else if (header != null) {
                     state.value = state.value.copy(message = "Recuperando la clave con el DNI…")
                     val recovered = VaultDebugTrace.measure("nfc.key_unwrap") { detected.unwrapVaultKey(header.envelope).getOrThrow() }.also { secret = it }
                     detected.close()
@@ -188,7 +226,7 @@ class VaultViewModel(private val cryptoDispatcher: CoroutineDispatcher = Dispatc
                     state.value = state.value.copy(message = "Verificando archivo y guardando copia descifrada…")
                     if (recovery != null) {
                         state.value = state.value.copy(message = "Verificando archivo y protegiendo el paquete de recuperación…")
-                        files.prepareRecovery(recovery.id, header, recovered, recovery.password, recovery.destination)
+                        files.prepareRecovery(requireNotNull(recovery.id), header, recovered, recovery.password, recovery.destination)
                         ensureActive()
                         state.value = state.value.copy(verified = true,
                             message = "Paquete verificado y guardado para este archivo. Guárdalo separado y comprueba la recuperación antes de renovar el DNI.")
@@ -234,6 +272,7 @@ class VaultViewModel(private val cryptoDispatcher: CoroutineDispatcher = Dispatc
                     message = e.message ?: "No se pudo completar la operación NFC.")
             } finally {
                 secret?.fill(0)
+                recoveryBatch?.close()
                 recovery?.password?.fill('\u0000')
                 detected.close()
                 if (generation == operation) {
@@ -374,7 +413,7 @@ class VaultViewModel(private val cryptoDispatcher: CoroutineDispatcher = Dispatc
         val prepared = withContext(cryptoDispatcher) { VaultLibrarySnapshot(source) }
         inventory = source
         library = prepared
-        state.value = state.value.copy(totalItems = prepared.totalItems, folders = prepared.folders)
+        state.value = state.value.copy(totalItems = prepared.totalItems, allItems = source.size, folders = prepared.folders)
         filterItems()
     }
     private fun filterItems(debounce: Boolean = false) {

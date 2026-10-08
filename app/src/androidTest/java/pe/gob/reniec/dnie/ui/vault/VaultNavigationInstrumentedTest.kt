@@ -25,14 +25,14 @@ class VaultNavigationInstrumentedTest {
                 onCanChange = {}, onPinChange = {}, onRememberCan = {}, onRun = {}, onBack = {}, onCancel = {},
                 onImportArchive = {}, onExportEncrypted = { _, _ -> }, onRequestOpen = { _, _ -> }, onStartOpen = {},
                 onClearSelection = {}, onDelete = {}, onAcknowledgeRisk = {}, library = actions,
-                recovery = VaultRecoveryActions({ _, _, _ -> }, { _, _, _, _ -> }))
+                recovery = VaultRecoveryActions({ _, _, _ -> }, { _, _, _, _ -> }, { _, _ -> }, { _, _, _ -> }))
         }
         compose.onNodeWithText("CAN").assertDoesNotExist()
-        compose.onNodeWithText("Guardar respaldo completo").assertDoesNotExist()
+        compose.onNodeWithText("Guardar respaldo ZIP").assertDoesNotExist()
         click("Seleccionar varios"); click("Todos los visibles")
         compose.onNodeWithText("2 seleccionado(s)").assertExists()
-        click("DNI"); compose.onNodeWithText("CAN").assertExists()
-        click("Archivos"); compose.onNodeWithText("2 seleccionado(s)").assertExists()
+        click("Copias"); click("Vincular o cambiar DNI"); compose.onNodeWithText("CAN").assertExists()
+        click("Mis archivos"); compose.onNodeWithText("2 seleccionado(s)").assertExists()
         click("A papelera"); click("Continuar")
         compose.runOnIdle {
             assertEquals(1, batches.size)

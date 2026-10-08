@@ -8,12 +8,15 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 internal fun VaultToolsPanel(enabled: Boolean, onBackup: () -> Unit, onImport: () -> Unit,
-    onNote: () -> Unit, canCreate: Boolean, onPasskeys: () -> Unit) {
+    onNote: () -> Unit, canCreate: Boolean, onPasskeys: () -> Unit, onDni: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Respaldo", style = MaterialTheme.typography.titleMedium)
-        Text("Copia completa de archivos cifrados, etiquetas y papelera. El paquete de recuperación se guarda por separado.", style = MaterialTheme.typography.bodySmall)
-        OutlinedButton(onClick = onBackup, enabled = enabled, modifier = Modifier.fillMaxWidth()) { Text("Guardar respaldo completo") }
-        OutlinedButton(onClick = onImport, enabled = enabled, modifier = Modifier.fillMaxWidth()) { Text("Importar respaldo") }
+        Text("Copias de tus documentos", style = MaterialTheme.typography.titleMedium)
+        Text("El ZIP incluye todos los archivos cifrados, etiquetas y papelera. Sirve para guardarlos fuera del teléfono o llevarlos a otro equipo. Para abrirlos necesitarás el DNI original o la protección con contraseña.", style = MaterialTheme.typography.bodySmall)
+        OutlinedButton(onClick = onBackup, enabled = enabled, modifier = Modifier.fillMaxWidth()) { Text("Guardar respaldo ZIP") }
+        OutlinedButton(onClick = onImport, enabled = enabled, modifier = Modifier.fillMaxWidth()) { Text("Importar respaldo ZIP") }
+        HorizontalDivider()
+        TextButton(onClick = onDni, enabled = enabled) { Text("Vincular o cambiar DNI") }
+        Text("Vincular permite cifrar nuevos archivos para ese DNI. No cambia la clave de los archivos anteriores; recupéralos primero desde Protección.", style = MaterialTheme.typography.bodySmall)
         HorizontalDivider()
         OutlinedButton(onClick = onNote, enabled = enabled && canCreate, modifier = Modifier.fillMaxWidth()) { Text("Nueva nota cifrada") }
         HorizontalDivider()

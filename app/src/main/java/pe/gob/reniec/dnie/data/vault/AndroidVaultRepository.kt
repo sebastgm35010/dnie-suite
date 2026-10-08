@@ -26,6 +26,19 @@ class AndroidVaultRepository(context: Context) {
     private val catalog by lazy { VaultCatalog(File(app.filesDir, "vault-preview/catalog")) }
     private val previews by lazy { VaultPreviewFiles(app) }
     private val recovery by lazy { AndroidVaultRecoveryAdapter(app) }
+    suspend fun recoveryHeaders(): Map<String, VaultHeader> = io {
+        val items = files.list()
+        require(items.size in 1..1000) { "La protección completa admite de 1 a 1000 archivos, incluida la papelera." }
+        items.associate { it.id to files.readHeader(it.id) }
+    }
+    suspend fun prepareWholeRecovery(batch: pe.gob.reniec.dnie.domain.vault.UnlockedRecoveryBatch,
+                                    password: CharArray, destination: Uri, progress: (Int, Int) -> Unit): Int = io {
+        recovery.prepareAll(files, batch, password, destination, progress)
+    }
+    suspend fun restoreWholeRecovery(packageUri: Uri, password: CharArray, destination: Uri,
+                                    progress: (Int, Int) -> Unit): Int = io {
+        recovery.restoreAll(files, packageUri, password, destination, progress)
+    }
 
     suspend fun prepareRecovery(id: String, header: VaultHeader, secret: ByteArray,
                                 password: CharArray, destination: Uri): Unit = io {

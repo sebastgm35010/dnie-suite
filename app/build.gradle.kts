@@ -12,8 +12,8 @@ android {
         applicationId = "pe.gob.reniec.dnie.evolution"
         minSdk = 24
         targetSdk = 34
-        versionCode = 66
-        versionName = "2.0.0-rc18-vault-ui"
+        versionCode = 67
+        versionName = "2.0.0-rc19-whole-vault"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
