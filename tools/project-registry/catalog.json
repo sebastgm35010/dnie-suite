@@ -23,7 +23,8 @@
     "docs/architecture/BOVEDA_UI_SIMPLE_R4.md": "historical_vault_ui_architecture",
     "docs/architecture/RECUPERACION_COMPLETA_Y_FLUJO_R5.md": "historical_whole_vault_recovery_architecture",
     "docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md": "current_unified_vault_archive_architecture",
-    "docs/architecture/BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md": "current_vault_picker_lifecycle_fix"
+    "docs/architecture/BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md": "current_vault_picker_lifecycle_fix",
+    "docs/architecture/PASSKEYS_ALMACEN_INDEPENDIENTE_R1.md": "user_selected_passkey_architecture_not_implemented"
   },
   "features": [
     {
@@ -258,9 +259,9 @@
     {
       "id": "passkeys",
       "name": "Proveedor passkeys Android",
-      "status": "implemented_real_use",
-      "note": "Flujos Facebook/Google confirmados; delegación biométrica opcional no se extiende a bóveda. QR/migración requieren pruebas físicas pendientes. P0: respaldo actual no recupera privada eliminada; renovación destructiva requiere preparación independiente todavía no implementada.",
-      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md",
+      "status": "implemented_real_use_ui_regression",
+      "note": "Proveedor usado con Facebook/Google; APK69 conserva motor. R6 elimino acceso a configuracion desde Boveda sin reubicarlo. Usuario elige almacen independiente autorizado inicialmente con DNI: diseno registrado, no implementado. Catalogo actual sigue ligado a CIF; respaldo actual no recupera privada eliminada.",
+      "evidence": "docs/architecture/PASSKEYS_ALMACEN_INDEPENDIENTE_R1.md",
       "files": {
         "engine": [
           "dnie-passkeys-core/src/main/"
@@ -276,7 +277,8 @@
           "docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md",
           "docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md",
           "docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md",
-          "docs/architecture/RIESGOS_RECUPERACION_PASSWORD_Y_DNI.md"
+          "docs/architecture/RIESGOS_RECUPERACION_PASSWORD_Y_DNI.md",
+          "docs/architecture/PASSKEYS_ALMACEN_INDEPENDIENTE_R1.md"
         ]
       },
       "depends_on": [
@@ -468,9 +470,9 @@
     {
       "id": "dni_migration",
       "feature": "passkeys",
-      "state": "needs_physical_test",
-      "description": "Migración/renovación DNI y certificado requiere pruebas específicas.",
-      "evidence": "docs/PENDIENTES_ACTUALES.md"
+      "state": "needs_design_and_implementation",
+      "description": "Migracion actual exige clave antigua disponible. Renovacion destructiva no resuelta para passkeys. Disenar almacen independiente opt-in y migracion transaccional conservando credenciales y BE/BS.",
+      "evidence": "docs/architecture/PASSKEYS_ALMACEN_INDEPENDIENTE_R1.md"
     },
     {
       "id": "refirma_issuer",
@@ -513,6 +515,20 @@
       "state": "needs_physical_test",
       "description": "Interoperabilidad ICAO con otros documentos y cancelación por bloques completos no acreditadas.",
       "evidence": "docs/PENDIENTES_ACTUALES.md"
+    },
+    {
+      "id": "passkeys_navigation_regression",
+      "feature": "passkeys",
+      "state": "open",
+      "description": "Restaurar entrada propia a Passkeys fuera de Boveda: ad6a34b elimino onPasskeys de VaultScreen. Actividad y proveedor permanecen.",
+      "evidence": "docs/architecture/PASSKEYS_ALMACEN_INDEPENDIENTE_R1.md"
+    },
+    {
+      "id": "passkeys_independent_store",
+      "feature": "passkeys",
+      "state": "needs_design_and_implementation",
+      "description": "Usuario eligio almacen independiente autorizado inicialmente con DNI. Definir desbloqueo local y recuperacion antes de implementar; no cambiar politica existente automaticamente.",
+      "evidence": "docs/architecture/PASSKEYS_ALMACEN_INDEPENDIENTE_R1.md"
     }
   ],
   "facts": [
@@ -566,9 +582,9 @@
     },
     {
       "id": "independent_keys_proposal",
-      "category": "proposal_not_implemented",
-      "value": "Passkeys independientes siguen como propuesta. Archivos disponen de respaldo autosuficiente DNIEBKP2 con contraseña e importación recifrada para DNI destino verificado.",
-      "evidence": "docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md"
+      "category": "user_selected_not_implemented",
+      "value": "Passkeys: usuario elige almacen independiente autorizado inicialmente con DNI. Catalogo nuevo y migracion pendientes. DNIEBKP2 de archivos no respalda passkeys.",
+      "evidence": "docs/architecture/PASSKEYS_ALMACEN_INDEPENDIENTE_R1.md"
     },
     {
       "id": "identity_hash_not_encryption_secret",
