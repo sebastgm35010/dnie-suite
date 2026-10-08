@@ -43,7 +43,8 @@ fun VaultScreen(
     onClearSelection: () -> Unit,
     onDelete: (String) -> Unit,
     onAcknowledgeRisk: () -> Unit,
-    library: VaultLibraryActions
+    library: VaultLibraryActions,
+    recovery: VaultRecoveryActions
 ) {
     val passkeyContext = androidx.compose.ui.platform.LocalContext.current
     val busy = state.awaitingCard || state.running
@@ -205,6 +206,7 @@ fun VaultScreen(
                         onBackup = { exportBackup.launch("boveda-completa.dniebackup.zip") },
                         onRestoreBackup = { restoreBackup.launch(arrayOf("application/zip", "application/octet-stream")) })
                 }
+                item(key = "recovery") { VaultRecoveryControls(state, recovery) }
                 if (state.incomingFiles > 0) item(key = "incoming") {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("${state.incomingFiles} archivo(s) recibidos desde otra app")

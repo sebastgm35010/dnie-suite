@@ -12,8 +12,8 @@ android {
         applicationId = "pe.gob.reniec.dnie.evolution"
         minSdk = 24
         targetSdk = 34
-        versionCode = 64
-        versionName = "2.0.0-rc16-ess-issuer"
+        versionCode = 65
+        versionName = "2.0.0-rc17-vault-recovery"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -105,6 +105,7 @@ dependencies {
     implementation(project(":dnie-pdf"))
     implementation(project(":dnie-icao"))
     implementation(project(":dnie-vault-core"))
+    implementation(project(":dnie-vault-recovery"))
     implementation(project(":dnie-passkeys-android"))
     implementation("com.google.crypto.tink:tink-android:1.23.0")
     implementation("com.github.Tgo1014:JP2ForAndroid:1.0.4")

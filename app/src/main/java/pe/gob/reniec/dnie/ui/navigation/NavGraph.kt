@@ -153,6 +153,8 @@ fun NavGraph(
                     onClearSelection = vaultViewModel::clearSelection,
                     onDelete = vaultViewModel::delete,
                     onAcknowledgeRisk = vaultViewModel::acknowledgeRisk,
+                    recovery = pe.gob.reniec.dnie.ui.vault.VaultRecoveryActions(
+                        prepare = vaultViewModel::prepareRecovery, restore = vaultViewModel::restoreRecovery),
                     library = pe.gob.reniec.dnie.ui.vault.VaultLibraryActions(
                         importFiles = vaultViewModel::importFiles, exportBackup = vaultViewModel::exportBackup,
                         importBackup = vaultViewModel::importBackup, query = vaultViewModel::updateQuery,

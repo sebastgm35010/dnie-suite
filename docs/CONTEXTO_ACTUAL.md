@@ -1,5 +1,7 @@
 # Estado vigente · corrección USB tras reinicio
 
+2026-10-07 · Recuperación Android R3: APK65 instalado por ADB; motor aislado + adapter IO/SAF + UI. Paquete por archivo preparado con DNI original, recuperación con paquete y contraseña. 125 resultados JVM sin fallos; APK principal/auxiliar compilados. Auxiliar instalado al reintentar; 1 prueba instrumentada sintética superada en teléfono (4.708 s). Flujo real CIF/SAF y cruces pendientes. [Detalle](architecture/RECUPERACION_ANDROID_R3.md).
+
 2026-10-07 · Recuperación R2: 23 pruebas ejecutadas sin fallos; incluye límites, errores de almacenamiento/proveedor, cancelación con progreso y concurrencia. Corregido cierre de entrada ante staging inválido y cancelación previa a operación de tarjeta. Android y pruebas físicas pendientes. [Detalle](architecture/PRUEBAS_RECUPERACION_WINDOWS_R2.md).
 
 2026-10-07 · Recuperación R1: módulo JVM aislado y 12 pruebas nuevas Windows superadas; formato actual preservado. No habilitado en APK/Suite. Pendientes Android, cruces, cobertura y CIF hard físico; passkeys no modificadas. [Resultados](architecture/PRUEBAS_RECUPERACION_WINDOWS_R1.md).

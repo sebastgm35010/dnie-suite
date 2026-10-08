@@ -25,6 +25,18 @@ class AndroidVaultRepository(context: Context) {
     private val files get() = requireNotNull(store) { "La bóveda todavía no está preparada" }
     private val catalog by lazy { VaultCatalog(File(app.filesDir, "vault-preview/catalog")) }
     private val previews by lazy { VaultPreviewFiles(app) }
+    private val recovery by lazy { AndroidVaultRecoveryAdapter(app) }
+
+    suspend fun prepareRecovery(id: String, header: VaultHeader, secret: ByteArray,
+                                password: CharArray, destination: Uri): Unit = io {
+        recovery.prepare(files, id, header, secret, password, destination)
+    }
+    suspend fun restoreRecovery(id: String, packageUri: Uri, password: CharArray,
+                                destination: Uri): Restoration = io {
+        recovery.restore(files, id, packageUri, password, destination).also {
+            mark(id, verified = true, mime = it.metadata.mime)
+        }
+    }
 
     data class Inventory(val pairedFingerprint: String?, val riskAcknowledged: Boolean)
     data class Restoration(val metadata: VaultMetadata, val nameApplied: Boolean)
