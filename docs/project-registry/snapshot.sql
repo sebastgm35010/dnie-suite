@@ -1017,7 +1017,7 @@ INSERT INTO "documents" VALUES('tools/windows-pcsc-driver/README.md','DNIe Andro
 INSERT INTO "documents" VALUES('tools/windows-reader-selector/README.md','Selector de lector por proceso','historical_or_reference');
 CREATE TABLE facts(id TEXT PRIMARY KEY, category TEXT NOT NULL, value TEXT NOT NULL,
  evidence TEXT REFERENCES documents(path));
-INSERT INTO "facts" VALUES('android_current','artifact','APK68 / 2.0.0-rc20-unified-vault instalado; D:/DNIeToolchain/AndroidPackages/dnie-evolution-2.0.0-rc20-unified-vault-debug.apk','docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md');
+INSERT INTO "facts" VALUES('android_current','artifact','APK69 / 2.0.0-rc21-vault-picker instalada y versión comprobada; D:/DNIeToolchain/AndroidPackages/dnie-evolution-2.0.0-rc21-vault-picker-debug.apk. 79 pruebas app pasan; 3 instrumentadas de interfaz pasan (8,537 s), con selector simulado. SAF real y DNI físico pendientes.','docs/architecture/BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md');
 INSERT INTO "facts" VALUES('desktop_current','artifact','D:/DNIeToolchain/Builds/refirma-issuer-h15/ABRIR-SUITE-CORREGIDA.bat','docs/suite/REFIRMA_ISSUER_SERIAL_H15.md');
 INSERT INTO "facts" VALUES('h15_tests','verification','247 pruebas, cero fallos/errores; algunas tareas Gradle reutilizadas.','docs/suite/REFIRMA_ISSUER_SERIAL_H15.md');
 INSERT INTO "facts" VALUES('vault_no_biometrics','invariant','Bóveda sin biometría; el permiso biométrico de passkeys no se extiende a ella.','AGENTS.md');
@@ -1030,7 +1030,7 @@ INSERT INTO "facts" VALUES('identity_hash_not_encryption_secret','invariant','Su
 INSERT INTO "facts" VALUES('password_recovery_requested','android_integrated_physical_pending','2026-10-08 · Bóveda R6: APK68 instalada; biblioteca única con Cifrar/Descifrar/Importar/Exportar. Respaldo autosuficiente DNIEBKP2 comprimido y cifrado por contraseña. Importar verifica DNI destino y recifra todo, actualiza UUID coincidentes sin duplicarlos, conserva archivos ajenos y usa journal durable. 137 pruebas JVM y 4 instrumentadas Android pasan; NFC/SAF reales y cruce Windows pendientes.','docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md');
 INSERT INTO "facts" VALUES('recovery_copy_and_rotation_limits','design_constraint','Archivo de respaldo + contraseña permite acceso independiente del DNI antiguo. Cambiar contraseña no revoca copias anteriores. DNIEBKP2 implementado; bóveda cotidiana continúa CIF hard + PIN.','docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md');
 INSERT INTO "facts" VALUES('vault_lifecycle_windows_first','android_integrated_physical_pending','2026-10-08 · Bóveda R6: APK68 instalada; biblioteca única con Cifrar/Descifrar/Importar/Exportar. Respaldo autosuficiente DNIEBKP2 comprimido y cifrado por contraseña. Importar verifica DNI destino y recifra todo, actualiza UUID coincidentes sin duplicarlos, conserva archivos ajenos y usa journal durable. 137 pruebas JVM y 4 instrumentadas Android pasan; NFC/SAF reales y cruce Windows pendientes.','docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md');
-INSERT INTO "facts" VALUES('android_candidate_vault_picker','compiled_not_installed','APK69 / 2.0.0-rc21-vault-picker; D:/DNIeToolchain/AndroidPackages/dnie-evolution-2.0.0-rc21-vault-picker-debug.apk. 79 pruebas app pasan; instrumentadas compiladas, no ejecutadas.','docs/architecture/BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md');
+INSERT INTO "facts" VALUES('android_candidate_vault_picker','installed_ui_validated','APK69 / 2.0.0-rc21-vault-picker instalada y versión comprobada; D:/DNIeToolchain/AndroidPackages/dnie-evolution-2.0.0-rc21-vault-picker-debug.apk. 79 pruebas app pasan; 3 instrumentadas de interfaz pasan (8,537 s), con selector simulado. SAF real y DNI físico pendientes.','docs/architecture/BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md');
 CREATE TABLE feature_dependencies(source TEXT REFERENCES features(id), target TEXT REFERENCES features(id),
  PRIMARY KEY(source,target));
 INSERT INTO "feature_dependencies" VALUES('pdf_android','cms');
@@ -1478,19 +1478,19 @@ INSERT INTO "features" VALUES('icao','Identidad ICAO por bloques','implemented_r
 INSERT INTO "features" VALUES('certificates','Consulta de certificados y escaneo combinado','validated_real','Certificados PKI del titular separados de EF.SOD/ICAO; unificación visual no mezcla sesiones.','docs/architecture/ARQUITECTURA_ACTUAL_2_0.md');
 INSERT INTO "features" VALUES('validation','Confianza TSL Perú y revocación','validated_real_manual','TSL autenticada, ruta PKIX, OCSP titular y CRL CA; consulta manual, evidencia caduca. No clasificación eIDAS.','docs/suite/REVOCACION_CA_DIAGNOSTICO_H9B.md');
 INSERT INTO "features" VALUES('tsa','Sello de tiempo RENIEC','validated_real','PAdES T opcional, confianza ROOT5/TSL y revocación; fallo TSA no publica B silenciosamente ni repite firma.','docs/suite/ANDROID_TSA_RENIEC_H11.md');
-INSERT INTO "features" VALUES('vault','Bóveda personal cifrada','implemented_real_use','2026-10-08 · Bóveda R7: corregido inicio tras SAF: selector primero, credenciales después y autorización explícita. onPause limpiaba PIN y R6 rechazaba el inicio automático, dejando destino vacío. APK69 compilada y 79 pruebas app pasan; nuevas pruebas instrumentadas compiladas. ADB desconectada: APK69 NO instalada, pruebas de selector/NFC pendientes; instalada conocida APK68.','docs/architecture/BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md');
+INSERT INTO "features" VALUES('vault','Bóveda personal cifrada','implemented_real_use','2026-10-08 · Bóveda R7: corregido inicio tras SAF: selector primero, credenciales después y autorización explícita. onPause limpiaba PIN y R6 rechazaba el inicio automático, dejando destino vacío. APK69 instalada por ADB y versión comprobada; 79 pruebas app pasan y 3 pruebas instrumentadas de interfaz pasan (8,537 s). El selector se simula con registro aislado; exportación/importación con SAF real y DNI físico pendientes.','docs/architecture/BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md');
 INSERT INTO "features" VALUES('passkeys','Proveedor passkeys Android','implemented_real_use','Flujos Facebook/Google confirmados; delegación biométrica opcional no se extiende a bóveda. QR/migración requieren pruebas físicas pendientes. P0: respaldo actual no recupera privada eliminada; renovación destructiva requiere preparación independiente todavía no implementada.','docs/architecture/ARQUITECTURA_ACTUAL_2_0.md');
 INSERT INTO "features" VALUES('bridge','Puente NFC ↔ PCSC','validated_real','Compatibilidad abierta ReFirma/Firma Perú y Ciudadano Digital probada; traducción PACE y modo privado separados.','docs/architecture/ARQUITECTURA_ACTUAL_2_0.md');
 INSERT INTO "features" VALUES('windows_host','Gestor, servicio y lector virtual Windows','validated_real','Instalación PCSC sigue siendo requerida para compatibilidad abierta; suite privada no depende de exposición PCSC.','docs/architecture/ARQUITECTURA_ACTUAL_2_0.md');
 INSERT INTO "features" VALUES('orchestration','Coordinación modular Suite + Bridge','implemented_partial','Adaptador .NET opcional; permiso de modo solo local a GUI, sin exclusión global entre procesos.','docs/suite/INTEGRACION_BRIDGE_MODULAR_H13.md');
 INSERT INTO "features" VALUES('diagnostics','Diagnóstico aislado de producción','implemented','Registros estructurados y variantes debug/release; no confundir un registro histórico con proceso activo.','docs/architecture/ARQUITECTURA_ACTUAL_2_0.md');
-INSERT INTO "features" VALUES('vault_recovery','Recuperación portable con paquete separado','android_integrated_physical_pending','2026-10-08 · Bóveda R7: corregido inicio tras SAF: selector primero, credenciales después y autorización explícita. onPause limpiaba PIN y R6 rechazaba el inicio automático, dejando destino vacío. APK69 compilada y 79 pruebas app pasan; nuevas pruebas instrumentadas compiladas. ADB desconectada: APK69 NO instalada, pruebas de selector/NFC pendientes; instalada conocida APK68.','docs/architecture/BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md');
+INSERT INTO "features" VALUES('vault_recovery','Recuperación portable con paquete separado','android_integrated_physical_pending','2026-10-08 · Bóveda R7: corregido inicio tras SAF: selector primero, credenciales después y autorización explícita. onPause limpiaba PIN y R6 rechazaba el inicio automático, dejando destino vacío. APK69 instalada por ADB y versión comprobada; 79 pruebas app pasan y 3 pruebas instrumentadas de interfaz pasan (8,537 s). El selector se simula con registro aislado; exportación/importación con SAF real y DNI físico pendientes.','docs/architecture/BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md');
 CREATE TABLE files(path TEXT PRIMARY KEY, module TEXT REFERENCES modules(id), kind TEXT NOT NULL,
  layer TEXT NOT NULL, sha256 TEXT NOT NULL, bytes INTEGER NOT NULL);
 INSERT INTO "files" VALUES('.gitattributes',NULL,'','configuration','2c4b973ac38fda1504556a74b7a745e2602b36683915d915b1e1f7baa9d2bee2',116);
 INSERT INTO "files" VALUES('.gitignore',NULL,'','configuration','81aa48b8b82fa1a430f6ea69519d41a47a8999948c7a46f5078c6801302f040c',333);
 INSERT INTO "files" VALUES('ABRIR-PUENTE-PC.bat',NULL,'.bat','configuration','852c0dc1db381be4cbb8c695d5e88643c7f21afd9f8a71a129032593998e187e',298);
-INSERT INTO "files" VALUES('AGENTS.md',NULL,'.md','documentation','a97b4ea8e7db3d88c33bac5bee82e68dfa0dbb928a167a118ac5e26e695486db',4721);
+INSERT INTO "files" VALUES('AGENTS.md',NULL,'.md','documentation','ca767231d135243e40af7462d048ead45a1ce02fec230e3832360dedbb7778af',4738);
 INSERT INTO "files" VALUES('AJUSTE_VISTA_PREVIA_Y_CAN.md',NULL,'.md','documentation','cd4959715e36b83e4063b075bb90131dd82232965a33da855bf3289ee2a7b0a7',3947);
 INSERT INTO "files" VALUES('ANALISIS_RENDIMIENTO_PASSKEYS_1_6_5.md',NULL,'.md','documentation','634bb6e733693aace089bb43e9938a9386b69aabbaf5593b30fd2a4e89e70dd6',4997);
 INSERT INTO "files" VALUES('ARQUITECTURA_FORK.md',NULL,'.md','documentation','f7a9e1a9413160fd0461a2de5ef932c68995431355feb420034432a6a28d4cce',13743);
@@ -2003,16 +2003,16 @@ INSERT INTO "files" VALUES('dnie-vault-recovery/src/main/java/pe/gob/reniec/dnie
 INSERT INTO "files" VALUES('dnie-vault-recovery/src/test/java/pe/gob/reniec/dnie/vault/recovery/RecoveryFailureScenariosTest.kt','dnie-vault-recovery','.kt','test','16b0afd495f352a650bd797e3a34e3fd68e86ea4a004ae39e417128e6d2f651e',10683);
 INSERT INTO "files" VALUES('dnie-vault-recovery/src/test/java/pe/gob/reniec/dnie/vault/recovery/RecoveryPackageTest.kt','dnie-vault-recovery','.kt','test','2d20452a07db228d33d3caef45ae67cf1022303c489347d8dc52487b97fb6646',10596);
 INSERT INTO "files" VALUES('dnie-vault-recovery/src/test/java/pe/gob/reniec/dnie/vault/recovery/VaultArchiveTest.kt','dnie-vault-recovery','.kt','test','146a79e6018c3c8264d420b32ba7a78086ff4fe368b95128f9186a3ba92b9d16',10048);
-INSERT INTO "files" VALUES('docs/CONTEXTO_ACTUAL.md',NULL,'.md','documentation','8a48023331eb5baaafbab6782bcad2e5faeafd71ec260492338ef0f48c978034',25966);
-INSERT INTO "files" VALUES('docs/PENDIENTES_ACTUALES.md',NULL,'.md','documentation','0f9017676e0a5177a91f3b0246ddd0db478f61cd443cf9d5058c0ad51c471285',21959);
+INSERT INTO "files" VALUES('docs/CONTEXTO_ACTUAL.md',NULL,'.md','documentation','dd0c1d487c4423b5a499afa5a417021d6edadf580efc9ed25c62d1d9038bb8e1',26017);
+INSERT INTO "files" VALUES('docs/PENDIENTES_ACTUALES.md',NULL,'.md','documentation','de5cf4dc968f6ebb280440fb09966717b972ae3f2376d274431cce4f7e481020',22010);
 INSERT INTO "files" VALUES('docs/README.md',NULL,'.md','documentation','f8a67f28622d75a7891437265bc3eae8228a7b295059225c5e7894c0a0384c6e',5012);
 INSERT INTO "files" VALUES('docs/architecture/AISLAMIENTO_USB_USBDK.md',NULL,'.md','documentation','dd2fd5c975277088907e2c70b9bca34c8d5fb8a13d4a51ae3abc58ff475b3477',4647);
 INSERT INTO "files" VALUES('docs/architecture/ALCANCE_AISLAMIENTO_MINIDRIVER.md',NULL,'.md','documentation','6f942a4e2a78c9b0c2f4a53e5f403d6133a96305935ee60315554b31f3f31bea',2639);
 INSERT INTO "files" VALUES('docs/architecture/ALTERNATIVAS_PERMISIVAS_PUENTE.md',NULL,'.md','documentation','aa919909246a7cbbc7362e01d8608cb5eba9f9e10a0ec5ddcae90c1e9be7d2e0',4185);
-INSERT INTO "files" VALUES('docs/architecture/ARQUITECTURA_ACTUAL_2_0.md',NULL,'.md','documentation','1e48da41e57c0185294674f60c18fb368d9da3116034f9e713331ae69f6da51e',20847);
+INSERT INTO "files" VALUES('docs/architecture/ARQUITECTURA_ACTUAL_2_0.md',NULL,'.md','documentation','79b2bf05fac8f6989ed38d93ecc01e9adb5c94f05ca2e9ce5c34434e957150bb',20898);
 INSERT INTO "files" VALUES('docs/architecture/AUDITORIA_SESION_ACTIVA_REFIRMA_2_0.md',NULL,'.md','documentation','f625e115100c74608c398ba4e182c8abb9fb95344371cfdfa0055d131111dbfb',7042);
 INSERT INTO "files" VALUES('docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md',NULL,'.md','documentation','2c790d99a65c1ba1af1a37cf0cedae2a00f7cf844547b321219ddffebe164898',6630);
-INSERT INTO "files" VALUES('docs/architecture/BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md',NULL,'.md','documentation','711748a64fafd9d2c6d8012492aa6ad7e32f7a4fce0bb9db36515bfe70cf8fb4',2916);
+INSERT INTO "files" VALUES('docs/architecture/BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md',NULL,'.md','documentation','4705cec27aa5123237a88f125784b9d6be0459f9bc837a7b39c09489863b2d64',3163);
 INSERT INTO "files" VALUES('docs/architecture/BOVEDA_UI_SIMPLE_R4.md',NULL,'.md','documentation','2aabd539fb6cf55534e18a91be583b79437ab0b35af8320b0923511462e39502',3192);
 INSERT INTO "files" VALUES('docs/architecture/CAPTURA_ATRIBUCION_PCSC.md',NULL,'.md','documentation','302d021eb463d49dcd52e61f285180f93d54f53480508900369a7a5c7b203622',9544);
 INSERT INTO "files" VALUES('docs/architecture/CAPTURA_EDGE_Y_MIDDLEWARE.md',NULL,'.md','documentation','4ee8feeaecdd396ec091b2760acc306c26447fa42954eb876dc5d98d375911eb',6052);
@@ -2281,7 +2281,7 @@ INSERT INTO "files" VALUES('tools/host-diagnostics/watch-tailnet-session.py',NUL
 INSERT INTO "files" VALUES('tools/passkey-verifier/package-lock.json',NULL,'.json','tool','5acf03ac62c4bb9bafe94f6d35d5d2132e158ca7aaba3079f2ce3e840bae20ef',13038);
 INSERT INTO "files" VALUES('tools/passkey-verifier/package.json',NULL,'.json','tool','8020c404b9830a8a17ba7f38f5635afd5f431fb878c926a58d9cf88ca15d85a9',191);
 INSERT INTO "files" VALUES('tools/passkey-verifier/verify.mjs',NULL,'.mjs','tool','db41e3ac10789bd35a31cbc752373d699c8a282965f9749b07baa2ed25a7a9ab',2043);
-INSERT INTO "files" VALUES('tools/project-registry/catalog.json',NULL,'.json','tool','96cfeaa629aca9cd599e97a1654049db0ac03b99d155d96084d0e88965046492',25021);
+INSERT INTO "files" VALUES('tools/project-registry/catalog.json',NULL,'.json','tool','73c3166991548244fc69d4363a86548777c3cbe176ad3062cc97f928e6005047',25388);
 INSERT INTO "files" VALUES('tools/project-registry/registry.py',NULL,'.py','tool','34c9eeb70779c4c9968250b8542d94b4a29d35d048f87624679b2c5a879fa986',11521);
 INSERT INTO "files" VALUES('tools/project-registry/schema.sql',NULL,'.sql','tool','3ab4590979168acbb2e9b654cd5abc9a929fd97eac37f24bea142cd30647a2fb',2808);
 INSERT INTO "files" VALUES('tools/project-registry/test_registry.py',NULL,'.py','tool','df595b00d8a8bd25c579e1e6c41f81dc248a8511417ebf599a24b0d39682e289',4254);
@@ -5680,7 +5680,7 @@ INSERT INTO "metadata" VALUES('catalog_review_date','2026-10-08');
 INSERT INTO "metadata" VALUES('index_method','tracked files; lexical symbols/imports, not runtime call graph');
 INSERT INTO "metadata" VALUES('project','DnieSignerPeruEvolution');
 INSERT INTO "metadata" VALUES('schema_version','1');
-INSERT INTO "metadata" VALUES('source_commit','ad6a34b3fbd2cef9991fd69eed11c2387601876a');
+INSERT INTO "metadata" VALUES('source_commit','604afc6526bc8ecbb12c12fd25a0d30fe7f80daf');
 CREATE TABLE module_dependencies(source TEXT REFERENCES modules(id), target TEXT REFERENCES modules(id),
  scope TEXT NOT NULL, line INTEGER NOT NULL, PRIMARY KEY(source,target,scope,line));
 INSERT INTO "module_dependencies" VALUES('app','dnie-core','implementation',99);
@@ -5757,7 +5757,7 @@ INSERT INTO "modules" VALUES('tools/windows-reader-selector','windows',NULL);
 INSERT INTO "modules" VALUES('tools/windows-suite-integration','windows',NULL);
 CREATE TABLE pending(id TEXT PRIMARY KEY, feature TEXT REFERENCES features(id), state TEXT NOT NULL,
  description TEXT NOT NULL, evidence TEXT REFERENCES documents(path));
-INSERT INTO "pending" VALUES('destructive_renewal_recovery','vault','android_integrated_physical_pending','APK69 corrige pausa SAF que borraba PIN antes de inicio automático. Compilada, no instalada; ADB desconectada. Pendientes pruebas selector, lote NFC/SAF, cruces Windows y recuperación passkeys.','docs/architecture/BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md');
+INSERT INTO "pending" VALUES('destructive_renewal_recovery','vault','android_integrated_physical_pending','APK69 instalada: selector antes de credenciales y autorización explícita; 3 pruebas instrumentadas de interfaz pasan con selector simulado. Pendientes lote NFC/SAF reales, cruces Windows y recuperación passkeys.','docs/architecture/BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md');
 INSERT INTO "pending" VALUES('tsa_recovery','tsa','open','Recuperación persistente de solo TSA sin repetir operación privada.','docs/suite/VALIDACIONES_SINTETICAS_H14.md');
 INSERT INTO "pending" VALUES('online_preflight','validation','open','Validación online automática previa a firma; actual consulta manual.','docs/suite/VALIDACIONES_SINTETICAS_H14.md');
 INSERT INTO "pending" VALUES('global_mode_lock','orchestration','open','Exclusión global Bridge/Suite entre procesos; guard actual local a GUI.','docs/suite/INTEGRACION_BRIDGE_MODULAR_H13.md');

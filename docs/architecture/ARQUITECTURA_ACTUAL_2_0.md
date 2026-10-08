@@ -1,6 +1,6 @@
 # Arquitectura actual · motor 2.0 y gestor Windows rc4
 
-2026-10-08 · Bóveda R7: corregido inicio tras SAF: selector primero, credenciales después y autorización explícita. onPause limpiaba PIN y R6 rechazaba el inicio automático, dejando destino vacío. APK69 compilada y 79 pruebas app pasan; nuevas pruebas instrumentadas compiladas. ADB desconectada: APK69 NO instalada, pruebas de selector/NFC pendientes; instalada conocida APK68. [Detalle](BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md).
+2026-10-08 · Bóveda R7: corregido inicio tras SAF: selector primero, credenciales después y autorización explícita. onPause limpiaba PIN y R6 rechazaba el inicio automático, dejando destino vacío. APK69 instalada por ADB y versión comprobada; 79 pruebas app pasan y 3 pruebas instrumentadas de interfaz pasan (8,537 s). El selector se simula con registro aislado; exportación/importación con SAF real y DNI físico pendientes. [Detalle](BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md).
 
 2026-10-08 · Bóveda R6: APK68 instalada; biblioteca única con Cifrar/Descifrar/Importar/Exportar. Respaldo autosuficiente DNIEBKP2 comprimido y cifrado por contraseña. Importar verifica DNI destino y recifra todo, actualiza UUID coincidentes sin duplicarlos, conserva archivos ajenos y usa journal durable. 137 pruebas JVM y 4 instrumentadas Android pasan; NFC/SAF reales y cruce Windows pendientes. [Detalle](BOVEDA_RESPALDO_UNIFICADO_R6.md).
 

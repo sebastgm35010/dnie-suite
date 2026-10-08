@@ -1,6 +1,6 @@
 # Selector SAF antes de credenciales y autorización · R7
 
-2026-10-08. Checkpoint previo `checkpoint/pre-vault-picker-r7` sobre `ad6a34b`. APK69 / `2.0.0-rc21-vault-picker` compilada; instalación y ejecución instrumentada pendientes de ADB.
+2026-10-08. Checkpoint previo `checkpoint/pre-vault-picker-r7` sobre `ad6a34b`. APK69 / `2.0.0-rc21-vault-picker` instalada por ADB; versión comprobada y pruebas instrumentadas de interfaz satisfactorias.
 
 ## Error reportado y causa
 
@@ -18,6 +18,6 @@ Contraseñas usan remember (no saved state), se limpian al abrir otro selector y
 
 `:app:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest`: BUILD SUCCESSFUL; app 79 pruebas, sin fallos/errores. Pruebas instrumentadas compiladas: export/import con registro ActivityResult aislado que simula pausa limpiando PIN, comprueba ausencia de autorización al recibir URI y espera de tarjeta tras introducir credenciales y pulsar explícitamente. Navegación actualizada para el paso inicial sin credenciales.
 
-ADB perdió conexión; intentos al puerto anterior LAN/Tailscale y descubrimiento mDNS no encontraron conexión válida. No instalada APK69 ni ejecutadas sus pruebas de interfaz todavía. APK instalada conocida previa: 68.
+Conexión ADB restablecida por el usuario: instalación de APK principal y auxiliar con Success. Paquete pe.gob.reniec.dnie.evolution.debug comprobado con versionCode 69 y versionName 2.0.0-rc21-vault-picker. VaultArchivePickerInstrumentedTest y VaultNavigationInstrumentedTest: OK (3 tests), 8,537 s. Cubren exportación, importación y navegación mediante fixtures y registro ActivityResult aislado que simula limpieza de PIN durante pausa; no equivalen a una exportación física con selector SAF del sistema y DNI real.
 
-Artefacto: `D:/DNIeToolchain/AndroidPackages/dnie-evolution-2.0.0-rc21-vault-picker-debug.apk`. Pendiente reconectar ADB, instalar principal/auxiliar, ejecutar clases VaultArchivePickerInstrumentedTest y VaultNavigationInstrumentedTest, y confirmar exportación real desde SAF con DNI. El archivo vacío reportado no contiene un respaldo recuperable; no se modifica automáticamente ni se borra sin conocer su ruta.
+Artefacto: `D:/DNIeToolchain/AndroidPackages/dnie-evolution-2.0.0-rc21-vault-picker-debug.apk`. Pendiente confirmar exportación e importación completas desde SAF real con DNI físico. El archivo vacío reportado no contiene un respaldo recuperable; no se modifica automáticamente ni se borra sin conocer su ruta.
