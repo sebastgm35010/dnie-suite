@@ -20,3 +20,5 @@ No modificar la copia de Antigravity.
 - ICAO usa una conexión nueva y su propia sesión; no reutilizar la sesión IAS/PKI ni cambiar su secuencia de firma.
 - Los datos ICAO y las imágenes se procesan por bloques. Los errores de archivo no abortan otros bloques; una pérdida de transporte o integridad SM detiene la sesión y conserva solo bloques completos.
 - No registrar MRZ, datos personales o imágenes ICAO en claro en la consola. No confundir hashes/firma de EF.SOD con confianza en el emisor o autenticación del chip.
+
+- Registro SQL de arquitectura/estado: `docs/project-registry/project.sqlite3`. Al retomar, consultar `python tools/project-registry/registry.py status` y `check`; consultar `feature <id>`/`search <nombre>` antes de localizar motores. No sustituye los documentos vigentes. Tras cambiar arquitectura/estado, mantener `tools/project-registry/catalog.json` y documentos, preparar archivos nuevos en Git, ejecutar `refresh`/`check` y versionar base + exportación SQL. Procedimiento en `docs/project-registry/README.md`. No confundir imports léxicos con llamadas resueltas ni snapshot con servicios vivos.

@@ -1,0 +1,493 @@
+{
+  "review_date": "2026-10-07",
+  "document_roles": {
+    "AGENTS.md": "operational_instructions",
+    "docs/CONTEXTO_ACTUAL.md": "current_state",
+    "docs/PENDIENTES_ACTUALES.md": "current_pending",
+    "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md": "current_architecture",
+    "docs/suite/CONTEXTO_SUITE_FIRMA.md": "current_suite",
+    "docs/operations/RETOMAR_TRAS_REINICIO_RC4.md": "resume_operations",
+    "docs/suite/REFIRMA_ISSUER_SERIAL_H15.md": "validation_evidence",
+    "docs/project-registry/README.md": "registry_operations",
+    "docs/suite/REVOCACION_CA_DIAGNOSTICO_H9B.md": "validation_or_architecture_reference",
+    "docs/suite/ANDROID_TSA_RENIEC_H11.md": "validation_or_architecture_reference",
+    "docs/suite/INTEGRACION_BRIDGE_MODULAR_H13.md": "validation_or_architecture_reference"
+  },
+  "features": [
+    {
+      "id": "cms",
+      "name": "Motor CMS/CAdES compartido",
+      "status": "validated_real",
+      "note": "issuerSerial corregido y aceptación externa de firma nueva confirmada; las firmas antiguas no se alteran.",
+      "evidence": "docs/suite/REFIRMA_ISSUER_SERIAL_H15.md",
+      "files": {
+        "engine": [
+          "dnie-core/src/main/java/pe/gob/reniec/dnie/crypto/CmsSignatureBuilder.kt",
+          "dnie-core/src/main/java/pe/gob/reniec/dnie/crypto/DetachedFileSigner.kt",
+          "dnie-core/src/main/java/pe/gob/reniec/dnie/crypto/RawHashSigner.kt"
+        ],
+        "test": [
+          "dnie-core/src/test/java/pe/gob/reniec/dnie/crypto/CmsSignatureBuilderTest.kt"
+        ]
+      },
+      "depends_on": []
+    },
+    {
+      "id": "pace",
+      "name": "Sesión DNI v3 y PACE/SM",
+      "status": "validated_real",
+      "note": "Mantener IAS → PKI → PACE → PKI protegido y GET RESPONSE físico antes de desenvolver.",
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md",
+      "files": {
+        "engine": [
+          "dnie-protocol/src/main/"
+        ],
+        "transport": [
+          "dnie-nfc/src/main/"
+        ]
+      },
+      "depends_on": []
+    },
+    {
+      "id": "pdf_android",
+      "name": "Firma PDF Android",
+      "status": "validated_real",
+      "note": "Visible/invisible, PAdES B y TSA opcional T; usar APK64 para issuerSerial.",
+      "evidence": "docs/suite/REFIRMA_ISSUER_SERIAL_H15.md",
+      "files": {
+        "engine": [
+          "dnie-pdf/src/main/"
+        ],
+        "frontend": [
+          "app/src/main/java/pe/gob/reniec/dnie/ui/signer/"
+        ],
+        "adapter": [
+          "app/src/main/java/pe/gob/reniec/dnie/data/signing/"
+        ]
+      },
+      "depends_on": [
+        "cms",
+        "pace",
+        "tsa"
+      ]
+    },
+    {
+      "id": "batch_android",
+      "name": "Firma por lotes Android",
+      "status": "validated_real",
+      "note": "Lote bajo sesión/autorización compartida; no repetir automáticamente operaciones privadas. Pantalla SignerScreen(batch=true), ViewModel separado por key batchSigner; UI compartida con PDF.",
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md",
+      "files": {
+        "engine": [
+          "dnie-signing-core/src/main/"
+        ],
+        "frontend": [
+          "app/src/main/java/pe/gob/reniec/dnie/ui/signer/",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/navigation/NavGraph.kt"
+        ],
+        "adapter": [
+          "app/src/main/java/pe/gob/reniec/dnie/data/signing/"
+        ]
+      },
+      "depends_on": [
+        "cms",
+        "pace"
+      ]
+    },
+    {
+      "id": "suite",
+      "name": "Suite privada Windows ↔ Android",
+      "status": "validated_real",
+      "note": "Lotes reales PDF y CMS; emparejamiento permanente, sesión PC/móvil independiente de presencia NFC.",
+      "evidence": "docs/suite/CONTEXTO_SUITE_FIRMA.md",
+      "files": {
+        "application": [
+          "dnie-signing-desktop/src/main/"
+        ],
+        "frontend": [
+          "dnie-signing-ui/src/main/",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/suite/"
+        ],
+        "adapter": [
+          "app/src/main/java/pe/gob/reniec/dnie/data/suite/"
+        ],
+        "protocol": [
+          "dnie-signing-link/src/main/"
+        ],
+        "engine": [
+          "dnie-signing-core/src/main/",
+          "dnie-pdf-desktop/src/main/"
+        ]
+      },
+      "depends_on": [
+        "cms",
+        "pace",
+        "tsa"
+      ]
+    },
+    {
+      "id": "icao",
+      "name": "Identidad ICAO por bloques",
+      "status": "implemented_real_scan",
+      "note": "Escaneo combinado confirmado; sesión ICAO independiente, interoperabilidad con otros documentos no probada.",
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md",
+      "files": {
+        "engine": [
+          "dnie-icao/src/main/"
+        ],
+        "frontend": [
+          "app/src/main/java/pe/gob/reniec/dnie/ui/identity/"
+        ],
+        "application": [
+          "app/src/main/java/pe/gob/reniec/dnie/domain/scan/",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/navigation/IdentitySignatureBridge.kt"
+        ]
+      },
+      "depends_on": [
+        "pace"
+      ]
+    },
+    {
+      "id": "certificates",
+      "name": "Consulta de certificados y escaneo combinado",
+      "status": "validated_real",
+      "note": "Certificados PKI del titular separados de EF.SOD/ICAO; unificación visual no mezcla sesiones.",
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md",
+      "files": {
+        "frontend": [
+          "app/src/main/java/pe/gob/reniec/dnie/ui/certificates/"
+        ],
+        "application": [
+          "app/src/main/java/pe/gob/reniec/dnie/domain/scan/"
+        ],
+        "adapter": [
+          "app/src/main/java/pe/gob/reniec/dnie/data/certificates/"
+        ]
+      },
+      "depends_on": [
+        "pace",
+        "icao",
+        "validation"
+      ]
+    },
+    {
+      "id": "validation",
+      "name": "Confianza TSL Perú y revocación",
+      "status": "validated_real_manual",
+      "note": "TSL autenticada, ruta PKIX, OCSP titular y CRL CA; consulta manual, evidencia caduca. No clasificación eIDAS.",
+      "evidence": "docs/suite/REVOCACION_CA_DIAGNOSTICO_H9B.md",
+      "files": {
+        "engine": [
+          "dnie-validation-core/src/main/java/pe/gob/reniec/dnie/validation/"
+        ],
+        "adapter": [
+          "app/src/main/java/pe/gob/reniec/dnie/data/certificates/"
+        ],
+        "frontend": [
+          "app/src/main/java/pe/gob/reniec/dnie/ui/certificates/CertificateValidationPanel.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/certificates/CertificateValidationViewModel.kt"
+        ]
+      },
+      "depends_on": []
+    },
+    {
+      "id": "tsa",
+      "name": "Sello de tiempo RENIEC",
+      "status": "validated_real",
+      "note": "PAdES T opcional, confianza ROOT5/TSL y revocación; fallo TSA no publica B silenciosamente ni repite firma.",
+      "evidence": "docs/suite/ANDROID_TSA_RENIEC_H11.md",
+      "files": {
+        "engine": [
+          "dnie-validation-core/src/main/java/pe/gob/reniec/dnie/timestamp/"
+        ],
+        "adapter": [
+          "app/src/main/java/pe/gob/reniec/dnie/data/signing/AndroidTimestampServices.kt"
+        ],
+        "desktop": [
+          "dnie-pdf-desktop/src/main/"
+        ]
+      },
+      "depends_on": [
+        "validation",
+        "cms"
+      ]
+    },
+    {
+      "id": "vault",
+      "name": "Bóveda personal cifrada",
+      "status": "implemented_real_use",
+      "note": "DNI requerido para descifrar; sin biometría. Nombre/extensión, inventario, respaldo y políticas en capas.",
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md",
+      "files": {
+        "engine": [
+          "dnie-vault-core/src/main/"
+        ],
+        "frontend": [
+          "app/src/main/java/pe/gob/reniec/dnie/ui/vault/"
+        ],
+        "adapter": [
+          "app/src/main/java/pe/gob/reniec/dnie/data/vault/"
+        ],
+        "application": [
+          "app/src/main/java/pe/gob/reniec/dnie/domain/vault/"
+        ]
+      },
+      "depends_on": [
+        "pace"
+      ]
+    },
+    {
+      "id": "passkeys",
+      "name": "Proveedor passkeys Android",
+      "status": "implemented_real_use",
+      "note": "Flujos Facebook/Google confirmados; delegación biométrica opcional no se extiende a bóveda. QR/migración requieren pruebas físicas pendientes.",
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md",
+      "files": {
+        "engine": [
+          "dnie-passkeys-core/src/main/"
+        ],
+        "adapter": [
+          "dnie-passkeys-android/src/main/",
+          "app/src/main/java/pe/gob/reniec/dnie/data/passkeys/"
+        ],
+        "frontend": [
+          "app/src/main/java/pe/gob/reniec/dnie/ui/passkeys/"
+        ]
+      },
+      "depends_on": [
+        "pace",
+        "vault"
+      ]
+    },
+    {
+      "id": "bridge",
+      "name": "Puente NFC ↔ PCSC",
+      "status": "validated_real",
+      "note": "Compatibilidad abierta ReFirma/Firma Perú y Ciudadano Digital probada; traducción PACE y modo privado separados.",
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md",
+      "files": {
+        "engine": [
+          "dnie-bridge-core/src/main/"
+        ],
+        "adapter": [
+          "dnie-bridge-android/src/main/",
+          "app/src/main/java/pe/gob/reniec/dnie/data/bridge/"
+        ],
+        "frontend": [
+          "app/src/main/java/pe/gob/reniec/dnie/ui/bridge/"
+        ]
+      },
+      "depends_on": [
+        "pace"
+      ]
+    },
+    {
+      "id": "windows_host",
+      "name": "Gestor, servicio y lector virtual Windows",
+      "status": "validated_real",
+      "note": "Instalación PCSC sigue siendo requerida para compatibilidad abierta; suite privada no depende de exposición PCSC.",
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md",
+      "files": {
+        "host": [
+          "tools/windows-manager/",
+          "tools/windows-agent/",
+          "tools/windows-bridge/",
+          "tools/windows-control/",
+          "tools/windows-pcsc-driver/"
+        ],
+        "operations": [
+          "tools/windows-pairing/"
+        ]
+      },
+      "depends_on": [
+        "bridge"
+      ]
+    },
+    {
+      "id": "orchestration",
+      "name": "Coordinación modular Suite + Bridge",
+      "status": "implemented_partial",
+      "note": "Adaptador .NET opcional; permiso de modo solo local a GUI, sin exclusión global entre procesos.",
+      "evidence": "docs/suite/INTEGRACION_BRIDGE_MODULAR_H13.md",
+      "files": {
+        "engine": [
+          "dnie-desktop-orchestration/src/main/"
+        ],
+        "adapter": [
+          "tools/windows-suite-integration/"
+        ],
+        "frontend": [
+          "dnie-signing-ui/src/main/java/pe/gob/reniec/dnie/desktop/ui/BridgePanel.kt",
+          "dnie-signing-ui/src/main/java/pe/gob/reniec/dnie/desktop/ui/DesktopIntegration.kt"
+        ]
+      },
+      "depends_on": [
+        "suite",
+        "windows_host"
+      ]
+    },
+    {
+      "id": "diagnostics",
+      "name": "Diagnóstico aislado de producción",
+      "status": "implemented",
+      "note": "Registros estructurados y variantes debug/release; no confundir un registro histórico con proceso activo.",
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md",
+      "files": {
+        "engine": [
+          "dnie-diagnostics-core/src/main/"
+        ],
+        "debug": [
+          "app/src/debug/"
+        ],
+        "release": [
+          "app/src/release/"
+        ]
+      },
+      "depends_on": []
+    }
+  ],
+  "pending": [
+    {
+      "id": "tsa_recovery",
+      "feature": "tsa",
+      "state": "open",
+      "description": "Recuperación persistente de solo TSA sin repetir operación privada.",
+      "evidence": "docs/suite/VALIDACIONES_SINTETICAS_H14.md"
+    },
+    {
+      "id": "online_preflight",
+      "feature": "validation",
+      "state": "open",
+      "description": "Validación online automática previa a firma; actual consulta manual.",
+      "evidence": "docs/suite/VALIDACIONES_SINTETICAS_H14.md"
+    },
+    {
+      "id": "global_mode_lock",
+      "feature": "orchestration",
+      "state": "open",
+      "description": "Exclusión global Bridge/Suite entre procesos; guard actual local a GUI.",
+      "evidence": "docs/suite/INTEGRACION_BRIDGE_MODULAR_H13.md"
+    },
+    {
+      "id": "redesign_v3",
+      "feature": "orchestration",
+      "state": "deferred",
+      "description": "Rediseño e integración visual completa en 3.0; motores desacoplados.",
+      "evidence": "docs/PENDIENTES_ACTUALES.md"
+    },
+    {
+      "id": "distribution",
+      "feature": "windows_host",
+      "state": "deferred",
+      "description": "Pulir instalación y distribución final tras estabilización.",
+      "evidence": "docs/PENDIENTES_ACTUALES.md"
+    },
+    {
+      "id": "lt_lta",
+      "feature": "tsa",
+      "state": "deferred",
+      "description": "PAdES LT/LTA: no implementados, sin prioridad inmediata.",
+      "evidence": "docs/PENDIENTES_ACTUALES.md"
+    },
+    {
+      "id": "qr_physical",
+      "feature": "passkeys",
+      "state": "needs_physical_test",
+      "description": "Flujo QR FIDO entre dispositivos pendiente de prueba completa.",
+      "evidence": "docs/PENDIENTES_ACTUALES.md"
+    },
+    {
+      "id": "dni_migration",
+      "feature": "passkeys",
+      "state": "needs_physical_test",
+      "description": "Migración/renovación DNI y certificado requiere pruebas específicas.",
+      "evidence": "docs/PENDIENTES_ACTUALES.md"
+    },
+    {
+      "id": "refirma_issuer",
+      "feature": "cms",
+      "state": "closed",
+      "description": "Aceptación externa de firma nueva con issuerSerial confirmada por usuario; integridad verificada localmente.",
+      "evidence": "docs/suite/REFIRMA_ISSUER_SERIAL_H15.md"
+    },
+    {
+      "id": "usb_cycles",
+      "feature": "windows_host",
+      "state": "needs_physical_test",
+      "description": "AOA/UsbDk: estabilidad de reconexión y paradas repetidas; firma real funciona, no acredita todos los ciclos.",
+      "evidence": "docs/PENDIENTES_ACTUALES.md"
+    },
+    {
+      "id": "tailscale_regression",
+      "feature": "windows_host",
+      "state": "needs_physical_test",
+      "description": "Regresión de gestor/servicio actualizado en Tailscale: retirada/reaproximación y firma independiente.",
+      "evidence": "docs/PENDIENTES_ACTUALES.md"
+    },
+    {
+      "id": "continuous_jobs",
+      "feature": "suite",
+      "state": "needs_physical_test",
+      "description": "Dos trabajos exitosos consecutivos en mismo TLS y secuencia de pérdida/reaproximación con estados visibles.",
+      "evidence": "docs/PENDIENTES_ACTUALES.md"
+    },
+    {
+      "id": "partial_restore",
+      "feature": "vault",
+      "state": "needs_physical_test",
+      "description": "Cancelación SAF, muerte de proceso y restauraciones parciales; certificados y DNI pueden vencer en fechas distintas.",
+      "evidence": "docs/PENDIENTES_ACTUALES.md"
+    },
+    {
+      "id": "icao_other_documents",
+      "feature": "icao",
+      "state": "needs_physical_test",
+      "description": "Interoperabilidad ICAO con otros documentos y cancelación por bloques completos no acreditadas.",
+      "evidence": "docs/PENDIENTES_ACTUALES.md"
+    }
+  ],
+  "facts": [
+    {
+      "id": "android_current",
+      "category": "artifact",
+      "value": "APK64 / 2.0.0-rc16-ess-issuer; D:/DNIeToolchain/AndroidPackages/dnie-evolution-2.0.0-rc16-ess-issuer-debug.apk",
+      "evidence": "docs/suite/REFIRMA_ISSUER_SERIAL_H15.md"
+    },
+    {
+      "id": "desktop_current",
+      "category": "artifact",
+      "value": "D:/DNIeToolchain/Builds/refirma-issuer-h15/ABRIR-SUITE-CORREGIDA.bat",
+      "evidence": "docs/suite/REFIRMA_ISSUER_SERIAL_H15.md"
+    },
+    {
+      "id": "h15_tests",
+      "category": "verification",
+      "value": "247 pruebas, cero fallos/errores; algunas tareas Gradle reutilizadas.",
+      "evidence": "docs/suite/REFIRMA_ISSUER_SERIAL_H15.md"
+    },
+    {
+      "id": "vault_no_biometrics",
+      "category": "invariant",
+      "value": "Bóveda sin biometría; el permiso biométrico de passkeys no se extiende a ella.",
+      "evidence": "AGENTS.md"
+    },
+    {
+      "id": "pace_invariant",
+      "category": "invariant",
+      "value": "IAS → PKI → PACE → PKI protegido; GET RESPONSE físico previo a desenvolver.",
+      "evidence": "AGENTS.md"
+    },
+    {
+      "id": "icao_independent",
+      "category": "invariant",
+      "value": "ICAO conexión/sesión nueva; lectura por bloques, sin MRZ/imagen en consola.",
+      "evidence": "AGENTS.md"
+    },
+    {
+      "id": "historical_processes",
+      "category": "operations",
+      "value": "Los PIDs y sesiones históricos no representan estado vivo de Windows.",
+      "evidence": "AGENTS.md"
+    }
+  ]
+}
