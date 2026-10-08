@@ -15,7 +15,8 @@
     "docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md": "current_recovery_architecture",
     "docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md": "research_recovery_proposal",
     "docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md": "identity_research_not_implemented",
-    "docs/architecture/RIESGOS_RECUPERACION_PASSWORD_Y_DNI.md": "current_recovery_risk_analysis"
+    "docs/architecture/RIESGOS_RECUPERACION_PASSWORD_Y_DNI.md": "current_recovery_risk_analysis",
+    "docs/architecture/CICLO_ARCHIVO_Y_PLAN_PRUEBAS_RECUPERACION.md": "proposed_lifecycle_and_test_plan"
   },
   "features": [
     {
@@ -239,7 +240,8 @@
           "docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md",
           "docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md",
           "docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md",
-          "docs/architecture/RIESGOS_RECUPERACION_PASSWORD_Y_DNI.md"
+          "docs/architecture/RIESGOS_RECUPERACION_PASSWORD_Y_DNI.md",
+          "docs/architecture/CICLO_ARCHIVO_Y_PLAN_PRUEBAS_RECUPERACION.md"
         ]
       },
       "depends_on": [
@@ -541,6 +543,12 @@
       "category": "design_constraint",
       "value": "DNI OR password añade acceso offline por contraseña; cambiarla no revoca copias antiguas. Se evalúa paquete separado. age v1 no permite mezclar scrypt con otros destinatarios.",
       "evidence": "docs/architecture/RIESGOS_RECUPERACION_PASSWORD_Y_DNI.md"
+    },
+    {
+      "id": "vault_lifecycle_windows_first",
+      "category": "plan_for_review",
+      "value": "Flujo CIF hard portable con paquete separado. Orden propuesto: motor/pruebas Windows, Android, cruces sintéticos y físicos, recuperación. Suite de firma no se presupone adaptador de descifrado.",
+      "evidence": "docs/architecture/CICLO_ARCHIVO_Y_PLAN_PRUEBAS_RECUPERACION.md"
     }
   ]
 }

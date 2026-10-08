@@ -291,6 +291,11 @@ INSERT INTO "document_sections" VALUES('docs/architecture/CAPTURA_EDGE_Y_MIDDLEW
 INSERT INTO "document_sections" VALUES('docs/architecture/CHECKPOINT_MOTOR_FIRMA_WINDOWS_1_8_14.md',1,'Checkpoint del motor funcional 1.8.14');
 INSERT INTO "document_sections" VALUES('docs/architecture/CHECKPOINT_MOTOR_FIRMA_WINDOWS_1_8_14.md',9,'Motor y limites que se preservan');
 INSERT INTO "document_sections" VALUES('docs/architecture/CHECKPOINT_MOTOR_FIRMA_WINDOWS_1_8_14.md',21,'Primera limpieza y orden posterior');
+INSERT INTO "document_sections" VALUES('docs/architecture/CICLO_ARCHIVO_Y_PLAN_PRUEBAS_RECUPERACION.md',1,'Ciclo de vida del archivo y plan de pruebas de recuperación');
+INSERT INTO "document_sections" VALUES('docs/architecture/CICLO_ARCHIVO_Y_PLAN_PRUEBAS_RECUPERACION.md',5,'Flujo propuesto');
+INSERT INTO "document_sections" VALUES('docs/architecture/CICLO_ARCHIVO_Y_PLAN_PRUEBAS_RECUPERACION.md',39,'Condiciones del flujo');
+INSERT INTO "document_sections" VALUES('docs/architecture/CICLO_ARCHIVO_Y_PLAN_PRUEBAS_RECUPERACION.md',52,'Orden de implementación y pruebas tras conformidad');
+INSERT INTO "document_sections" VALUES('docs/architecture/CICLO_ARCHIVO_Y_PLAN_PRUEBAS_RECUPERACION.md',62,'Criterio de aceptación');
 INSERT INTO "document_sections" VALUES('docs/architecture/CONSOLIDACION_2_0_RC1.md',1,'Entrega candidata 2.0.0-rc1');
 INSERT INTO "document_sections" VALUES('docs/architecture/CONSOLIDACION_2_0_RC1.md',5,'Motor y responsabilidades');
 INSERT INTO "document_sections" VALUES('docs/architecture/CONSOLIDACION_2_0_RC1.md',13,'Windows operativo');
@@ -858,6 +863,7 @@ INSERT INTO "documents" VALUES('docs/architecture/AUDITORIA_SESION_ACTIVA_REFIRM
 INSERT INTO "documents" VALUES('docs/architecture/CAPTURA_ATRIBUCION_PCSC.md','Captura temporal del cliente PC/SC','historical_or_reference');
 INSERT INTO "documents" VALUES('docs/architecture/CAPTURA_EDGE_Y_MIDDLEWARE.md','Captura preparada para el flujo manual de Ciudadano Digital','historical_or_reference');
 INSERT INTO "documents" VALUES('docs/architecture/CHECKPOINT_MOTOR_FIRMA_WINDOWS_1_8_14.md','Checkpoint del motor funcional 1.8.14','historical_or_reference');
+INSERT INTO "documents" VALUES('docs/architecture/CICLO_ARCHIVO_Y_PLAN_PRUEBAS_RECUPERACION.md','Ciclo de vida del archivo y plan de pruebas de recuperación','proposed_lifecycle_and_test_plan');
 INSERT INTO "documents" VALUES('docs/architecture/CONSOLIDACION_2_0_RC1.md','Entrega candidata 2.0.0-rc1','historical_or_reference');
 INSERT INTO "documents" VALUES('docs/architecture/CONTROL_SIN_MINIDRIVER_PROVISIONAL.md','Observación provisional: canal estable sin minidriver','historical_or_reference');
 INSERT INTO "documents" VALUES('docs/architecture/CORRECCION_USB_AOA_RC4.md','Corrección de descubrimiento USB AOA','historical_or_reference');
@@ -980,6 +986,7 @@ INSERT INTO "facts" VALUES('independent_keys_proposal','proposal_not_implemented
 INSERT INTO "facts" VALUES('identity_hash_not_encryption_secret','invariant','Subject.serialNumber PNOPE es candidato a continuidad verificada del titular; hash de datos públicos no es clave secreta ni recupera CIF hard antiguo. Identificador aún sin implementar.','docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md');
 INSERT INTO "facts" VALUES('password_recovery_requested','design_requested_not_implemented','Usuario solicita contraseña de recuperación: candidata KDF Argon2id con sal portable e identidad como contexto; CIF hard cotidiano conservado. No hay formato/UI nuevos desplegados.','docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md');
 INSERT INTO "facts" VALUES('recovery_copy_and_rotation_limits','design_constraint','DNI OR password añade acceso offline por contraseña; cambiarla no revoca copias antiguas. Se evalúa paquete separado. age v1 no permite mezclar scrypt con otros destinatarios.','docs/architecture/RIESGOS_RECUPERACION_PASSWORD_Y_DNI.md');
+INSERT INTO "facts" VALUES('vault_lifecycle_windows_first','plan_for_review','Flujo CIF hard portable con paquete separado. Orden propuesto: motor/pruebas Windows, Android, cruces sintéticos y físicos, recuperación. Suite de firma no se presupone adaptador de descifrado.','docs/architecture/CICLO_ARCHIVO_Y_PLAN_PRUEBAS_RECUPERACION.md');
 CREATE TABLE feature_dependencies(source TEXT REFERENCES features(id), target TEXT REFERENCES features(id),
  PRIMARY KEY(source,target));
 INSERT INTO "feature_dependencies" VALUES('pdf_android','cms');
@@ -1203,6 +1210,7 @@ INSERT INTO "feature_files" VALUES('vault','docs/architecture/RECUPERACION_Y_REN
 INSERT INTO "feature_files" VALUES('vault','docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md','architecture');
 INSERT INTO "feature_files" VALUES('vault','docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md','architecture');
 INSERT INTO "feature_files" VALUES('vault','docs/architecture/RIESGOS_RECUPERACION_PASSWORD_Y_DNI.md','architecture');
+INSERT INTO "feature_files" VALUES('vault','docs/architecture/CICLO_ARCHIVO_Y_PLAN_PRUEBAS_RECUPERACION.md','architecture');
 INSERT INTO "feature_files" VALUES('passkeys','dnie-passkeys-core/src/main/java/pe/gob/reniec/dnie/passkeys/FidoQrPayload.kt','engine');
 INSERT INTO "feature_files" VALUES('passkeys','dnie-passkeys-core/src/main/java/pe/gob/reniec/dnie/passkeys/PasskeyBackupPolicy.kt','engine');
 INSERT INTO "feature_files" VALUES('passkeys','dnie-passkeys-core/src/main/java/pe/gob/reniec/dnie/passkeys/PasskeyCatalog.kt','engine');
@@ -1917,6 +1925,7 @@ INSERT INTO "files" VALUES('docs/architecture/AUDITORIA_SESION_ACTIVA_REFIRMA_2_
 INSERT INTO "files" VALUES('docs/architecture/CAPTURA_ATRIBUCION_PCSC.md',NULL,'.md','documentation','302d021eb463d49dcd52e61f285180f93d54f53480508900369a7a5c7b203622',9544);
 INSERT INTO "files" VALUES('docs/architecture/CAPTURA_EDGE_Y_MIDDLEWARE.md',NULL,'.md','documentation','4ee8feeaecdd396ec091b2760acc306c26447fa42954eb876dc5d98d375911eb',6052);
 INSERT INTO "files" VALUES('docs/architecture/CHECKPOINT_MOTOR_FIRMA_WINDOWS_1_8_14.md',NULL,'.md','documentation','65d07970e506b0323967f4e35884327d27ba124451a6aaaf7a67ab75880c825f',2662);
+INSERT INTO "files" VALUES('docs/architecture/CICLO_ARCHIVO_Y_PLAN_PRUEBAS_RECUPERACION.md',NULL,'.md','documentation','b2205dc3db52cd4982dd6aa40e3c9a1c47060e4f421758d004c50e13b7240566',6825);
 INSERT INTO "files" VALUES('docs/architecture/CONSOLIDACION_2_0_RC1.md',NULL,'.md','documentation','31c37d926705bb4d7a6091fe6b095699bd99dd246173cbd36d331b795de4997d',5194);
 INSERT INTO "files" VALUES('docs/architecture/CONTROL_SIN_MINIDRIVER_PROVISIONAL.md',NULL,'.md','documentation','9b699fe646d3632c6c2b6a60a888f6ac6b109337e950f865c5fe4d16051e3c1c',1848);
 INSERT INTO "files" VALUES('docs/architecture/CORRECCION_USB_AOA_RC4.md',NULL,'.md','documentation','91fc6d6f0d8db092b59964e8ab28873ee2a5783d9680ef827189c407eff2206f',4060);
@@ -2176,7 +2185,7 @@ INSERT INTO "files" VALUES('tools/host-diagnostics/watch-tailnet-session.py',NUL
 INSERT INTO "files" VALUES('tools/passkey-verifier/package-lock.json',NULL,'.json','tool','5acf03ac62c4bb9bafe94f6d35d5d2132e158ca7aaba3079f2ce3e840bae20ef',13038);
 INSERT INTO "files" VALUES('tools/passkey-verifier/package.json',NULL,'.json','tool','8020c404b9830a8a17ba7f38f5635afd5f431fb878c926a58d9cf88ca15d85a9',191);
 INSERT INTO "files" VALUES('tools/passkey-verifier/verify.mjs',NULL,'.mjs','tool','db41e3ac10789bd35a31cbc752373d699c8a282965f9749b07baa2ed25a7a9ab',2043);
-INSERT INTO "files" VALUES('tools/project-registry/catalog.json',NULL,'.json','tool','70260935ed54fc373099886eb0e6a42dcb0746ae0077765f9f59da3c1e5e2206',20832);
+INSERT INTO "files" VALUES('tools/project-registry/catalog.json',NULL,'.json','tool','f44e957877d9956378f001ac0611aeba2151000dfc77db84ee268b80c7d2227a',21415);
 INSERT INTO "files" VALUES('tools/project-registry/registry.py',NULL,'.py','tool','34c9eeb70779c4c9968250b8542d94b4a29d35d048f87624679b2c5a879fa986',11521);
 INSERT INTO "files" VALUES('tools/project-registry/schema.sql',NULL,'.sql','tool','3ab4590979168acbb2e9b654cd5abc9a929fd97eac37f24bea142cd30647a2fb',2808);
 INSERT INTO "files" VALUES('tools/project-registry/test_registry.py',NULL,'.py','tool','df595b00d8a8bd25c579e1e6c41f81dc248a8511417ebf599a24b0d39682e289',4254);
@@ -5417,7 +5426,7 @@ INSERT INTO "metadata" VALUES('catalog_review_date','2026-10-07');
 INSERT INTO "metadata" VALUES('index_method','tracked files; lexical symbols/imports, not runtime call graph');
 INSERT INTO "metadata" VALUES('project','DnieSignerPeruEvolution');
 INSERT INTO "metadata" VALUES('schema_version','1');
-INSERT INTO "metadata" VALUES('source_commit','34463b4a28c03e189eadb15d162f14ccc5912d39');
+INSERT INTO "metadata" VALUES('source_commit','05c6ec71f18a937f4151d837ae9deac91c68dd31');
 CREATE TABLE module_dependencies(source TEXT REFERENCES modules(id), target TEXT REFERENCES modules(id),
  scope TEXT NOT NULL, line INTEGER NOT NULL, PRIMARY KEY(source,target,scope,line));
 INSERT INTO "module_dependencies" VALUES('app','dnie-core','implementation',99);
