@@ -11,7 +11,8 @@
     "docs/project-registry/README.md": "registry_operations",
     "docs/suite/REVOCACION_CA_DIAGNOSTICO_H9B.md": "validation_or_architecture_reference",
     "docs/suite/ANDROID_TSA_RENIEC_H11.md": "validation_or_architecture_reference",
-    "docs/suite/INTEGRACION_BRIDGE_MODULAR_H13.md": "validation_or_architecture_reference"
+    "docs/suite/INTEGRACION_BRIDGE_MODULAR_H13.md": "validation_or_architecture_reference",
+    "docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md": "current_recovery_architecture"
   },
   "features": [
     {
@@ -216,7 +217,7 @@
       "id": "vault",
       "name": "Bóveda personal cifrada",
       "status": "implemented_real_use",
-      "note": "DNI requerido para descifrar; sin biometría. Nombre/extensión, inventario, respaldo y políticas en capas.",
+      "note": "DNI requerido para descifrar; sin biometría. Nombre/extensión, inventario, respaldo y políticas en capas. P0: respaldo actual no recupera privada eliminada; renovación destructiva requiere preparación independiente todavía no implementada.",
       "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md",
       "files": {
         "engine": [
@@ -230,6 +231,9 @@
         ],
         "application": [
           "app/src/main/java/pe/gob/reniec/dnie/domain/vault/"
+        ],
+        "architecture": [
+          "docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md"
         ]
       },
       "depends_on": [
@@ -240,7 +244,7 @@
       "id": "passkeys",
       "name": "Proveedor passkeys Android",
       "status": "implemented_real_use",
-      "note": "Flujos Facebook/Google confirmados; delegación biométrica opcional no se extiende a bóveda. QR/migración requieren pruebas físicas pendientes.",
+      "note": "Flujos Facebook/Google confirmados; delegación biométrica opcional no se extiende a bóveda. QR/migración requieren pruebas físicas pendientes. P0: respaldo actual no recupera privada eliminada; renovación destructiva requiere preparación independiente todavía no implementada.",
       "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md",
       "files": {
         "engine": [
@@ -252,6 +256,9 @@
         ],
         "frontend": [
           "app/src/main/java/pe/gob/reniec/dnie/ui/passkeys/"
+        ],
+        "architecture": [
+          "docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md"
         ]
       },
       "depends_on": [
@@ -347,6 +354,13 @@
     }
   ],
   "pending": [
+    {
+      "id": "destructive_renewal_recovery",
+      "feature": "vault",
+      "state": "design_required_p0",
+      "description": "Bóveda y passkeys: diseñar vía independiente/preparación previa a sustitución de claves. Respaldos actuales no sobreviven a pérdida de privada; no activar nuevo modo sin elección expresa.",
+      "evidence": "docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md"
+    },
     {
       "id": "tsa_recovery",
       "feature": "tsa",
@@ -488,6 +502,12 @@
       "category": "operations",
       "value": "Los PIDs y sesiones históricos no representan estado vivo de Windows.",
       "evidence": "AGENTS.md"
+    },
+    {
+      "id": "renewal_not_key_continuity",
+      "category": "invariant",
+      "value": "Mismo DNI físico/identidad no garantiza misma clave. Comparar pública; certificado viejo guardado no conserva privada.",
+      "evidence": "docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md"
     }
   ]
 }

@@ -1,5 +1,7 @@
 # Pendientes actuales · Windows rc4 USB / Android rc4-usb
 
+2026-10-07 · P0 conceptual de bóveda/passkeys: renovación puede sustituir la privada aun en el mismo chip. Respaldos actuales siguen ligados a la clave anterior y no recuperan tras su eliminación; migración actual exige abrir con clave vieja y nueva después. Recuperación independiente/asistente previo todavía sin implementar ni activar. [Auditoría y alternativas](architecture/RECUPERACION_Y_RENOVACION_DNI.md).
+
 2026-10-07 · Registro estable SQL: SQLite portable de archivos, módulos, símbolos, dependencias, mapa de funciones y pendientes revisados, con evidencia documental. Consulta/actualización offline por CLI Python; inventario verificable por SHA256 y exportación SQL versionable. [Uso y límites](project-registry/README.md).
 
 2026-10-07 · H15 físico confirmado: usuario comunica aceptación de la firma nueva. PDF aportado contiene cuatro firmas criptográficamente válidas; la última incluye issuerSerial y TSA válido. Se cierra el pendiente de aceptación externa de la corrección; la primera firma conserva la omisión antigua. [Evidencia y límites](suite/REFIRMA_ISSUER_SERIAL_H15.md).
