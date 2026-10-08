@@ -24,6 +24,7 @@ internal fun VaultRecoveryControls(state: VaultUiState, actions: VaultRecoveryAc
     var outputUri by remember { mutableStateOf<Uri?>(null) }
     var preparing by remember { mutableStateOf(false) }
     var passwordDialog by remember { mutableStateOf(false) }
+    var showHelp by remember { mutableStateOf(false) }
     val export = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) {
         outputUri = it; passwordDialog = it != null
     }
@@ -36,8 +37,12 @@ internal fun VaultRecoveryControls(state: VaultUiState, actions: VaultRecoveryAc
     }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         SectionLabel("RECUPERACIÓN ANTES DE RENOVAR EL DNI")
-        Text("El respaldo cifrado habitual no recupera una clave eliminada al renovar. Prepara y prueba un paquete separado para cada archivo mientras el DNI original funcione.", style = MaterialTheme.typography.bodySmall)
-        Text("Con paquete y contraseña se puede abrir sin el DNI antiguo. Guarda el paquete separado del archivo. Cambiar la contraseña no invalida copias anteriores.", style = MaterialTheme.typography.bodySmall)
+        Text("Prepara un paquete por archivo antes de renovar tu DNI.", style = MaterialTheme.typography.bodySmall)
+        TextButton(onClick = { showHelp = !showHelp }) { Text(if (showHelp) "Ocultar explicación" else "Cómo funciona y precauciones") }
+        if (showHelp) {
+            Text("El respaldo habitual no recupera una clave eliminada. Con paquete y contraseña se puede abrir sin el DNI antiguo. Guarda el paquete separado y prueba la recuperación antes de renovar. Cambiar contraseña no invalida copias anteriores.", style = MaterialTheme.typography.bodySmall)
+            Text("Puedes importar un .dnievault de otro equipo. La selección usa la lista filtrada de Archivos.", style = MaterialTheme.typography.bodySmall)
+        }
         val selected = state.items.firstOrNull { it.id == id && !it.trashed }
         var menu by remember { mutableStateOf(false) }
         Box {
@@ -52,7 +57,6 @@ internal fun VaultRecoveryControls(state: VaultUiState, actions: VaultRecoveryAc
                 }
             }
         }
-        Text("La selección usa los archivos de la lista filtrada. Puedes importar primero un .dnievault desde otro equipo.", style = MaterialTheme.typography.bodySmall)
         OutlinedButton(onClick = {
             preparing = true; packageUri = null
             export.launch("recuperacion-${id?.take(12)}.dnierecovery")
@@ -64,7 +68,7 @@ internal fun VaultRecoveryControls(state: VaultUiState, actions: VaultRecoveryAc
         }, enabled = !busy && selected != null && state.riskAcknowledged) {
             Text("Recuperar con paquete y contraseña")
         }
-        Text("Para preparar, introduce CAN y PIN arriba. La recuperación alternativa no pide CAN, PIN ni biometría.", style = MaterialTheme.typography.bodySmall)
+        Text("Para preparar, introduce CAN y PIN en el acceso DNI. La recuperación alternativa no pide CAN, PIN ni biometría.", style = MaterialTheme.typography.bodySmall)
     }
     if (passwordDialog) {
         var password by remember { mutableStateOf("") }

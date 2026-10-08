@@ -306,6 +306,21 @@ class VaultViewModel(private val cryptoDispatcher: CoroutineDispatcher = Dispatc
         files.organize(id, labels.copy(folder = folder.trim(), tags = tags.map(String::trim).filter(String::isNotEmpty).distinct()))
     }
     fun recoverTrash(id: String) = launchDisk("Recuperando archivo…") { files.trash(id, false) }
+    fun trashMany(ids: List<String>, trashed: Boolean) = batchLibrary(ids) { files.trash(it, trashed) }
+    fun organizeMany(ids: List<String>, folder: String, tags: List<String>) = batchLibrary(ids) { id ->
+        val labels = inventory.first { it.file.id == id }.labels
+        files.organize(id, labels.copy(folder = folder.trim(), tags = tags.map(String::trim).filter(String::isNotEmpty).distinct()))
+    }
+    private fun batchLibrary(ids: List<String>, action: suspend (String) -> Unit) {
+        val selected = ids.distinct().filter { id -> inventory.any { it.file.id == id } }
+        if (selected.isEmpty() || !state.value.riskAcknowledged) return
+        var result = ""
+        launchDisk("Procesando selección…", { result }) {
+            val batch = pe.gob.reniec.dnie.domain.vault.VaultBatchImportUseCase().run(selected, action,
+                { done, total, failed -> state.value = state.value.copy(message = "$done/$total · $failed fallido(s)") })
+            result = "Selección completada: ${batch.completed} archivo(s), ${batch.failed} fallido(s)."
+        }
+    }
     fun importFiles(uris: List<Uri>) {
         if (!state.value.riskAcknowledged || state.value.pairedFingerprint == null || uris.isEmpty()) return
         var result = ""

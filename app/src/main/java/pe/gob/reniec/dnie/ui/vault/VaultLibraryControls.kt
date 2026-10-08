@@ -27,20 +27,27 @@ data class VaultLibraryActions(
     val encryptIncoming: () -> Unit,
     val dismissIncoming: () -> Unit,
     val inspect: (String) -> Unit,
-    val closeDetails: () -> Unit
+    val closeDetails: () -> Unit,
+    val trashMany: (List<String>, Boolean) -> Unit,
+    val organizeMany: (List<String>, String, List<String>) -> Unit
 )
 
 @Composable
-internal fun VaultLibraryControls(state: VaultUiState, actions: VaultLibraryActions,
-    onBackup: () -> Unit, onRestoreBackup: () -> Unit) {
+internal fun VaultLibraryControls(state: VaultUiState, actions: VaultLibraryActions) {
     val busy = state.running || state.awaitingCard
+    var filters by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = onBackup, enabled = !busy && state.riskAcknowledged, modifier = Modifier.weight(1f)) { Text("Respaldar todo") }
-            OutlinedButton(onClick = onRestoreBackup, enabled = !busy && state.riskAcknowledged, modifier = Modifier.weight(1f)) { Text("Restaurar respaldo") }
-        }
         OutlinedTextField(state.query, actions.query, label = { Text("Buscar nombre, carpeta o etiqueta") },
             singleLine = true, modifier = Modifier.fillMaxWidth())
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            TextButton(onClick = { filters = true }, enabled = !busy) { Text("Filtros y orden") }
+            TextButton(onClick = { actions.trash(!state.showTrash) }, enabled = !busy) {
+                Text(if (state.showTrash) "Volver a archivos" else "Papelera")
+            }
+        }
+    }
+    if (filters) AlertDialog(onDismissRequest = { filters = false }, title = { Text("Filtros y orden") }, text = {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(selected = !state.showTrash, onClick = { actions.trash(false) }, label = { Text("Archivos (${state.totalItems})") })
             FilterChip(selected = state.showTrash, onClick = { actions.trash(true) }, label = { Text("Papelera") })
@@ -57,7 +64,8 @@ internal fun VaultLibraryControls(state: VaultUiState, actions: VaultLibraryActi
                 })
             }
         }
-    }
+        }
+    }, confirmButton = { TextButton(onClick = { filters = false }) { Text("Listo") } })
 }
 
 @Composable

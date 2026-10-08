@@ -163,7 +163,8 @@ fun NavGraph(
                         recover = vaultViewModel::recoverTrash, purge = vaultViewModel::permanentlyDelete,
                         preview = vaultViewModel::requestPreview, createNote = vaultViewModel::createNote,
                         encryptIncoming = vaultViewModel::encryptSharedFiles, dismissIncoming = vaultViewModel::dismissSharedFiles,
-                        inspect = vaultViewModel::inspect, closeDetails = vaultViewModel::closeDetails),
+                        inspect = vaultViewModel::inspect, closeDetails = vaultViewModel::closeDetails,
+                        trashMany = vaultViewModel::trashMany, organizeMany = vaultViewModel::organizeMany),
                     onBack = leaveVault)
             }
         }

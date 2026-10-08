@@ -19,7 +19,8 @@
     "docs/architecture/CICLO_ARCHIVO_Y_PLAN_PRUEBAS_RECUPERACION.md": "proposed_lifecycle_and_test_plan",
     "docs/architecture/PRUEBAS_RECUPERACION_WINDOWS_R1.md": "synthetic_validation_recovery_windows",
     "docs/architecture/PRUEBAS_RECUPERACION_WINDOWS_R2.md": "synthetic_validation_recovery_windows",
-    "docs/architecture/RECUPERACION_ANDROID_R3.md": "current_android_recovery_architecture"
+    "docs/architecture/RECUPERACION_ANDROID_R3.md": "current_android_recovery_architecture",
+    "docs/architecture/BOVEDA_UI_SIMPLE_R4.md": "current_vault_ui_architecture"
   },
   "features": [
     {
@@ -224,8 +225,8 @@
       "id": "vault",
       "name": "Bóveda personal cifrada",
       "status": "implemented_real_use",
-      "note": "CIF hard cotidiano sin biometría; recuperación alternativa opcional mediante paquete separado y contraseña integrada APK65, prueba física pendiente. Respaldo habitual no recupera claves eliminadas.",
-      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md",
+      "note": "APK66 instalado: Archivos/DNI/Recuperar/Más, tarjetas compactas, selección múltiple carpeta-etiquetas/papelera/restaurar. Cifrado y autorización preservados.",
+      "evidence": "docs/architecture/BOVEDA_UI_SIMPLE_R4.md",
       "files": {
         "engine": [
           "dnie-vault-core/src/main/"
@@ -507,8 +508,8 @@
     {
       "id": "android_current",
       "category": "artifact",
-      "value": "APK65 / 2.0.0-rc17-vault-recovery instalado; D:/DNIeToolchain/AndroidPackages/dnie-evolution-2.0.0-rc17-vault-recovery-debug.apk",
-      "evidence": "docs/architecture/RECUPERACION_ANDROID_R3.md"
+      "value": "APK66 / 2.0.0-rc18-vault-ui instalado; D:/DNIeToolchain/AndroidPackages/dnie-evolution-2.0.0-rc18-vault-ui-debug.apk",
+      "evidence": "docs/architecture/BOVEDA_UI_SIMPLE_R4.md"
     },
     {
       "id": "desktop_current",

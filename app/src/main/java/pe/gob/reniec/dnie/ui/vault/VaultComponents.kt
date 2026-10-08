@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -85,42 +86,39 @@ internal fun VaultResult(running: Boolean, awaitingCard: Boolean, verified: Bool
 @Composable
 internal fun VaultFileCard(item: VaultItemUi, enabled: Boolean, selected: Boolean,
     onRestore: () -> Unit, onExport: () -> Unit, onDelete: () -> Unit,
-    onPreview: () -> Unit, onOrganize: () -> Unit, onRecover: () -> Unit, onInspect: () -> Unit) {
-    Card(shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = VaultSurface)) {
-        Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Lock, null, tint = VaultAccent)
-                Column {
-                    Text(item.displayName ?: "Archivo cifrado · nombre pendiente", fontWeight = FontWeight.Medium)
-                    if (selected) Text("Archivo seleccionado", style = MaterialTheme.typography.labelSmall, color = VaultAccent)
-                    Text(encryptedSize(item.encryptedBytes), style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+    onPreview: () -> Unit, onOrganize: () -> Unit, onRecover: () -> Unit, onInspect: () -> Unit,
+    selectionMode: Boolean = false, checked: Boolean = false, onToggle: () -> Unit = {}) {
+    var menu by remember { mutableStateOf(false) }
+    Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = VaultSurface)) {
+        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (selectionMode) Checkbox(checked = checked, onCheckedChange = { onToggle() }, enabled = enabled)
+                else Icon(Icons.Default.Lock, null, tint = VaultAccent, modifier = Modifier.padding(end = 10.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(item.displayName ?: "Archivo cifrado", fontWeight = FontWeight.Medium)
+                    Text(encryptedSize(item.encryptedBytes) + if (item.folder.isNotBlank()) " · ${item.folder}" else "",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (selected) Text("Pendiente de abrir", style = MaterialTheme.typography.labelSmall)
+                }
+                if (!selectionMode) Box {
+                    IconButton(onClick = { menu = true }, enabled = enabled) {
+                        Icon(Icons.Default.MoreVert, "Opciones del archivo")
+                    }
+                    DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                        fun run(action: () -> Unit) { menu = false; action() }
+                        if (!item.trashed) {
+                            if (item.canPreview) DropdownMenuItem(text = { Text("Descifrar copia") }, onClick = { run(onRestore) })
+                            DropdownMenuItem(text = { Text("Exportar cifrado") }, onClick = { run(onExport) })
+                            DropdownMenuItem(text = { Text("Carpeta y etiquetas") }, onClick = { run(onOrganize) })
+                        }
+                        DropdownMenuItem(text = { Text("Ficha del archivo") }, onClick = { run(onInspect) })
+                        DropdownMenuItem(text = { Text(if (item.trashed) "Eliminar definitivamente" else "Mover a papelera") }, onClick = { run(onDelete) })
+                    }
                 }
             }
-            if (item.folder.isNotBlank()) Text("Carpeta: ${item.folder}", style = MaterialTheme.typography.labelMedium)
-            if (item.tags.isNotEmpty()) Text(item.tags.joinToString(" · "), style = MaterialTheme.typography.labelSmall)
-            if (item.createdAt > 0) Text(java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.SHORT, java.text.DateFormat.SHORT)
-                .format(java.util.Date(item.createdAt)), style = MaterialTheme.typography.bodySmall)
-            Text(item.id.chunked(20).joinToString("\n"), fontFamily = FontFamily.Monospace,
-                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            if (!item.trashed) {
-            if (item.canPreview) OutlinedButton(onClick = onPreview, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
-                Text("Ver con DNI · vista privada")
-            }
-            TextButton(onClick = onOrganize, enabled = enabled, modifier = Modifier.fillMaxWidth()) { Text("Carpeta y etiquetas") }
-            OutlinedButton(onClick = onRestore, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
-                Text("Descifrar copia")
-            }
-            TextButton(onClick = onExport, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
-                Text("Exportar cifrado")
-            }
-            } else {
-                OutlinedButton(onClick = onRecover, enabled = enabled, modifier = Modifier.fillMaxWidth()) { Text("Recuperar de papelera") }
-            }
-            TextButton(onClick = onDelete, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
-                Text(if (item.trashed) "Eliminar definitivamente" else "Mover a papelera")
-            }
-            TextButton(onClick = onInspect, enabled = enabled, modifier = Modifier.fillMaxWidth()) { Text("Ficha del archivo") }
+            if (!selectionMode) TextButton(onClick = when {
+                item.trashed -> onRecover; item.canPreview -> onPreview; else -> onRestore
+            }, enabled = enabled) { Text(when { item.trashed -> "Restaurar"; item.canPreview -> "Ver con DNI"; else -> "Descifrar copia" }) }
         }
     }
 }
