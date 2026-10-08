@@ -1,5 +1,7 @@
 # Pendientes actuales · Windows rc4 USB / Android rc4-usb
 
+2026-10-07 · H15 físico confirmado: usuario comunica aceptación de la firma nueva. PDF aportado contiene cuatro firmas criptográficamente válidas; la última incluye issuerSerial y TSA válido. Se cierra el pendiente de aceptación externa de la corrección; la primera firma conserva la omisión antigua. [Evidencia y límites](suite/REFIRMA_ISSUER_SERIAL_H15.md).
+
 2026-10-07 · H15: ReFirma PCX/DSS 5.4.3 exige issuerSerial en signingCertificateV2 mediante política PE. Corrección del motor CMS compartido Android/Windows, APK64 y GUI H15 compiladas; 247 pruebas pasan. Prueba sintética con el motor real cambia emisor/serie de false a true. Pendiente validar firma NUEVA con DNI y TSA en ReFirma PCX; las firmas anteriores conservan su integridad pero no se pueden parchear. [Causa, evidencia y entregables](suite/REFIRMA_ISSUER_SERIAL_H15.md).
 
 2026-10-07 · H14: batería sintética forzada (--rerun), 330 pruebas pasan, 2 opt-in externas omitidas, 0 fallos/errores. Nuevos casos TSA timeout/respuestas inválidas y lote PDF fallido con TXT posterior válido sin repetir firma. Sin DNI ni cambios de producción; recuperación persistente de solo TSA y preflight online automático siguen sin implementar. [Resultados y límites](suite/VALIDACIONES_SINTETICAS_H14.md).

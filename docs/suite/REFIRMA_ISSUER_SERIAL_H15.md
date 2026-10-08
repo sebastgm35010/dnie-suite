@@ -35,4 +35,12 @@ GUI corregida: D:/DNIeToolchain/Builds/refirma-issuer-h15/ABRIR-SUITE-CORREGIDA.
 CLI: D:/DNIeToolchain/Builds/refirma-issuer-h15/signing-desktop/install/dnie-signing-desktop/bin/dnie-signing-desktop.bat.
 El adaptador opcional Bridge mantiene la distribución H13 existente; no se reinstalan controladores ni se altera el puente.
 
-Checkpoint final previsto: checkpoint/refirma-issuer-serial-h15; copia comprimida en D:/DNIeToolchain/Checkpoints/refirma-issuer-serial-h15/source.zip.
+Checkpoint final: checkpoint/refirma-issuer-serial-h15; copia comprimida en D:/DNIeToolchain/Checkpoints/refirma-issuer-serial-h15/source.zip.
+
+## Confirmación física posterior
+
+2026-10-07: el usuario confirma revisión positiva y aceptación de la firma nueva. Evidencia local: SuiteContinuousJobs/c82bb113-9f35-4c0f-b5c8-8e7ba1af5904/signed/1e075a40-3837-4170-b51a-c0b927401541/01_acta_prueba_firmado[R][FP]_firmado.pdf.
+
+Inspección local independiente: cuatro firmas ETSI.CAdES.detached, todas verifican criptográficamente y sus hashes de certificado coinciden. Tres tokens TSA presentes y criptográficamente válidos. La primera firma conserva issuerSerial ausente; las siguientes tres lo incluyen. La última firma incluye también TSA. La revisión positiva comunicada por el usuario cierra el pendiente de aceptación externa de la firma nueva; no implica que la firma antigua haya sido corregida ni que las cuatro sean aceptadas por la política PE.
+
+SHA256 del PDF: 897231F26DF0499608AF49CD716D83BB6EE0D5AB2025D63D549BC000135DA901.
