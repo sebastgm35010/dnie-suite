@@ -66,3 +66,5 @@ K_recovery protegerá mediante AEAD una copia del secreto aleatorio necesario pa
 Quien posea archivo, identidad requerida y contraseña puede recuperar sin la privada anterior del DNI. Comprobar después un DNI nuevo vincula el reenlace al titular, pero esa comprobación por sí sola no añade una barrera criptográfica hardware a la vía de contraseña. La robustez frente a intentos offline depende de contraseña fuerte y KDF, no del PIN/CAN ni de CRL.
 
 El modo de recuperación debe habilitarse/prepararse mientras la clave antigua abre los datos. No rescata retroactivamente un archivo cuya única privada ya fue eliminada. Mantener explícita esta segunda vía y la bóveda sin biometría.
+
+Revisión posterior: [riesgos y soluciones de proyectos comparables](RIESGOS_RECUPERACION_PASSWORD_Y_DNI.md). Precisión sobre age: su destinatario de contraseña no se mezcla con otros destinatarios en el mismo archivo. Se evalúa paquete de recuperación separado para preservar la ruta portable CIF hard sin distribuir una vía débil en cada copia.

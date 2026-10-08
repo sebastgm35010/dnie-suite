@@ -14,7 +14,8 @@
     "docs/suite/INTEGRACION_BRIDGE_MODULAR_H13.md": "validation_or_architecture_reference",
     "docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md": "current_recovery_architecture",
     "docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md": "research_recovery_proposal",
-    "docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md": "identity_research_not_implemented"
+    "docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md": "identity_research_not_implemented",
+    "docs/architecture/RIESGOS_RECUPERACION_PASSWORD_Y_DNI.md": "current_recovery_risk_analysis"
   },
   "features": [
     {
@@ -237,7 +238,8 @@
         "architecture": [
           "docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md",
           "docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md",
-          "docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md"
+          "docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md",
+          "docs/architecture/RIESGOS_RECUPERACION_PASSWORD_Y_DNI.md"
         ]
       },
       "depends_on": [
@@ -264,7 +266,8 @@
         "architecture": [
           "docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md",
           "docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md",
-          "docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md"
+          "docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md",
+          "docs/architecture/RIESGOS_RECUPERACION_PASSWORD_Y_DNI.md"
         ]
       },
       "depends_on": [
@@ -532,6 +535,12 @@
       "category": "design_requested_not_implemented",
       "value": "Usuario solicita contraseña de recuperación: candidata KDF Argon2id con sal portable e identidad como contexto; CIF hard cotidiano conservado. No hay formato/UI nuevos desplegados.",
       "evidence": "docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md"
+    },
+    {
+      "id": "recovery_copy_and_rotation_limits",
+      "category": "design_constraint",
+      "value": "DNI OR password añade acceso offline por contraseña; cambiarla no revoca copias antiguas. Se evalúa paquete separado. age v1 no permite mezclar scrypt con otros destinatarios.",
+      "evidence": "docs/architecture/RIESGOS_RECUPERACION_PASSWORD_Y_DNI.md"
     }
   ]
 }

@@ -47,3 +47,5 @@ La recuperación debe prepararse antes de perder la antigua privada. Los DNIEVLT
 ## Decisiones aún abiertas
 
 Modo independiente de passkeys, alternativa local sin biometría, modalidad opcional de recuperación de bóveda, secreto/segundo dispositivo de recuperación y formato versionado. Investigación no equivale a autorización para quitar el requisito actual de DNI. No se ha alterado código de cifrado, passkeys, firmas o autenticación ni incorporado dependencias/código de los proyectos investigados.
+
+Revisión posterior: [riesgos y soluciones de proyectos comparables](RIESGOS_RECUPERACION_PASSWORD_Y_DNI.md). Precisión sobre age: su destinatario de contraseña no se mezcla con otros destinatarios en el mismo archivo. Se evalúa paquete de recuperación separado para preservar la ruta portable CIF hard sin distribuir una vía débil en cada copia.
