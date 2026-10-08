@@ -48,7 +48,7 @@ Smoke real **de solo consulta**: helper devuelve `AVAILABLE / STOPPED / card=fal
 
 ## Pendientes
 
-Probar físicamente apertura del gestor desde GUI, detener un puente activo con confirmación, cambio Bridge↔Suite y firma privada con DNI. La firma Windows con TSA H12 sigue pendiente de validación externa. Próximas iteraciones: mover presentación/configuración Bridge a un frontend común vía contratos acotados, perfiles públicos compartidos sin mezclar identidades, notificaciones de conexión, catálogo de certificados/ICAO mediante adaptadores públicos y distribución/instalador opcional por producto. No cambiar motores comprobados para resolver duplicación visual.
+Probar físicamente apertura del gestor desde GUI, detener un puente activo con confirmación, cambio Bridge↔Suite. La firma privada Windows con DNI y TSA H12 fue confirmada por el usuario para el PDF del lote PC01; CMS TXT separado también válido. Falta resultado del segundo PDF y confirmación explícita de completos3/3/PIN único. Próximas iteraciones: mover presentación/configuración Bridge a un frontend común vía contratos acotados, perfiles públicos compartidos sin mezclar identidades, notificaciones de conexión, catálogo de certificados/ICAO mediante adaptadores públicos y distribución/instalador opcional por producto. No cambiar motores comprobados para resolver duplicación visual.
 
 Checkpoint final `checkpoint/suite-bridge-modular-h13`, fuente/manifiesto en `D:/DNIeToolchain/Checkpoints/suite-bridge-modular-h13`.
 

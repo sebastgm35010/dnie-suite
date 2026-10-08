@@ -27,6 +27,15 @@ Para consola, conservar los argumentos habituales `suite --pc ... --phone ... --
 
 Experimento externo del **ejecutable distribuido**: comando `demo --pdf-mode visible --pdf-tsa reniec` con documento y firmante sintéticos, pero TSA RENIEC real y verificaciones de confianza de producción. Trabajo `b6c31728-cf85-4416-a82f-4e5b00e5e41c`, completos1/1. Verificación local posterior del PDF: PASS, firma CMS y token válidos, imprint coincidente y ByteRange completo; TSA 2026-10-07 18:19:45 UTC-05. Evidencias fuera de Git en `D:/DNIeToolchain/TsaExperiment/h12-live.log`, `h12-verification.log` y `H12Jobs`. El helper de inspección falló inicialmente por casts genéricos Java, se corrigió fuera del repositorio; no fue un fallo del ejecutable.
 
-**Pendiente:** firma Windows con DNI real y validación externa en Firma Perú esperando VÁLIDO, PAdES_BASELINE_T y ambas raíces en TSL Sí. El experimento sintético no establece confianza del firmante ni sustituye esa prueba. Quedan LT/LTA, recuperación de solo sellado, consulta online automática del titular antes de firmar y condiciones de distribución/acceso al proveedor. No declara acreditación IOFE ni clasificación eIDAS.
+**Prueba física superada:** el usuario aporta validación Firma Perú de 01_acta_prueba_firmado.pdf: VÁLIDO, PAdES_BASELINE_T y ambas raíces en TSL Sí (detalle abajo). El experimento inicial sintético queda separado de esta evidencia real. Quedan LT/LTA, recuperación de solo sellado, consulta online automática del titular antes de firmar y condiciones de distribución/acceso al proveedor. No declara acreditación IOFE ni clasificación eIDAS.
 
 Checkpoint final: `checkpoint/windows-tsa-reniec-h12`, archivo fuente y manifiesto en `D:/DNIeToolchain/Checkpoints/windows-tsa-reniec-h12`. Distribuciones previas preservadas.
+
+## Validación externa con DNI real · lote PC 01
+
+Informes textuales aportados por el usuario el 2026-10-07 tras probar el lote preparado en la GUI Windows:
+
+- `01_acta_prueba_firmado.pdf`: validación 21:09:51 UTC-05, VÁLIDO, una firma válida, integridad conservada, PAdES_BASELINE_T, RSA with SHA256. Raíz del firmante en TSL Sí y raíz TSA en TSL Sí. Hora declarada 21:08:52; hora TSA 21:08:57 UTC-05. Motivo Doy conformidad, ubicación Arequipa, Peru. TSA PSVA-TSA-RENIEC TSU-2026-01 → EC-PSVA CA ROOT 5 → ECERNEP PERU CA ROOT 5; vigencia TSA hasta 2038-01-17 11:47:17 UTC-05.
+- `03_constancia_prueba.txt` con `03_constancia_prueba.txt.p7s`: validación 21:10:54 UTC-05, VÁLIDO, una firma válida e integridad conservada, CAdES_BASELINE_B, RSA with SHA256, raíz del firmante en TSL Sí. Hora declarada 21:08:59 UTC-05. Sin TSA, acorde con la opción actual limitada a PDF integrado.
+
+Estos resultados confirman firma privada desde Windows con DNI real para PDF-T y CMS separado-B. Evidencia recibida: texto del validador Firma Perú/DSS5.11.1; los artefactos firmados no fueron adjuntados ni inspeccionados localmente en esta confirmación. No se copian identidad ni serie del titular al repositorio. No hay resultado aportado para `02_informe_prueba_firmado.pdf`, ni confirmación explícita de completos3/3 o PIN único; esos aspectos permanecen sin cerrar. Tampoco prueban cambio Bridge↔Suite, LT/LTA o acreditación del software.
