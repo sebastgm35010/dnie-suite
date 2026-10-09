@@ -16,7 +16,8 @@ fun BridgeScreen(state: BridgeUiState, nfcEnabled: Boolean, onImport: () -> Unit
     onExportTrace: () -> Unit, onClearTrace: () -> Unit, onWindowsPace: (Boolean) -> Unit, onTranslatePace: (Boolean) -> Unit,
     onTailnetHost: (String) -> Unit, onConnectTailnet: () -> Unit,
     onMethod: (pe.gob.reniec.dnie.bridge.BridgeConnectionMethod) -> Unit,
-    onSettings: (pe.gob.reniec.dnie.bridge.BridgeRuntimeSettings) -> Unit, development: Boolean = false, onForgetPc: () -> Unit = {}) {
+    onSettings: (pe.gob.reniec.dnie.bridge.BridgeRuntimeSettings) -> Unit, development: Boolean = false, onForgetPc: () -> Unit = {},
+    onPcHost: (String) -> Unit = {}) {
     if (state.sessionStage.visible) {
         BridgeSessionScreen(state, onStop)
         return
@@ -43,7 +44,12 @@ fun BridgeScreen(state: BridgeUiState, nfcEnabled: Boolean, onImport: () -> Unit
             if (state.method.usesPairing) Button(onClick = onScan, enabled = !state.busy && !state.armed) { Text("Escanear QR de la PC") }
             if (state.method.usesPairing) OutlinedButton(onClick = onImport, enabled = !state.busy && !state.armed) { Text("Importar archivo de emparejamiento") }
             if (state.peer.isNotEmpty()) {
-                Text("PC: ${state.peer}", style = MaterialTheme.typography.titleMedium)
+                Text("PC vinculada", style = MaterialTheme.typography.titleMedium)
+                if (state.directPcConnection) OutlinedTextField(state.directPcHost, onPcHost,
+                    label = { Text("IP actual de la PC") }, singleLine = true,
+                    enabled = !state.busy && !state.armed, modifier = Modifier.fillMaxWidth())
+                else Text("Dirección al vincular: ${state.peer}", style = MaterialTheme.typography.bodySmall)
+                if (!state.tailscale) Text("La IP puede cambiar. Se conserva la misma huella y conexión cifrada.", style = MaterialTheme.typography.bodySmall)
                 if (!state.tailscale) TextButton(onClick=onForgetPc, enabled=!state.busy && !state.armed) {Text("Olvidar PC") }
                 if (!state.tailscale) {
                     TextButton(onClick = { details = !details }) { Text(if (details) "Ocultar huella" else "Comparar huella con la PC") }

@@ -32,18 +32,24 @@ class ContinuousSuiteTest {
         val folder = Files.createTempDirectory("continuous-suite-")
         val executor = Executors.newSingleThreadExecutor()
         val identity = JobTlsIdentity()
-        val pair = SuitePairing(UUID.randomUUID(), ip, identity.fingerprint, ByteArray(32) { 3 })
+        val stale = if (ip != "192.168.255.254") "192.168.255.254" else "10.254.254.254"
+        val pair = SuitePairing(UUID.randomUUID(), stale, identity.fingerprint, ByteArray(32) { 3 })
         val provision = pair.provision()
         val phone = PhoneSigningTransport(provision, port, continuous = true)
-        val pc = ReverseTlsExchange(ip, provision, identity, port, continuous = true)
+        val currentRoute = SigningProvision(provision.sessionId, ip, provision.expiresAt, provision.count, provision.fingerprint, provision.token)
+        val pc = ReverseTlsExchange(ip, currentRoute, identity, port, continuous = true)
         val card = SimulatedSigningCard()
         val slot = SuiteCardSlot()
+        val authenticatedPeer = java.util.concurrent.atomic.AtomicReference<String>()
+        val peerKnown = java.util.concurrent.CountDownLatch(1)
         assertTrue(slot.offer { card to { true } })
         val worker = executor.submit { runBlocking {
-            ContinuousSigningConnection(phone.accept(), slot::acquire, slot::invalidate, finishJob = slot::finishJob).run()
+            ContinuousSigningConnection(phone.accept(onPeerAddress = { authenticatedPeer.set(it); peerKnown.countDown() }), slot::acquire, slot::invalidate, finishJob = slot::finishJob).run()
         } }
         try {
             val client = ContinuousSigningClient(pc.openChannel())
+            assertTrue(peerKnown.await(5, TimeUnit.SECONDS))
+            assertEquals(ip, authenticatedPeer.get())
             client.use {
                 repeat(2) { round ->
                     val input = folder.resolve("document-$round.txt"); Files.writeString(input, "Synthetic continuous job $round")
@@ -62,7 +68,7 @@ class ContinuousSuiteTest {
             assertEquals(1, card.selections); assertEquals(2, card.verifications); assertEquals(2, card.signatures)
             assertEquals(1, card.closes)
         } finally {
-            pc.close(); phone.close(); slot.close(); provision.close(); pair.close(); executor.shutdownNow()
+            pc.close(); phone.close(); slot.close(); provision.close(); currentRoute.close(); pair.close(); executor.shutdownNow()
             Files.walk(folder).use { it.sorted(Comparator.reverseOrder()).forEach(Files::delete) }
         }
     }
@@ -95,7 +101,7 @@ class ContinuousSuiteTest {
             worker.get(10, TimeUnit.SECONDS)
         } finally { pc.close(); phone.close(); slot.close(); provision.close(); pair.close(); executor.shutdownNow() }
     }
-    @Test fun persistentWindowsIdentitySurvivesRestartRejectsTamperingAndAddressChange() {
+    @Test fun persistentWindowsIdentitySurvivesRestartAndAddressChangeButRejectsTampering() {
         assumeTrue(System.getProperty("os.name").startsWith("Windows"))
         val root = Files.createTempDirectory("suite-dpapi-"); val path = root.resolve("identity.bin")
         try {
@@ -106,7 +112,18 @@ class ContinuousSuiteTest {
             SuitePcIdentity.open(path, "192.168.1.5").use {
                 assertEquals(fingerprint, it.pairing.fingerprintText()); assertEquals(encoded, it.pairing.encode())
             }
-            assertTrue(runCatching { SuitePcIdentity.open(path, "192.168.1.6") }.isFailure)
+            val originalBytes = Files.readAllBytes(path)
+            val originalPair = SuitePairing.parse(encoded)
+            originalPair.use { original ->
+                SuitePcIdentity.open(path, "192.168.1.6").use { moved ->
+                    assertEquals("192.168.1.6", moved.pairing.pc)
+                    assertEquals(original.id, moved.pairing.id)
+                    assertEquals(fingerprint, moved.pairing.fingerprintText())
+                    assertArrayEquals(original.token, moved.pairing.token)
+                    assertArrayEquals(original.fingerprint, moved.tls.fingerprint)
+                }
+            }
+            assertArrayEquals(originalBytes, Files.readAllBytes(path))
             val damaged = Files.readAllBytes(path); damaged[damaged.lastIndex] = (damaged.last().toInt() xor 1).toByte()
             assertTrue(runCatching { WindowsPrivateStore().unprotect(damaged) }.isFailure)
         } finally { Files.deleteIfExists(path); Files.deleteIfExists(root) }

@@ -54,6 +54,7 @@ class BridgeActivity : ComponentActivity() {
                 onTailnetHost = model::tailnetHost, onConnectTailnet = model::connectTailnet,
                 onMethod = model::method, onSettings = model::settings,
                 onForgetPc = model::forgetPc,
+                onPcHost = model::pcHost,
                 development = pe.gob.reniec.dnie.BuildConfig.DEBUG && intent.getBooleanExtra("development", false))
         } }
     }

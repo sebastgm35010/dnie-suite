@@ -30,8 +30,9 @@
     "docs/architecture/REDISENO_ANDROID_3_0_R1.md": "current_android_redesign_3_0_first_stage",
     "docs/architecture/REDISENO_ANDROID_3_0_R2.md": "previous_android_ui_architecture",
     "docs/architecture/REDISENO_ANDROID_3_0_R3.md": "current_android_ui_architecture",
-    "docs/architecture/CONEXIONES_INDEPENDIENTES_R4.md": "current_connection_architecture",
-    "docs/architecture/CONTROLADOR_ENERGIA_Y_PUBLICACION_R1.md": "current_driver_power_architecture"
+    "docs/architecture/CONEXIONES_INDEPENDIENTES_R4.md": "previous_connection_architecture",
+    "docs/architecture/CONTROLADOR_ENERGIA_Y_PUBLICACION_R1.md": "current_driver_power_architecture",
+    "docs/architecture/CONEXIONES_DIRECCION_E_IDENTIDAD_R5.md": "current_connection_architecture"
   },
   "features": [
     {
@@ -118,7 +119,7 @@
       "id": "suite",
       "name": "Suite privada Windows ↔ Android",
       "status": "validated_real",
-      "note": "Lotes reales PDF y CMS; emparejamiento permanente, sesión PC/móvil independiente de presencia NFC.",
+      "note": "Lotes reales PDF y CMS; emparejamiento permanente, sesión PC/móvil independiente de presencia NFC. R5: IP variable con huella/token estables; DPAPI y TLS comprobados en sintético, cambio de IP con DNI real pendiente.",
       "evidence": "docs/suite/CONTEXTO_SUITE_FIRMA.md",
       "files": {
         "application": [
@@ -276,7 +277,7 @@
       "id": "bridge",
       "name": "Puente NFC ↔ PCSC",
       "status": "validated_real",
-      "note": "Compatibilidad abierta ReFirma/Firma Perú y Ciudadano Digital probada; traducción PACE y modo privado separados.",
+      "note": "Compatibilidad abierta ReFirma/Firma Perú y Ciudadano Digital probada; traducción PACE y modo privado separados. R5: receptor Wi-Fi admite IP privada distinta sin cambiar confianza TLS; TLS directo permite cambiar destino. Prueba física de movilidad pendiente.",
       "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md",
       "files": {
         "engine": [
@@ -288,6 +289,9 @@
         ],
         "frontend": [
           "app/src/main/java/pe/gob/reniec/dnie/ui/bridge/"
+        ],
+        "protocol": [
+          "dnie-signing-link/src/main/java/pe/gob/reniec/dnie/signing/link/ReverseTlsPeer.kt"
         ]
       },
       "depends_on": [
@@ -427,8 +431,8 @@
       "id": "android_redesign",
       "name": "Interfaz Android 3.0 basada en Aether",
       "status": "implemented_runtime_validated",
-      "note": "2026-10-09 · Conexiones R4: APK76 / 3.0.0-alpha04-links instalada. Puente autentica PC antes de esperar DNI; Suite tiene pantalla completa con presencia separada y diagnóstico de conexión. Red agrupa Wi-Fi/Tailscale, USB separado. Windows host actualizado y GUI Suite selecciona IP vigente; emparejamiento anterior puede requerir TXT/QR actualizado de la misma PC. 154 JVM pasan, 3 omitidas; 93 comprobaciones Windows y 34 Android pasan. Prueba física bilateral y detección de cierre remoto antes de NFC pendientes.",
-      "evidence": "docs/architecture/CONEXIONES_INDEPENDIENTES_R4.md",
+      "note": "2026-10-09 · Conexiones R5: APK77 / 3.0.0-alpha05-mobility instalada sin borrar datos. Suite y Bridge Wi-Fi ya no fijan identidad a la IP; TLS y token siguen obligatorios. Windows conserva la identidad DPAPI al cambiar IP. TLS directo permite editar destino; Suite tiene pantalla completa independiente y limpia conexión al finalizar lote único. 159 JVM pasan / 3 omitidas, release compilado. Pruebas de pantallas y cambio físico de IP pendientes.",
+      "evidence": "docs/architecture/CONEXIONES_DIRECCION_E_IDENTIDAD_R5.md",
       "files": {
         "frontend": [
           "app/src/main/java/pe/gob/reniec/dnie/ui/home/",
@@ -631,8 +635,8 @@
       "id": "android_redesign_physical_workflows",
       "feature": "android_redesign",
       "state": "open",
-      "description": "Validar PC autenticada antes de NFC y presencia/retirada en Bridge LAN/Tailscale/USB y Suite real tras R4; actualizar TXT/QR si IP cambió. 34 pruebas instrumentadas aisladas pasan; firma y lectura físicas pendientes.",
-      "evidence": "docs/architecture/CONEXIONES_INDEPENDIENTES_R4.md"
+      "description": "Validar cambio real de IP PC con emparejamiento existente (sin QR nuevo), PC autenticada antes de NFC, retirada/presencia en Bridge LAN/Tailscale/USB y Suite. R5 instalada, TLS/DPAPI sintéticos pasan; prueba instrumentada preparada pendiente de desbloqueo. No confundirlo con firma física.",
+      "evidence": "docs/architecture/CONEXIONES_DIRECCION_E_IDENTIDAD_R5.md"
     },
     {
       "id": "bridge_remote_close_before_card",
@@ -653,14 +657,14 @@
     {
       "id": "android_current",
       "category": "installed_ui_validated",
-      "value": "2026-10-09 · Conexiones R4: APK76 / 3.0.0-alpha04-links instalada. Puente autentica PC antes de esperar DNI; Suite tiene pantalla completa con presencia separada y diagnóstico de conexión. Red agrupa Wi-Fi/Tailscale, USB separado. Windows host actualizado y GUI Suite selecciona IP vigente; emparejamiento anterior puede requerir TXT/QR actualizado de la misma PC. 154 JVM pasan, 3 omitidas; 93 comprobaciones Windows y 34 Android pasan. Prueba física bilateral y detección de cierre remoto antes de NFC pendientes.",
-      "evidence": "docs/architecture/CONEXIONES_INDEPENDIENTES_R4.md"
+      "value": "2026-10-09 · Conexiones R5: APK77 / 3.0.0-alpha05-mobility instalada sin borrar datos. Suite y Bridge Wi-Fi ya no fijan identidad a la IP; TLS y token siguen obligatorios. Windows conserva la identidad DPAPI al cambiar IP. TLS directo permite editar destino; Suite tiene pantalla completa independiente y limpia conexión al finalizar lote único. 159 JVM pasan / 3 omitidas, release compilado. Pruebas de pantallas y cambio físico de IP pendientes.",
+      "evidence": "docs/architecture/CONEXIONES_DIRECCION_E_IDENTIDAD_R5.md"
     },
     {
       "id": "desktop_current",
       "category": "artifact",
-      "value": "D:/DNIeToolchain/Builds/refirma-issuer-h15/ABRIR-SUITE-CORREGIDA.bat",
-      "evidence": "docs/suite/REFIRMA_ISSUER_SERIAL_H15.md"
+      "value": "D:/DNIeToolchain/Builds/mobility77/signing-ui/install/dnie-signing-ui/DNIe Suite.lnk",
+      "evidence": "docs/architecture/CONEXIONES_DIRECCION_E_IDENTIDAD_R5.md"
     },
     {
       "id": "h15_tests",
@@ -745,6 +749,12 @@
       "category": "installed_synthetic_validated",
       "value": "2026-10-09 · Controlador R1: driver2.0.0.3 oem237 instalado, PnP0 y PCSC publicado. Retiro EvtIoStop sin replay, cancelación invalida backend, purge síncrono y host UMDF aislado. Servicio/gestor distinguen ReaderPublished del CardPresent privado. 6797 comprobaciones C++ pasan, 25 PCSC nativas y 13 TLSrelay pasan; Control45 Debug/45 Release. Firma física/suspensión reales pendientes; APK76 intacta.",
       "evidence": "docs/architecture/CONTROLADOR_ENERGIA_Y_PUBLICACION_R1.md"
+    },
+    {
+      "id": "connection_address_not_identity_r5",
+      "category": "invariant",
+      "value": "Dirección de red como ruta, identidad TLS SHA256/token como confianza. Receptor inverso limitado a IPv4 privada/tailnet, sin fallback LAN en claro. Archivo DPAPI no cambia por nueva IP.",
+      "evidence": "docs/architecture/CONEXIONES_DIRECCION_E_IDENTIDAD_R5.md"
     }
   ]
 }

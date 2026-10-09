@@ -33,10 +33,11 @@ class RemoteTlsSigningTest {
         val folder = Files.createTempDirectory("remote-tls-")
         val executor = Executors.newSingleThreadExecutor()
         val identity = JobTlsIdentity()
-        val pair = SigningProvision(UUID.randomUUID(), ip, System.currentTimeMillis() + 60_000, 2,
+        val pair = SigningProvision(UUID.randomUUID(), "192.168.255.254", System.currentTimeMillis() + 60_000, 2,
             identity.fingerprint, ByteArray(32) { (it + 1).toByte() })
         val phone = PhoneSigningTransport(pair, port)
-        val exchange = ReverseTlsExchange(ip, pair, identity, port)
+        val currentRoute = SigningProvision(pair.sessionId, ip, pair.expiresAt, pair.count, pair.fingerprint, pair.token)
+        val exchange = ReverseTlsExchange(ip, currentRoute, identity, port)
         val card = SimulatedSigningCard()
         val worker = executor.submit {
             runBlocking {
@@ -58,7 +59,7 @@ class RemoteTlsSigningTest {
                 assertTrue(cms.signerInfos.signers.single().verify(JcaSimpleSignerInfoVerifierBuilder().build(card.certificate)))
             }
         } finally {
-            exchange.close(); phone.close(); pair.close(); executor.shutdownNow()
+            exchange.close(); phone.close(); pair.close(); currentRoute.close(); executor.shutdownNow()
             Files.walk(folder).use { it.sorted(Comparator.reverseOrder()).forEach(Files::delete) }
         }
     }
@@ -67,7 +68,7 @@ class RemoteTlsSigningTest {
         val ip = address(); val port = ServerSocket(0).use { it.localPort }
         val identity = JobTlsIdentity()
         val serverPair = SigningProvision(UUID.randomUUID(), ip, System.currentTimeMillis() + 60_000, 1, identity.fingerprint, ByteArray(32))
-        val phonePair = SigningProvision(serverPair.sessionId, ip, serverPair.expiresAt, 1,
+        val phonePair = SigningProvision(serverPair.sessionId, "192.168.255.254", serverPair.expiresAt, 1,
             if (variant == 0) ByteArray(32) else identity.fingerprint,
             if (variant == 0) serverPair.token else ByteArray(32) { 1 })
         val phone = PhoneSigningTransport(phonePair, port)

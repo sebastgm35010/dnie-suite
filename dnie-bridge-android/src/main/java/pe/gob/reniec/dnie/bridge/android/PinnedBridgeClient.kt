@@ -36,6 +36,8 @@ class BridgePairing(
         if (transport.startsWith("tailscale_")) require(TailnetAddress.validHost(host))
     }
     fun fingerprint(): String = pin.joinToString(":") { "%02X".format(it) }
+    /** Change destination metadata without replacing trusted credentials or transport policy. */
+    fun withHost(host: String) = BridgePairing(host, port, pin, secret, expiresAtEpochMillis, transport, persistent)
     override fun close() { pin.fill(0); secret.fill(0) }
 }
 
@@ -67,7 +69,7 @@ class PinnedBridgeClient(private val pairing: BridgePairing,
             init(null, arrayOf<TrustManager>(PinnedTrust(pairing.pin)), null)
         }.socketFactory
         val raw = transportSocket?.invoke()
-        val connection = if (raw != null) checkNotNull(factory).createSocket(raw, pairing.host, pairing.port, true)
+        val connection = if (raw != null) checkNotNull(factory).createSocket(raw, raw.inetAddress.hostAddress, raw.port, true)
             else if (direct) Socket() else checkNotNull(factory).createSocket()
         synchronized(lifecycle) {
             if (closed || used) {
@@ -81,11 +83,13 @@ class PinnedBridgeClient(private val pairing: BridgePairing,
             check(System.currentTimeMillis() < pairing.expiresAtEpochMillis) { "Pairing expired" }
             connection.soTimeout = 30_000 // Bound the unauthenticated synchronization/handshake.
             connection.tcpNoDelay = true
-            val address = if (direct) {
-                InetAddress.getAllByName(pairing.host).firstOrNull(TailnetAddress::isTailnet)
-                    ?: error("Tailscale address unavailable")
-            } else InetAddress.getByName(pairing.host)
-            if (raw == null) connection.connect(InetSocketAddress(address, pairing.port), settings.connectTimeoutMs)
+            if (raw == null) {
+                val address = if (direct) {
+                    InetAddress.getAllByName(pairing.host).firstOrNull(TailnetAddress::isTailnet)
+                        ?: error("Tailscale address unavailable")
+                } else InetAddress.getByName(pairing.host)
+                connection.connect(InetSocketAddress(address, pairing.port), settings.connectTimeoutMs)
+            }
             if (connection is SSLSocket) {
                 connection.enabledProtocols = connection.supportedProtocols.filter { it in setOf("TLSv1.2", "TLSv1.3") }.toTypedArray()
                 connection.startHandshake()

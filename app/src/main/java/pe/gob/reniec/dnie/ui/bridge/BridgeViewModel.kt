@@ -40,7 +40,7 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
             if (saved != null) {
                 if (generation == initialGeneration && pairing == null && !mutable.value.busy && mutable.value.method.accepts(saved.transport)) {
                     pairing = saved
-                    mutable.update { it.copy(peer = "${saved.host}:${saved.port}", fingerprint = saved.fingerprint(), message = "PC recordada. Autoriza el puente para conectar el DNI.") }
+                    mutable.update { it.copy(peer = "${saved.host}:${saved.port}", directPcHost = if (saved.transport == "tls") saved.host else "", directPcConnection = saved.transport == "tls", fingerprint = saved.fingerprint(), message = "PC recordada. Autoriza el puente para conectar el DNI.") }
                 } else saved.close()
             }
         }
@@ -49,7 +49,7 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
         if (mutable.value.busy || mutable.value.armed) return
         ++generation; pairing?.close(); pairing = null
         viewModelScope.launch { withContext(Dispatchers.IO) {trustedPc.forget()} }
-        mutable.update {it.copy(peer="",fingerprint="",message="PC olvidada. Escanea su QR para volver a autorizarla.")}
+        mutable.update {it.copy(peer="",directPcHost="",directPcConnection=false,fingerprint="",message="PC olvidada. Escanea su QR para volver a autorizarla.")}
     }
     private fun savePreferences() { mutable.value.let { preferences.save(it.method, it.tailnetHost, it.settings) } }
     fun settings(value: pe.gob.reniec.dnie.bridge.BridgeRuntimeSettings) {
@@ -60,7 +60,7 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
         if (mutable.value.busy || mutable.value.armed || value == mutable.value.method) return
         ++generation; task?.cancel(); task = null
         pairing?.close(); pairing = null
-        mutable.update { it.copy(method = value, peer = "", fingerprint = "", tailscale = false,
+        mutable.update { it.copy(method = value, peer = "", directPcHost = "", directPcConnection = false, fingerprint = "", tailscale = false,
             message = if (value.usesPairing) "En la PC selecciona la red correspondiente, inicia el host y escanea su QR." else "Activa Tailscale en ambos equipos y conecta con el nombre de la PC.") }
         savePreferences()
         val epoch=generation
@@ -73,6 +73,7 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
                     pairing=saved;saved=null
                     val remembered=pairing
                     mutable.update {it.copy(busy=false, peer=remembered?.let {pc -> "${pc.host}:${pc.port}"} ?: "",
+                        directPcHost = if (remembered?.transport == "tls") remembered.host else "", directPcConnection = remembered?.transport == "tls",
                         fingerprint=remembered?.fingerprint() ?: "", message=if(remembered!=null) "PC recordada para este transporte. Autoriza el puente." else it.message)}
                 }
             } finally {saved?.close()}
@@ -82,6 +83,10 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
     fun windowsPace(value: Boolean) { if (pe.gob.reniec.dnie.BuildConfig.DEBUG && !mutable.value.busy && !mutable.value.armed) mutable.update { it.copy(mode = if (value) BridgeMode.DIRECT_WINDOWS_PACE else BridgeMode.TRANSLATED_ANDROID_PACE) } }
     fun can(value: String) { if (!mutable.value.busy) mutable.update { it.copy(can = value.filter(Char::isDigit).take(6)) } }
     fun tailnetHost(value: String) { if (!mutable.value.busy && !mutable.value.armed) { mutable.update { it.copy(tailnetHost = value.trim().take(253)) }; savePreferences() } }
+    fun pcHost(value: String) {
+        if (!mutable.value.busy && !mutable.value.armed && pairing?.transport == "tls")
+            mutable.update { it.copy(directPcHost = value.trim().take(15)) }
+    }
     fun connectTailnet() {
         if (mutable.value.busy || mutable.value.armed || mutable.value.method.usesPairing) return
         val next = try { adapter.tailnet(mutable.value.tailnetHost) } catch (_: Exception) {
@@ -134,6 +139,7 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
                 savePreferences()
                 DiagnosticLog.event("bridge", "pairing_imported")
                 mutable.update { it.copy(peer = "${p.host}:${p.port}",
+                    directPcHost = if (p.transport == "tls") p.host else "", directPcConnection = p.transport == "tls",
                     fingerprint = p.fingerprint(), busy = false, tailscale = p.transport.startsWith("tailscale_"),
                     message = if (p.transport == "tailscale_tcp") "Tailscale directo listo. Activa Tailscale y autoriza el DNI." else "Comprueba esta huella con la PC antes de autorizar.") }
             } catch (cancelled: CancellationException) { throw cancelled }
@@ -144,9 +150,17 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
     fun authorize() {
-        val p = pairing ?: return
+        var p = pairing ?: return
         val current = mutable.value
         if (current.busy || current.armed || (!current.windowsPace && current.can.length != 6)) return
+        if (p.transport == "tls" && current.directPcHost != p.host) {
+            if (!pe.gob.reniec.dnie.signing.link.SigningProvision.privateAddress(current.directPcHost)) {
+                mutable.update { it.copy(message = "Introduce la IP privada actual de la PC.") }; return
+            }
+            val updated = p.withHost(current.directPcHost)
+            p.close(); pairing = updated; p = updated
+            mutable.update { it.copy(peer = "${updated.host}:${updated.port}") }
+        }
         if (System.currentTimeMillis() >= p.expiresAtEpochMillis) {
             mutable.update { it.copy(message = "Emparejamiento vencido. Genera otro en la PC.") }; return
         }

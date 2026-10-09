@@ -32,7 +32,8 @@ fun RemoteSigningScreen(state: RemoteSigningState, nfcEnabled: Boolean, addresse
                 Button(onClick = onScan, enabled = !state.busy && !state.armed) { Text("Escanear solicitud de la PC") }
                 OutlinedButton(onClick = onImport, enabled = !state.busy && !state.armed) { Text("Importar solicitud TXT") }
                 if (state.pc.isNotEmpty()) {
-                    Text(if (state.continuous) "PC: ${state.pc} · conexión continua" else "PC: ${state.pc} · hasta ${state.count} documento(s)")
+                    Text(if (state.continuous) "PC guardada · conexión continua" else "Solicitud para hasta ${state.count} documento(s)")
+                    Text("Dirección al vincular: ${state.pc}. Puede cambiar; la PC se reconoce por su huella.", style = MaterialTheme.typography.bodySmall)
                     Text("Compara esta huella con la que muestra tu PC:")
                     Text(state.fingerprint, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall)
                     Text("Autoriza solo solicitudes que hayas iniciado. El teléfono autoriza el lote y no muestra los documentos guardados en PC.")

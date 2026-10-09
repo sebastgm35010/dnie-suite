@@ -54,7 +54,9 @@ class RemoteSigningViewModel(application: Application) : AndroidViewModel(applic
         task = viewModelScope.launch {
             try {
                 withContext(Dispatchers.IO) { trust.save(pair) }
-                val stream = withContext(Dispatchers.IO) { link.accept { event -> DiagnosticLog.event("suite", event) } }
+                val stream = withContext(Dispatchers.IO) { link.accept(onPeerAddress = { address ->
+                    if (generation == epoch) mutable.update { it.copy(pc = address) }
+                }) { event -> DiagnosticLog.event("suite", event) } }
                 if (generation != epoch) { stream.close(); return@launch }
                 channel = stream
                 mutable.update { it.copy(busy = false, connected = true, armed = true, remembered = true,
@@ -154,7 +156,9 @@ class RemoteSigningViewModel(application: Application) : AndroidViewModel(applic
         mutable.update { it.copy(busy = true, sessionVisible = true, failureCode = "", message = "Esperando y autenticando la suite PC por TLS…") }
         task = viewModelScope.launch {
             try {
-                val next = withContext(Dispatchers.IO) { link.accept { event -> DiagnosticLog.event("suite", event) } }
+                val next = withContext(Dispatchers.IO) { link.accept(onPeerAddress = { address ->
+                    if (generation == epoch) mutable.update { it.copy(pc = address) }
+                }) { event -> DiagnosticLog.event("suite", event) } }
                 if (generation != epoch) { next.close(); return@launch }
                 channel = next
                 mutable.update { it.copy(busy = false, armed = true, connected = true, message = "PC autenticada. Acerca y mantén tu DNI hasta completar el lote.") }
@@ -206,7 +210,7 @@ class RemoteSigningViewModel(application: Application) : AndroidViewModel(applic
                 DiagnosticLog.event("suite", "session_ended")
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) { if (generation == epoch) mutable.update { it.copy(message = "Sesión interrumpida. Conserva los resultados de PC; no se repite ninguna firma.") } }
-            finally { session.close(); if (generation == epoch) { release(); mutable.update { it.copy(busy = false, armed = false, pc = "", fingerprint = "", count = 0) } } }
+            finally { session.close(); if (generation == epoch) { release(); mutable.update { it.copy(busy = false, armed = false, connected = false, pc = "", fingerprint = "", count = 0) } } }
         }
     }
     private fun release() {

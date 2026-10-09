@@ -12,6 +12,24 @@ import pe.gob.reniec.dnie.ui.theme.DnieTheme
 
 class SuiteSessionPresentationTest {
     @get:Rule val rule = createComposeRule()
+    @Test fun connectingFromSetupReplacesFormWithDedicatedSessionUntilStop() {
+        val state = mutableStateOf(RemoteSigningState(pc = "192.168.1.5", can = "123456", continuous = true, remembered = true))
+        rule.setContent { DnieTheme(darkTheme = false) {
+            RemoteSigningScreen(state.value, true, "192.168.1.11", {}, {}, {}, {},
+                onConnect = { state.value = state.value.copy(sessionVisible = true, busy = true) },
+                onForget = {}, onStop = { state.value = state.value.copy(sessionVisible = false, busy = false) }, onBack = {})
+        } }
+        rule.onNodeWithText("Conectar PC guardada").performScrollTo().performClick()
+        rule.onNodeWithTag("suite_session").assertExists()
+        rule.onNodeWithText("CAN del DNI").assertDoesNotExist()
+        rule.onAllNodes(hasClickAction()).assertCountEquals(1)
+        rule.onNodeWithText("Esperando la PC").assertExists()
+        rule.runOnIdle { state.value = state.value.copy(busy = false, connected = true, pc = "192.168.20.8") }
+        rule.onNodeWithText("PC 192.168.20.8 · conexión privada").assertExists()
+        rule.onNodeWithText("Detener sesión").performClick()
+        rule.onNodeWithTag("suite_session").assertDoesNotExist()
+        rule.onNodeWithText("CAN del DNI").assertExists()
+    }
     @Test fun suiteShowsPcBeforeDniAndRetainsOneStopActionOnFailure() {
         val state = mutableStateOf(RemoteSigningState(sessionVisible = true, busy = true))
         var stops = 0

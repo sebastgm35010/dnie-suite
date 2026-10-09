@@ -18,7 +18,6 @@ class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite �
     private val prefs=Preferences.userRoot().node("pe/gob/reniec/dnie/suite-ui")
     private val phone=JTextField(prefs.get("phone",""),12)
     private val pc=JTextField(pe.gob.reniec.dnie.desktop.remote.SuiteNetworkAddress.choose(prefs.get("pc",""),phone.text),12)
-    private var endpointChanged=pc.text != prefs.get("pc", "")
     private val workspace=JTextField(prefs.get("workspace",defaultPath("SuiteContinuousJobs")),38)
     private val identity=JTextField(prefs.get("identity",defaultPath("SuiteContinuousState/pc.dpapi")),38)
     private val connect=JButton("Conectar Android")
@@ -120,14 +119,13 @@ class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite �
             val previous=pc.text.trim()
             val local=pe.gob.reniec.dnie.desktop.remote.SuiteNetworkAddress.choose(previous,remote)
             pc.text=local
-            endpointChanged = endpointChanged || local != previous
-            if(local!=previous) JOptionPane.showMessageDialog(this,"La dirección anterior de la PC ya no está disponible. Se usará $local. Actualiza el emparejamiento TXT/QR en Android conservando esta identidad.")
+            if(local!=previous) JOptionPane.showMessageDialog(this,"Se usará la dirección actual $local. La PC conserva su identidad; en Android actualizado no necesitas importar otro TXT/QR.")
             setBusy(true);status.text="Esperando Android. Abre Suite continua en el teléfono…"
             controller.connect(local,remote,output,own,{ info ->
                 pairingFile=info.file;fingerprint.text="Huella PC: ${info.fingerprint}";qr.isEnabled=true
-                status.text=if(info.firstEnrollment || endpointChanged) "Importa TXT/QR para actualizar esta PC en Android." else "PC recordada: pulsa Conectar PC guardada en Android."
+                status.text=if(info.firstEnrollment) "Vincula esta PC mediante TXT/QR en Android." else "PC recordada: pulsa Conectar PC guardada en Android. La IP puede cambiar."
             },{ ok,message -> connected=ok;setBusy(false);status.text=message;qr.isEnabled=false
-                if(ok) { endpointChanged=false; prefs.put("pc",local);prefs.put("phone",remote);prefs.put("workspace",output.toString());prefs.put("identity",own.toString()) }
+                if(ok) { prefs.put("pc",local);prefs.put("phone",remote);prefs.put("workspace",output.toString());prefs.put("identity",own.toString()) }
             })
         } catch(_: Exception) { setBusy(false);status.text="Configuración de conexión inválida." }
     }

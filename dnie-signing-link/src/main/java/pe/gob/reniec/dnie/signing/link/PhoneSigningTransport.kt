@@ -1,6 +1,5 @@
 package pe.gob.reniec.dnie.signing.link
 
-import java.net.InetAddress
 import java.net.ServerSocket
 import java.net.Socket
 import java.security.MessageDigest
@@ -24,7 +23,7 @@ class PhoneSigningTransport(private val provision: SigningProvision,
     private val lifecycle = Any()
     @Volatile private var listener: ServerSocket? = null
     @Volatile private var socket: Socket? = null
-    fun accept(onEvent: (String) -> Unit = {}): SigningDuplex {
+    fun accept(onPeerAddress: (String) -> Unit = {}, onEvent: (String) -> Unit = {}): SigningDuplex {
         check(used.compareAndSet(false, true)) { "Request already used" }
         check(System.currentTimeMillis() < provision.expiresAt)
         val server = ServerSocket().apply { reuseAddress = true }
@@ -39,8 +38,9 @@ class PhoneSigningTransport(private val provision: SigningProvision,
                 socket = raw
             }
             server.close(); listener = null
-            require(raw.inetAddress == InetAddress.getByName(provision.pcAddress)) { "Unexpected PC" }
-            onEvent("pc_address_verified")
+            // The saved IP is a pairing hint, not identity. DHCP/interface changes are allowed.
+            val peer = ReverseTlsPeer.requirePrivate(raw.inetAddress)
+            onEvent("peer_route_allowed")
             val trust = object : X509TrustManager {
                 override fun getAcceptedIssuers() = emptyArray<X509Certificate>()
                 override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) = throw CertificateException()
@@ -52,7 +52,7 @@ class PhoneSigningTransport(private val provision: SigningProvision,
                 }
             }
             val context = SSLContext.getInstance("TLS").apply { init(null, arrayOf<TrustManager>(trust), null) }
-            val tls = context.socketFactory.createSocket(raw, provision.pcAddress, port, true) as SSLSocket
+            val tls = context.socketFactory.createSocket(raw, peer, raw.port, true) as SSLSocket
             synchronized(lifecycle) { if (closed.get()) { tls.close(); error("Session closed") }; socket = tls }
             tls.enabledProtocols = tls.supportedProtocols.filter { it == "TLSv1.2" || it == "TLSv1.3" }.toTypedArray()
             tls.soTimeout = 30_000
@@ -63,6 +63,7 @@ class PhoneSigningTransport(private val provision: SigningProvision,
             tls.outputStream.write(provision.token); tls.outputStream.flush()
             check(tls.inputStream.read() == 1) { "Suite authorization rejected" }
             onEvent("peer_authorized")
+            onPeerAddress(peer) // Publish the address only after pinned TLS and token authorization.
             // Idle input is bounded in this one-job prototype; never replay after timeout.
             tls.soTimeout = if (continuous) 0 else 300_000
             return object : SigningDuplex {

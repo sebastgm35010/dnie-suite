@@ -1,5 +1,7 @@
 # Pendientes actuales · Windows rc4 USB / Android rc4-usb
 
+2026-10-09 · Conexiones R5: APK77 / 3.0.0-alpha05-mobility instalada sin borrar datos. Suite y Bridge Wi-Fi ya no fijan identidad a la IP; TLS y token siguen obligatorios. Windows conserva la identidad DPAPI al cambiar IP. TLS directo permite editar destino; Suite tiene pantalla completa independiente y limpia conexión al finalizar lote único. 159 JVM pasan / 3 omitidas, release compilado. Pruebas de pantallas y cambio físico de IP pendientes. [Detalle](architecture/CONEXIONES_DIRECCION_E_IDENTIDAD_R5.md).
+
 2026-10-09 · Controlador R1: driver2.0.0.3 oem237 instalado, PnP0 y PCSC publicado. Retiro EvtIoStop sin replay, cancelación invalida backend, purge síncrono y host UMDF aislado. Servicio/gestor distinguen ReaderPublished del CardPresent privado. 6797 comprobaciones C++ pasan, 25 PCSC nativas y 13 TLSrelay pasan; Control45 Debug/45 Release. Firma física/suspensión reales pendientes; APK76 intacta. [Detalle](architecture/CONTROLADOR_ENERGIA_Y_PUBLICACION_R1.md).
 
 2026-10-09 · Tras reinicio manual vuelve lector propio a WinSCard y PnP código0, sin tarjeta presente. Revisión de driver detecta falta de EvtIoStop para solicitudes pendientes, coordinación de purge/arranque y host UMDF compartido; estado backend no acredita publicación. Sin cambio de controlador; corrección y reproducción de suspensión pendientes. [Detalle](operations/LECTOR_AUSENTE_PCSC_2026_10_07.md).

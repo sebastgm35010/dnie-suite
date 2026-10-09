@@ -38,8 +38,8 @@ class BridgeTransportAdapter(private val context: Context) : Closeable {
         "tls_reverse" -> { {
             val connected = checkNotNull(listener) { "Autoriza el receptor Wi-Fi primero" }.accept()
             socket = connected
-            val peer = connected.inetAddress.hostAddress
-            check(peer == pairing.host) { "PC distinta al emparejamiento" }
+            pe.gob.reniec.dnie.signing.link.ReverseTlsPeer.requirePrivate(connected.inetAddress)
+            // DHCP does not change identity. PinnedBridgeClient authenticates the PC by TLS pin.
             connected.outputStream.write("DNIREADY1".toByteArray(Charsets.US_ASCII)); connected.outputStream.flush()
             connected
         } }

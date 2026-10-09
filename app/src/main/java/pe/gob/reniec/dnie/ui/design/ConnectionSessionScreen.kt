@@ -18,9 +18,10 @@ import pe.gob.reniec.dnie.ui.design.StatusCheck
 /** Shared visual session only. Each module supplies independently observed status. */
 @Composable fun ConnectionSessionScreen(title: String, channel: String, headline: String,
     pcConnected: Boolean, phoneReady: Boolean, cardReady: Boolean, cardLabel: String,
-    inProgress: Boolean, stopping: Boolean, instruction: String, onStop: () -> Unit) {
+    inProgress: Boolean, stopping: Boolean, instruction: String, onStop: () -> Unit,
+    sessionTag: String = "bridge_session") {
     BackHandler { if (!stopping) onStop() }
-    Surface(Modifier.fillMaxSize().testTag("bridge_session"), color = MaterialTheme.colorScheme.background) {
+    Surface(Modifier.fillMaxSize().testTag(sessionTag), color = MaterialTheme.colorScheme.background) {
         Column(Modifier.fillMaxSize().systemBarsPadding().padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally) {
             Column(Modifier.weight(1f).verticalScroll(rememberScrollState()),

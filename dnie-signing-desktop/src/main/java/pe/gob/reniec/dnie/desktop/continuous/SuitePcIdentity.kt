@@ -22,13 +22,13 @@ class SuitePcIdentity(val tls: JobTlsIdentity, val pairing: SuitePairing) : Auto
                     val pairSize = input.readInt(); require(pairSize in 1..1024)
                     val pair = SuitePairing.parse(String(ByteArray(pairSize).also(input::readFully), Charsets.UTF_8))
                     try {
-                        require(pair.pc == pc) { "PC address changed: revoke and pair again" }
                         val size = input.readInt(); require(size in 1..32768 && input.available() == size)
                         val p12 = ByteArray(size).also(input::readFully)
                         val identity = try { JobTlsIdentity.restore(p12) } finally { p12.fill(0) }
                         require(java.security.MessageDigest.isEqual(pair.fingerprint, identity.fingerprint))
-                        return SuitePcIdentity(identity, pair)
-                    } catch (e: Exception) { pair.close(); throw e }
+                        // Keep the same DPAPI identity/key/token. Only the current route changes.
+                        return SuitePcIdentity(identity, SuitePairing(pair.id, pc, pair.fingerprint, pair.token))
+                    } finally { pair.close() }
                 } finally { plain.fill(0) }
             }
             Files.createDirectories(file.toAbsolutePath().parent)
