@@ -24,13 +24,14 @@ class PhoneSigningTransport(private val provision: SigningProvision,
     private val lifecycle = Any()
     @Volatile private var listener: ServerSocket? = null
     @Volatile private var socket: Socket? = null
-    fun accept(): SigningDuplex {
+    fun accept(onEvent: (String) -> Unit = {}): SigningDuplex {
         check(used.compareAndSet(false, true)) { "Request already used" }
         check(System.currentTimeMillis() < provision.expiresAt)
         val server = ServerSocket().apply { reuseAddress = true }
         synchronized(lifecycle) { if (closed.get()) { server.close(); error("Closed") }; listener = server }
         try {
             server.bind(java.net.InetSocketAddress(port), 1)
+            onEvent("listener_ready")
             server.soTimeout = (provision.expiresAt - System.currentTimeMillis()).coerceIn(1, 300_000).toInt()
             val raw = server.accept()
             synchronized(lifecycle) {
@@ -39,6 +40,7 @@ class PhoneSigningTransport(private val provision: SigningProvision,
             }
             server.close(); listener = null
             require(raw.inetAddress == InetAddress.getByName(provision.pcAddress)) { "Unexpected PC" }
+            onEvent("pc_address_verified")
             val trust = object : X509TrustManager {
                 override fun getAcceptedIssuers() = emptyArray<X509Certificate>()
                 override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) = throw CertificateException()
@@ -55,10 +57,12 @@ class PhoneSigningTransport(private val provision: SigningProvision,
             tls.enabledProtocols = tls.supportedProtocols.filter { it == "TLSv1.2" || it == "TLSv1.3" }.toTypedArray()
             tls.soTimeout = 30_000
             tls.startHandshake()
+            onEvent("tls_ready")
             check(System.currentTimeMillis() < provision.expiresAt)
             tls.outputStream.write("DNISIGN1".toByteArray(Charsets.US_ASCII))
             tls.outputStream.write(provision.token); tls.outputStream.flush()
             check(tls.inputStream.read() == 1) { "Suite authorization rejected" }
+            onEvent("peer_authorized")
             // Idle input is bounded in this one-job prototype; never replay after timeout.
             tls.soTimeout = if (continuous) 0 else 300_000
             return object : SigningDuplex {

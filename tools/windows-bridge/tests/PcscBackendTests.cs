@@ -115,6 +115,18 @@ static class PcscBackendTests
         try { await PcscBackend.RunAsync(lostDevice, lostStream, stop.Token); throw new Exception("Expected EOF."); }
         catch (EndOfStreamException)
         { Check(lostDevice.Detached && lostDevice.Results.Single().Id == 42 && lostDevice.Results.Single().Status == PcscAbi.DeviceDisconnected); }
+        // A paired PC link may wait for physical NFC without announcing a synthetic card.
+        using (var cancellation = new CancellationTokenSource())
+        using (var waitingDevice = new FakeDevice(new Queue<PcscRequest>()))
+        using (var waitingStream = new WaitingAtrStream(cancellation.Token)) {
+            var session = PcscBackend.RunAsync(waitingDevice, waitingStream, cancellation.Token);
+            await waitingStream.Reading.Task.WaitAsync(TimeSpan.FromSeconds(2));
+            Check(waitingStream.SessionTokenUsed);
+            Check(waitingDevice.Atr == null && !waitingDevice.Detached);
+            cancellation.Cancel();
+            try { await session; throw new Exception("Expected cancelled card wait."); }
+            catch (OperationCanceledException) { Check(waitingDevice.Atr == null && !waitingDevice.Detached); }
+        }
         return checks;
     }
     private static async Task<byte[]> ReadFrame(Stream stream, CancellationToken ct)
@@ -143,6 +155,24 @@ static class PcscBackendTests
         public void Complete(ulong id, uint status, byte[] payload) => Results.Add((id, status, payload.ToArray()));
         public void Detach() => Detached = true;
         public void Dispose() { }
+    }
+    private sealed class WaitingAtrStream(CancellationToken session) : Stream {
+        public readonly TaskCompletionSource Reading = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public bool SessionTokenUsed;
+        public override bool CanRead => true; public override bool CanWrite => true; public override bool CanSeek => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position {get=>throw new NotSupportedException();set=>throw new NotSupportedException();}
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellation=default) {
+            SessionTokenUsed = cancellation == session && buffer.Length == 1;
+            Reading.TrySetResult(); await Task.Delay(Timeout.Infinite, cancellation); return 0;
+        }
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer,CancellationToken cancellation=default)=>ValueTask.CompletedTask;
+        public override Task FlushAsync(CancellationToken cancellation)=>Task.CompletedTask;
+        public override void Flush() {}
+        public override int Read(byte[] b,int o,int c)=>throw new NotSupportedException();
+        public override void Write(byte[] b,int o,int c) {}
+        public override long Seek(long o,SeekOrigin origin)=>throw new NotSupportedException();
+        public override void SetLength(long length)=>throw new NotSupportedException();
     }
     private sealed class ScriptedStream(byte[] input) : Stream
     {

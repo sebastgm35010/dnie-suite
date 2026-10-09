@@ -16,6 +16,10 @@ import androidx.compose.ui.unit.dp
 fun RemoteSigningScreen(state: RemoteSigningState, nfcEnabled: Boolean, addresses: String,
     onImport: () -> Unit, onScan: () -> Unit, onCan: (String) -> Unit,
     onAuthorize: (String) -> Unit, onConnect: () -> Unit, onForget: () -> Unit, onStop: () -> Unit, onBack: () -> Unit) {
+    if (state.sessionVisible) {
+        SuiteSessionScreen(state, onStop)
+        return
+    }
     var pin by remember { mutableStateOf("") } // Not saveable, never stored in ViewModel UI state.
     LaunchedEffect(state.pc) { if (state.pc.isEmpty()) pin = "" }
     DisposableEffect(Unit) { onDispose { pin = "" } }

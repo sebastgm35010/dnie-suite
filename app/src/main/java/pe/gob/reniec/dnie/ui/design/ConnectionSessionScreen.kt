@@ -1,0 +1,71 @@
+package pe.gob.reniec.dnie.ui.design
+
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.dp
+import pe.gob.reniec.dnie.ui.design.StatusCheck
+
+/** Shared visual session only. Each module supplies independently observed status. */
+@Composable fun ConnectionSessionScreen(title: String, channel: String, headline: String,
+    pcConnected: Boolean, phoneReady: Boolean, cardReady: Boolean, cardLabel: String,
+    inProgress: Boolean, stopping: Boolean, instruction: String, onStop: () -> Unit) {
+    BackHandler { if (!stopping) onStop() }
+    Surface(Modifier.fillMaxSize().testTag("bridge_session"), color = MaterialTheme.colorScheme.background) {
+        Column(Modifier.fillMaxSize().systemBarsPadding().padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(Modifier.weight(1f).verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                Spacer(Modifier.height(12.dp))
+                Text(title, style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.secondary)
+                Text(headline, style = MaterialTheme.typography.headlineMedium)
+                Text(channel, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceEvenly) {
+                    SessionNode(Icons.Default.Computer, "PC", pcConnected)
+                    Icon(Icons.Default.SyncAlt, null, tint = MaterialTheme.colorScheme.outline)
+                    SessionNode(Icons.Default.PhoneAndroid, "Teléfono", phoneReady)
+                    Icon(Icons.Default.SyncAlt, null, tint = MaterialTheme.colorScheme.outline)
+                    SessionNode(Icons.Default.Badge, "DNI", cardReady)
+                }
+                if (inProgress)
+                    LinearProgressIndicator(Modifier.fillMaxWidth())
+                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                    Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        StatusCheck("PC conectada", pcConnected)
+                        StatusCheck(cardLabel, cardReady)
+                    }
+                }
+                Text(instruction, style = MaterialTheme.typography.bodyLarge)
+                Text("Al salir o bloquear el teléfono, la sesión se detiene.",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Button(onClick = onStop, enabled = !stopping,
+                modifier = Modifier.fillMaxWidth().padding(top = 16.dp).testTag("bridge_stop")) {
+                Icon(Icons.Default.StopCircle, null); Spacer(Modifier.width(8.dp)); Text("Detener sesión")
+            }
+        }
+    }
+}
+
+@Composable private fun SessionNode(icon: ImageVector, label: String, complete: Boolean) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Surface(shape = MaterialTheme.shapes.medium,
+            color = if (complete) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer) {
+            Icon(icon, null, Modifier.padding(16.dp).size(28.dp),
+                tint = if (complete) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outline)
+        }
+        Text(label, style = MaterialTheme.typography.labelLarge)
+    }
+}

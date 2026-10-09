@@ -1,5 +1,7 @@
 # Contexto vigente de la suite propia de firma
 
+2026-10-09 · Conexiones R4: APK76 / 3.0.0-alpha04-links instalada. Puente autentica PC antes de esperar DNI; Suite tiene pantalla completa con presencia separada y diagnóstico de conexión. Red agrupa Wi-Fi/Tailscale, USB separado. Windows host actualizado y GUI Suite selecciona IP vigente; emparejamiento anterior puede requerir TXT/QR actualizado de la misma PC. 154 JVM pasan, 3 omitidas; 93 comprobaciones Windows y 34 Android pasan. Prueba física bilateral y detección de cierre remoto antes de NFC pendientes. [Detalle](../architecture/CONEXIONES_INDEPENDIENTES_R4.md).
+
 2026-10-07 · H15: CMS compartido incluye issuerSerial exacto en ESSCertIDv2 para compatibilidad con política PE de ReFirma PCX. Sin cambios de UI, PACE o transporte; 247 pruebas y comparación sintética con DSS real satisfactorias. Validación física externa pendiente. Ver docs/suite/REFIRMA_ISSUER_SERIAL_H15.md.
 
 2026-10-07 · H14: batería sintética forzada (--rerun), 330 pruebas pasan, 2 opt-in externas omitidas, 0 fallos/errores. Nuevos casos TSA timeout/respuestas inválidas y lote PDF fallido con TXT posterior válido sin repetir firma. Sin DNI ni cambios de producción; recuperación persistente de solo TSA y preflight online automático siguen sin implementar. [Resultados y límites](VALIDACIONES_SINTETICAS_H14.md).

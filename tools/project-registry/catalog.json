@@ -29,7 +29,8 @@
     "docs/architecture/DIAGNOSTICO_RENDIMIENTO_UI_R2.md": "current_ui_performance_diagnosis",
     "docs/architecture/REDISENO_ANDROID_3_0_R1.md": "current_android_redesign_3_0_first_stage",
     "docs/architecture/REDISENO_ANDROID_3_0_R2.md": "previous_android_ui_architecture",
-    "docs/architecture/REDISENO_ANDROID_3_0_R3.md": "current_android_ui_architecture"
+    "docs/architecture/REDISENO_ANDROID_3_0_R3.md": "current_android_ui_architecture",
+    "docs/architecture/CONEXIONES_INDEPENDIENTES_R4.md": "current_connection_architecture"
   },
   "features": [
     {
@@ -425,8 +426,8 @@
       "id": "android_redesign",
       "name": "Interfaz Android 3.0 basada en Aether",
       "status": "implemented_runtime_validated",
-      "note": "2026-10-09 · Rediseño Android R3: APK75 / 3.0.0-alpha03-sessions instalada. Disposición compacta basada en Aether, estados con comprobaciones y detalles técnicos desplegables. Puente Tailscale/Wi-Fi/USB con pantalla completa PC–teléfono–DNI y único botón Detener sesión. Vibración común; pulso de 90 ms ejecutado por el sistema verificado. 79 JVM pasan, uno omitido; 33 Android pasan. Sesión física y percepción al leer DNI pendientes.",
-      "evidence": "docs/architecture/REDISENO_ANDROID_3_0_R3.md",
+      "note": "2026-10-09 · Conexiones R4: APK76 / 3.0.0-alpha04-links instalada. Puente autentica PC antes de esperar DNI; Suite tiene pantalla completa con presencia separada y diagnóstico de conexión. Red agrupa Wi-Fi/Tailscale, USB separado. Windows host actualizado y GUI Suite selecciona IP vigente; emparejamiento anterior puede requerir TXT/QR actualizado de la misma PC. 154 JVM pasan, 3 omitidas; 93 comprobaciones Windows y 34 Android pasan. Prueba física bilateral y detección de cierre remoto antes de NFC pendientes.",
+      "evidence": "docs/architecture/CONEXIONES_INDEPENDIENTES_R4.md",
       "files": {
         "frontend": [
           "app/src/main/java/pe/gob/reniec/dnie/ui/home/",
@@ -450,7 +451,9 @@
           "app/src/main/java/pe/gob/reniec/dnie/ui/suite/RemoteSigningScreen.kt",
           "app/src/main/java/pe/gob/reniec/dnie/ui/design/StatusCheck.kt",
           "app/src/main/java/pe/gob/reniec/dnie/ui/bridge/BridgeSessionStage.kt",
-          "app/src/main/java/pe/gob/reniec/dnie/ui/bridge/BridgeSessionScreen.kt"
+          "app/src/main/java/pe/gob/reniec/dnie/ui/bridge/BridgeSessionScreen.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/design/ConnectionSessionScreen.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/suite/SuiteSessionScreen.kt"
         ],
         "test": [
           "app/src/androidTest/java/pe/gob/reniec/dnie/ui/HomeNavigationTest.kt",
@@ -458,7 +461,8 @@
           "app/src/test/java/pe/gob/reniec/dnie/ui/NavigationDestinationsTest.kt",
           "app/src/androidTest/java/pe/gob/reniec/dnie/ui/RedesignContinuityTest.kt",
           "app/src/androidTest/java/pe/gob/reniec/dnie/ui/BridgeSessionPresentationTest.kt",
-          "app/src/test/java/pe/gob/reniec/dnie/ui/bridge/BridgeSessionStageTest.kt"
+          "app/src/test/java/pe/gob/reniec/dnie/ui/bridge/BridgeSessionStageTest.kt",
+          "app/src/androidTest/java/pe/gob/reniec/dnie/ui/SuiteSessionPresentationTest.kt"
         ],
         "architecture": [
           "docs/architecture/REDISENO_ANDROID_3_0_R1.md",
@@ -626,16 +630,23 @@
       "id": "android_redesign_physical_workflows",
       "feature": "android_redesign",
       "state": "open",
-      "description": "Comprobar lectura/firma/recuperación y sesión puente física Tailscale/Wi-Fi/USB tras R3, percepción háptica al leer DNI y rendimiento con biblioteca real. Pulso aislado ejecutado por Android confirmado; 33 Android de navegación/fixtures pasan.",
-      "evidence": "docs/architecture/REDISENO_ANDROID_3_0_R3.md"
+      "description": "Validar PC autenticada antes de NFC y presencia/retirada en Bridge LAN/Tailscale/USB y Suite real tras R4; actualizar TXT/QR si IP cambió. 34 pruebas instrumentadas aisladas pasan; firma y lectura físicas pendientes.",
+      "evidence": "docs/architecture/CONEXIONES_INDEPENDIENTES_R4.md"
+    },
+    {
+      "id": "bridge_remote_close_before_card",
+      "feature": "bridge",
+      "state": "open",
+      "description": "Detectar cierre remoto durante espera Tag/ATR antes de NFC; cierre local cancela, EOF remoto puede esperar hasta entregar tarjeta o detener. No bajar autenticación.",
+      "evidence": "docs/architecture/CONEXIONES_INDEPENDIENTES_R4.md"
     }
   ],
   "facts": [
     {
       "id": "android_current",
       "category": "installed_ui_validated",
-      "value": "2026-10-09 · Rediseño Android R3: APK75 / 3.0.0-alpha03-sessions instalada. Disposición compacta basada en Aether, estados con comprobaciones y detalles técnicos desplegables. Puente Tailscale/Wi-Fi/USB con pantalla completa PC–teléfono–DNI y único botón Detener sesión. Vibración común; pulso de 90 ms ejecutado por el sistema verificado. 79 JVM pasan, uno omitido; 33 Android pasan. Sesión física y percepción al leer DNI pendientes.",
-      "evidence": "docs/architecture/REDISENO_ANDROID_3_0_R3.md"
+      "value": "2026-10-09 · Conexiones R4: APK76 / 3.0.0-alpha04-links instalada. Puente autentica PC antes de esperar DNI; Suite tiene pantalla completa con presencia separada y diagnóstico de conexión. Red agrupa Wi-Fi/Tailscale, USB separado. Windows host actualizado y GUI Suite selecciona IP vigente; emparejamiento anterior puede requerir TXT/QR actualizado de la misma PC. 154 JVM pasan, 3 omitidas; 93 comprobaciones Windows y 34 Android pasan. Prueba física bilateral y detección de cierre remoto antes de NFC pendientes.",
+      "evidence": "docs/architecture/CONEXIONES_INDEPENDIENTES_R4.md"
     },
     {
       "id": "desktop_current",

@@ -22,7 +22,7 @@ class BridgeSessionPresentationTest {
             rule.runOnIdle { state.value = state.value.copy(method = method, sessionStage = BridgeSessionStage.WAITING_CARD) }
             rule.onNodeWithText(method.title).assertExists()
             rule.onAllNodes(hasClickAction()).assertCountEquals(1)
-            rule.onAllNodesWithContentDescription("Completado").assertCountEquals(0)
+            rule.onAllNodesWithContentDescription("Completado").assertCountEquals(1)
             rule.onNodeWithText("Acerca tu DNI").assertExists()
             rule.runOnIdle { state.value = state.value.copy(sessionStage = BridgeSessionStage.OPENING_CARD) }
             rule.onAllNodesWithContentDescription("Completado").assertCountEquals(1)

@@ -48,5 +48,32 @@ class BridgeAndroidAdapter(private val context: Context) {
         settings: pe.gob.reniec.dnie.bridge.BridgeRuntimeSettings = pe.gob.reniec.dnie.bridge.BridgeRuntimeSettings()): Prepared? =
         prepare(pairing, tag, mode.windowsPace, mode.translatePace, settings)
 
+    fun awaiting(pairing: BridgePairing, mode: BridgeMode,
+        settings: pe.gob.reniec.dnie.bridge.BridgeRuntimeSettings): Awaiting {
+        val pending = pe.gob.reniec.dnie.bridge.android.PendingCard<Tag>()
+        var iso: IsoDep? = null
+        var tagId = byteArrayOf()
+        val connection = BridgeConnection(pairing, settings = settings,
+            transportSocket = transport.socketFactory(pairing), cancelPendingCard = pending::close,
+            smDiagnostic = { event, context -> pe.gob.reniec.dnie.diagnostics.DiagnosticLog.event("bridge", event, "flow" to context) },
+            decorate = { card -> trace.decorate(ContactlessReaderCard(card, tagId),
+                if (mode.windowsPace) "pace_windows_raw" else if (mode.translatePace) "pace_android_translated" else "pace_android_logical") }) {
+            IsoDepCardChannel(checkNotNull(iso), settings.nfcTimeoutMs)
+        }
+        return Awaiting(connection, pending) {
+            val tag = pending.await()
+            iso = checkNotNull(IsoDep.get(tag)) { "Tarjeta NFC incompatible" }
+            val history = checkNotNull(iso!!.historicalBytes) { "Tarjeta NFC incompatible" }
+            require(history.size <= 15)
+            tagId = tag.id ?: byteArrayOf()
+            ContactlessAtr.fromTypeAHistory(history)
+        }
+    }
+
+    class Awaiting(val connection: BridgeConnection,
+        private val pending: pe.gob.reniec.dnie.bridge.android.PendingCard<Tag>, val awaitAtr: () -> ByteArray) {
+        fun offer(tag: Tag) = pending.offer(tag)
+    }
+
     class Prepared(val connection: BridgeConnection, val atr: ByteArray)
 }

@@ -96,7 +96,9 @@ public static class PcscBackend
         Exception? primaryFailure = null;
         try
         {
-            byte[] atr = await ExchangeAsync(card, [4], cancellation);
+            // The PC link is already authenticated; a physical card may arrive later.
+            // Keep reader empty until an actual ATR is received, with cancellable idle wait.
+            byte[] atr = await ExchangeAsync(card, [4], cancellation, waitForCard: true);
             try { device.Attach(atr, 2); attached = true; }
             finally { CryptographicOperations.ZeroMemory(atr); }
             log?.Invoke("pcsc_card_present");
@@ -189,7 +191,7 @@ public static class PcscBackend
         }
     }
 
-    private static async Task<byte[]> ExchangeAsync(Stream stream, byte[] command, CancellationToken cancellation)
+    private static async Task<byte[]> ExchangeAsync(Stream stream, byte[] command, CancellationToken cancellation, bool waitForCard = false)
     {
         if (command.Length is < 1 or > PcscAbi.MaxPayload) throw new InvalidDataException("Invalid card frame.");
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
@@ -198,7 +200,12 @@ public static class PcscBackend
         await stream.WriteAsync(header, deadline.Token);
         await stream.WriteAsync(command, deadline.Token);
         await stream.FlushAsync(deadline.Token);
-        await stream.ReadExactlyAsync(header, deadline.Token);
+        if (waitForCard) {
+            deadline.CancelAfter(Timeout.InfiniteTimeSpan);
+            await stream.ReadExactlyAsync(header.AsMemory(0, 1), cancellation);
+            deadline.CancelAfter(TimeSpan.FromSeconds(30));
+            await stream.ReadExactlyAsync(header.AsMemory(1, 1), deadline.Token);
+        } else await stream.ReadExactlyAsync(header, deadline.Token);
         int size = (header[0] << 8) | header[1];
         if (size == 0) throw new InvalidDataException("Empty card response.");
         var result = new byte[size];

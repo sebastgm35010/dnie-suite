@@ -6,7 +6,14 @@ import androidx.compose.ui.Modifier
 import pe.gob.reniec.dnie.bridge.BridgeConnectionMethod
 @Composable fun BridgeConnectionSettings(method: BridgeConnectionMethod, enabled: Boolean, select: (BridgeConnectionMethod) -> Unit) {
     Column {
-        BridgeConnectionMethod.entries.forEach { value ->
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+            FilterChip(selected = method != BridgeConnectionMethod.USB_NETWORK,
+                onClick = { if (method == BridgeConnectionMethod.USB_NETWORK) select(BridgeConnectionMethod.LOCAL_NETWORK) },
+                enabled = enabled, label = { Text("Red · Wi-Fi / Tailscale") })
+            FilterChip(selected = method == BridgeConnectionMethod.USB_NETWORK,
+                onClick = { select(BridgeConnectionMethod.USB_NETWORK) }, enabled = enabled, label = { Text("Cable USB") })
+        }
+        if (method != BridgeConnectionMethod.USB_NETWORK) listOf(BridgeConnectionMethod.LOCAL_NETWORK, BridgeConnectionMethod.TAILSCALE).forEach { value ->
             Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 RadioButton(method == value, { select(value) }, enabled = enabled); Text(value.title, Modifier.weight(1f))
             }

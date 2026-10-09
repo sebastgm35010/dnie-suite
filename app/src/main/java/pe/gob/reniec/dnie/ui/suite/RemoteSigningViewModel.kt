@@ -15,6 +15,8 @@ import pe.gob.reniec.dnie.signing.link.*
 
 data class RemoteSigningState(val can: String = "", val pc: String = "", val fingerprint: String = "",
     val cardState: SuiteCardState = SuiteCardState.ABSENT, val count: Int = 0, val continuous: Boolean = false, val connected: Boolean = false, val remembered: Boolean = false, val busy: Boolean = false, val armed: Boolean = false,
+    val sessionVisible: Boolean = false,
+    val failureCode: String = "",
     val message: String = "Importa la solicitud de la suite PC. El puente para ReFirma sigue siendo independiente.")
 
 /** Owns one foreground job. Socket/card/PIN never enter Compose state or another ViewModel. */
@@ -47,11 +49,12 @@ class RemoteSigningViewModel(application: Application) : AndroidViewModel(applic
         val cardSlot = SuiteCardSlot(); slot = cardSlot
         val request = pair.provision(); provision = request
         val link = PhoneSigningTransport(request, continuous = true); transport = link
-        mutable.update { it.copy(busy = true, connected = false, message = "Esperando PC y autenticando Suite continua…") }
+        mutable.update { it.copy(busy = true, connected = false, sessionVisible = true, failureCode = "", message = "Esperando PC y autenticando Suite continua…") }
+        DiagnosticLog.event("suite", "connection_requested")
         task = viewModelScope.launch {
             try {
                 withContext(Dispatchers.IO) { trust.save(pair) }
-                val stream = withContext(Dispatchers.IO) { link.accept() }
+                val stream = withContext(Dispatchers.IO) { link.accept { event -> DiagnosticLog.event("suite", event) } }
                 if (generation != epoch) { stream.close(); return@launch }
                 channel = stream
                 mutable.update { it.copy(busy = false, connected = true, armed = true, remembered = true,
@@ -89,7 +92,9 @@ class RemoteSigningViewModel(application: Application) : AndroidViewModel(applic
             } catch (_: TimeoutCancellationException) {
                 if (generation == epoch) mutable.update { it.copy(message = "No se presentó el DNI a tiempo. Conecta de nuevo; la PC permanece recordada y no se repite el lote.") }
             } catch (cancelled: CancellationException) { throw cancelled }
-            catch (_: Exception) { if (generation == epoch) mutable.update { it.copy(message = "Conexión Suite cerrada. La PC permanece recordada; conecta de nuevo sin QR. No se repite ninguna firma.") } }
+            catch (failure: Exception) {
+                DiagnosticLog.failure("suite", "connection", failure)
+                if (generation == epoch) mutable.update { it.copy(failureCode = failure.javaClass.simpleName, message = "Conexión Suite cerrada. La PC permanece recordada; conecta de nuevo sin QR. No se repite ninguna firma.") } }
             finally {
                 if (generation == epoch) { release(); mutable.update { it.copy(busy = false, armed = false, connected = false, count = 0) } }
             }
@@ -146,16 +151,18 @@ class RemoteSigningViewModel(application: Application) : AndroidViewModel(applic
         val generation = ++epoch
         val link = PhoneSigningTransport(pair)
         transport = link
-        mutable.update { it.copy(busy = true, message = "Esperando y autenticando la suite PC por TLS…") }
+        mutable.update { it.copy(busy = true, sessionVisible = true, failureCode = "", message = "Esperando y autenticando la suite PC por TLS…") }
         task = viewModelScope.launch {
             try {
-                val next = withContext(Dispatchers.IO) { link.accept() }
+                val next = withContext(Dispatchers.IO) { link.accept { event -> DiagnosticLog.event("suite", event) } }
                 if (generation != epoch) { next.close(); return@launch }
                 channel = next
-                mutable.update { it.copy(busy = false, armed = true, message = "PC autenticada. Acerca y mantén tu DNI hasta completar el lote.") }
+                mutable.update { it.copy(busy = false, armed = true, connected = true, message = "PC autenticada. Acerca y mantén tu DNI hasta completar el lote.") }
                 DiagnosticLog.event("suite", "peer_authorized", "count" to pair.count)
             } catch (cancelled: CancellationException) { throw cancelled }
-            catch (_: Exception) { if (generation == epoch) { release(); mutable.update { it.copy(busy = false, armed = false, message = "No se conectó la suite. Revisa las IP y genera una solicitud nueva.") } } }
+            catch (failure: Exception) {
+                DiagnosticLog.failure("suite", "connection", failure)
+                if (generation == epoch) { release(); mutable.update { it.copy(busy = false, armed = false, connected = false, failureCode = failure.javaClass.simpleName, message = "No se conectó la suite. Revisa las IP y genera una solicitud nueva.") } } }
         }
     }
     fun tag(tag: Tag) {
@@ -191,7 +198,7 @@ class RemoteSigningViewModel(application: Application) : AndroidViewModel(applic
         }
         connection = session
         val generation = epoch
-        mutable.update { it.copy(armed = false, busy = true, message = "Abriendo PACE y firmando el lote. Mantén el DNI junto al teléfono.") }
+        mutable.update { it.copy(armed = false, busy = true, cardState = SuiteCardState.IN_USE, message = "Abriendo PACE y firmando el lote. Mantén el DNI junto al teléfono.") }
         task = viewModelScope.launch {
             try {
                 withContext(Dispatchers.IO) { session.run() }
@@ -218,7 +225,7 @@ class RemoteSigningViewModel(application: Application) : AndroidViewModel(applic
         ++epoch
         release() // Close socket/card first to unblock IO; then cancel coroutine.
         task?.cancel(); task = null
-        mutable.update { it.copy(busy = false, armed = false, connected = false, pc = pairing?.pc ?: "",
+        mutable.update { it.copy(busy = false, armed = false, connected = false, sessionVisible = false, failureCode = "", pc = pairing?.pc ?: "",
             fingerprint = pairing?.fingerprintText() ?: "", count = 0,
             message = if (pairing != null) "Suite detenida. La PC queda recordada; conecta de nuevo sin QR." else "Sesión detenida. Importa una nueva solicitud para volver a firmar.") }
     }
