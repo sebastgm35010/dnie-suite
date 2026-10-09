@@ -233,17 +233,17 @@ INSERT INTO "document_sections" VALUES('dnie-signing-link/README.md',1,'Canal pr
 INSERT INTO "document_sections" VALUES('dnie-signing-link/README.md',47,'Extensión H2');
 INSERT INTO "document_sections" VALUES('dnie-signing-ui/README.md',1,'Interfaz aislada de DNIe Suite');
 INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',1,'Estado vigente · corrección USB tras reinicio');
-INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',115,'Registro previo conservado: antes del reinicio');
-INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',118,'Por dónde retomar');
-INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',125,'Versión y checkpoint');
-INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',133,'Estado comprobado');
-INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',141,'Evidencia y límites');
-INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',149,'Historia');
+INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',117,'Registro previo conservado: antes del reinicio');
+INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',120,'Por dónde retomar');
+INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',127,'Versión y checkpoint');
+INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',135,'Estado comprobado');
+INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',143,'Evidencia y límites');
+INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',151,'Historia');
 INSERT INTO "document_sections" VALUES('docs/PENDIENTES_ACTUALES.md',1,'Pendientes actuales · Windows rc4 USB / Android rc4-usb');
-INSERT INTO "document_sections" VALUES('docs/PENDIENTES_ACTUALES.md',83,'Siguiente secuencia');
-INSERT INTO "document_sections" VALUES('docs/PENDIENTES_ACTUALES.md',97,'Seguridad y distribución');
-INSERT INTO "document_sections" VALUES('docs/PENDIENTES_ACTUALES.md',112,'Otras funciones y deuda restante');
-INSERT INTO "document_sections" VALUES('docs/PENDIENTES_ACTUALES.md',122,'Ya resuelto: no reabrir sin una regresión nueva');
+INSERT INTO "document_sections" VALUES('docs/PENDIENTES_ACTUALES.md',85,'Siguiente secuencia');
+INSERT INTO "document_sections" VALUES('docs/PENDIENTES_ACTUALES.md',99,'Seguridad y distribución');
+INSERT INTO "document_sections" VALUES('docs/PENDIENTES_ACTUALES.md',114,'Otras funciones y deuda restante');
+INSERT INTO "document_sections" VALUES('docs/PENDIENTES_ACTUALES.md',124,'Ya resuelto: no reabrir sin una regresión nueva');
 INSERT INTO "document_sections" VALUES('docs/README.md',1,'Mapa de documentación');
 INSERT INTO "document_sections" VALUES('docs/README.md',5,'Entrada al proyecto');
 INSERT INTO "document_sections" VALUES('docs/README.md',24,'Funciones existentes');
@@ -716,12 +716,13 @@ INSERT INTO "document_sections" VALUES('docs/archive/CONTEXTO_HISTORICO_HASTA_1_
 INSERT INTO "document_sections" VALUES('docs/archive/CONTEXTO_HISTORICO_HASTA_1_8_14.md',124,'Ubicaciones y registros útiles');
 INSERT INTO "document_sections" VALUES('docs/operations/LECTOR_AUSENTE_PCSC_2026_10_07.md',1,'Lector instalado pero ausente de PC/SC — 2026-10-07');
 INSERT INTO "document_sections" VALUES('docs/operations/LECTOR_AUSENTE_PCSC_2026_10_07.md',17,'Reincidencia tras suspensión · 2026-10-09');
+INSERT INTO "document_sections" VALUES('docs/operations/LECTOR_AUSENTE_PCSC_2026_10_07.md',27,'Recuperación y revisión del controlador · 2026-10-09');
 INSERT INTO "document_sections" VALUES('docs/operations/RETOMAR_TRAS_REINICIO_RC4.md',1,'Estado guardado y retomar tras reiniciar');
-INSERT INTO "document_sections" VALUES('docs/operations/RETOMAR_TRAS_REINICIO_RC4.md',13,'Referencia guardada');
-INSERT INTO "document_sections" VALUES('docs/operations/RETOMAR_TRAS_REINICIO_RC4.md',32,'Datos que sobreviven');
-INSERT INTO "document_sections" VALUES('docs/operations/RETOMAR_TRAS_REINICIO_RC4.md',40,'Evidencia previa');
-INSERT INTO "document_sections" VALUES('docs/operations/RETOMAR_TRAS_REINICIO_RC4.md',51,'Después de reiniciar');
-INSERT INTO "document_sections" VALUES('docs/operations/RETOMAR_TRAS_REINICIO_RC4.md',64,'Precauciones para continuar el desarrollo');
+INSERT INTO "document_sections" VALUES('docs/operations/RETOMAR_TRAS_REINICIO_RC4.md',15,'Referencia guardada');
+INSERT INTO "document_sections" VALUES('docs/operations/RETOMAR_TRAS_REINICIO_RC4.md',34,'Datos que sobreviven');
+INSERT INTO "document_sections" VALUES('docs/operations/RETOMAR_TRAS_REINICIO_RC4.md',42,'Evidencia previa');
+INSERT INTO "document_sections" VALUES('docs/operations/RETOMAR_TRAS_REINICIO_RC4.md',53,'Después de reiniciar');
+INSERT INTO "document_sections" VALUES('docs/operations/RETOMAR_TRAS_REINICIO_RC4.md',66,'Precauciones para continuar el desarrollo');
 INSERT INTO "document_sections" VALUES('docs/project-registry/README.md',1,'Registro SQL del proyecto');
 INSERT INTO "document_sections" VALUES('docs/project-registry/README.md',5,'Consultar');
 INSERT INTO "document_sections" VALUES('docs/project-registry/README.md',24,'Contenido y procedencia');
@@ -1053,7 +1054,7 @@ INSERT INTO "facts" VALUES('recovery_copy_and_rotation_limits','design_constrain
 INSERT INTO "facts" VALUES('vault_lifecycle_windows_first','android_integrated_physical_pending','2026-10-08 · Bóveda R6: APK68 instalada; biblioteca única con Cifrar/Descifrar/Importar/Exportar. Respaldo autosuficiente DNIEBKP2 comprimido y cifrado por contraseña. Importar verifica DNI destino y recifra todo, actualiza UUID coincidentes sin duplicarlos, conserva archivos ajenos y usa journal durable. 137 pruebas JVM y 4 instrumentadas Android pasan; NFC/SAF reales y cruce Windows pendientes.','docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md');
 INSERT INTO "facts" VALUES('android_candidate_vault_picker','installed_ui_validated','APK69 / 2.0.0-rc21-vault-picker instalada y versión comprobada; D:/DNIeToolchain/AndroidPackages/dnie-evolution-2.0.0-rc21-vault-picker-debug.apk. 79 pruebas app pasan; 3 instrumentadas de interfaz pasan (8,537 s), con selector simulado. SAF real y DNI físico pendientes.','docs/architecture/BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md');
 INSERT INTO "facts" VALUES('ui_performance_r2','diagnosis','APK72 sin modificación: navegación 2350/2348 cuadros, jank moderno 0,13%/0,04%, P50 6 ms; edición 528 cuadros, 0,95%, P50 11 ms. Trazas completas: medición Compose hasta 42,175 ms y recomposición al editar hasta 35,728 ms. Sin prueba física NFC.','docs/architecture/DIAGNOSTICO_RENDIMIENTO_UI_R2.md');
-INSERT INTO "facts" VALUES('reader_resume_incident_20261009','observed_failure','Segunda incidencia reportada tras suspensión. Captura: lector privado/CardPresent/PACE activos pero WinSCard no enumera propio. Recuperación en caliente falla; código43 posterior, Windows requiere reinicio manual. Puente detenido; no reinicio automático ni cambio de seguridad.','docs/operations/LECTOR_AUSENTE_PCSC_2026_10_07.md');
+INSERT INTO "facts" VALUES('reader_resume_incident_20261009','observed_failure','2026-10-09 · Tras reinicio manual vuelve lector propio a WinSCard y PnP código0, sin tarjeta presente. Revisión de driver detecta falta de EvtIoStop para solicitudes pendientes, coordinación de purge/arranque y host UMDF compartido; estado backend no acredita publicación. Sin cambio de controlador; corrección y reproducción de suspensión pendientes.','docs/operations/LECTOR_AUSENTE_PCSC_2026_10_07.md');
 CREATE TABLE feature_dependencies(source TEXT REFERENCES features(id), target TEXT REFERENCES features(id),
  PRIMARY KEY(source,target));
 INSERT INTO "feature_dependencies" VALUES('pdf_android','cms');
@@ -2022,8 +2023,8 @@ INSERT INTO "files" VALUES('dnie-vault-recovery/src/main/java/pe/gob/reniec/dnie
 INSERT INTO "files" VALUES('dnie-vault-recovery/src/test/java/pe/gob/reniec/dnie/vault/recovery/RecoveryFailureScenariosTest.kt','dnie-vault-recovery','.kt','test','16b0afd495f352a650bd797e3a34e3fd68e86ea4a004ae39e417128e6d2f651e',10683);
 INSERT INTO "files" VALUES('dnie-vault-recovery/src/test/java/pe/gob/reniec/dnie/vault/recovery/RecoveryPackageTest.kt','dnie-vault-recovery','.kt','test','2d20452a07db228d33d3caef45ae67cf1022303c489347d8dc52487b97fb6646',10596);
 INSERT INTO "files" VALUES('dnie-vault-recovery/src/test/java/pe/gob/reniec/dnie/vault/recovery/VaultArchiveTest.kt','dnie-vault-recovery','.kt','test','146a79e6018c3c8264d420b32ba7a78086ff4fe368b95128f9186a3ba92b9d16',10048);
-INSERT INTO "files" VALUES('docs/CONTEXTO_ACTUAL.md',NULL,'.md','documentation','6abb33a421f1e78cd94f23c398eba24f15b1b0d80487e770731883d463ce5cdc',29542);
-INSERT INTO "files" VALUES('docs/PENDIENTES_ACTUALES.md',NULL,'.md','documentation','667c9b006f1bdb0c541933bb81d626ee616a09b9c840ef854dee51e95dcb17bb',25535);
+INSERT INTO "files" VALUES('docs/CONTEXTO_ACTUAL.md',NULL,'.md','documentation','ec868f3b1fce133e145d60e4a70a5d10935d7e3741cfd441f1ca3df96253f88c',29962);
+INSERT INTO "files" VALUES('docs/PENDIENTES_ACTUALES.md',NULL,'.md','documentation','f05b7d47ec47e69f7ecf46691e55eb6349c6c4878d8350115b97e40d4af04aeb',25955);
 INSERT INTO "files" VALUES('docs/README.md',NULL,'.md','documentation','f8a67f28622d75a7891437265bc3eae8228a7b295059225c5e7894c0a0384c6e',5012);
 INSERT INTO "files" VALUES('docs/architecture/AISLAMIENTO_USB_USBDK.md',NULL,'.md','documentation','dd2fd5c975277088907e2c70b9bca34c8d5fb8a13d4a51ae3abc58ff475b3477',4647);
 INSERT INTO "files" VALUES('docs/architecture/ALCANCE_AISLAMIENTO_MINIDRIVER.md',NULL,'.md','documentation','6f942a4e2a78c9b0c2f4a53e5f403d6133a96305935ee60315554b31f3f31bea',2639);
@@ -2125,8 +2126,8 @@ INSERT INTO "files" VALUES('docs/architecture/TRANSPORTES_Y_DEBUG_2_0_RC2.md',NU
 INSERT INTO "files" VALUES('docs/architecture/VIABILIDAD_DISTRIBUCION_SIN_CONTROLADOR.md',NULL,'.md','documentation','276899b3e0c33839ed651d448d81d2ca418d1e9d34336ac8b7e232d38ae5565d',8285);
 INSERT INTO "files" VALUES('docs/archive/CONTEXTO_HASTA_WINDOWS_NATIVE_RC4.md',NULL,'.md','documentation','5026ce9902aa1bbcc39b7a8e3089c320c29ab7daa3bd15cf0153d8b82d42477d',9360);
 INSERT INTO "files" VALUES('docs/archive/CONTEXTO_HISTORICO_HASTA_1_8_14.md',NULL,'.md','documentation','1f9c2411ebeeec0e3bd9a811482859942ce00a2b61b2f9573b86837f87c9dbab',26839);
-INSERT INTO "files" VALUES('docs/operations/LECTOR_AUSENTE_PCSC_2026_10_07.md',NULL,'.md','documentation','ea69655e4cfa6045dd9178f09a6bc9de93da8c1d46e1e838f0e63b5964d430ed',4799);
-INSERT INTO "files" VALUES('docs/operations/RETOMAR_TRAS_REINICIO_RC4.md',NULL,'.md','documentation','a0e9252dcf1c02cc1843db2c8d2e9e19fe2582cd1a5483f6026ce3a42d1d62b4',9022);
+INSERT INTO "files" VALUES('docs/operations/LECTOR_AUSENTE_PCSC_2026_10_07.md',NULL,'.md','documentation','d6365f892538292c1df048dd59745b49b83a704c0cb91ae1fc7a834d44f9dfdb',7947);
+INSERT INTO "files" VALUES('docs/operations/RETOMAR_TRAS_REINICIO_RC4.md',NULL,'.md','documentation','4142277b7497cd686ed0f191ee457ccef0db69e447d68ea9180673f30dab96ee',9431);
 INSERT INTO "files" VALUES('docs/project-registry/README.md',NULL,'.md','documentation','48fbb24cca20d1efb6e28ff8c3a8c1f1e2b6359fe18f8b5f826a56c860bfbed9',4820);
 INSERT INTO "files" VALUES('docs/suite/ANDROID_PADES_BASELINE_H6.md',NULL,'.md','documentation','888754447a9fa0d9067aa1f9ddcfb093fe5111b7a3769c3e910c871185444c16',4610);
 INSERT INTO "files" VALUES('docs/suite/ANDROID_TSA_RENIEC_H11.md',NULL,'.md','documentation','f81de5bfa6a216de44e742b15852e1f3534a6e11cc42add0d4158c18215f8794',6999);
@@ -2307,7 +2308,7 @@ INSERT INTO "files" VALUES('tools/host-diagnostics/watch-phone-apdu.py',NULL,'.p
 INSERT INTO "files" VALUES('tools/host-diagnostics/watch-process-events.ps1',NULL,'.ps1','tool','752d70e4e89f05d28ca38f7f10138b4ac794abc58b9e32f755db0add3e98547f',2239);
 INSERT INTO "files" VALUES('tools/host-diagnostics/watch-reniec-reader.py',NULL,'.py','tool','ef5bbb0b336d6d3f0a10f015cb635bf52e2db6777a71e1e8b11489681dcb0cb7',8461);
 INSERT INTO "files" VALUES('tools/host-diagnostics/watch-tailnet-session.py',NULL,'.py','tool','12d422cc108d2b81535e51453ce599e900bbe1b1ad5696d61fd2a81e4c33c913',6365);
-INSERT INTO "files" VALUES('tools/project-registry/catalog.json',NULL,'.json','tool','53589bc15a0c1d1aa43c5804e7d9c14181dccaf9897c7825eccb378d588b09f7',34553);
+INSERT INTO "files" VALUES('tools/project-registry/catalog.json',NULL,'.json','tool','fa7726b1bb016c920b1dfd15db8a8d80003a6a682b7827b65d4b27d3d7d9338b',35091);
 INSERT INTO "files" VALUES('tools/project-registry/registry.py',NULL,'.py','tool','34c9eeb70779c4c9968250b8542d94b4a29d35d048f87624679b2c5a879fa986',11521);
 INSERT INTO "files" VALUES('tools/project-registry/schema.sql',NULL,'.sql','tool','3ab4590979168acbb2e9b654cd5abc9a929fd97eac37f24bea142cd30647a2fb',2808);
 INSERT INTO "files" VALUES('tools/project-registry/test_registry.py',NULL,'.py','tool','df595b00d8a8bd25c579e1e6c41f81dc248a8511417ebf599a24b0d39682e289',4254);
@@ -5620,7 +5621,7 @@ INSERT INTO "metadata" VALUES('catalog_review_date','2026-10-09');
 INSERT INTO "metadata" VALUES('index_method','tracked files; lexical symbols/imports, not runtime call graph');
 INSERT INTO "metadata" VALUES('project','DnieSignerPeruEvolution');
 INSERT INTO "metadata" VALUES('schema_version','1');
-INSERT INTO "metadata" VALUES('source_commit','44ce3cbad7879d800fd701bd09464ba2d6f68918');
+INSERT INTO "metadata" VALUES('source_commit','f8134bce3c34289b04e389f2c207db9fa58e6b8d');
 CREATE TABLE module_dependencies(source TEXT REFERENCES modules(id), target TEXT REFERENCES modules(id),
  scope TEXT NOT NULL, line INTEGER NOT NULL, PRIMARY KEY(source,target,scope,line));
 INSERT INTO "module_dependencies" VALUES('app','dnie-core','implementation',103);
@@ -5712,6 +5713,7 @@ INSERT INTO "pending" VALUES('diagnostics_live_nfc_and_ui_performance','diagnost
 INSERT INTO "pending" VALUES('android_redesign_inner_screens','android_redesign','closed','Presentación común aplicada a todos los interiores y vistas previas, configuración de apariencia y navegación continua de bóveda/PC. 32 Android pasan. Validación NFC física y rendimiento con biblioteca real se conservan como pendientes separados.','docs/architecture/REDISENO_ANDROID_3_0_R2.md');
 INSERT INTO "pending" VALUES('android_redesign_physical_workflows','android_redesign','open','Validar PC autenticada antes de NFC y presencia/retirada en Bridge LAN/Tailscale/USB y Suite real tras R4; actualizar TXT/QR si IP cambió. 34 pruebas instrumentadas aisladas pasan; firma y lectura físicas pendientes.','docs/architecture/CONEXIONES_INDEPENDIENTES_R4.md');
 INSERT INTO "pending" VALUES('bridge_remote_close_before_card','bridge','open','Detectar cierre remoto durante espera Tag/ATR antes de NFC; cierre local cancela, EOF remoto puede esperar hasta entregar tarjeta o detener. No bajar autenticación.','docs/architecture/CONEXIONES_INDEPENDIENTES_R4.md');
+INSERT INTO "pending" VALUES('reader_resume_recovery','bridge','open','Lector vuelve tras reinicio manual. Revisar EvtIoStop y retiro cancelable sin replay antes de D0Exit, ciclo de colas, host UMDF compartido y salud WinSCard. Sin corrección desplegada ni causa exacta demostrada; reproducción y prueba sintética pendientes.','docs/operations/LECTOR_AUSENTE_PCSC_2026_10_07.md');
 CREATE TABLE symbols(id INTEGER PRIMARY KEY, path TEXT NOT NULL REFERENCES files(path),
  name TEXT NOT NULL, qualified_name TEXT NOT NULL, kind TEXT NOT NULL, line INTEGER NOT NULL);
 INSERT INTO "symbols" VALUES(1,'app/src/androidTest/java/pe/gob/reniec/dnie/DiagnosticsRuntimeInstrumentedTest.kt','DiagnosticsRuntimeInstrumentedTest','pe.gob.reniec.dnie.DiagnosticsRuntimeInstrumentedTest','class',17);

@@ -639,6 +639,13 @@
       "state": "open",
       "description": "Detectar cierre remoto durante espera Tag/ATR antes de NFC; cierre local cancela, EOF remoto puede esperar hasta entregar tarjeta o detener. No bajar autenticación.",
       "evidence": "docs/architecture/CONEXIONES_INDEPENDIENTES_R4.md"
+    },
+    {
+      "id": "reader_resume_recovery",
+      "feature": "bridge",
+      "state": "open",
+      "description": "Lector vuelve tras reinicio manual. Revisar EvtIoStop y retiro cancelable sin replay antes de D0Exit, ciclo de colas, host UMDF compartido y salud WinSCard. Sin corrección desplegada ni causa exacta demostrada; reproducción y prueba sintética pendientes.",
+      "evidence": "docs/operations/LECTOR_AUSENTE_PCSC_2026_10_07.md"
     }
   ],
   "facts": [
@@ -729,7 +736,7 @@
     {
       "id": "reader_resume_incident_20261009",
       "category": "observed_failure",
-      "value": "Segunda incidencia reportada tras suspensión. Captura: lector privado/CardPresent/PACE activos pero WinSCard no enumera propio. Recuperación en caliente falla; código43 posterior, Windows requiere reinicio manual. Puente detenido; no reinicio automático ni cambio de seguridad.",
+      "value": "2026-10-09 · Tras reinicio manual vuelve lector propio a WinSCard y PnP código0, sin tarjeta presente. Revisión de driver detecta falta de EvtIoStop para solicitudes pendientes, coordinación de purge/arranque y host UMDF compartido; estado backend no acredita publicación. Sin cambio de controlador; corrección y reproducción de suspensión pendientes.",
       "evidence": "docs/operations/LECTOR_AUSENTE_PCSC_2026_10_07.md"
     }
   ]

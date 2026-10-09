@@ -23,3 +23,24 @@ Recuperación intentada: reinicio PnP solo de lector propio devuelve 3010; event
 Evidencia fuera de Git: D:/DNIeToolchain/Diagnostics/resume-reader/ contiene current-phone.jsonl, pcsc-before.json, pnp-before.json, host-before.json, deviceenum-before.json, recovery-events.json, restart-reader.txt y pcsc-after.json. No incluir logs personales en registro SQL.
 
 Siguiente paso: reinicio manual Windows y comprobar lector con pcsc-presence.ps1 ANTES de sesión NFC; después conectar de nuevo y verificar presencia real. No insistir en reiniciar PnP con backend abierto ni considerar CardPresent privado garantía de publicación. Deuda: salud explícita WinSCard y recuperación después de energía, revisar D0Exit/D0Entry, propiedad del handle y colas pendientes; capturar trazas UMDF acotadas en próxima reproducción. El servicio actual no maneja notificaciones de energía en WindowsServiceLifetime; esto es inspección de código, no prueba causal. No desplegar una modificación del driver sin prueba sintética de suspensión y revisión de cancelación.
+
+## Recuperación y revisión del controlador · 2026-10-09
+
+Después del reinicio manual confirmado por usuario, WinSCard enumera de nuevo DNIe Bridge Android NFC Private Reader 0, sin tarjeta presente (flags18, ATR0). PnP código0 / OK, SCardSvr y DNIeBridgeAgent Running. Se verifica recuperación de enumeración; no se ejecuta una firma ni se acredita suspensión corregida. Evidencia: D:/DNIeToolchain/Diagnostics/resume-reader/after-reboot/pcsc.json y pnp.json.
+
+Paquete activo oem236.inf, versión2.0.0.2. INF instalado coincide byte a byte con fuente y paquete build. DriverStore a7ead70180d6745b contiene código .text idéntico al build local; SHA256 de DLL firmada difiere del DLL no firmado, por lo que no se usa hash total como prueba de diferencia de código. Comparación guardada en driver-binary-comparison.json. No se cambió ni reinstaló driver durante esta revisión.
+
+Hallazgos de revisión:
+
+1. DniBridgeReader.cpp crea cola predeterminada sin EvtIoStop. QueueBackend conserva solicitudes cancelables hasta respuesta remota/timeout; D0Exit intenta retirarlas después. WDF espera completar/cancelar/posponer solicitudes entregadas antes de abandonar D0. Falta retirarlas en EvtIoStop, respetando UnmarkCancelable y propiedad del callback de cancelación. Una APDU ya entregada no debe reencolarse ni repetirse al reanudar. Riesgo confirmado por diseño, no causa del incidente demostrada por dump.
+2. D0Exit purga colas manuales y D0Entry las inicia sin mecanismo explícito que acredite fin de purge asíncrono. Revisar política power-managed y coordinación, evitando una modificación basada solo en lectura de código. No se ha reproducido carrera.
+3. INF no declara aislamiento de host UMDF. Eventos previos mencionaron lector propio y Bix en host compartido: un fallo compartido puede afectar ambos, sin demostrar cuál lo provocó. Para laboratorio evaluar ProcessSharingDisabled y capturas acotadas, no atribuir culpa a Bix ni cambiar ACL.
+4. Servicio no acepta eventos de energía y CardPresent refleja Attach privado, no enumeración WinSCard. Incorporar estado de lector publicado distinto de tarjeta/transportes y coordinación de cierre de handles al suspender/reanudar. No reiniciar dispositivo PnP con backend abierto.
+
+Fuentes oficiales:
+- https://learn.microsoft.com/en-us/windows-hardware/drivers/wdf/using-power-managed-i-o-queues
+- https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/wdfio/nc-wdfio-evt_wdf_io_queue_io_stop
+- https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/wdfrequest/nf-wdfrequest-wdfrequeststopacknowledge
+- https://learn.microsoft.com/en-us/windows-hardware/drivers/wdf/umdf-driver-host-process
+
+Plan de corrección: checkpoint de paquete funcional, prueba sintética de retirada con solicitud pendiente y cancelación simultánea, EvtIoStop sin replay, revisión del ciclo de colas, diagnóstico WinSCard y captura de reanudación. Compilar/validar INF y firmar paquete de pruebas antes de instalar. Mantener el paquete instalado recuperado durante la revisión. Pendientes reproducción real y confirmación de causa por trazas/dump.
