@@ -19,42 +19,44 @@ fun RemoteSigningScreen(state: RemoteSigningState, nfcEnabled: Boolean, addresse
     var pin by remember { mutableStateOf("") } // Not saveable, never stored in ViewModel UI state.
     LaunchedEffect(state.pc) { if (state.pc.isEmpty()) pin = "" }
     DisposableEffect(Unit) { onDispose { pin = "" } }
-    Scaffold { padding ->
+    pe.gob.reniec.dnie.ui.design.FeatureScaffold("Suite · firma remota", "Firma desde PC", onBack = onBack, bottomBar = { pe.gob.reniec.dnie.ui.navigation.ActivityNavigation() }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Text("Suite · firma remota", style = MaterialTheme.typography.headlineSmall)
-            Text("Los archivos permanecen en tu PC. Tu DNI firma por NFC y la respuesta viaja cifrada. No se publica un lector de tarjeta para otras aplicaciones.")
-            Text("IP del teléfono: $addresses")
-            Button(onClick = onScan, enabled = !state.busy && !state.armed) { Text("Escanear solicitud de la PC") }
-            OutlinedButton(onClick = onImport, enabled = !state.busy && !state.armed) { Text("Importar solicitud TXT") }
-            if (state.pc.isNotEmpty()) {
-                Text(if (state.continuous) "PC: ${state.pc} · conexión continua" else "PC: ${state.pc} · hasta ${state.count} documento(s)")
-                Text("Compara esta huella con la que muestra tu PC:")
-                Text(state.fingerprint, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall)
-                Text("Autoriza solo solicitudes que hayas iniciado. El teléfono autoriza el lote y no muestra los documentos guardados en PC.")
+            pe.gob.reniec.dnie.ui.design.FeatureSection("1 · Vincular PC") {
+                Text("Los archivos permanecen en tu PC. Tu DNI firma por NFC y la respuesta viaja cifrada. No se publica un lector de tarjeta para otras aplicaciones.")
+                Text("IP del teléfono: $addresses")
+                Button(onClick = onScan, enabled = !state.busy && !state.armed) { Text("Escanear solicitud de la PC") }
+                OutlinedButton(onClick = onImport, enabled = !state.busy && !state.armed) { Text("Importar solicitud TXT") }
+                if (state.pc.isNotEmpty()) {
+                    Text(if (state.continuous) "PC: ${state.pc} · conexión continua" else "PC: ${state.pc} · hasta ${state.count} documento(s)")
+                    Text("Compara esta huella con la que muestra tu PC:")
+                    Text(state.fingerprint, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall)
+                    Text("Autoriza solo solicitudes que hayas iniciado. El teléfono autoriza el lote y no muestra los documentos guardados en PC.")
             }
-            OutlinedTextField(state.can, onCan, label = { Text("CAN del DNI") }, singleLine = true,
-                enabled = !state.busy && !state.armed, visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword))
-            if (!state.continuous) OutlinedTextField(pin, { pin = it.filter { c -> c in '0'..'9' }.take(8) }, label = { Text("PIN de firma") }, singleLine = true,
-                enabled = !state.busy && !state.armed, visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword))
-            if (state.continuous) {
-                Card(Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(if (state.connected) "PC ↔ Android: conectados" else "PC ↔ Android: sin conexión")
-                        Text(when (state.cardState) {
-                            pe.gob.reniec.dnie.signing.link.SuiteCardState.ABSENT -> "DNI: sin conexión NFC. Acerca tu tarjeta."
-                            pe.gob.reniec.dnie.signing.link.SuiteCardState.DETECTED -> "DNI: NFC conectado; PACE se abrirá al iniciar el trabajo."
-                            pe.gob.reniec.dnie.signing.link.SuiteCardState.PREPARING -> "DNI: abriendo canal PACE. Mantén la tarjeta quieta."
-                            pe.gob.reniec.dnie.signing.link.SuiteCardState.READY -> "DNI: canal PACE listo para otro trabajo."
-                            pe.gob.reniec.dnie.signing.link.SuiteCardState.IN_USE -> "DNI: procesando solicitud. No retires la tarjeta."
-                            pe.gob.reniec.dnie.signing.link.SuiteCardState.REMOVED -> "DNI: retirado o desconectado. Puedes acercarlo de nuevo."
-                            pe.gob.reniec.dnie.signing.link.SuiteCardState.FAILED -> "DNI: sesión NFC fallida. Retira y vuelve a acercar la tarjeta."
-                            pe.gob.reniec.dnie.signing.link.SuiteCardState.CLOSED -> "DNI: sesión NFC cerrada."
-                        })
+            }
+            pe.gob.reniec.dnie.ui.design.FeatureSection("2 · Autorizar conexión") {
+                OutlinedTextField(state.can, onCan, label = { Text("CAN del DNI") }, singleLine = true,
+                    enabled = !state.busy && !state.armed, visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword))
+                if (!state.continuous) OutlinedTextField(pin, { pin = it.filter { c -> c in '0'..'9' }.take(8) }, label = { Text("PIN de firma") }, singleLine = true,
+                    enabled = !state.busy && !state.armed, visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword))
+                if (state.continuous) {
+                    Card(Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(if (state.connected) "PC ↔ Android: conectados" else "PC ↔ Android: sin conexión")
+                            Text(when (state.cardState) {
+                                pe.gob.reniec.dnie.signing.link.SuiteCardState.ABSENT -> "DNI: sin conexión NFC. Acerca tu tarjeta."
+                                pe.gob.reniec.dnie.signing.link.SuiteCardState.DETECTED -> "DNI: NFC conectado; PACE se abrirá al iniciar el trabajo."
+                                pe.gob.reniec.dnie.signing.link.SuiteCardState.PREPARING -> "DNI: abriendo canal PACE. Mantén la tarjeta quieta."
+                                pe.gob.reniec.dnie.signing.link.SuiteCardState.READY -> "DNI: canal PACE listo para otro trabajo."
+                                pe.gob.reniec.dnie.signing.link.SuiteCardState.IN_USE -> "DNI: procesando solicitud. No retires la tarjeta."
+                                pe.gob.reniec.dnie.signing.link.SuiteCardState.REMOVED -> "DNI: retirado o desconectado. Puedes acercarlo de nuevo."
+                                pe.gob.reniec.dnie.signing.link.SuiteCardState.FAILED -> "DNI: sesión NFC fallida. Retira y vuelve a acercar la tarjeta."
+                                pe.gob.reniec.dnie.signing.link.SuiteCardState.CLOSED -> "DNI: sesión NFC cerrada."
+                            })
+                        }
                     }
-                }
             }
             Text(state.message)
             if (!nfcEnabled) Text("Activa NFC para firmar.")
@@ -70,7 +72,7 @@ fun RemoteSigningScreen(state: RemoteSigningState, nfcEnabled: Boolean, addresse
             if (state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
             OutlinedButton(onClick = { pin = ""; onStop() }, enabled = state.busy || state.armed) { Text(if (state.continuous) "Cerrar conexión Suite" else "Cancelar") }
             Text("Salir o bloquear el teléfono termina la autorización. Nunca se reenvía una firma fallida.", style = MaterialTheme.typography.bodySmall)
-            TextButton(onClick = onBack) { Text("Volver") }
+            }
         }
     }
 }

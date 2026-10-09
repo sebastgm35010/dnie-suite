@@ -81,6 +81,8 @@ fun NfcTapPromptSheet(
 
     ModalBottomSheet(
         onDismissRequest = onCancel,
+        containerColor = MaterialTheme.colorScheme.surface,
+        shape = MaterialTheme.shapes.large,
         sheetState = sheetState
     ) {
         Column(

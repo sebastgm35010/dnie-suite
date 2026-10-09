@@ -46,18 +46,20 @@ fun IdentityScreen(viewModel: IdentityViewModel) {
         }
     }
     DisposableEffect(viewModel) { onDispose { viewModel.cancelReading() } }
-    Scaffold(topBar = { TopAppBar(title = { Text("Identidad del DNI") }) }) { padding ->
+    pe.gob.reniec.dnie.ui.design.FeatureScaffold("Identidad del DNI", "Documento ICAO", subtitle = "Datos e imágenes del chip, conservados por bloques independientes.") { padding ->
         LazyColumn(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(bottom = 24.dp)) {
             item {
-                Text("Lea los datos y las imágenes del chip. Cada bloque se procesa por separado; no necesita PIN.",
-                    style = MaterialTheme.typography.bodyMedium)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 12.dp)) {
-                    if (state.awaitingCard || state.reading) {
-                        OutlinedButton(onClick = viewModel::cancelReading) { Text("Cancelar") }
-                    } else {
-                        Button(onClick = viewModel::requestReading) { Text(if (state.document == null) "Leer DNI" else "Volver a leer") }
-                        if (state.document != null) TextButton(onClick = viewModel::clear) { Text("Borrar datos") }
+                pe.gob.reniec.dnie.ui.design.FeatureSection("Leer el documento") {
+                    Text("Lea los datos y las imágenes del chip. Cada bloque se procesa por separado; no necesita PIN.",
+                        style = MaterialTheme.typography.bodyMedium)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 12.dp)) {
+                        if (state.awaitingCard || state.reading) {
+                            OutlinedButton(onClick = viewModel::cancelReading) { Text("Cancelar") }
+                        } else {
+                            Button(onClick = viewModel::requestReading) { Text(if (state.document == null) "Leer DNI" else "Volver a leer") }
+                            if (state.document != null) TextButton(onClick = viewModel::clear) { Text("Borrar datos") }
+                        }
                     }
                 }
             }

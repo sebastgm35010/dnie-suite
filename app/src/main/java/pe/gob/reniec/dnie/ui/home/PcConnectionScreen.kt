@@ -14,14 +14,12 @@ import androidx.compose.ui.unit.dp
 /** Chooses existing, independently distributed features; transport setup stays in each module. */
 @Composable
 fun PcConnectionScreen(onBack: () -> Unit, onBridge: () -> Unit, onSuite: () -> Unit) {
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        item {
-            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver") }
-            Text("Conexión PC", style = MaterialTheme.typography.headlineMedium)
-            Text("Elige cómo utilizar tu DNI desde Windows.", style = MaterialTheme.typography.bodyLarge)
-        }
+    pe.gob.reniec.dnie.ui.design.FeatureScaffold("Conexión PC", "Tu DNI en Windows", onBack = onBack,
+        subtitle = "Elige cómo utilizar tu DNI desde el equipo.") { padding ->
+    LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         item { ModuleCard("Lector para otras aplicaciones", "Expone el DNI al sistema para ReFirma, Firma Perú y aplicaciones compatibles. Requiere el lector virtual instalado en Windows.", Icons.Default.Computer, onBridge) }
         item { ModuleCard("Suite propia de firma", "Envía documentos desde nuestra suite. El teléfono autoriza las operaciones del DNI sin exponer un lector a todo Windows.", Icons.Default.Description, onSuite) }
         item { Text("El emparejamiento, el transporte y el estado de la conexión se consultan dentro de cada módulo. No necesitas depuración USB para el modo por cable del puente.", style = MaterialTheme.typography.bodyMedium) }
     }
+}
 }

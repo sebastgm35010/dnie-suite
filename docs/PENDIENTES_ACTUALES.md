@@ -1,5 +1,7 @@
 # Pendientes actuales · Windows rc4 USB / Android rc4-usb
 
+2026-10-08 · Rediseño Android R2: APK74 / 3.0.0-alpha02-interface instalada. Apariencia Claro/Oscuro/Del sistema en Configuración; bóveda integrada en navegación principal y paleta común; interiores, vistas previas, Bridge/Suite y diagnóstico usan presentación compartida. Retorno PC y restauración de Inicio corregidos. 77 JVM pasan, uno omitido, 32 Android pasan. Flujos NFC físicos tras rediseño pendientes. [Detalle](architecture/REDISENO_ANDROID_3_0_R2.md).
+
 2026-10-08 · Rediseño Android R1: APK73 / 3.0.0-alpha01-interface instalada. Inicio, navegación de cinco secciones, acceso diferenciado Bridge/Suite y tema Aether adaptados a funciones reales. Cierre inicial de navegación corregido (lista lazy); 77 pruebas JVM pasan, una omitida y 28 Android pasan. Interiores y medición de rendimiento pendientes. [Detalle](architecture/REDISENO_ANDROID_3_0_R1.md).
 
 2026-10-08 · Rendimiento R2: capturas ADB fuera de instrumental localizan picos de medición de Compose al entrar en pestañas y recomposición al editar. Navegación caliente P50 6 ms; edición 11 ms. APK72 intacta; optimización y NFC físico pendientes. [Diagnóstico y límites](architecture/DIAGNOSTICO_RENDIMIENTO_UI_R2.md).

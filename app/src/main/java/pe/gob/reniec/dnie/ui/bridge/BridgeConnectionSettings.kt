@@ -7,7 +7,9 @@ import pe.gob.reniec.dnie.bridge.BridgeConnectionMethod
 @Composable fun BridgeConnectionSettings(method: BridgeConnectionMethod, enabled: Boolean, select: (BridgeConnectionMethod) -> Unit) {
     Column {
         BridgeConnectionMethod.entries.forEach { value ->
-            Row { RadioButton(method == value, { select(value) }, enabled = enabled); Text(value.title) }
+            Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                RadioButton(method == value, { select(value) }, enabled = enabled); Text(value.title, Modifier.weight(1f))
+            }
         }
         Text(when (method) {
             BridgeConnectionMethod.TAILSCALE -> "Requiere Tailscale en ambos equipos y permiso entre ellos en la tailnet. Sin JSON ni TLS adicional."

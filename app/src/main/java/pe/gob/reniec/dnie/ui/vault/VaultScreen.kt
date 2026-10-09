@@ -62,22 +62,24 @@ fun VaultScreen(state: VaultUiState, onCanChange: (String) -> Unit, onPinChange:
         selection = selection.intersect(state.items.map { it.id }.toSet())
     }
     fun finishSelection() { selection = emptySet(); selecting = false }
-    MaterialTheme(colorScheme = VaultColors) {
-        Scaffold(containerColor = VaultBackground, topBar = {
-            TopAppBar(title = { Text("Bóveda · ${page.title}") }, navigationIcon = {
-                IconButton(onClick = { if (page == VaultPage.FILES) onBack() else pageName = VaultPage.FILES.name }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver") }
-            }, actions = {
+    Box(Modifier.fillMaxSize()) {
+        pe.gob.reniec.dnie.ui.design.FeatureScaffold("Bóveda", "Archivos protegidos",
+            subtitle = if (page == VaultPage.FILES) "Tu biblioteca cifrada. Importa, organiza y conserva un respaldo completo." else page.title,
+            onBack = if (page == VaultPage.FILES) null else ({ pageName = VaultPage.FILES.name }),
+            actions = {
                 IconButton(onClick = { pageName = VaultPage.TOOLS.name }, enabled = !busy) {
                     Icon(Icons.Default.Settings, "Opciones de bóveda")
                 }
-            })
-        }) { padding ->
+            }) { padding ->
             // Separate scroll state per page; switching does not recreate the vault session.
             key(page) {
                 LazyColumn(Modifier.fillMaxSize().padding(padding).imePadding(),
                     state = when (page) { VaultPage.FILES -> filesScroll; VaultPage.DNI -> dniScroll
                         VaultPage.RECOVERY -> recoveryScroll; VaultPage.TOOLS -> toolsScroll },
                     contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    if (page != VaultPage.FILES) item("return") {
+                        TextButton(onClick = { pageName = VaultPage.FILES.name }) { Text("Mis archivos") }
+                    }
                     if (!state.riskAcknowledged) item("risk") {
                         Card { Column(Modifier.padding(16.dp)) {
                             Text("Conserva tus originales", style = MaterialTheme.typography.titleMedium)
@@ -105,17 +107,19 @@ fun VaultScreen(state: VaultUiState, onCanChange: (String) -> Unit, onPinChange:
                         }
                         VaultPage.FILES -> {
                             item("add") {
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Button(onClick = { importFiles.launch(arrayOf("*/*")) },
-                                        enabled = !busy && state.riskAcknowledged && state.pairedFingerprint != null,
-                                        modifier = Modifier.weight(1f)) { Text("Cifrar archivos") }
-                                    OutlinedButton(onClick = { importChoice = true },
-                                        enabled = !busy && state.riskAcknowledged, modifier = Modifier.weight(1f)) { Text("Importar cifrados") }
+                                pe.gob.reniec.dnie.ui.design.FeatureSection("Mis archivos", "Cifra nuevos archivos o recupera tu bóveda completa.") {
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        Button(onClick = { importFiles.launch(arrayOf("*/*")) },
+                                            enabled = !busy && state.riskAcknowledged && state.pairedFingerprint != null,
+                                            modifier = Modifier.weight(1f)) { Text("Cifrar archivos") }
+                                        OutlinedButton(onClick = { importChoice = true },
+                                            enabled = !busy && state.riskAcknowledged, modifier = Modifier.weight(1f)) { Text("Importar cifrados") }
+                                    }
+                                    OutlinedButton(onClick = { importingVault = false; pageName = VaultPage.RECOVERY.name },
+                                        enabled = !busy && state.riskAcknowledged && state.allItems > 0,
+                                        modifier = Modifier.fillMaxWidth()) { Text("Exportar bóveda") }
+                                    if (state.pairedFingerprint == null) TextButton(onClick = { pageName = VaultPage.DNI.name }) { Text("Vincular DNI para cifrar") }
                                 }
-                                OutlinedButton(onClick = { importingVault = false; pageName = VaultPage.RECOVERY.name },
-                                    enabled = !busy && state.riskAcknowledged && state.allItems > 0,
-                                    modifier = Modifier.fillMaxWidth()) { Text("Exportar bóveda") }
-                                if (state.pairedFingerprint == null) TextButton(onClick = { pageName = VaultPage.DNI.name }) { Text("Vincular DNI para cifrar") }
                             }
                             item("search") { VaultLibraryControls(state, library) }
                             if (state.incomingFiles > 0) item("incoming") {

@@ -97,14 +97,11 @@ fun PdfPlacementEditor(document: SigningDocument, name: String, dni: String, opt
     var size by remember { mutableStateOf(IntSize.Zero) }
     var pageText by remember(draft.pageNumber) { mutableStateOf(draft.pageNumber.toString()) }
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
-        Scaffold(Modifier.fillMaxSize(), topBar = {
-            TopAppBar(title = { Text("Colocar firma") }, navigationIcon = {
-                TextButton(onClick = onDismiss) { Text("Cancelar") }
-            }, actions = {
+        pe.gob.reniec.dnie.ui.design.FeatureScaffold("Colocar firma", "Vista previa PDF", modifier = Modifier.fillMaxSize(),
+            onBack = onDismiss, actions = {
                 TextButton(enabled = pageBitmap != null && !preparingStamp && stampError == null && stamp != null,
                     onClick = { onApply(draft) }) { Text("Aplicar") }
-            })
-        }) { insets ->
+            }) { insets ->
             Column(Modifier.fillMaxSize().padding(insets).navigationBarsPadding()) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                     TextButton(enabled = draft.pageNumber > 1, onClick = { draft = draft.copy(pageNumber = draft.pageNumber - 1) }) { Text("Anterior") }

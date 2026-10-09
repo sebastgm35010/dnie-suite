@@ -19,8 +19,8 @@ fun DiagnosticsScreen(state: DiagnosticsUiState, filter: (String?) -> Unit, olde
     clear: () -> Unit, export: (Uri) -> Unit, back: () -> Unit) {
     var confirming by remember { mutableStateOf(false) }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/x-ndjson")) { it?.let(export) }
-    Scaffold { padding -> Column(Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp)) {
-        Text("Diagnóstico de la app · temporal", style = MaterialTheme.typography.titleLarge)
+    pe.gob.reniec.dnie.ui.design.FeatureScaffold("Registro de eventos", "Desarrollo", onBack = back) { padding -> Column(Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp)) {
+        Text("Captura por capas", style = MaterialTheme.typography.titleMedium)
         Text("Captura persistente activa. Solo Borrar elimina el historial. Sin PIN, CAN, claves, contenido ni datos del titular.", style = MaterialTheme.typography.bodySmall)
         Row(Modifier.horizontalScroll(rememberScrollState())) {
             TextButton(back) { Text("Volver") }; TextButton(onClick = { picker.launch("dnie-diagnostico.jsonl") }) { Text("Exportar todo") }

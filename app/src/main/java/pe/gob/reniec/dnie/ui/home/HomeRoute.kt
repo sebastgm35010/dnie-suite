@@ -12,7 +12,7 @@ import pe.gob.reniec.dnie.ui.identity.IdentityViewModel
 @Composable
 fun HomeRoute(viewModel: CertificatesViewModel, identityViewModel: IdentityViewModel, onRead: () -> Unit, onIdentity: () -> Unit,
     onCertificates: () -> Unit, onPdf: () -> Unit, onBatch: () -> Unit,
-    onVault: () -> Unit, onPc: () -> Unit, onDevelopment: (() -> Unit)?) {
+    onVault: () -> Unit, onPc: () -> Unit, onSettings: () -> Unit, onDevelopment: (() -> Unit)?) {
     val summaries = remember(viewModel, identityViewModel) {
         combine(viewModel.uiState, identityViewModel.uiState) { state, identity ->
             HomeSummary((state as? CertificatesUiState.Loaded)?.certificates?.size ?: 0,
@@ -20,5 +20,5 @@ fun HomeRoute(viewModel: CertificatesViewModel, identityViewModel: IdentityViewM
         }.distinctUntilChanged()
     }
     val summary by summaries.collectAsStateWithLifecycle(initialValue = HomeSummary())
-    HomeScreen(summary, onRead, onIdentity, onCertificates, onPdf, onBatch, onVault, onPc, onDevelopment)
+    HomeScreen(summary, onRead, onIdentity, onCertificates, onPdf, onBatch, onVault, onPc, onSettings, onDevelopment)
 }

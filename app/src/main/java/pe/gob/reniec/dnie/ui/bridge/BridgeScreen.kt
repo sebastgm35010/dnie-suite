@@ -20,17 +20,17 @@ fun BridgeScreen(state: BridgeUiState, nfcEnabled: Boolean, onImport: () -> Unit
     var settings by remember { mutableStateOf(false) }
     var advanced by remember { mutableStateOf(false) }
     if (advanced) BridgeAdvancedSettings(state.settings, onSettings) { advanced = false }
-    Scaffold { padding ->
+    pe.gob.reniec.dnie.ui.design.FeatureScaffold("Puente NFC · PC", "Lector compatible", onBack = onBack, bottomBar = { pe.gob.reniec.dnie.ui.navigation.ActivityNavigation() }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text("Puente NFC · PC", style = MaterialTheme.typography.headlineSmall)
-            TextButton(onClick = { settings = !settings }, enabled = !state.busy && !state.armed) { Text("Configuración de conexión") }
-            TextButton(onClick = { advanced = true }, enabled = !state.busy && !state.armed) { Text("Configuración avanzada") }
-            if (settings || state.peer.isEmpty()) BridgeConnectionSettings(state.method, !state.busy && !state.armed, onMethod)
-            if (state.method == pe.gob.reniec.dnie.bridge.BridgeConnectionMethod.TAILSCALE) {
-                OutlinedTextField(value = state.tailnetHost, onValueChange = onTailnetHost,
-                    label = { Text("PC en Tailscale") },singleLine = true,modifier = Modifier.fillMaxWidth(), enabled = !state.busy && !state.armed)
-                Button(onClick = onConnectTailnet, enabled = !state.busy && !state.armed) { Text("Conectar por Tailscale") }
+            pe.gob.reniec.dnie.ui.design.FeatureSection("1 · Conexión", "Elige el transporte y empareja tu PC.") {
+                TextButton(onClick = { settings = !settings }, enabled = !state.busy && !state.armed) { Text("Configuración de conexión") }
+                TextButton(onClick = { advanced = true }, enabled = !state.busy && !state.armed) { Text("Configuración avanzada") }
+                if (settings || state.peer.isEmpty()) BridgeConnectionSettings(state.method, !state.busy && !state.armed, onMethod)
+                if (state.method == pe.gob.reniec.dnie.bridge.BridgeConnectionMethod.TAILSCALE) {
+                    OutlinedTextField(value = state.tailnetHost, onValueChange = onTailnetHost,
+                        label = { Text("PC en Tailscale") },singleLine = true,modifier = Modifier.fillMaxWidth(), enabled = !state.busy && !state.armed)
+                    Button(onClick = onConnectTailnet, enabled = !state.busy && !state.armed) { Text("Conectar por Tailscale") }
             }
             if(state.method == pe.gob.reniec.dnie.bridge.BridgeConnectionMethod.LOCAL_NETWORK)
                 Text("IP Wi-Fi del teléfono: ${state.localWifiAddress.ifEmpty { "Conecta a Wi-Fi" }} · puerto 39444")
@@ -52,20 +52,22 @@ fun BridgeScreen(state: BridgeUiState, nfcEnabled: Boolean, onImport: () -> Unit
                     style = MaterialTheme.typography.bodySmall)
                 } else Text("Conexión directa a la PC por Tailscale, con autorización de sesión.")
             }
-            OutlinedTextField(value = state.can, onValueChange = onCan, label = { Text("CAN del DNI") },
-                modifier = Modifier.fillMaxWidth(), enabled = !state.busy && !state.armed,
-                singleLine = true, visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword))
-            if (!nfcEnabled) Text("Activa NFC para conectar el DNI.", color = MaterialTheme.colorScheme.error)
-            Text(state.message)
-            Button(onClick = onAuthorize, enabled = nfcEnabled && state.peer.isNotEmpty() && (state.windowsPace || state.can.length == 6) && !state.busy && !state.armed) {
-                Text("Autorizar puente en esta PC")
+            }
+            pe.gob.reniec.dnie.ui.design.FeatureSection("2 · Autorizar DNI", "El acceso NFC y la conexión con Windows son sesiones distintas.") {
+                OutlinedTextField(value = state.can, onValueChange = onCan, label = { Text("CAN del DNI") },
+                    modifier = Modifier.fillMaxWidth(), enabled = !state.busy && !state.armed,
+                    singleLine = true, visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword))
+                if (!nfcEnabled) Text("Activa NFC para conectar el DNI.", color = MaterialTheme.colorScheme.error)
+                Text(state.message)
+                Button(onClick = onAuthorize, enabled = nfcEnabled && state.peer.isNotEmpty() && (state.windowsPace || state.can.length == 6) && !state.busy && !state.armed) {
+                    Text("Autorizar puente en esta PC")
             }
             if (state.busy) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             OutlinedButton(onClick = onStop, enabled = state.busy || state.armed) { Text("Detener sesión") }
             Text("Solo permanece activo en esta pantalla. Al salir o bloquear el teléfono se detiene. Retirar el DNI cierra la sesión de tarjeta y permite iniciar otra al acercarlo.",
                 style = MaterialTheme.typography.bodySmall)
-            TextButton(onClick = onBack) { Text("Volver") }
+            }
         }
     }
 }

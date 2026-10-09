@@ -24,6 +24,8 @@ class DnieApplication : Application() {
             get() = instance ?: throw IllegalStateException("DnieApplication no ha sido inicializada")
     }
 
+    val appearance by lazy { pe.gob.reniec.dnie.data.preferences.AppearancePreferences(this) }
+
     override fun onCreate() {
         super.onCreate()
         instance = this

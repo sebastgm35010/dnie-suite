@@ -32,10 +32,10 @@ internal fun ApduLogItem(entry: ApduLogEntry) {
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = when {
-                !entry.isSuccess -> Color(0xFFFFEBEE) // Error suave
-                entry.direction == ApduDirection.TX -> Color(0xFFF0F4F8)
-                entry.direction == ApduDirection.RX -> Color(0xFFF7F5FA)
-                else -> Color(0xFFF5F5F5)
+                !entry.isSuccess -> MaterialTheme.colorScheme.errorContainer // Error suave
+                entry.direction == ApduDirection.TX -> MaterialTheme.colorScheme.surface
+                entry.direction == ApduDirection.RX -> MaterialTheme.colorScheme.surfaceVariant
+                else -> MaterialTheme.colorScheme.surface
             }
         )
     ) {
@@ -49,9 +49,9 @@ internal fun ApduLogItem(entry: ApduLogEntry) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     // Badge de Dirección (TX / RX / INFO)
                     val badgeColor = when (entry.direction) {
-                        ApduDirection.TX -> Color(0xFF1565C0) // Azul
-                        ApduDirection.RX -> Color(0xFF6A1B9A) // Púrpura
-                        ApduDirection.INFO -> Color(0xFF616161) // Gris
+                        ApduDirection.TX -> MaterialTheme.colorScheme.primary // Azul
+                        ApduDirection.RX -> MaterialTheme.colorScheme.secondary // Púrpura
+                        ApduDirection.INFO -> MaterialTheme.colorScheme.onSurfaceVariant // Gris
                     }
                     Surface(
                         color = badgeColor,
@@ -59,7 +59,7 @@ internal fun ApduLogItem(entry: ApduLogEntry) {
                     ) {
                         Text(
                             text = " ${entry.direction.name} ",
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.surface,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -92,7 +92,7 @@ internal fun ApduLogItem(entry: ApduLogEntry) {
                         text = entry.apduHex,
                         fontFamily = FontFamily.Monospace,
                         fontSize = 11.sp,
-                        color = if (entry.direction == ApduDirection.TX) Color(0xFF0D47A1) else Color(0xFF4A148C)
+                        color = if (entry.direction == ApduDirection.TX) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
                     )
                 }
             }
@@ -103,12 +103,12 @@ internal fun ApduLogItem(entry: ApduLogEntry) {
                 Spacer(modifier = Modifier.height(4.dp))
                 val sw = statusWordHex.uppercase()
                 val (badgeBackground, badgeText, statusLabel) = when {
-                    sw == "9000" || sw.startsWith("90 00") -> Triple(Color(0xFF2E7D32), "90 00", "OK")
-                    sw.startsWith("63C") || sw.startsWith("63 C") -> Triple(Color(0xFFF57F17), sw, "PIN Inválido")
-                    sw.startsWith("6983") || sw.startsWith("69 83") -> Triple(Color(0xFFC62828), sw, "BLOQUEADO")
-                    sw.startsWith("6B00") || sw.startsWith("6B 00") -> Triple(Color(0xFF757575), sw, "Fin de archivo")
-                    sw.startsWith("6282") || sw.startsWith("62 82") -> Triple(Color(0xFF2E7D32), sw, "Fin de EF")
-                    else -> Triple(Color(0xFFC62828), sw, "Error")
+                    sw == "9000" || sw.startsWith("90 00") -> Triple(MaterialTheme.colorScheme.secondary, "90 00", "OK")
+                    sw.startsWith("63C") || sw.startsWith("63 C") -> Triple(MaterialTheme.colorScheme.tertiary, sw, "PIN Inválido")
+                    sw.startsWith("6983") || sw.startsWith("69 83") -> Triple(MaterialTheme.colorScheme.error, sw, "BLOQUEADO")
+                    sw.startsWith("6B00") || sw.startsWith("6B 00") -> Triple(MaterialTheme.colorScheme.outline, sw, "Fin de archivo")
+                    sw.startsWith("6282") || sw.startsWith("62 82") -> Triple(MaterialTheme.colorScheme.secondary, sw, "Fin de EF")
+                    else -> Triple(MaterialTheme.colorScheme.error, sw, "Error")
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -123,7 +123,7 @@ internal fun ApduLogItem(entry: ApduLogEntry) {
                     ) {
                         Text(
                             text = " $badgeText ($statusLabel) ",
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.surface,
                             fontFamily = FontFamily.Monospace,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold

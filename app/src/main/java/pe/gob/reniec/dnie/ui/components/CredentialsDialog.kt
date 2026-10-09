@@ -87,6 +87,8 @@ fun CredentialsDialog(
     val isValid = loaded && isCanValid && isPinValid
 
     AlertDialog(
+        containerColor = MaterialTheme.colorScheme.surface,
+        shape = MaterialTheme.shapes.large,
         onDismissRequest = onDismiss,
         icon = {
             Icon(

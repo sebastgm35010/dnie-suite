@@ -39,7 +39,7 @@ fun HexViewer(
 
     Surface(
         shape = MaterialTheme.shapes.small,
-        color = Color(0xFF1E1E1E),
+        color = MaterialTheme.colorScheme.surfaceVariant,
         modifier = modifier.fillMaxWidth()
     ) {
         Box(
@@ -53,7 +53,7 @@ fun HexViewer(
                     fontFamily = FontFamily.Monospace,
                     fontSize = 11.sp,
                     lineHeight = 16.sp,
-                    color = Color(0xFFD4D4D4)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }

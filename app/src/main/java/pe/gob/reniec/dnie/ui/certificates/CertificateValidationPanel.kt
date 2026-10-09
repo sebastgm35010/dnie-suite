@@ -26,9 +26,8 @@ fun CertificateValidationPanel(certificate: CertificateInfo) {
     val state by model.state.collectAsStateWithLifecycle()
     LaunchedEffect(certificate.sha256FingerprintHex) { model.clear() }
     DisposableEffect(Unit) { onDispose { model.clear() } }
-    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Comprobación del certificado", style = MaterialTheme.typography.titleMedium)
+    Box(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+    pe.gob.reniec.dnie.ui.design.FeatureSection("Comprobación del certificado") {
         OutlinedButton(enabled = !state.checking, onClick = {
             model.check(certificate.rawDerBytes, certificate.sha256FingerprintHex, certificate.type == CertificateType.SIGNATURE)
         }) { Text(if (state.checking) "Consultando estado…" else "Comprobar confianza y revocación") }
@@ -74,4 +73,5 @@ fun CertificateValidationPanel(certificate: CertificateInfo) {
             }
         }
     }
+}
 }

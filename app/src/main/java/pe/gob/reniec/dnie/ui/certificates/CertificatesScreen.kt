@@ -95,40 +95,14 @@ fun CertificatesScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Mi DNIe", style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
-                ),
-                actions = {
-                    TextButton(onClick = onOpenSuite, enabled = uiState !is CertificatesUiState.ReadingCard) {
-                        Text("Suite", color = MaterialTheme.colorScheme.onPrimary)
-                    }
-                    TextButton(onClick = onOpenBridge, enabled = uiState !is CertificatesUiState.ReadingCard) {
-                        Text("PC", color = MaterialTheme.colorScheme.onPrimary)
-                    }
-                    TextButton(onClick = onOpenVault) {
-                        Icon(Icons.Default.Lock, contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text("Bóveda", color = MaterialTheme.colorScheme.onPrimary)
-                    }
-                    IconButton(onClick = { viewModel.requestCanEntry() }, enabled=uiState !is CertificatesUiState.ReadingCard) {
-                        Icon(
-                            imageVector = Icons.Default.Nfc,
-                            contentDescription = "Leer DNIe con NFC"
-                        )
-                    }
-                }
-            )
-        },
-        modifier = modifier
-    ) { innerPadding ->
+    pe.gob.reniec.dnie.ui.design.FeatureScaffold(
+        title = "Mi DNIe", category = "Certificados e identidad",
+        subtitle = "Una lectura pública del DNI. Revisa cada certificado y su confianza por separado.",
+        modifier = modifier, actions = {
+            IconButton(onClick = { viewModel.requestCanEntry() }, enabled = uiState !is CertificatesUiState.ReadingCard) {
+                Icon(Icons.Default.Nfc, "Leer DNIe con NFC")
+            }
+        }) { innerPadding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()

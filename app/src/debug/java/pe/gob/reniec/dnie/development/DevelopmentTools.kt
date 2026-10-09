@@ -38,3 +38,5 @@ fun developmentDestinations(): List<Screen> = listOf(Screen.Console)
     val context = LocalContext.current
     TextButton(onClick = { context.startActivity(Intent(context, DiagnosticsActivity::class.java)) }) { Text("Diagnóstico de desarrollo") }
 }
+
+fun cancelDevelopment(controller: DevelopmentController) { controller.cancelCardProbe() }

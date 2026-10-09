@@ -46,6 +46,7 @@ class MainActivity : ComponentActivity() {
     private val identityViewModel: IdentityViewModel by viewModels()
     private val vaultViewModel: VaultViewModel by viewModels()
     private var currentRoute: String? = null
+    private val requestedDestination = androidx.compose.runtime.mutableStateOf<String?>(null)
     private var frameDiagnostics: pe.gob.reniec.dnie.diagnostics.UiFrameDiagnostics? = null
 
     private val nfcReaderManager by lazy {
@@ -87,9 +88,12 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        requestedDestination.value = intent.getStringExtra("destination")
         setContent {
             DnieTheme {
                 NavGraph(
+                    requestedDestination = requestedDestination.value,
+                    onDestinationConsumed = { requestedDestination.value = null; intent.removeExtra("destination") },
                     certificatesViewModel = certificatesViewModel,
                     signerViewModel = signerViewModel,
                     batchSignerViewModel = batchSignerViewModel,
@@ -111,6 +115,16 @@ class MainActivity : ComponentActivity() {
                         } else startActivity(Intent(this, pe.gob.reniec.dnie.ui.suite.RemoteSigningActivity::class.java))
                     },
                     onRouteChanged = {
+                        if (currentRoute != it) {
+                            when (currentRoute) {
+                                Screen.Vault.route -> { vaultViewModel.clearSelection(); vaultViewModel.cancel() }
+                                Screen.Certificates.route -> { certificatesViewModel.cancelCanEntry(); certificatesViewModel.cancelReading() }
+                                Screen.Signer.route -> if (signerViewModel.busy) signerViewModel.cancelSigning()
+                                Screen.BatchSigner.route -> if (batchSignerViewModel.busy) batchSignerViewModel.cancelSigning()
+                                Screen.Identity.route -> identityViewModel.cancelReading()
+                                Screen.Console.route -> pe.gob.reniec.dnie.development.cancelDevelopment(consoleViewModel)
+                            }
+                        }
                         currentRoute = it
                         pe.gob.reniec.dnie.diagnostics.DiagnosticLog.event("navigation", "route", "state" to it, "layer" to "ui")
                         frameDiagnostics?.onRoute(it)
@@ -150,6 +164,7 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        requestedDestination.value = intent.getStringExtra("destination")
         vaultViewModel.receiveSharedFiles(pe.gob.reniec.dnie.data.vault.VaultShareIntake.read(intent))
         @Suppress("DEPRECATION")
         val tag = intent.getParcelableExtra<Tag>(NfcAdapter.EXTRA_TAG)
@@ -190,7 +205,7 @@ class MainActivity : ComponentActivity() {
     private fun dispatchNfcTag(tag: Tag) {
         pe.gob.reniec.dnie.diagnostics.DiagnosticLog.event("nfc", "tag_detected", "state" to currentRoute)
         // Landing and connection chooser are navigation surfaces, not card operations.
-        if (currentRoute == Screen.Home.route || currentRoute == Screen.Pc.route) return
+        if (currentRoute == Screen.Home.route || currentRoute == Screen.Pc.route || currentRoute == "settings") return
         if (certificatesViewModel.busy || identityViewModel.uiState.value.reading) return
         if (vaultViewModel.uiState.value.running) return
         if (signerViewModel.uiState.value is SignerUiState.Signing || batchSignerViewModel.uiState.value is SignerUiState.Signing) return

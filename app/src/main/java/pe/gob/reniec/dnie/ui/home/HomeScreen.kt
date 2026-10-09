@@ -18,10 +18,14 @@ data class HomeSummary(val certificates: Int = 0, val identityAvailable: Boolean
 @Composable
 fun HomeScreen(summary: HomeSummary, onRead: () -> Unit, onIdentity: () -> Unit,
     onCertificates: () -> Unit, onPdf: () -> Unit, onBatch: () -> Unit,
-    onVault: () -> Unit, onPc: () -> Unit, onDevelopment: (() -> Unit)? = null) {
+    onVault: () -> Unit, onPc: () -> Unit, onSettings: () -> Unit = {}, onDevelopment: (() -> Unit)? = null) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("DNIe", style = MaterialTheme.typography.titleMedium)
+                IconButton(onClick = onSettings) { Icon(Icons.Default.Settings, "Configuración") }
+            }
             Text("DNIe · IDENTIDAD Y FIRMA", style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.secondary, fontFamily = FontFamily.Monospace)
             Text("Inicio", style = MaterialTheme.typography.headlineLarge)

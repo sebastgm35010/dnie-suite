@@ -14,3 +14,5 @@ fun developmentDestinations(): List<Screen> = emptyList()
 fun defaultTailnetHost() = ""
 @Composable fun DevelopmentScreen(controller: DevelopmentController) {}
 @Composable fun DevelopmentEntry() {}
+
+fun cancelDevelopment(controller: DevelopmentController) { Unit }

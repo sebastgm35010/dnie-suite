@@ -84,22 +84,15 @@ fun ConsoleScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Consola APDU") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
-                ),
-                actions = {
+    pe.gob.reniec.dnie.ui.design.FeatureScaffold(
+        title = "Consola APDU", category = "Desarrollo", modifier = modifier,
+        actions = {
                     // Alternar Auto-Scroll
                     IconButton(onClick = { viewModel.toggleAutoScroll() }) {
                         Icon(
                             imageVector = Icons.Default.KeyboardDoubleArrowDown,
                             contentDescription = "Auto Scroll",
-                            tint = if (uiState.autoScroll) Color.White else Color.White.copy(alpha = 0.5f)
+                            tint = if (uiState.autoScroll) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                         )
                     }
 
@@ -124,10 +117,7 @@ fun ConsoleScreen(
                     IconButton(onClick = { viewModel.clearLogs() }) {
                         Icon(imageVector = Icons.Default.DeleteSweep, contentDescription = "Limpiar")
                     }
-                }
-            )
-        },
-        modifier = modifier
+        }
     ) { innerPadding ->
         Column(
             modifier = Modifier

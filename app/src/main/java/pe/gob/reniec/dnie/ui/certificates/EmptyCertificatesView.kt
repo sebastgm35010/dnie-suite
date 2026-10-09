@@ -1,67 +1,40 @@
 package pe.gob.reniec.dnie.ui.certificates
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CreditCard
+import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Nfc
-import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import pe.gob.reniec.dnie.ui.design.FeatureSection
 
 @Composable
-internal fun EmptyCertificatesView(
-    onScanClicked: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.CreditCard,
-                contentDescription = null,
-                modifier = Modifier.size(80.dp),
-                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
-            )
-            Text(
-                text = "Lee tu DNIe",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "Aproxime su DNIe al sensor NFC para leer sus certificados públicos y los datos de identidad ICAO disponibles, manteniéndolo inmóvil durante ambas etapas.\n\nEsta operación no requiere PIN.",
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Button(onClick = onScanClicked) {
-                Icon(imageVector = Icons.Default.Nfc, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Leer identidad y certificados")
+internal fun EmptyCertificatesView(onScanClicked: () -> Unit) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
+            Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Icon(Icons.Default.Badge, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(36.dp))
+                Text("Lee tu DNIe", style = MaterialTheme.typography.titleLarge)
+                Text("Identidad ICAO y certificados públicos en una misma lectura. No necesitas PIN.")
+                Button(onClick = onScanClicked, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Default.Nfc, null); Spacer(Modifier.width(8.dp))
+                    Text("Leer identidad y certificados")
+                }
             }
+        }
+        FeatureSection("Cómo leer", "Necesitas el CAN de seis dígitos impreso en el documento.") {
+            Text("1 · Autoriza la lectura e introduce el CAN.")
+            Text("2 · Acerca el DNI al sensor NFC del teléfono.")
+            Text("3 · Mantenlo inmóvil hasta completar ambas etapas.")
+        }
+        FeatureSection("Resultados independientes") {
+            Text("Los bloques de identidad y los certificados disponibles se conservan por separado. Un dato ausente no oculta los demás.")
+            Text("Leer un certificado no demuestra por sí solo su confianza. Puedes comprobar vigencia, revocación y cadena desde su ficha.", style = MaterialTheme.typography.bodySmall)
         }
     }
 }

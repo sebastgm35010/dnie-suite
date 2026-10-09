@@ -20,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.ui.Modifier
@@ -55,6 +56,8 @@ fun NavGraph(
     consoleViewModel: DevelopmentController = viewModel(),
     identityViewModel: IdentityViewModel = viewModel(),
     vaultViewModel: VaultViewModel = viewModel(),
+    requestedDestination: String? = null,
+    onDestinationConsumed: () -> Unit = {},
     onRouteChanged: (String?) -> Unit = {},
     onOpenBridge: () -> Unit = {},
     onOpenSuite: () -> Unit = {}
@@ -62,17 +65,31 @@ fun NavGraph(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     LaunchedEffect(currentRoute) { onRouteChanged(currentRoute) }
+    LaunchedEffect(requestedDestination, currentRoute) {
+        // A return intent can arrive before NavHost installs its graph on cold start.
+        if (currentRoute != null && requestedDestination != null && Screen.items.any { it.route == requestedDestination }) {
+            navController.navigate(requestedDestination) {
+                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                launchSingleTop = true; restoreState = requestedDestination != Screen.Home.route
+            }
+            onDestinationConsumed()
+        }
+    }
     IdentitySignatureBridge(identityViewModel, certificatesViewModel, signerViewModel, batchSignerViewModel)
     val incomingFiles by remember(vaultViewModel) {
         vaultViewModel.uiState.map { it.incomingFiles }.distinctUntilChanged()
     }.collectAsStateWithLifecycle(initialValue = 0)
     LaunchedEffect(incomingFiles) {
-        if (incomingFiles > 0) navController.navigate(Screen.Vault.route) { launchSingleTop = true }
+        if (incomingFiles > 0) {
+            // Await graph initialization, but deliver this intake once rather than trapping tab changes.
+            navController.currentBackStackEntryFlow.first()
+            navController.navigate(Screen.Vault.route) { launchSingleTop = true }
+        }
     }
 
     Scaffold(
         bottomBar = {
-            if (currentRoute != Screen.Vault.route) NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
+            NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                 Screen.items.forEach { screen ->
                     NavigationBarItem(
                         icon = { Icon(screen.icon, contentDescription = screen.title) },
@@ -86,7 +103,8 @@ fun NavGraph(
                                         saveState = true
                                     }
                                     launchSingleTop = true
-                                    restoreState = true
+                                    // Restoring the start destination can resurrect its saved child (e.g. Vault).
+                                    restoreState = screen != Screen.Home
                                 }
                             }
                         }
@@ -118,7 +136,12 @@ fun NavGraph(
                     onIdentity = { open(Screen.Identity.route) }, onCertificates = { open(Screen.Certificates.route) },
                     onPdf = { open(Screen.Signer.route) }, onBatch = { open(Screen.BatchSigner.route) },
                     onVault = { open(Screen.Vault.route) }, onPc = { open(Screen.Pc.route) },
+                    onSettings = { open("settings") },
                     onDevelopment = if (pe.gob.reniec.dnie.BuildConfig.DEBUG) ({ open(Screen.Console.route) }) else null)
+            }
+            composable("settings") {
+                val app = LocalContext.current.applicationContext as pe.gob.reniec.dnie.DnieApplication
+                pe.gob.reniec.dnie.ui.settings.SettingsScreen(app.appearance) { navController.popBackStack() }
             }
             composable(Screen.Pc.route) {
                 PcConnectionScreen(onBack = { navController.popBackStack() }, onBridge = onOpenBridge, onSuite = onOpenSuite)

@@ -70,7 +70,7 @@ fun CertificateCard(
                 color = if (certificate.isExpired) {
                     MaterialTheme.colorScheme.errorContainer
                 } else {
-                    Color(0xFFE8F5E9) // Verde claro
+                    MaterialTheme.colorScheme.secondaryContainer // Verde claro
                 },
                 shape = MaterialTheme.shapes.small,
                 modifier = Modifier.fillMaxWidth()
@@ -88,21 +88,21 @@ fun CertificateCard(
                             color = if (certificate.isExpired) {
                                 MaterialTheme.colorScheme.onErrorContainer
                             } else {
-                                Color(0xFF1B5E20) // Verde oscuro
+                                MaterialTheme.colorScheme.onSecondaryContainer // Verde oscuro
                             }
                         )
                         if (!certificate.isExpired && certificate.daysRemaining > 0) {
                             Text(
                                 text = "${certificate.daysRemaining} días restantes de vigencia",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Color(0xFF2E7D32)
+                                color = MaterialTheme.colorScheme.secondary
                             )
                         }
                     }
                     Icon(
                         imageVector = if (certificate.isExpired) Icons.Default.Cancel else Icons.Default.CheckCircle,
                         contentDescription = null,
-                        tint = if (certificate.isExpired) MaterialTheme.colorScheme.error else Color(0xFF2E7D32),
+                        tint = if (certificate.isExpired) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondary,
                         modifier = Modifier.size(24.dp)
                     )
                 }

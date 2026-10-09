@@ -29,7 +29,7 @@ class VaultPreviewActivity : ComponentActivity() {
         val reader = VaultPreviewReader(file, intent.getStringExtra("mime").orEmpty())
         val name = intent.getStringExtra("name").orEmpty()
         setContent {
-            MaterialTheme(colorScheme = VaultColors) {
+            pe.gob.reniec.dnie.ui.theme.DnieTheme {
                 if (previewVisible) PreviewContent(name, reader, onClose = { finish() })
                 else Surface(modifier = Modifier.fillMaxSize()) {}
             }
@@ -58,9 +58,7 @@ private fun PreviewContent(name: String, reader: VaultPreviewReader, onClose: ()
         catch (_: Exception) { error = "No se pudo mostrar este contenido. Puedes descifrarlo a un archivo para abrirlo con otra aplicación." }
         finally { loading = false }
     }
-    Scaffold(topBar = { TopAppBar(title = { Text(name, maxLines = 2) }, navigationIcon = {
-        TextButton(onClick = onClose) { Text("Cerrar") }
-    }) }) { padding ->
+    pe.gob.reniec.dnie.ui.design.FeatureScaffold(name, "Vista privada", onBack = onClose) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Vista privada · se cierra al salir", style = MaterialTheme.typography.labelMedium)
             if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())

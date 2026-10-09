@@ -57,7 +57,7 @@ internal fun SectionLabel(text: String) {
 @Composable
 internal fun VaultResult(running: Boolean, awaitingCard: Boolean, verified: Boolean,
                         message: String?, restoredName: String?) {
-    Card(colors = CardDefaults.cardColors(containerColor = VaultSurface), shape = RoundedCornerShape(20.dp)) {
+    Card(colors = CardDefaults.cardColors(containerColor = VaultSurface), shape = RoundedCornerShape(12.dp)) {
         Column(Modifier.fillMaxWidth().padding(18.dp).semantics { liveRegion = LiveRegionMode.Polite },
             verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (running || awaitingCard) LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), color = VaultAccent)

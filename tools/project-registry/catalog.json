@@ -27,7 +27,8 @@
     "docs/architecture/RETIRO_PASSKEYS_R3.md": "current_feature_retirement_and_upgrade_cleanup",
     "docs/architecture/DIAGNOSTICOS_DIRECTOS_Y_CAPAS_R1.md": "current_diagnostics_runtime_and_direct_export",
     "docs/architecture/DIAGNOSTICO_RENDIMIENTO_UI_R2.md": "current_ui_performance_diagnosis",
-    "docs/architecture/REDISENO_ANDROID_3_0_R1.md": "current_android_redesign_3_0_first_stage"
+    "docs/architecture/REDISENO_ANDROID_3_0_R1.md": "current_android_redesign_3_0_first_stage",
+    "docs/architecture/REDISENO_ANDROID_3_0_R2.md": "current_android_ui_architecture"
   },
   "features": [
     {
@@ -422,22 +423,43 @@
     {
       "id": "android_redesign",
       "name": "Interfaz Android 3.0 basada en Aether",
-      "status": "first_stage_runtime_validated",
-      "note": "2026-10-08 · Rediseño Android R1: APK73 / 3.0.0-alpha01-interface instalada. Inicio, navegación de cinco secciones, acceso diferenciado Bridge/Suite y tema Aether adaptados a funciones reales. Cierre inicial de navegación corregido (lista lazy); 77 pruebas JVM pasan, una omitida y 28 Android pasan. Interiores y medición de rendimiento pendientes.",
-      "evidence": "docs/architecture/REDISENO_ANDROID_3_0_R1.md",
+      "status": "implemented_runtime_validated",
+      "note": "2026-10-08 · Rediseño Android R2: APK74 / 3.0.0-alpha02-interface instalada. Apariencia Claro/Oscuro/Del sistema en Configuración; bóveda integrada en navegación principal y paleta común; interiores, vistas previas, Bridge/Suite y diagnóstico usan presentación compartida. Retorno PC y restauración de Inicio corregidos. 77 JVM pasan, uno omitido, 32 Android pasan. Flujos NFC físicos tras rediseño pendientes.",
+      "evidence": "docs/architecture/REDISENO_ANDROID_3_0_R2.md",
       "files": {
         "frontend": [
           "app/src/main/java/pe/gob/reniec/dnie/ui/home/",
           "app/src/main/java/pe/gob/reniec/dnie/ui/navigation/",
-          "app/src/main/java/pe/gob/reniec/dnie/ui/theme/"
+          "app/src/main/java/pe/gob/reniec/dnie/ui/theme/",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/design/FeatureScaffold.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/settings/SettingsScreen.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/navigation/ActivityNavigation.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/certificates/CertificatesScreen.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/certificates/EmptyCertificatesView.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/certificates/CertificateValidationPanel.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/components/CertificateCard.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/identity/IdentityScreen.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/signer/SignerScreen.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/signer/PdfPlacementEditor.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/vault/VaultScreen.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/vault/VaultTheme.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/vault/VaultPreviewActivity.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/bridge/BridgeScreen.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/bridge/BridgeAdvancedSettings.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/suite/RemoteSigningScreen.kt"
         ],
         "test": [
           "app/src/androidTest/java/pe/gob/reniec/dnie/ui/HomeNavigationTest.kt",
           "app/src/androidTest/java/pe/gob/reniec/dnie/ui/UiInteractionStressTest.kt",
-          "app/src/test/java/pe/gob/reniec/dnie/ui/NavigationDestinationsTest.kt"
+          "app/src/test/java/pe/gob/reniec/dnie/ui/NavigationDestinationsTest.kt",
+          "app/src/androidTest/java/pe/gob/reniec/dnie/ui/RedesignContinuityTest.kt"
         ],
         "architecture": [
-          "docs/architecture/REDISENO_ANDROID_3_0_R1.md"
+          "docs/architecture/REDISENO_ANDROID_3_0_R1.md",
+          "docs/architecture/REDISENO_ANDROID_3_0_R2.md"
+        ],
+        "adapter": [
+          "app/src/main/java/pe/gob/reniec/dnie/data/preferences/AppearancePreferences.kt"
         ]
       },
       "depends_on": [
@@ -588,17 +610,24 @@
     {
       "id": "android_redesign_inner_screens",
       "feature": "android_redesign",
+      "state": "closed",
+      "description": "Presentación común aplicada a todos los interiores y vistas previas, configuración de apariencia y navegación continua de bóveda/PC. 32 Android pasan. Validación NFC física y rendimiento con biblioteca real se conservan como pendientes separados.",
+      "evidence": "docs/architecture/REDISENO_ANDROID_3_0_R2.md"
+    },
+    {
+      "id": "android_redesign_physical_workflows",
+      "feature": "android_redesign",
       "state": "open",
-      "description": "Continuar el rediseño de interiores identidad/certificados/firma/bóveda y configuración Bridge/Suite. Medir entrada, edición y biblioteca real; preservar motores, lectura por bloques, recuperación y exclusión debug de producción.",
-      "evidence": "docs/architecture/REDISENO_ANDROID_3_0_R1.md"
+      "description": "Comprobar lectura/firma/recuperación NFC física y biblioteca real tras rediseño R2. No se modificaron motores; 32 pruebas Android sintéticas/navegación pasan.",
+      "evidence": "docs/architecture/REDISENO_ANDROID_3_0_R2.md"
     }
   ],
   "facts": [
     {
       "id": "android_current",
-      "category": "artifact",
-      "value": "APK73 / 3.0.0-alpha01-interface instalada por ADB. D:/DNIeToolchain/AndroidPackages/dnie-evolution-3.0.0-alpha01-interface-debug.apk. SHA256 88D5C658B8B03C84F55820C7F2BE02F400A60DC446FC0489E47CE74741487384. Primera etapa UI; cierre de navegación corregido, 77 JVM pasan + un omitido, 28 Android pasan; arranque normal final visible.",
-      "evidence": "docs/architecture/REDISENO_ANDROID_3_0_R1.md"
+      "category": "installed_ui_validated",
+      "value": "2026-10-08 · Rediseño Android R2: APK74 / 3.0.0-alpha02-interface instalada. Apariencia Claro/Oscuro/Del sistema en Configuración; bóveda integrada en navegación principal y paleta común; interiores, vistas previas, Bridge/Suite y diagnóstico usan presentación compartida. Retorno PC y restauración de Inicio corregidos. 77 JVM pasan, uno omitido, 32 Android pasan. Flujos NFC físicos tras rediseño pendientes.",
+      "evidence": "docs/architecture/REDISENO_ANDROID_3_0_R2.md"
     },
     {
       "id": "desktop_current",
