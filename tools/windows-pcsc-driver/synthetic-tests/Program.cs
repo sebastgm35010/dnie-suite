@@ -57,7 +57,8 @@ try
         try { outsider.Attach(atr, 2); throw new Exception("duplicate attach succeeded"); }
         catch (Win32Exception) { checks.Add("second attach rejected"); }
     }
-    Check(backend.Poll() == null, "no pending request gives empty poll");
+    // Publishing a reader can immediately make SCardSvr enqueue a reset.
+    // Let the worker consume it; polling here would deliver and lose that request.
     stop = new CancellationTokenSource();
     worker = Task.Run(async () =>
     {

@@ -40,6 +40,7 @@ WDF_DECLARE_CONTEXT_TYPE_WITH_NAME(ReaderContext, Reader);
 EVT_WDF_DRIVER_DEVICE_ADD DeviceAdd;
 EVT_WDF_IO_QUEUE_IO_DEVICE_CONTROL DeviceControl;
 EVT_WDF_REQUEST_CANCEL CancelPending;
+EVT_WDF_IO_QUEUE_IO_STOP IoStop;
 EVT_WDF_TIMER TimerTick;
 EVT_WDF_FILE_CLEANUP FileCleanup;
 EVT_WDF_DEVICE_D0_EXIT D0Exit;
@@ -74,7 +75,7 @@ static void FinishPending(ReaderContext* context, NTSTATUS status, size_t inform
     WdfRequestCompleteWithInformation(pending, status, information);
 }
 
-static void Detach(ReaderContext* context) {
+static void Detach(ReaderContext* context, NTSTATUS pendingStatus = STATUS_DEVICE_NOT_CONNECTED) {
     context->attached = false;
     context->backendOwner = nullptr;
     context->state = SCARD_ABSENT;
@@ -82,7 +83,7 @@ static void Detach(ReaderContext* context) {
     context->supported = 0;
     context->atrLength = 0;
     SecureZeroMemory(context->atr, sizeof(context->atr));
-    FinishPending(context, STATUS_DEVICE_NOT_CONNECTED);
+    FinishPending(context, pendingStatus);
     Notify(context->absentWaiters);
 }
 
@@ -95,9 +96,23 @@ void CancelPending(WDFREQUEST request) {
             context->delivered = false;
             SecureZeroMemory(context->payload, context->payloadLength);
             context->payloadLength = 0;
+            // A canceled command may already have executed on the physical card.
+            // Invalidate this backend session; never accept another APDU on it.
+            Detach(context);
         }
     }
     WdfRequestComplete(request, STATUS_CANCELLED);
+}
+
+void IoStop(WDFQUEUE queue, WDFREQUEST request, ULONG) {
+    auto context = Reader(WdfIoQueueGetDevice(queue));
+    Guard guard(context->lock);
+    // This queue only retains the single QueueBackend request. Synchronous IOCTLs
+    // and requests forwarded to manual queues are no longer driver-owned here.
+    // If cancellation won UnmarkCancelable, CancelPending owns completion.
+    if (context->pending == request) Detach(context, STATUS_CANCELLED);
+    // Complete, never StopAcknowledge(TRUE): replaying a transmit/reset after
+    // resume can repeat a signature or corrupt the remote secure-messaging SSC.
 }
 
 void TimerTick(WDFTIMER timer) {
@@ -118,12 +133,17 @@ void FileCleanup(WDFFILEOBJECT file) {
 
 NTSTATUS D0Exit(WDFDEVICE device, WDF_POWER_DEVICE_STATE) {
     auto context = Reader(device);
-    Guard guard(context->lock);
-    context->powered = false;
-    WdfTimerStop(context->timer, FALSE);
-    Detach(context);
-    WdfIoQueuePurge(context->presentWaiters, WDF_NO_EVENT_CALLBACK, WDF_NO_CONTEXT);
-    WdfIoQueuePurge(context->absentWaiters, WDF_NO_EVENT_CALLBACK, WDF_NO_CONTEXT);
+    {
+        Guard guard(context->lock);
+        context->powered = false;
+        WdfTimerStop(context->timer, FALSE);
+        Detach(context);
+    }
+    // These are non-power-managed manual queues containing only framework-owned
+    // presence waits. Purge to completion outside our lock; D0Entry may then
+    // safely restart them, without an asynchronous purge racing the new session.
+    WdfIoQueuePurgeSynchronously(context->presentWaiters);
+    WdfIoQueuePurgeSynchronously(context->absentWaiters);
     return STATUS_SUCCESS;
 }
 
@@ -174,6 +194,7 @@ static NTSTATUS QueueBackend(ReaderContext* context, WDFREQUEST request, ULONG o
 void DeviceControl(WDFQUEUE queue, WDFREQUEST request, size_t outputLength, size_t inputLength, ULONG code) {
     auto context = Reader(WdfIoQueueGetDevice(queue));
     Guard guard(context->lock);
+    if (!context->powered) { WdfRequestComplete(request, STATUS_DEVICE_NOT_READY); return; }
     NTSTATUS status = STATUS_NOT_SUPPORTED;
     void* input = nullptr;
     if (inputLength) {
@@ -314,9 +335,11 @@ NTSTATUS DeviceAdd(WDFDRIVER, PWDFDEVICE_INIT init) {
     status = WdfDeviceCreateDeviceInterface(device, &GUID_DEVINTERFACE_SMARTCARD_READER, nullptr); if (!NT_SUCCESS(status)) return status;
     status = WdfDeviceCreateDeviceInterface(device, &GUID_DNI_BRIDGE_BACKEND, nullptr); if (!NT_SUCCESS(status)) return status;
     WDF_IO_QUEUE_CONFIG queue; WDF_IO_QUEUE_CONFIG_INIT(&queue, WdfIoQueueDispatchManual);
+    queue.PowerManaged = WdfFalse;
     status = WdfIoQueueCreate(device, &queue, WDF_NO_OBJECT_ATTRIBUTES, &context->presentWaiters); if (!NT_SUCCESS(status)) return status;
     status = WdfIoQueueCreate(device, &queue, WDF_NO_OBJECT_ATTRIBUTES, &context->absentWaiters); if (!NT_SUCCESS(status)) return status;
     WDF_IO_QUEUE_CONFIG_INIT_DEFAULT_QUEUE(&queue, WdfIoQueueDispatchParallel); queue.EvtIoDeviceControl = DeviceControl;
+    queue.PowerManaged = WdfTrue; queue.EvtIoStop = IoStop;
     status = WdfIoQueueCreate(device, &queue, WDF_NO_OBJECT_ATTRIBUTES, nullptr); if (!NT_SUCCESS(status)) return status;
     WDF_TIMER_CONFIG timerConfig; WDF_TIMER_CONFIG_INIT(&timerConfig, TimerTick);
     WDF_OBJECT_ATTRIBUTES timerAttributes; WDF_OBJECT_ATTRIBUTES_INIT(&timerAttributes); timerAttributes.ParentObject = device;

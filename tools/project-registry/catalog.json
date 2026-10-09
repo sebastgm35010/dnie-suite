@@ -30,7 +30,8 @@
     "docs/architecture/REDISENO_ANDROID_3_0_R1.md": "current_android_redesign_3_0_first_stage",
     "docs/architecture/REDISENO_ANDROID_3_0_R2.md": "previous_android_ui_architecture",
     "docs/architecture/REDISENO_ANDROID_3_0_R3.md": "current_android_ui_architecture",
-    "docs/architecture/CONEXIONES_INDEPENDIENTES_R4.md": "current_connection_architecture"
+    "docs/architecture/CONEXIONES_INDEPENDIENTES_R4.md": "current_connection_architecture",
+    "docs/architecture/CONTROLADOR_ENERGIA_Y_PUBLICACION_R1.md": "current_driver_power_architecture"
   },
   "features": [
     {
@@ -644,8 +645,8 @@
       "id": "reader_resume_recovery",
       "feature": "bridge",
       "state": "open",
-      "description": "Lector vuelve tras reinicio manual. Revisar EvtIoStop y retiro cancelable sin replay antes de D0Exit, ciclo de colas, host UMDF compartido y salud WinSCard. Sin corrección desplegada ni causa exacta demostrada; reproducción y prueba sintética pendientes.",
-      "evidence": "docs/operations/LECTOR_AUSENTE_PCSC_2026_10_07.md"
+      "description": "Correcciones R1 instaladas driver2.0.0.3 y observabilidad ReaderPublished, pruebas C++/PCSC/TLSrelay pasan. Falta reproducción física suspensión/reanudación, sesión y firma DNI nueva, demostrar causa de incidencias con trazas/dump; no replay de operaciones.",
+      "evidence": "docs/architecture/CONTROLADOR_ENERGIA_Y_PUBLICACION_R1.md"
     }
   ],
   "facts": [
@@ -736,8 +737,14 @@
     {
       "id": "reader_resume_incident_20261009",
       "category": "observed_failure",
-      "value": "2026-10-09 · Tras reinicio manual vuelve lector propio a WinSCard y PnP código0, sin tarjeta presente. Revisión de driver detecta falta de EvtIoStop para solicitudes pendientes, coordinación de purge/arranque y host UMDF compartido; estado backend no acredita publicación. Sin cambio de controlador; corrección y reproducción de suspensión pendientes.",
-      "evidence": "docs/operations/LECTOR_AUSENTE_PCSC_2026_10_07.md"
+      "value": "2026-10-09 · Controlador R1: driver2.0.0.3 oem237 instalado, PnP0 y PCSC publicado. Retiro EvtIoStop sin replay, cancelación invalida backend, purge síncrono y host UMDF aislado. Servicio/gestor distinguen ReaderPublished del CardPresent privado. 6797 comprobaciones C++ pasan, 25 PCSC nativas y 13 TLSrelay pasan; Control45 Debug/45 Release. Firma física/suspensión reales pendientes; APK76 intacta.",
+      "evidence": "docs/architecture/CONTROLADOR_ENERGIA_Y_PUBLICACION_R1.md"
+    },
+    {
+      "id": "driver_power_r1",
+      "category": "installed_synthetic_validated",
+      "value": "2026-10-09 · Controlador R1: driver2.0.0.3 oem237 instalado, PnP0 y PCSC publicado. Retiro EvtIoStop sin replay, cancelación invalida backend, purge síncrono y host UMDF aislado. Servicio/gestor distinguen ReaderPublished del CardPresent privado. 6797 comprobaciones C++ pasan, 25 PCSC nativas y 13 TLSrelay pasan; Control45 Debug/45 Release. Firma física/suspensión reales pendientes; APK76 intacta.",
+      "evidence": "docs/architecture/CONTROLADOR_ENERGIA_Y_PUBLICACION_R1.md"
     }
   ]
 }

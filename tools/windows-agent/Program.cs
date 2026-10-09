@@ -24,7 +24,7 @@ new WindowsServiceLifetime().Run(async stop=> {
     var enrollment=JsonSerializer.Deserialize<Enrollment>(await File.ReadAllTextAsync(Path.Combine(root,"state","enrollment.json"),stop)) ?? throw new IOException("No enrolled owner.");
     _=new System.Security.Principal.SecurityIdentifier(enrollment.OwnerSid);
     var engine=new BridgeHostRuntime(Path.Combine(root,"state","identity"));
-    await using var controller=new HostController(engine.RunAsync,engine.PairingAsync,DniBridge.UsbAccessoryStream.ListPhones);
+    await using var controller=new HostController(engine.RunAsync,engine.PairingAsync,DniBridge.UsbAccessoryStream.ListPhones,ReaderPublication.Query);
     await ControlServer.RunAsync(enrollment.OwnerSid,controller,stop,fault:failure=> {
         try {File.WriteAllText(Path.Combine(root,"state","control-fault.txt"),$"{DateTimeOffset.UtcNow:O} {failure}");}catch{ }
     });

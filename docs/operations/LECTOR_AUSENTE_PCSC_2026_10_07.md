@@ -44,3 +44,6 @@ Fuentes oficiales:
 - https://learn.microsoft.com/en-us/windows-hardware/drivers/wdf/umdf-driver-host-process
 
 Plan de corrección: checkpoint de paquete funcional, prueba sintética de retirada con solicitud pendiente y cancelación simultánea, EvtIoStop sin replay, revisión del ciclo de colas, diagnóstico WinSCard y captura de reanudación. Compilar/validar INF y firmar paquete de pruebas antes de instalar. Mantener el paquete instalado recuperado durante la revisión. Pendientes reproducción real y confirmación de causa por trazas/dump.
+
+
+2026-10-09 · Corrección implementada/instalada y pruebas: 2026-10-09 · Controlador R1: driver2.0.0.3 oem237 instalado, PnP0 y PCSC publicado. Retiro EvtIoStop sin replay, cancelación invalida backend, purge síncrono y host UMDF aislado. Servicio/gestor distinguen ReaderPublished del CardPresent privado. 6797 comprobaciones C++ pasan, 25 PCSC nativas y 13 TLSrelay pasan; Control45 Debug/45 Release. Firma física/suspensión reales pendientes; APK76 intacta. [Alcance y pendientes](../architecture/CONTROLADOR_ENERGIA_Y_PUBLICACION_R1.md).

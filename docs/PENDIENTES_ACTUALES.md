@@ -1,5 +1,7 @@
 # Pendientes actuales · Windows rc4 USB / Android rc4-usb
 
+2026-10-09 · Controlador R1: driver2.0.0.3 oem237 instalado, PnP0 y PCSC publicado. Retiro EvtIoStop sin replay, cancelación invalida backend, purge síncrono y host UMDF aislado. Servicio/gestor distinguen ReaderPublished del CardPresent privado. 6797 comprobaciones C++ pasan, 25 PCSC nativas y 13 TLSrelay pasan; Control45 Debug/45 Release. Firma física/suspensión reales pendientes; APK76 intacta. [Detalle](architecture/CONTROLADOR_ENERGIA_Y_PUBLICACION_R1.md).
+
 2026-10-09 · Tras reinicio manual vuelve lector propio a WinSCard y PnP código0, sin tarjeta presente. Revisión de driver detecta falta de EvtIoStop para solicitudes pendientes, coordinación de purge/arranque y host UMDF compartido; estado backend no acredita publicación. Sin cambio de controlador; corrección y reproducción de suspensión pendientes. [Detalle](operations/LECTOR_AUSENTE_PCSC_2026_10_07.md).
 
 2026-10-09 · Reincidencia lector ausente tras suspensión: móvil PACE y backend presentes, WinSCard sin lector propio. Recuperación PnP/SCardSvr no logró publicarlo; PnP exige reinicio y UMDF termina código43. Puente detenido, reinicio manual pendiente; causa inicial sin demostrar. [Evidencia](operations/LECTOR_AUSENTE_PCSC_2026_10_07.md).

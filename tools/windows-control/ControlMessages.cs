@@ -5,7 +5,7 @@ namespace DniBridge.Control;
 
 public sealed record ConnectionProfile(string Method="Tailscale",string Pc="",string Phone="");
 public sealed record ControlRequest(string Command,ConnectionProfile? Profile=null);
-public sealed record BridgeStatus(string State="Stopped",string Phase="idle",bool CardPresent=false,string? Error=null,ConnectionProfile? Profile=null);
+public sealed record BridgeStatus(string State="Stopped",string Phase="idle",bool CardPresent=false,string? Error=null,ConnectionProfile? Profile=null,bool? ReaderPublished=null);
 public sealed record PairingView(string Payload,string Fingerprint,string Expires);
 public sealed record ControlResponse(bool Ok,BridgeStatus? Status=null,PairingView? Pairing=null,string[]? Devices=null,string? Error=null);
 public static class ControlRules {

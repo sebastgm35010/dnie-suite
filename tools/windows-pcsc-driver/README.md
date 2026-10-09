@@ -69,3 +69,45 @@ La revisión de cancelación se abordó con lock pasivo explícito y transferenc
 4. Revisar permisos e instalación de paquete PnP, firma y canales de distribución adecuados. UMDF no elimina automáticamente los requisitos de instalación/firma. No se debe desactivar Secure Boot, integridad o políticas de Windows para probarlo en la PC habitual.
 
 No ejecutar `pnputil`, modificar registro/INI ni instalar este paquete como consecuencia de compilar. La instalación futura debe ser una acción explícita con un paquete revisado; hoy solo se entrega código revisable.
+
+
+## Revisión de energía R1 · 2026-10-09
+
+Paquete de desarrollo 2.0.0.3. La cola predeterminada tiene `EvtIoStop` y retira
+la operación remota cancelable antes de abandonar D0. Si la cancelación gana
+`WdfRequestUnmarkCancelable`, únicamente `CancelPending` completa la solicitud.
+No se reencola una APDU/reset ni se conserva un backend autenticado después de
+cancelación: el comando pudo haber llegado al chip y repetirlo es inseguro.
+
+Las colas manuales de presencia permanecen no gestionadas por energía para que
+D0Exit pueda purgarlas. El purge es síncrono y se hace fuera del lock propio;
+D0Entry reinicia colas ya vacías. El timer no se vuelve a programar fuera de D0
+y los IOCTLs se rechazan cuando el lector no está alimentado. La ABI privada,
+las ACL y el tratamiento PACE permanecen iguales.
+
+El INF aísla este lector en un host UMDF con
+`UmdfHostProcessSharing=ProcessSharingDisabled`. Reduce la propagación de fallos
+a lectores ajenos; no demuestra que esos lectores causaran los incidentes.
+
+### Pruebas sin privilegios ni tarjeta
+
+Desde un entorno VS x64/SDK, ejecutar `power-tests/run.ps1`. Compila e incluye
+el C++ de producción con un seam WDF exclusivo de pruebas. Usa los tipos reales
+Windows/WinSCard/ABI y verifica completado único, propiedad después de cancelación,
+retiro antes de D0Exit, ausencia de replay, respuesta tardía, reset/poweroff,
+notificaciones, timeout, cierre de handle y 200 carreras concurrentes. Resultados
+R1: 6797 comprobaciones pasan, 200 carreras cancel/stop y 200 ciclos simulados.
+Artefactos van a `D:/DNIeToolchain/ReaderPowerTests`.
+
+El seam no reproduce el scheduler WDF, PnP ni una suspensión física. No instala
+controladores, modifica el sistema ni usa DNI/PIN. Complementa, sin sustituir,
+la batería `synthetic-tests` que habla con el controlador instalado. Para cerrar
+la incidencia se requiere además comprobar suspensión/reanudación física,
+enumeración PCSC y reconexión con una sesión nueva. Nunca reintentar firmas
+pendientes automáticamente después de reanudar.
+
+Referencias de diseño:
+- [EvtIoStop y propiedad de solicitudes](https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/wdfio/nc-wdfio-evt_wdf_io_queue_io_stop).
+- [Colas gestionadas por energía](https://learn.microsoft.com/en-us/windows-hardware/drivers/wdf/using-power-managed-i-o-queues).
+- [Purge síncrono](https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/wdfio/nf-wdfio-wdfioqueuepurgesynchronously).
+- [Directivas INF y aislamiento de host](https://learn.microsoft.com/en-us/windows-hardware/drivers/wdf/specifying-wdf-directives-in-inf-files).

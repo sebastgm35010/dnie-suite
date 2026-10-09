@@ -3,7 +3,7 @@ Signature="$WINDOWS NT$"
 Class=SmartCardReader
 ClassGuid={50DD5230-BA8A-11D1-BF5D-0000F805F530}
 Provider=%Provider%
-DriverVer=10/05/2026,2.0.0.2
+DriverVer=10/09/2026,2.0.0.3
 CatalogFile=DniBridgeReader.cat
 PnpLockdown=1
 
@@ -42,6 +42,8 @@ Needs=WUDFRD.NT.Services
 [Install.NT.Wdf]
 UmdfService=DniBridgeReader,DriverService
 UmdfServiceOrder=DniBridgeReader
+; Isolate this reader from unrelated UMDF reader hosts.
+UmdfHostProcessSharing=ProcessSharingDisabled
 UmdfKernelModeClientPolicy=AllowKernelModeClients
 UmdfFileObjectPolicy=AllowNullAndUnknownFileObjects
 [DriverService]

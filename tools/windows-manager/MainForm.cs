@@ -97,7 +97,11 @@ public sealed partial class MainForm {
         start.Enabled=!busy && !running && last.State!="Unavailable";stop.Enabled=!busy && running;
         install.Enabled=!busy && !running;pair.Enabled=!busy && last.State!="Unavailable";
         method.Enabled=!busy && !running;pc.Enabled=!busy && !running && method.Text!="USB";phone.Enabled=pc.Enabled;usb.Enabled=!busy && !running && method.Text=="USB";refresh.Enabled=!busy && !running;
-        hostStatus.Text=busy?"Procesando…":last.CardPresent?"DNI disponible para aplicaciones de Windows":last.State switch {
+        hostStatus.Text=busy?"Procesando…":last.CardPresent?last.ReaderPublished switch {
+            true=>"DNI conectado · lector publicado en Windows",
+            false=>"DNI conectado · lector no publicado en Windows",
+            null=>"DNI conectado · publicación del lector sin verificar"
+        }:last.State switch {
             "Running"=>last.Phase switch {
                 "usb_waiting_phone"=>"USB: esperando el teléfono conectado",
                 "usb_switching_accessory"=>"USB: preparando modo accesorio Android",

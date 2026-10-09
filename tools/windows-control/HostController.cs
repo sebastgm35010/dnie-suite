@@ -11,16 +11,22 @@ public sealed class HostController : IAsyncDisposable {
     private readonly Func<ConnectionProfile,Action<string>,CancellationToken,Task> runner;
     private readonly Func<ConnectionProfile,Task<PairingView>> pairing;
     private readonly Func<string[]> usbDevices;
+    private readonly Func<bool?>? readerPublication;
     private Task? running;private CancellationTokenSource? lifetime;
     private BridgeStatus state=new();
 #if DEBUG
     private readonly Queue<string> diagnostics=new();
 #endif
     public HostController(Func<ConnectionProfile,Action<string>,CancellationToken,Task> runner,
-        Func<ConnectionProfile,Task<PairingView>> pairing,Func<string[]> usbDevices) {
-        this.runner=runner;this.pairing=pairing;this.usbDevices=usbDevices;
+        Func<ConnectionProfile,Task<PairingView>> pairing,Func<string[]> usbDevices,Func<bool?>? readerPublication=null) {
+        this.runner=runner;this.pairing=pairing;this.usbDevices=usbDevices;this.readerPublication=readerPublication;
     }
-    public BridgeStatus Snapshot {get {lock(stateLock)return state;}}
+    public BridgeStatus Snapshot {get {
+        BridgeStatus current;lock(stateLock)current=state;
+        bool? published=null;
+        try {published=readerPublication?.Invoke();}catch { /* An unavailable query is not absence. */ }
+        return current with {ReaderPublished=published};
+    }}
     private void Update(Func<BridgeStatus,BridgeStatus> change){lock(stateLock)state=change(state);}
     private void Phase(string phase) {
         // Production retains coarse state only; never APDU, PIN/CAN, payloads or tokens.

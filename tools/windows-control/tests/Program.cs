@@ -12,6 +12,23 @@ if(args.Contains("--synthetic-usb-hang")) {
 }
 if(args.Contains("--synthetic-usb-crash")) {Console.WriteLine("host_ready");Environment.ExitCode=2;return;}
 void Check(bool value,string message){if(!value)throw new Exception(message);passed++;}
+Check(ReaderPublication.IncludesOwnReader([ReaderPublication.ReaderName]),"Exact own reader publication recognized");
+Check(!ReaderPublication.IncludesOwnReader(["Windows Hello for Business 1","Other DNI reader"]),"Other readers never prove our publication");
+bool? published=false;
+await using(var observed=new HostController(async(_,log,stop)=> {
+    log("host_ready");log("pcsc_card_present");await Task.Delay(Timeout.Infinite,stop);
+},_=>throw new Exception(),()=>[],()=>published)) {
+    await observed.StartAsync(new("LAN","192.168.1.8","192.168.1.11"));
+    Check(observed.Snapshot.CardPresent && observed.Snapshot.ReaderPublished==false,"Private attach does not imply public reader");
+    published=true;
+    Check(observed.Snapshot.ReaderPublished==true,"Publication query updates without replaying the card");
+    published=null;
+    Check(observed.Snapshot.ReaderPublished==null && observed.Snapshot.CardPresent,"Unavailable publication remains unknown, independent from card");
+    await observed.StopAsync();
+}
+await using(var unavailable=new HostController((_,_,_)=>throw new Exception(),_=>throw new Exception(),()=>[],()=>throw new IOException())) {
+    Check(unavailable.Snapshot.ReaderPublished==null,"Failed enumeration is not reported as missing reader");
+}
 var profile=new ConnectionProfile("Tailscale","100.104.106.125","100.68.70.85");
 #if DEBUG
 Check(ControlRules.Allowed("diagnostics"),"Debug configuration exposes bounded diagnostics");
