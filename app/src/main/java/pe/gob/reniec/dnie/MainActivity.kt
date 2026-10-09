@@ -112,7 +112,7 @@ class MainActivity : ComponentActivity() {
                     },
                     onRouteChanged = {
                         currentRoute = it
-                        pe.gob.reniec.dnie.diagnostics.DiagnosticLog.event("navigation", "route", "state" to it)
+                        pe.gob.reniec.dnie.diagnostics.DiagnosticLog.event("navigation", "route", "state" to it, "layer" to "ui")
                         frameDiagnostics?.onRoute(it)
                         val shouldBeSecure = it == Screen.Vault.route
                         val isSecure = (window.attributes.flags and WindowManager.LayoutParams.FLAG_SECURE) != 0

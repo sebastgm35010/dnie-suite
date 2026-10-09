@@ -10,6 +10,10 @@ object CanStorage {
     private const val PREFS_NAME = "pe.gob.reniec.dnie.prefs"
     private const val KEY_SAVED_CAN = "saved_can"
 
+    suspend fun loadSavedCan(context: Context): String = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        getSavedCan(context)
+    }
+
     fun getSavedCan(context: Context): String {
         return try {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)

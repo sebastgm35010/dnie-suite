@@ -63,7 +63,9 @@ class BatchSigner(private val pdfEngine: PadesSignerEngineInterface) {
                         val config = document.options.copy(appearance = document.options.appearance.copy(
                             handwrittenPng = if (document.options.appearance.requiresHandwritten) mark?.png else null))
                         val signed = CancellableSigningInput(document.file.inputStream(), currentContext).use { input -> partial.outputStream().use { out ->
-                            pdfEngine.signConfiguredPdf(input, out, cert, signer, config).getOrThrow()
+                            DiagnosticLog.measureSuspend("signer", "pdf_sign_and_timestamp", "engine") {
+                                pdfEngine.signConfiguredPdf(input, out, cert, signer, config).getOrThrow()
+                            }
                         } }
                         time = signed.timestamp; size = signed.signatureSize
                     } else {

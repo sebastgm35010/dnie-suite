@@ -30,10 +30,10 @@ internal class BatchCardSession(
         check(!closed && !ready && !failed) { "La sesión del lote no está disponible" }
         try {
             coroutineContext.ensureActive()
-            card.selectPkiApplet().getOrThrow()
+            DiagnosticLog.measureSuspend("signer", "card_open_pace", "protocol") { card.selectPkiApplet().getOrThrow() }
             authorize()
             coroutineContext.ensureActive()
-            val certificate = card.readCertificate(CertificateType.SIGNATURE).getOrThrow()
+            val certificate = DiagnosticLog.measureSuspend("signer", "card_certificate", "protocol") { card.readCertificate(CertificateType.SIGNATURE).getOrThrow() }
             ready = true
             DiagnosticLog.event("signer", "batch_session_ready")
             certificate
@@ -52,7 +52,7 @@ internal class BatchCardSession(
             if (signatures > 0) authorize()
             coroutineContext.ensureActive()
             check(!closed) { "La sesión del lote está cerrada" }
-            val signature = card.signSha256Hash(hash).getOrThrow()
+            val signature = DiagnosticLog.measureSuspend("signer", "card_sign", "protocol") { card.signSha256Hash(hash).getOrThrow() }
             signatures++
             DiagnosticLog.event("signer", "batch_card_signature", "count" to signatures)
             Result.success(signature)
@@ -69,7 +69,7 @@ internal class BatchCardSession(
         coroutineContext.ensureActive()
         check(!closed) { "La sesión del lote está cerrada" }
         DiagnosticLog.event("signer", "batch_authorize", "count" to signatures + 1)
-        when (val result = card.verifyPin(String(credentials)).getOrThrow()) {
+        when (val result = DiagnosticLog.measureSuspend("signer", "card_verify_pin", "protocol") { card.verifyPin(String(credentials)).getOrThrow() }) {
             PinVerificationResult.Success -> Unit
             is PinVerificationResult.InvalidPin -> error("PIN incorrecto. Le quedan ${result.attemptsRemaining} intento(s) antes del bloqueo.")
             PinVerificationResult.CardBlocked -> error("El chip está bloqueado (69 83).")

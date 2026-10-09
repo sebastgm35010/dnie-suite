@@ -13,6 +13,7 @@ def verify(apk: Path, classes: Path, aapt: Path, windows: Path):
     manifest = subprocess.run([str(aapt), 'dump', 'xmltree', str(apk), 'AndroidManifest.xml'], check=True,
                               capture_output=True, text=True, encoding='utf-8').stdout
     assert 'DiagnosticsActivity' not in manifest, 'Debug activity in production manifest'
+    assert 'DiagnosticExportProvider' not in manifest and 'diagnostic-export' not in manifest, 'Debug export endpoint in production manifest'
     debug_line = next((line for line in manifest.splitlines() if 'android:debuggable' in line), '')
     assert not debug_line or '0x0' in debug_line and '0xffffffff' not in debug_line, 'Production APK debuggable'
     files = [p.relative_to(windows).as_posix() for p in windows.rglob('*') if p.is_file()]

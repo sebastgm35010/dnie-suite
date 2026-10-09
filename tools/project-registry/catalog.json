@@ -24,7 +24,8 @@
     "docs/architecture/RECUPERACION_COMPLETA_Y_FLUJO_R5.md": "historical_whole_vault_recovery_architecture",
     "docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md": "current_unified_vault_archive_architecture",
     "docs/architecture/BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md": "current_vault_picker_lifecycle_fix",
-    "docs/architecture/RETIRO_PASSKEYS_R3.md": "current_feature_retirement_and_upgrade_cleanup"
+    "docs/architecture/RETIRO_PASSKEYS_R3.md": "current_feature_retirement_and_upgrade_cleanup",
+    "docs/architecture/DIAGNOSTICOS_DIRECTOS_Y_CAPAS_R1.md": "current_diagnostics_runtime_and_direct_export"
   },
   "features": [
     {
@@ -335,9 +336,9 @@
     {
       "id": "diagnostics",
       "name": "Diagnóstico aislado de producción",
-      "status": "implemented",
-      "note": "Registros estructurados y variantes debug/release; no confundir un registro histórico con proceso activo.",
-      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md",
+      "status": "implemented_runtime_validated",
+      "note": "2026-10-08 · Diagnóstico R1: APK72 / 2.0.0-rc24-diagnostics instalada. Extracción directa ADB debug sin exportación manual; metadatos de hilo/proceso/capa y spans. 26 pruebas Android pasan; endpoint revalidado y tres lecturas con proceso cerrado pasan. CAN asíncrono, transacciones por lotes y protección de captura incompleta. Cuadros lentos instrumentados siguen pendientes de atribución.",
+      "evidence": "docs/architecture/DIAGNOSTICOS_DIRECTOS_Y_CAPAS_R1.md",
       "files": {
         "engine": [
           "dnie-diagnostics-core/src/main/"
@@ -347,6 +348,14 @@
         ],
         "release": [
           "app/src/release/"
+        ],
+        "tools": [
+          "tools/android-diagnostics/"
+        ],
+        "tests": [
+          "app/src/androidTest/java/pe/gob/reniec/dnie/DiagnosticsRuntimeInstrumentedTest.kt",
+          "app/src/androidTest/java/pe/gob/reniec/dnie/ui/UiInteractionStressTest.kt",
+          "dnie-diagnostics-core/src/test/"
         ]
       },
       "depends_on": []
@@ -531,14 +540,21 @@
       "state": "cancelled_by_user",
       "description": "Función retirada por decisión del usuario; no continuar su implementación ni pruebas de uso.",
       "evidence": "docs/architecture/RETIRO_PASSKEYS_R3.md"
+    },
+    {
+      "id": "diagnostics_live_nfc_and_ui_performance",
+      "feature": "diagnostics",
+      "state": "open",
+      "description": "Cuadros lentos bajo instrumental pendientes de atribución y medición cotidiana; comparar firma/lote/bóveda con DNI y Bridge/Suite por sus transportes. No extrapolar fixtures a operación NFC física.",
+      "evidence": "docs/architecture/DIAGNOSTICOS_DIRECTOS_Y_CAPAS_R1.md"
     }
   ],
   "facts": [
     {
       "id": "android_current",
       "category": "artifact",
-      "value": "APK71 / 2.0.0-rc23-core-only instalada; D:/DNIeToolchain/AndroidPackages/dnie-evolution-2.0.0-rc23-core-only-debug.apk. SHA256 828010436E81652B772D62F62A0FBA99BF6E23E8424D52651D957B0A4ECE1B16. Passkeys retiradas y limpieza automática al arranque verificada; 165 JVM y 5 Android pasan.",
-      "evidence": "docs/architecture/RETIRO_PASSKEYS_R3.md"
+      "value": "APK72 / 2.0.0-rc24-diagnostics instalada por ADB; D:/DNIeToolchain/AndroidPackages/dnie-evolution-2.0.0-rc24-diagnostics-debug.apk. SHA256 53E57C84A493F0D71BC923B6BC2E68165058B50A047DC36FC5135B1034745D3C. Passkeys retiradas. Diagnósticos directos y tres capturas en frío verificados; 26 pruebas Android pasan.",
+      "evidence": "docs/architecture/DIAGNOSTICOS_DIRECTOS_Y_CAPAS_R1.md"
     },
     {
       "id": "desktop_current",

@@ -27,30 +27,64 @@ class DiagnosticStore(context: Context, databaseName: String = "temporary-diagno
         }
         override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) { error("Unsupported diagnostics version") }
     }
-    private val worker = ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS, ArrayBlockingQueue<Runnable>(8192),
-        ThreadFactory { task -> Thread(task, "dnie-diagnostic-writer").apply { isDaemon = true } }, ThreadPoolExecutor.AbortPolicy())
+    private val scheduling = Any()
+    private val queue = ArrayBlockingQueue<Pair<Long, DiagnosticEvent>>(8192)
+    private var draining = false
+    private val worker = Executors.newSingleThreadExecutor(
+        ThreadFactory { task -> Thread(task, "dnie-diagnostic-writer").apply { isDaemon = true } })
     init { helper.setWriteAheadLoggingEnabled(true) }
 
     override fun append(event: DiagnosticEvent) {
-        val generation = epoch.get()
-        try { worker.execute {
-            synchronized(lock) {
-                if (generation != epoch.get()) return@synchronized
-                try {
-                    val gap = dropped.getAndSet(0)
-                    if (gap > 0) write(DiagnosticEvent(System.currentTimeMillis(), "diagnostics", "queue_overflow", mapOf("dropped" to gap.toString())))
-                    write(event); problem = null
-                } catch (failure: Exception) { problem = "No se pudo persistir el diagnóstico (${failure.javaClass.simpleName})." }
+        synchronized(scheduling) {
+            if (!queue.offer(epoch.get() to event)) {
+                dropped.incrementAndGet(); problem = "Cola de diagnóstico saturada; se registrará la cantidad de eventos perdidos."
+                return
             }
-        } } catch (_: RejectedExecutionException) { dropped.incrementAndGet(); problem = "Cola de diagnóstico saturada; se registrará la cantidad de eventos perdidos." }
+            if (!draining) {
+                draining = true
+                try { worker.execute { drain() } }
+                catch (_: RejectedExecutionException) { draining = false; queue.clear(); problem = "Registro cerrado." }
+            }
+        }
+    }
+    private fun drain() {
+        while (true) {
+            val batch = mutableListOf<Pair<Long, DiagnosticEvent>>()
+            synchronized(scheduling) {
+                queue.drainTo(batch, 256)
+                if (batch.isEmpty()) { draining = false; return }
+            }
+            synchronized(lock) {
+                val current = batch.filter { it.first == epoch.get() }
+                if (current.isEmpty()) return@synchronized
+                var db: SQLiteDatabase? = null
+                var gap = 0L
+                try {
+                    db = helper.writableDatabase
+                    db.beginTransaction()
+                    gap = dropped.getAndSet(0)
+                    if (gap > 0) write(DiagnosticEvent(System.currentTimeMillis(), "diagnostics", "queue_overflow", mapOf("dropped" to gap.toString())))
+                    current.forEach { write(it.second) }
+                    db.setTransactionSuccessful(); problem = null
+                } catch (failure: Exception) {
+                    dropped.addAndGet(current.size.toLong() + gap)
+                    problem = "No se pudo persistir el diagnóstico (${failure.javaClass.simpleName})."
+                } finally { try { if (db?.inTransaction() == true) db.endTransaction() } catch (_: Exception) { problem = "No se pudo cerrar la transacción de diagnóstico." } }
+            }
+        }
     }
     private fun write(event: DiagnosticEvent) {
         helper.writableDatabase.insertOrThrow("events", null, ContentValues().apply {
             put("time", event.time); put("category", event.category); put("name", event.name)
-            put("details", JSONObject(event.fields).toString())
+            put("details", JSONObject(event.fields).apply {
+                put("monotonicNs", event.monotonicNs); put("thread", event.thread); put("process", event.process)
+            }.toString())
         })
     }
-    fun flush(timeoutMs: Long = 2000): Boolean = try { worker.submit {}.get(timeoutMs, TimeUnit.MILLISECONDS); true } catch (_: Exception) { false }
+    fun flush(timeoutMs: Long = 2000): Boolean = try {
+        val barrier = synchronized(scheduling) { worker.submit {} }
+        barrier.get(timeoutMs, TimeUnit.MILLISECONDS); true
+    } catch (_: Exception) { false }
     suspend fun page(before: Long? = null, category: String? = null): DiagnosticPage = withContext(Dispatchers.IO) {
         synchronized(lock) {
             val where = mutableListOf<String>(); val args = mutableListOf<String>()
@@ -70,6 +104,7 @@ class DiagnosticStore(context: Context, databaseName: String = "temporary-diagno
     } }
     suspend fun export(output: OutputStream) = withContext(Dispatchers.IO) {
         check(flush(10000)) { "Diagnostics writer did not finish" }
+        check(problem == null) { "Diagnostics persistence failed" }
         val until = synchronized(lock) { helper.readableDatabase.rawQuery("SELECT COALESCE(MAX(id),0) FROM events", null).use { it.moveToFirst(); it.getLong(0) } }
         // Cursor is consumed as a stream, rather than loading the entire history into RAM.
         helper.readableDatabase.rawQuery("SELECT id,time,category,name,details FROM events WHERE id <= ? ORDER BY id", arrayOf(until.toString())).use { cursor ->
@@ -79,6 +114,7 @@ class DiagnosticStore(context: Context, databaseName: String = "temporary-diagno
                 output.write(line.toByteArray(Charsets.UTF_8))
             }
         }
+        until
     }
     suspend fun close() = withContext(Dispatchers.IO) { flush(); worker.shutdown(); worker.awaitTermination(3, TimeUnit.SECONDS); synchronized(lock) { helper.close() } }
 }

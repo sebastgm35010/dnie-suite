@@ -231,7 +231,9 @@ class AndroidVaultRepository(context: Context) {
         if (it.moveToFirst()) it.getString(0) else null
     }
     private suspend fun <T> io(action: suspend () -> T): T = withContext(Dispatchers.IO) {
-        mutex.withLock { currentCoroutineContext().ensureActive(); action() }
+        pe.gob.reniec.dnie.diagnostics.DiagnosticLog.measureSuspend("vault", "repository_io", "adapter") {
+            mutex.withLock { currentCoroutineContext().ensureActive(); action() }
+        }
     }
     private companion object {
         val MIME = Regex("[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+")

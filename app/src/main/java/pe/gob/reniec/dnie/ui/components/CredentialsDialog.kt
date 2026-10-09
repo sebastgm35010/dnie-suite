@@ -30,6 +30,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -66,14 +67,16 @@ fun CredentialsDialog(
     if (!show) return
 
     val context = LocalContext.current
-    val savedCan = remember(show) { CanStorage.getSavedCan(context) }
-    var canText by remember(show) {
-        mutableStateOf(
-            if (initialCan.isNotBlank()) initialCan else savedCan
-        )
-    }
-    var rememberCan by remember(show) {
-        mutableStateOf(savedCan.isNotBlank() || initialCan.isNotBlank())
+    var canText by remember(show) { mutableStateOf(initialCan) }
+    var rememberCan by remember(show) { mutableStateOf(initialCan.isNotBlank()) }
+    var loaded by remember(show) { mutableStateOf(false) }
+    var canEdited by remember(show) { mutableStateOf(false) }
+    var rememberEdited by remember(show) { mutableStateOf(false) }
+    LaunchedEffect(show) {
+        val savedCan = CanStorage.loadSavedCan(context)
+        if (!canEdited && initialCan.isBlank()) canText = savedCan
+        if (!rememberEdited) rememberCan = savedCan.isNotBlank() || initialCan.isNotBlank()
+        loaded = true
     }
 
     var pinText by remember(show) { mutableStateOf("") }
@@ -81,7 +84,7 @@ fun CredentialsDialog(
 
     val isCanValid = !requireCan || (canText.length == 6 && canText.all { it.isDigit() })
     val isPinValid = !requirePin || (pinText.length in 4..8 && pinText.all { it.isDigit() })
-    val isValid = isCanValid && isPinValid
+    val isValid = loaded && isCanValid && isPinValid
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -120,6 +123,7 @@ fun CredentialsDialog(
                         onValueChange = { input ->
                             if (input.length <= 6 && input.all { it.isDigit() }) {
                                 canText = input
+                                canEdited = true
                             }
                         },
                         label = { Text("CAN (6 dígitos)") },
@@ -150,13 +154,13 @@ fun CredentialsDialog(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { rememberCan = !rememberCan }
+                            .clickable { rememberEdited = true; rememberCan = !rememberCan }
                             .padding(vertical = 2.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Checkbox(
                             checked = rememberCan,
-                            onCheckedChange = { rememberCan = it }
+                            onCheckedChange = { rememberEdited = true; rememberCan = it }
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(

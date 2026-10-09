@@ -9,7 +9,7 @@ import kotlinx.coroutines.launch
 object AppFlowDiagnostics {
     fun <T> observe(owner: LifecycleOwner, category: String, state: StateFlow<T>, project: (T) -> String) {
         owner.lifecycleScope.launch { state.map(project).distinctUntilChanged().collect {
-            DiagnosticLog.event(category, "state_changed", "state" to it)
+            DiagnosticLog.event(category, "state_changed", "state" to it, "layer" to "coordination")
         } }
     }
 }
