@@ -725,6 +725,12 @@
       "category": "diagnosis",
       "value": "APK72 sin modificación: navegación 2350/2348 cuadros, jank moderno 0,13%/0,04%, P50 6 ms; edición 528 cuadros, 0,95%, P50 11 ms. Trazas completas: medición Compose hasta 42,175 ms y recomposición al editar hasta 35,728 ms. Sin prueba física NFC.",
       "evidence": "docs/architecture/DIAGNOSTICO_RENDIMIENTO_UI_R2.md"
+    },
+    {
+      "id": "reader_resume_incident_20261009",
+      "category": "observed_failure",
+      "value": "Segunda incidencia reportada tras suspensión. Captura: lector privado/CardPresent/PACE activos pero WinSCard no enumera propio. Recuperación en caliente falla; código43 posterior, Windows requiere reinicio manual. Puente detenido; no reinicio automático ni cambio de seguridad.",
+      "evidence": "docs/operations/LECTOR_AUSENTE_PCSC_2026_10_07.md"
     }
   ]
 }
