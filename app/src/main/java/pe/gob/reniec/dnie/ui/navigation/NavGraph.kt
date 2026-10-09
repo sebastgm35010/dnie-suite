@@ -51,8 +51,7 @@ fun NavGraph(
     vaultViewModel: VaultViewModel = viewModel(),
     onRouteChanged: (String?) -> Unit = {},
     onOpenBridge: () -> Unit = {},
-    onOpenSuite: () -> Unit = {},
-    onOpenPasskeys: () -> Unit = {}
+    onOpenSuite: () -> Unit = {}
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -104,7 +103,6 @@ fun NavGraph(
                 CertificatesScreen(viewModel = certificatesViewModel,
                     onOpenBridge = onOpenBridge,
                     onOpenSuite = onOpenSuite,
-                    onOpenPasskeys = onOpenPasskeys,
                     onOpenVault = { navController.navigate(Screen.Vault.route) { launchSingleTop = true } })
             }
             composable(Screen.Signer.route) {

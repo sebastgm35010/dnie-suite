@@ -1,8 +1,6 @@
 # Estado vigente · corrección USB tras reinicio
 
-2026-10-08 · Passkeys R2: APK70 instalada; acceso propio restaurado en Mi DNIe. Almacén independiente opt-in con DNI inicial y huella fuerte por operación; conserva credenciales y BE/BS. 145 pruebas JVM y 2 de interfaz pasan; navegación real comprobada. Migración/biometría reales pendientes. Recuperación portable independiente todavía no implementada. [Detalle](architecture/PASSKEYS_ALMACEN_INDEPENDIENTE_R2.md).
-
-2026-10-08 · Passkeys R1: acceso perdido al simplificar Boveda R6; proveedor y catalogo siguen implementados. Usuario elige almacen independiente autorizado inicialmente con DNI. Diseno y migracion pendientes; sin cambio automatico de politica ni APK nueva. [Detalle](architecture/PASSKEYS_ALMACEN_INDEPENDIENTE_R1.md).
+2026-10-08 · Retiro R3: passkeys eliminadas. APK71 / 2.0.0-rc23-core-only instalada por ADB. Limpieza automática al primer arranque verificada: catálogo y aliases ausentes, proveedor no registrado. 165 pruebas JVM y 5 Android pasan; un caso Windows omitido por permisos se verifica en Android. Bóveda y emparejamientos fuera del alcance de borrado. [Detalle](architecture/RETIRO_PASSKEYS_R3.md).
 
 2026-10-08 · Bóveda R7: corregido inicio tras SAF: selector primero, credenciales después y autorización explícita. onPause limpiaba PIN y R6 rechazaba el inicio automático, dejando destino vacío. APK69 instalada por ADB y versión comprobada; 79 pruebas app pasan y 3 pruebas instrumentadas de interfaz pasan (8,537 s). El selector se simula con registro aislado; exportación/importación con SAF real y DNI físico pendientes. [Detalle](architecture/BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md).
 

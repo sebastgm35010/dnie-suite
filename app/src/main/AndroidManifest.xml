@@ -65,10 +65,10 @@
             <meta-data android:name="android.hardware.usb.action.USB_ACCESSORY_ATTACHED"
                 android:resource="@xml/bridge_usb_accessory_filter" />
         </activity>
-        <activity android:name=".ui.passkeys.PasskeySettingsActivity" android:exported="false" />
-        <activity android:name=".ui.passkeys.PasskeyToolsActivity" android:exported="false" android:excludeFromRecents="true" android:windowSoftInputMode="adjustResize" />
-        <activity android:name=".ui.passkeys.PasskeyCeremonyActivity" android:exported="false"
-            android:excludeFromRecents="true" android:windowSoftInputMode="adjustResize" />
+
+        <receiver android:name=".data.migrations.PackageUpgradeReceiver" android:exported="false">
+            <intent-filter><action android:name="android.intent.action.MY_PACKAGE_REPLACED" /></intent-filter>
+        </receiver>
 
         <!-- FileProvider para compartir PDFs firmados y certificados exportados (.cer/.pem) vía SAF/Intent -->
         <provider

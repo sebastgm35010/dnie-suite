@@ -10,7 +10,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 JVM_MODULES = (
     "dnie-core", "dnie-protocol", "dnie-icao", "dnie-vault-core",
-    "dnie-passkeys-core", "dnie-diagnostics-core", "dnie-bridge-core",
+    "dnie-diagnostics-core", "dnie-bridge-core",
 )
 
 

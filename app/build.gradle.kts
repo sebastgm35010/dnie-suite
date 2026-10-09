@@ -12,8 +12,8 @@ android {
         applicationId = "pe.gob.reniec.dnie.evolution"
         minSdk = 24
         targetSdk = 34
-        versionCode = 70
-        versionName = "2.0.0-rc22-passkeys-local"
+        versionCode = 71
+        versionName = "2.0.0-rc23-core-only"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -94,9 +94,14 @@ tasks.register<Copy>("exportBranchApk") {
 }
 
 dependencies {
-    implementation("androidx.biometric:biometric:1.1.0")
+    constraints {
+        implementation("androidx.fragment:fragment:1.2.5") {
+            because("Preserve the QR scanner's tested transitive version after removing biometric")
+        }
+    }
     implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
     implementation(project(":dnie-core"))
+    implementation(project(":dnie-diagnostics-core"))
     implementation(project(":dnie-protocol"))
     implementation(project(":dnie-signing-link"))
     implementation(project(":dnie-signing-core"))
@@ -106,7 +111,6 @@ dependencies {
     implementation(project(":dnie-icao"))
     implementation(project(":dnie-vault-core"))
     implementation(project(":dnie-vault-recovery"))
-    implementation(project(":dnie-passkeys-android"))
     implementation("com.google.crypto.tink:tink-android:1.23.0")
     implementation("com.github.Tgo1014:JP2ForAndroid:1.0.4")
     // AndroidX & Lifecycle

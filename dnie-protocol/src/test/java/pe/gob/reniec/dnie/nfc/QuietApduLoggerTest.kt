@@ -10,7 +10,7 @@ import pe.gob.reniec.dnie.diagnostics.DiagnosticLog
 import pe.gob.reniec.dnie.diagnostics.DiagnosticSink
 import pe.gob.reniec.dnie.core.logging.ApduLogger
 
-class PasskeyQuietLoggerTest {
+class QuietApduLoggerTest {
     @Test fun persistentCaptureKeepsOnlyApduMetadataEvenWhenConsoleIsDisabled() {
         val captured = mutableListOf<DiagnosticEvent>()
         DiagnosticLog.install(DiagnosticSink { captured.add(it) })

@@ -1,7 +1,0 @@
-{
-  "name": "dnie-passkey-protocol-verifier",
-  "private": true,
-  "type": "module",
-  "scripts": { "test": "node verify.mjs" },
-  "devDependencies": { "@simplewebauthn/server": "14.0.3" }
-}

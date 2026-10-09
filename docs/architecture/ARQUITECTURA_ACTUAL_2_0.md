@@ -1,8 +1,6 @@
 # Arquitectura actual · motor 2.0 y gestor Windows rc4
 
-2026-10-08 · Passkeys R2: APK70 instalada; acceso propio restaurado en Mi DNIe. Almacén independiente opt-in con DNI inicial y huella fuerte por operación; conserva credenciales y BE/BS. 145 pruebas JVM y 2 de interfaz pasan; navegación real comprobada. Migración/biometría reales pendientes. Recuperación portable independiente todavía no implementada. [Detalle](PASSKEYS_ALMACEN_INDEPENDIENTE_R2.md).
-
-2026-10-08 · Passkeys R1: acceso perdido al simplificar Boveda R6; proveedor y catalogo siguen implementados. Usuario elige almacen independiente autorizado inicialmente con DNI. Diseno y migracion pendientes; sin cambio automatico de politica ni APK nueva. [Detalle](PASSKEYS_ALMACEN_INDEPENDIENTE_R1.md).
+2026-10-08 · Retiro R3: passkeys eliminadas. APK71 / 2.0.0-rc23-core-only instalada por ADB. Limpieza automática al primer arranque verificada: catálogo y aliases ausentes, proveedor no registrado. 165 pruebas JVM y 5 Android pasan; un caso Windows omitido por permisos se verifica en Android. Bóveda y emparejamientos fuera del alcance de borrado. [Detalle](RETIRO_PASSKEYS_R3.md).
 
 2026-10-08 · Bóveda R7: corregido inicio tras SAF: selector primero, credenciales después y autorización explícita. onPause limpiaba PIN y R6 rechazaba el inicio automático, dejando destino vacío. APK69 instalada por ADB y versión comprobada; 79 pruebas app pasan y 3 pruebas instrumentadas de interfaz pasan (8,537 s). El selector se simula con registro aislado; exportación/importación con SAF real y DNI físico pendientes. [Detalle](BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md).
 
@@ -62,8 +60,6 @@ La UI presenta estado y emite acciones. ViewModels y controladores coordinan cas
 | `dnie-signing-desktop` | CLI JVM, workspace/adaptadores locales y simulación explícita de suite (hito 0) | signing-core, signing-link |
 | `dnie-signing-link` | Contrato privado de firma, endpoint con autorización/PIN móvil, cliente y framing de flujos; todavía sin transporte físico de suite | protocol |
 | `dnie-vault-core` | Contenedor, catálogo y formatos cifrados de bóveda | Ninguna interna |
-| `dnie-passkeys-core` | WebAuthn, CBOR/COSE y validación | diagnostics-core |
-| `dnie-passkeys-android` | Credential Manager, almacén Android y autorización | passkeys-core, vault-core, protocol |
 | `dnie-bridge-core` | Contratos/framing del puente y método de conexión | Ninguna interna |
 | `dnie-bridge-android` | Sesión del puente y adaptación del traductor; acceso al contrato privado de suite todavía sin enlace físico | bridge-core, protocol, signing-link |
 | `app` | Compose, ViewModels, casos de uso y adaptadores Android | Bibliotecas anteriores según función |
@@ -136,7 +132,7 @@ La PC autorizada sigue siendo un extremo de confianza: otros consumidores locale
 - `D:/DNIeBridgeApp/versions/<versión>`: binarios administrativos, propietario con lectura/ejecución.
 - `D:/DNIeBridgeApp/state`: inscripción e identidad TLS; ACL SYSTEM/administradores. Certificado y metadatos anteriores migrados exactamente.
 - `%LOCALAPPDATA%/DNIeBridge/Manager/settings.json`: preferencias públicas; sin credenciales.
-- Android: TrustedPcStorage cifrado mediante Keystore, perfiles por transporte. CAN compartido pertenece a su almacén de preferencias; bóveda no usa biometría. Biometría opcional de passkeys no se extiende a bóveda.
+- Android: TrustedPcStorage cifrado mediante Keystore, perfiles por transporte. CAN compartido pertenece a su almacén de preferencias; bóveda no usa biometría.
 - `D:/DNIeToolchain/Checkpoints`: paquetes, hashes y resultados; material privado de ejecución permanece fuera de Git.
 
 La identidad TLS estable no es un certificado personal DNI ni una firma de producción del controlador. Renovar el DNI/certificados y migrar bóveda/passkeys son problemas distintos. No restaurar el minidriver DNI ni reinstalar drivers automáticamente al retomar. No cambiar Hello, CertPropSvc, SCardSvr o firewall para probar el puente.

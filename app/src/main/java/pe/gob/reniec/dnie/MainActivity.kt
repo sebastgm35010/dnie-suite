@@ -103,11 +103,6 @@ class MainActivity : ComponentActivity() {
                             android.widget.Toast.makeText(this, "Termina la operación NFC actual antes de abrir el puente.", android.widget.Toast.LENGTH_SHORT).show()
                         } else startActivity(Intent(this, pe.gob.reniec.dnie.ui.bridge.BridgeActivity::class.java))
                     },
-                    onOpenPasskeys = {
-                        if (certificatesViewModel.busy || consoleViewModel.busy || consoleViewModel.isProbeActive || signerViewModel.busy || batchSignerViewModel.busy || identityViewModel.uiState.value.reading || vaultViewModel.uiState.value.running) {
-                            android.widget.Toast.makeText(this, "Termina la operación NFC actual antes de abrir Passkeys.", android.widget.Toast.LENGTH_SHORT).show()
-                        } else startActivity(Intent(this, pe.gob.reniec.dnie.ui.passkeys.PasskeySettingsActivity::class.java))
-                    },
                     onOpenSuite = {
                         if (certificatesViewModel.busy || consoleViewModel.busy || consoleViewModel.isProbeActive ||
                             signerViewModel.busy || batchSignerViewModel.busy || identityViewModel.uiState.value.reading ||

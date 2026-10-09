@@ -30,7 +30,7 @@ class UiFrameDiagnostics(private val window: Window) : AutoCloseable {
     }
     init { window.addOnFrameMetricsAvailableListener(listener, Handler(worker.looper)) }
     fun onRoute(value: String?) {
-        route = value?.takeIf { it in setOf("identity", "certificates", "signer", "batchSigner", "console", "vault", "passkeys") } ?: "startup"
+        route = value?.takeIf { it in setOf("identity", "certificates", "signer", "batchSigner", "console", "vault") } ?: "startup"
     }
     override fun close() {
         window.removeOnFrameMetricsAvailableListener(listener)

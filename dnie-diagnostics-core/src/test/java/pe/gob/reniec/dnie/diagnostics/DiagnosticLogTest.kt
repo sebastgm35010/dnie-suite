@@ -8,8 +8,8 @@ class DiagnosticLogTest {
     @After fun cleanup() { DiagnosticLog.install(null) }
     @Test fun dropsSecretFieldsAndDoesNotSerializeThrowableMessages() {
         val events = mutableListOf<DiagnosticEvent>(); DiagnosticLog.install { events += it }
-        DiagnosticLog.event("passkeys", "test", "stage" to "create", "pin" to "private-pin", "can" to "private-can", "requestJson" to "private-request")
-        DiagnosticLog.failure("passkeys", "create", IllegalArgumentException("private-secret-message"))
+        DiagnosticLog.event("vault", "test", "stage" to "create", "pin" to "private-pin", "can" to "private-can", "requestJson" to "private-request")
+        DiagnosticLog.failure("vault", "create", IllegalArgumentException("private-secret-message"))
         assertEquals(mapOf("stage" to "create"), events.first().fields)
         assertFalse(events.toString().contains("private-"))
     }

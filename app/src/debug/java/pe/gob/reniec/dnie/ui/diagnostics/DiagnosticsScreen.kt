@@ -27,7 +27,7 @@ fun DiagnosticsScreen(state: DiagnosticsUiState, filter: (String?) -> Unit, olde
             TextButton(onClick = { confirming = true }) { Text("Borrar") }
         }
         Row(Modifier.horizontalScroll(rememberScrollState())) {
-            listOf(null, "passkeys", "apdu", "vault", "signer", "batch", "identity", "certificates", "lifecycle", "performance", "crash").forEach { category ->
+            listOf(null, "apdu", "vault", "signer", "batch", "identity", "certificates", "lifecycle", "performance", "crash").forEach { category ->
                 FilterChip(selected = state.category == category, onClick = { filter(category) }, label = { Text(category ?: "Todo") })
             }
         }
