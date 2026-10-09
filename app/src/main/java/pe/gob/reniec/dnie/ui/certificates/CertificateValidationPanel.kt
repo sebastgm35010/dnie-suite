@@ -24,6 +24,7 @@ fun CertificateValidationPanel(certificate: CertificateInfo) {
     } }
     val model: CertificateValidationViewModel = androidx.lifecycle.viewmodel.compose.viewModel(factory = factory)
     val state by model.state.collectAsStateWithLifecycle()
+    val expanded = androidx.compose.runtime.remember(certificate.sha256FingerprintHex) { androidx.compose.runtime.mutableStateOf(false) }
     LaunchedEffect(certificate.sha256FingerprintHex) { model.clear() }
     DisposableEffect(Unit) { onDispose { model.clear() } }
     Box(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
@@ -34,6 +35,26 @@ fun CertificateValidationPanel(certificate: CertificateInfo) {
         if (state.fingerprint == certificate.sha256FingerprintHex) {
             state.error?.let { Text(it) }
             state.report?.let { report ->
+                pe.gob.reniec.dnie.ui.design.StatusCheck(if (report.certificate.acceptable) "Vigencia y uso aptos" else "Vigencia o uso no aptos", report.certificate.acceptable)
+                pe.gob.reniec.dnie.ui.design.StatusCheck(when (report.revocation.status) {
+                    RevocationStatus.GOOD -> "Sin revocación en evidencia verificada"
+                    RevocationStatus.REVOKED -> "Certificado revocado"
+                    RevocationStatus.UNKNOWN -> "Revocación sin confirmar"
+                }, report.revocation.status == RevocationStatus.GOOD)
+                pe.gob.reniec.dnie.ui.design.StatusCheck(when (report.trust) {
+                    TrustStatus.TRUSTED -> "Confianza verificada · TSL Perú"
+                    TrustStatus.UNTRUSTED -> "Cadena no admitida"
+                    TrustStatus.UNKNOWN -> "Confianza sin confirmar"
+                }, report.trust == TrustStatus.TRUSTED)
+                if (report.trust == TrustStatus.TRUSTED)
+                    pe.gob.reniec.dnie.ui.design.StatusCheck(when (report.chainRevocation) {
+                        RevocationStatus.GOOD -> "Cadena sin revocación verificada"
+                        RevocationStatus.REVOKED -> "Cadena revocada"
+                        RevocationStatus.UNKNOWN -> "Revocación de cadena sin confirmar"
+                    }, report.chainRevocation == RevocationStatus.GOOD)
+                report.chainValidUntil?.let { Text("Evidencia válida hasta: $it", style = MaterialTheme.typography.bodySmall) }
+                TextButton(onClick = { expanded.value = !expanded.value }) { Text(if (expanded.value) "Ocultar evidencias" else "Ver evidencias de validación") }
+                if (expanded.value) {
                 Text(if (report.certificate.acceptable) "Vigencia y uso del certificado: aptos" else report.certificate.issues.joinToString("; "))
                 val label = when (report.revocation.status) {
                     RevocationStatus.GOOD -> "Sin revocación en evidencia verificada"
@@ -69,6 +90,7 @@ fun CertificateValidationPanel(certificate: CertificateInfo) {
                     Text(evidence.assessment.detail, style = MaterialTheme.typography.bodySmall)
                     if (pe.gob.reniec.dnie.BuildConfig.DEBUG && evidence.diagnosticCode.isNotEmpty())
                         Text("Diagnóstico: ${evidence.diagnosticCode}", style = MaterialTheme.typography.bodySmall)
+                }
                 }
             }
         }

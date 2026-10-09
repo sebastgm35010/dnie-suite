@@ -97,7 +97,7 @@ fun CertificatesScreen(
 
     pe.gob.reniec.dnie.ui.design.FeatureScaffold(
         title = "Mi DNIe", category = "Certificados e identidad",
-        subtitle = "Una lectura pública del DNI. Revisa cada certificado y su confianza por separado.",
+        subtitle = "Identidad y certificados en una sola lectura.",
         modifier = modifier, actions = {
             IconButton(onClick = { viewModel.requestCanEntry() }, enabled = uiState !is CertificatesUiState.ReadingCard) {
                 Icon(Icons.Default.Nfc, "Leer DNIe con NFC")

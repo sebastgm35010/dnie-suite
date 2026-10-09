@@ -12,10 +12,9 @@ import pe.gob.reniec.dnie.bridge.BridgeConnectionMethod
             }
         }
         Text(when (method) {
-            BridgeConnectionMethod.TAILSCALE -> "Requiere Tailscale en ambos equipos y permiso entre ellos en la tailnet. Sin JSON ni TLS adicional."
-            BridgeConnectionMethod.LOCAL_NETWORK -> "Conecta ambos equipos a la misma Wi-Fi. Autoriza en Android y escribe la IP del teléfono mostrada aquí en el gestor de Windows. TLS comprueba la identidad permanente de la PC."
-            BridgeConnectionMethod.USB_NETWORK -> "Conecta un cable de datos e inicia USB directo en Windows. Autoriza el accesorio Android. No necesita compartir Internet ni depuración USB; TLS viaja por el cable."
+            BridgeConnectionMethod.TAILSCALE -> "Activa Tailscale en el teléfono y la PC."
+            BridgeConnectionMethod.LOCAL_NETWORK -> "Conecta ambos equipos a la misma Wi-Fi y escanea el QR de la PC."
+            BridgeConnectionMethod.USB_NETWORK -> "Conecta el cable e inicia USB directo en la PC. Acepta el accesorio en Android."
         }, style = MaterialTheme.typography.bodySmall)
-        Text("Avanzado: el teléfono gestiona PACE y traduce el protocolo del PC. No hay límite de inactividad. Retirar y acercar el DNI abre una sesión nueva, sin reenviar operaciones anteriores.", style = MaterialTheme.typography.bodySmall)
     }
 }

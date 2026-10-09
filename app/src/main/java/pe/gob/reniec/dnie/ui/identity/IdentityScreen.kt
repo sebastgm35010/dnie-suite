@@ -46,12 +46,12 @@ fun IdentityScreen(viewModel: IdentityViewModel) {
         }
     }
     DisposableEffect(viewModel) { onDispose { viewModel.cancelReading() } }
-    pe.gob.reniec.dnie.ui.design.FeatureScaffold("Identidad del DNI", "Documento ICAO", subtitle = "Datos e imágenes del chip, conservados por bloques independientes.") { padding ->
+    pe.gob.reniec.dnie.ui.design.FeatureScaffold("Identidad del DNI", "Documento ICAO", subtitle = "Datos, foto y firma disponibles.") { padding ->
         LazyColumn(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(bottom = 24.dp)) {
             item {
                 pe.gob.reniec.dnie.ui.design.FeatureSection("Leer el documento") {
-                    Text("Lea los datos y las imágenes del chip. Cada bloque se procesa por separado; no necesita PIN.",
+                    Text("Acerca tu DNI para leer sus datos. No necesitas PIN.",
                         style = MaterialTheme.typography.bodyMedium)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 12.dp)) {
                         if (state.awaitingCard || state.reading) {

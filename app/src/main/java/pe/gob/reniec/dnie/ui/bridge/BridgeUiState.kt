@@ -4,6 +4,7 @@ data class BridgeUiState(
     val localWifiAddress: String = "",
     val peer: String = "", val fingerprint: String = "", val can: String = "",
     val armed: Boolean = false, val busy: Boolean = false,
+    val sessionStage: BridgeSessionStage = BridgeSessionStage.IDLE,
     val traceAvailable: Boolean = false, val mode: BridgeMode = BridgeMode.TRANSLATED_ANDROID_PACE,
     val method: pe.gob.reniec.dnie.bridge.BridgeConnectionMethod = pe.gob.reniec.dnie.bridge.BridgeConnectionMethod.TAILSCALE,
     val settings: pe.gob.reniec.dnie.bridge.BridgeRuntimeSettings = pe.gob.reniec.dnie.bridge.BridgeRuntimeSettings(),

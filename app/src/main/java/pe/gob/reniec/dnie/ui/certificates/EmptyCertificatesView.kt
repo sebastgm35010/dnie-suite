@@ -20,7 +20,7 @@ internal fun EmptyCertificatesView(onScanClicked: () -> Unit) {
             Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Icon(Icons.Default.Badge, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(36.dp))
                 Text("Lee tu DNIe", style = MaterialTheme.typography.titleLarge)
-                Text("Identidad ICAO y certificados públicos en una misma lectura. No necesitas PIN.")
+                Text("Identidad y certificados · sin PIN")
                 Button(onClick = onScanClicked, modifier = Modifier.fillMaxWidth()) {
                     Icon(Icons.Default.Nfc, null); Spacer(Modifier.width(8.dp))
                     Text("Leer identidad y certificados")
@@ -32,9 +32,7 @@ internal fun EmptyCertificatesView(onScanClicked: () -> Unit) {
             Text("2 · Acerca el DNI al sensor NFC del teléfono.")
             Text("3 · Mantenlo inmóvil hasta completar ambas etapas.")
         }
-        FeatureSection("Resultados independientes") {
-            Text("Los bloques de identidad y los certificados disponibles se conservan por separado. Un dato ausente no oculta los demás.")
-            Text("Leer un certificado no demuestra por sí solo su confianza. Puedes comprobar vigencia, revocación y cadena desde su ficha.", style = MaterialTheme.typography.bodySmall)
-        }
+        Text("Comprueba la confianza de cada certificado desde su ficha.",
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

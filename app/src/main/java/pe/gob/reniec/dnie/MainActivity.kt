@@ -177,25 +177,7 @@ class MainActivity : ComponentActivity() {
      * Emite una vibración háptica de 70 ms inmediatamente cuando la tarjeta entra en el campo NFC.
      */
     private fun triggerHapticFeedback() {
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
-                vibratorManager?.defaultVibrator?.vibrate(
-                    VibrationEffect.createOneShot(70, VibrationEffect.DEFAULT_AMPLITUDE)
-                )
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                @Suppress("DEPRECATION")
-                val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
-                vibrator?.vibrate(
-                    VibrationEffect.createOneShot(70, VibrationEffect.DEFAULT_AMPLITUDE)
-                )
-            } else {
-                @Suppress("DEPRECATION")
-                val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
-                @Suppress("DEPRECATION")
-                vibrator?.vibrate(70)
-            }
-        } catch (_: Exception) {}
+        pe.gob.reniec.dnie.data.feedback.ReadingFeedback.start(this)
     }
 
     /**

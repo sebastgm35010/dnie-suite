@@ -142,16 +142,16 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
             mutable.update { it.copy(message = "Emparejamiento vencido. Genera otro en la PC.") }; return
         }
         val epoch = ++generation
-        mutable.update { it.copy(busy = true, message = "Preparando conexión…") }
+        mutable.update { it.copy(busy = true, sessionStage = BridgeSessionStage.PREPARING, message = "Preparando conexión…") }
         task = viewModelScope.launch {
             try {
                 val endpoint = withContext(Dispatchers.IO) { adapter.arm(p).also { trustedPc.save(p) } }
-                if (epoch == generation) mutable.update {it.copy(busy=false,armed=true,message="${if(endpoint.isNotEmpty()) "$endpoint · " else ""}Acerca el DNI. Sin cierre por inactividad; puedes volver a acercarlo después de retirarlo.")}
+                if (epoch == generation) mutable.update {it.copy(busy=false,armed=true,sessionStage=BridgeSessionStage.WAITING_CARD,message="${if(endpoint.isNotEmpty()) "$endpoint · " else ""}Acerca el DNI. Sin cierre por inactividad; puedes volver a acercarlo después de retirarlo.")}
                 DiagnosticLog.event("bridge", "nfc_authorized")
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (failure: Exception) {
                 DiagnosticLog.failure("bridge","transport_prepare",failure)
-                if (epoch == generation) mutable.update {it.copy(busy=false,armed=false,message=failure.message ?: "No se pudo preparar el transporte.")}
+                if (epoch == generation) mutable.update {it.copy(busy=false,armed=false,sessionStage=BridgeSessionStage.IDLE,message=failure.message ?: "No se pudo preparar el transporte.")}
             }
         }
     }
@@ -165,7 +165,7 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
         }
         val session = prepared.connection
         connection = session
-        mutable.update { it.copy(armed = false, busy = true, message = "Conectando con la PC…") }
+        mutable.update { it.copy(armed = false, busy = true, sessionStage = BridgeSessionStage.CONNECTING_PC, message = "Conectando con la PC…") }
         val epoch = ++generation
         val atr = prepared.atr
         task = viewModelScope.launch {
@@ -176,7 +176,11 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
                         DiagnosticLog.event("bridge", event)
                     }) { phase ->
                         if (phase == BridgeConnection.Phase.PACE_ACTIVE || phase == BridgeConnection.Phase.RAW_ACTIVE) opened = true
-                        if (epoch == generation) mutable.update { it.copy(message = when (phase) {
+                        if (epoch == generation) mutable.update { it.copy(sessionStage = when (phase) {
+                            BridgeConnection.Phase.AUTHENTICATING_PC -> BridgeSessionStage.CONNECTING_PC
+                            BridgeConnection.Phase.OPENING_PACE -> BridgeSessionStage.OPENING_CARD
+                            BridgeConnection.Phase.RAW_ACTIVE, BridgeConnection.Phase.PACE_ACTIVE -> BridgeSessionStage.ACTIVE
+                        }, message = when (phase) {
                             BridgeConnection.Phase.AUTHENTICATING_PC -> if (current.tailscale) "Sincronizando con la PC por Tailscale…" else "Validando la PC por TLS…"
                             BridgeConnection.Phase.OPENING_PACE -> "Abriendo PACE con tu DNI…"
                             BridgeConnection.Phase.RAW_ACTIVE -> "Puente directo activo. Windows gestiona PACE."
@@ -197,7 +201,7 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
                 if (connection === session) connection = null
                 if (epoch == generation) {
                     val ready = withContext(Dispatchers.IO) { adapter.closeTransport(); if(opened) runCatching {adapter.arm(p)}.isSuccess else false }
-                    mutable.update {it.copy(busy=false, armed=ready, traceAvailable=adapter.hasTrace(),
+                    mutable.update {it.copy(busy=false, armed=ready, sessionStage=if(ready) BridgeSessionStage.WAITING_CARD else BridgeSessionStage.IDLE, traceAvailable=adapter.hasTrace(),
                         message=if(ready) "Tarjeta retirada o sesión finalizada. Acerca el DNI para abrir una sesión nueva; la PC sigue autorizada." else it.message)}
                 }
             }
@@ -209,12 +213,12 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
         val active = connection
         val previous = task
         previous?.cancel(); task = null
-        mutable.update { it.copy(armed = false, busy = true, message = "Cerrando sesión…") }
+        mutable.update { it.copy(armed = false, busy = true, sessionStage = if(it.sessionStage.visible) BridgeSessionStage.STOPPING else BridgeSessionStage.IDLE, message = "Cerrando sesión…") }
         viewModelScope.launch {
             withContext(Dispatchers.IO) { adapter.closeTransport(); active?.close() }
             previous?.join()
             if (connection === active) connection = null
-            if (epoch == generation) mutable.update { it.copy(busy = false, traceAvailable = adapter.hasTrace(), message = "Sesión detenida. Autoriza de nuevo para conectar.") }
+            if (epoch == generation) mutable.update { it.copy(busy = false, sessionStage = BridgeSessionStage.IDLE, traceAvailable = adapter.hasTrace(), message = "Sesión detenida. Autoriza de nuevo para conectar.") }
         }
     }
     override fun onCleared() {

@@ -12,8 +12,8 @@ android {
         applicationId = "pe.gob.reniec.dnie.evolution"
         minSdk = 24
         targetSdk = 34
-        versionCode = 74
-        versionName = "3.0.0-alpha02-interface"
+        versionCode = 75
+        versionName = "3.0.0-alpha03-sessions"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

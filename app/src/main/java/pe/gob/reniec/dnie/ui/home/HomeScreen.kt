@@ -35,11 +35,11 @@ fun HomeScreen(summary: HomeSummary, onRead: () -> Unit, onIdentity: () -> Unit,
                 Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Icon(Icons.Default.Badge, null, tint = MaterialTheme.colorScheme.primary)
                     Text(if (summary.reading) "Lectura en curso" else "Tu DNI, en un solo lugar", style = MaterialTheme.typography.titleLarge)
-                    Text("Lee identidad ICAO y certificados en un mismo flujo. Cada resultado se conserva de forma independiente.", style = MaterialTheme.typography.bodyMedium)
+                    Text("Identidad y certificados en una sola lectura.", style = MaterialTheme.typography.bodyMedium)
                     Button(onClick = onRead, enabled = !summary.reading, modifier = Modifier.fillMaxWidth()) {
                         Text("Leer mi DNIe")
                     }
-                    Text("La lectura pública no requiere PIN. Para firmar o descifrar, autoriza cada operación.", style = MaterialTheme.typography.bodySmall)
+                    Text("Solo necesitas tu DNI y su CAN.", style = MaterialTheme.typography.bodySmall)
                 }
             }
         }
@@ -48,13 +48,19 @@ fun HomeScreen(summary: HomeSummary, onRead: () -> Unit, onIdentity: () -> Unit,
                 SummaryCard("Certificados leídos", summary.certificates.toString(), Modifier.weight(1f))
                 SummaryCard("Identidad ICAO", if (summary.identityAvailable) "Disponible" else "Sin lectura", Modifier.weight(1f))
             }
-            Text("Resultados de esta sesión de la app; no indican que el DNI siga conectado.",
+            Text("Última lectura · no indica conexión actual",
                 style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 8.dp))
+        }
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Button(onClick = onPc, modifier = Modifier.weight(1f)) { Text("Conectar PC") }
+                FilledTonalButton(onClick = onPdf, modifier = Modifier.weight(1f)) { Text("Firmar PDF") }
+            }
         }
         item { Text("Qué quieres hacer", style = MaterialTheme.typography.titleLarge) }
         item { ModuleCard("Ficha de identidad", "Datos e imágenes disponibles del documento", Icons.Default.Person, onIdentity) }
-        item { ModuleCard("Certificados del DNIe", "Inspección, exportación y comprobación de confianza", Icons.Default.VerifiedUser, onCertificates) }
-        item { ModuleCard("Firma PDF", "Firma integrada, sello visual y TSA RENIEC opcional", Icons.Default.Edit, onPdf) }
+        item { ModuleCard("Certificados del DNIe", "Ver, exportar y validar", Icons.Default.VerifiedUser, onCertificates) }
+        item { ModuleCard("Firma PDF", "Firma y sello a tu medida", Icons.Default.Edit, onPdf) }
         item { ModuleCard("Firma por lotes", "Varios documentos en una autorización", Icons.Default.Folder, onBatch) }
         item { ModuleCard("Archivos protegidos", "Cifrar, descifrar y respaldar tu bóveda", Icons.Default.Lock, onVault) }
         item { ModuleCard("Conexión con PC", "Lector compatible y suite propia de firma", Icons.Default.Computer, onPc) }
@@ -75,7 +81,7 @@ fun HomeScreen(summary: HomeSummary, onRead: () -> Unit, onIdentity: () -> Unit,
     Card(modifier, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(value, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
-            Text(label, style = MaterialTheme.typography.labelMedium)
+            pe.gob.reniec.dnie.ui.design.StatusCheck(label, value != "0" && value != "Sin lectura")
         }
     }
 }
@@ -83,7 +89,7 @@ fun HomeScreen(summary: HomeSummary, onRead: () -> Unit, onIdentity: () -> Unit,
 @Composable internal fun ModuleCard(title: String, description: String, icon: ImageVector, onClick: () -> Unit) {
     Card(onClick = onClick, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-        Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+        Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(10.dp)) {
                 Icon(icon, null, Modifier.padding(12.dp), tint = MaterialTheme.colorScheme.primary)
             }

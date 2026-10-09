@@ -228,10 +228,18 @@ fun NavGraph(
 /** PDF and batch retain separate routes and ViewModels. */
 @Composable
 private fun SigningModeNavigation(batch: Boolean, navController: NavHostController) {
-    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    androidx.compose.material3.Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = MaterialTheme.shapes.medium, modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
+    Row(Modifier.fillMaxWidth().padding(4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         listOf(Screen.Signer to "PDF individual", Screen.BatchSigner to "Lotes").forEach { (screen, label) ->
-            TextButton(modifier = Modifier.weight(1f), enabled = (screen == Screen.BatchSigner) != batch,
+            androidx.compose.material3.FilledTonalButton(modifier = Modifier.weight(1f), enabled = (screen == Screen.BatchSigner) != batch,
+                shape = MaterialTheme.shapes.small,
+                colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
+                    containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledContainerColor = MaterialTheme.colorScheme.surface,
+                    disabledContentColor = MaterialTheme.colorScheme.primary),
                 onClick = { navController.navigate(screen.route) { launchSingleTop = true } }) { Text(label) }
         }
     }
+}
 }

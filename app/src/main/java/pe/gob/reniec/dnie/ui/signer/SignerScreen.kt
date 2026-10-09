@@ -37,17 +37,17 @@ fun SignerScreen(viewModel: SignerViewModel, batch: Boolean = false, onReadIdent
     }
     val open = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris -> viewModel.importDocuments(context, uris) }
     val openPdf = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let { viewModel.importDocuments(context, listOf(it), singlePdf = true) } }
-    pe.gob.reniec.dnie.ui.design.FeatureScaffold(if (batch) "Firma por lotes" else "Firma PDF", "Firma digital", subtitle = if (batch) "Prepara tu cola y autoriza todos los documentos una sola vez." else "Documento, apariencia y autorización en un mismo espacio.") { padding ->
+    pe.gob.reniec.dnie.ui.design.FeatureScaffold(if (batch) "Firma por lotes" else "Firma PDF", "Firma digital", subtitle = if (batch) "Varios archivos · un solo PIN" else "Selecciona, coloca y firma.") { padding ->
         Column(Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(if (batch) "Varios documentos, una autorización" else "Tu firma, en el lugar que elijas", style = MaterialTheme.typography.titleLarge)
-                    Text(if (batch) "Añade todos los archivos antes de firmar. Introduces el PIN una vez para todo el lote: PDF con firma integrada y otros formatos con firma separada .p7s." else "Selecciona un PDF y coloca la firma en una vista previa a pantalla completa.")
+                    Text(if (batch) "PDF con firma integrada. Otros archivos conservan el original y reciben su firma .p7s." else "Selecciona un PDF y coloca la firma en una vista previa a pantalla completa.")
                     Button(enabled = editing, onClick = { if (batch) open.launch(arrayOf("*/*")) else openPdf.launch(arrayOf("application/pdf")) }) {
                         Text(if (batch) "Añadir archivos" else if (workspace.documents.isEmpty()) "Seleccionar PDF" else "Cambiar PDF")
                     }
-                    Text(if (batch) "Hasta 50 archivos · 256 MiB por archivo · 512 MiB por lote" else "Un PDF de hasta 256 MiB. Guarda el resultado antes de cambiar de documento.", style = MaterialTheme.typography.bodySmall)
+                    Text(if (batch) "Hasta 50 archivos · 256 MiB por archivo · 512 MiB por lote" else "Hasta 256 MiB · guarda el resultado antes de cambiar de PDF", style = MaterialTheme.typography.bodySmall)
                     if (workspace.importing) LinearProgressIndicator(Modifier.fillMaxWidth())
                     workspace.importErrors.forEach { Text(it, color = MaterialTheme.colorScheme.error) }
                 }
@@ -61,11 +61,11 @@ fun SignerScreen(viewModel: SignerViewModel, batch: Boolean = false, onReadIdent
                         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text((if (doc.id == workspace.selectedId) "● " else "") + doc.name, style = MaterialTheme.typography.titleSmall)
                             Text((if (doc.isPdf) "PDF · " + doc.pages.size + " páginas" else "Archivo · .p7s") + " · " + (doc.size / 1024) + " KiB", style = MaterialTheme.typography.bodySmall)
-                            if (result != null) Text(when (result.status) {
-                                DocumentSignStatus.SIGNED -> if (doc.isPdf && doc.options.reniecTimestamp) "Firmado ✓ · sello RENIEC" else "Firmado ✓"
-                                DocumentSignStatus.FAILED -> "No firmado: " + result.message
-                                DocumentSignStatus.INTERRUPTED -> "Pendiente: " + result.message
-                            }, color = if (result.status == DocumentSignStatus.SIGNED) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error)
+                            if (result?.status == DocumentSignStatus.SIGNED)
+                                pe.gob.reniec.dnie.ui.design.StatusCheck(if (doc.isPdf && doc.options.reniecTimestamp) "Firmado · sello RENIEC" else "Firmado", true)
+                            else if (result != null) Text(
+                                (if (result.status == DocumentSignStatus.FAILED) "No firmado: " else "Pendiente: ") + result.message,
+                                color = MaterialTheme.colorScheme.error)
                             Row {
                                 if (result?.status == DocumentSignStatus.SIGNED) {
                                     TextButton(enabled = editing, onClick = { exportArtifact = result; exportPem = null; save.launch(requireNotNull(result.output).name) }) { Text("Guardar") }

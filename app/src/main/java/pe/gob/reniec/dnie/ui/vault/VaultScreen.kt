@@ -64,7 +64,7 @@ fun VaultScreen(state: VaultUiState, onCanChange: (String) -> Unit, onPinChange:
     fun finishSelection() { selection = emptySet(); selecting = false }
     Box(Modifier.fillMaxSize()) {
         pe.gob.reniec.dnie.ui.design.FeatureScaffold("Bóveda", "Archivos protegidos",
-            subtitle = if (page == VaultPage.FILES) "Tu biblioteca cifrada. Importa, organiza y conserva un respaldo completo." else page.title,
+            subtitle = if (page == VaultPage.FILES) "Tus archivos protegidos con DNI." else page.title,
             onBack = if (page == VaultPage.FILES) null else ({ pageName = VaultPage.FILES.name }),
             actions = {
                 IconButton(onClick = { pageName = VaultPage.TOOLS.name }, enabled = !busy) {
@@ -107,7 +107,7 @@ fun VaultScreen(state: VaultUiState, onCanChange: (String) -> Unit, onPinChange:
                         }
                         VaultPage.FILES -> {
                             item("add") {
-                                pe.gob.reniec.dnie.ui.design.FeatureSection("Mis archivos", "Cifra nuevos archivos o recupera tu bóveda completa.") {
+                                pe.gob.reniec.dnie.ui.design.FeatureSection("Mis archivos") {
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         Button(onClick = { importFiles.launch(arrayOf("*/*")) },
                                             enabled = !busy && state.riskAcknowledged && state.pairedFingerprint != null,

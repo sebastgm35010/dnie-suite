@@ -17,9 +17,9 @@ fun PcConnectionScreen(onBack: () -> Unit, onBridge: () -> Unit, onSuite: () -> 
     pe.gob.reniec.dnie.ui.design.FeatureScaffold("Conexión PC", "Tu DNI en Windows", onBack = onBack,
         subtitle = "Elige cómo utilizar tu DNI desde el equipo.") { padding ->
     LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        item { ModuleCard("Lector para otras aplicaciones", "Expone el DNI al sistema para ReFirma, Firma Perú y aplicaciones compatibles. Requiere el lector virtual instalado en Windows.", Icons.Default.Computer, onBridge) }
-        item { ModuleCard("Suite propia de firma", "Envía documentos desde nuestra suite. El teléfono autoriza las operaciones del DNI sin exponer un lector a todo Windows.", Icons.Default.Description, onSuite) }
-        item { Text("El emparejamiento, el transporte y el estado de la conexión se consultan dentro de cada módulo. No necesitas depuración USB para el modo por cable del puente.", style = MaterialTheme.typography.bodyMedium) }
+        item { ModuleCard("Lector para otras aplicaciones", "ReFirma y Firma Perú · requiere lector virtual en Windows.", Icons.Default.Computer, onBridge) }
+        item { ModuleCard("Suite propia de firma", "Firma desde nuestra suite · sin lector virtual.", Icons.Default.Description, onSuite) }
+
     }
 }
 }

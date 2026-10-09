@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.Button
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
@@ -51,6 +52,7 @@ fun CertificateCard(
     onExportPem: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val details = androidx.compose.runtime.remember(certificate.sha256FingerprintHex) { androidx.compose.runtime.mutableStateOf(false) }
     val dateFormat = remember { SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()) }
 
     OutlinedCard(
@@ -137,6 +139,9 @@ fun CertificateCard(
 
             HorizontalDivider()
 
+            Text("Vence el " + dateFormat.format(certificate.validTo), style = MaterialTheme.typography.bodyMedium)
+            TextButton(onClick = { details.value = !details.value }) { Text(if (details.value) "Ocultar detalles" else "Ver detalles técnicos") }
+            if (details.value) {
             // Emisor y Uso de Clave
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 DetailItem(label = "Emisor (CA)", value = certificate.issuerDn)
@@ -196,6 +201,7 @@ fun CertificateCard(
                 )
             }
 
+            }
             Spacer(modifier = Modifier.height(2.dp))
 
             // Botones de Exportación

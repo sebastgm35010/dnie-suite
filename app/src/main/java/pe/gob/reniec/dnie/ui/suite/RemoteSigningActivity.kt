@@ -32,7 +32,10 @@ class RemoteSigningActivity : ComponentActivity() {
             .filter { it.isUp && !it.isLoopback }.flatMap { it.inetAddresses.toList() }
             .filterIsInstance<java.net.Inet4Address>().mapNotNull { it.hostAddress }
             .filter(pe.gob.reniec.dnie.signing.link.SigningProvision::privateAddress).joinToString(", ") }.getOrDefault("")
-        lifecycleScope.launch { repeatOnLifecycle(Lifecycle.State.RESUMED) { reader.discoveredTags.collect(model::tag) } }
+        lifecycleScope.launch { repeatOnLifecycle(Lifecycle.State.RESUMED) { reader.discoveredTags.collect { tag ->
+            if (model.state.value.armed || model.state.value.connected) pe.gob.reniec.dnie.data.feedback.ReadingFeedback.start(this@RemoteSigningActivity)
+            model.tag(tag)
+        } } }
         setContent { DnieTheme {
             val state by model.state.collectAsStateWithLifecycle()
             val importer = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(model::import) }

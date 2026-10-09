@@ -37,7 +37,10 @@ class BridgeActivity : ComponentActivity() {
             model.method(pe.gob.reniec.dnie.bridge.BridgeConnectionMethod.USB_NETWORK)
         }
         lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.RESUMED) { reader.discoveredTags.collect(model::tag) }
+            repeatOnLifecycle(Lifecycle.State.RESUMED) { reader.discoveredTags.collect { tag ->
+                if (model.state.value.armed && !model.state.value.busy) pe.gob.reniec.dnie.data.feedback.ReadingFeedback.start(this@BridgeActivity)
+                model.tag(tag)
+            } }
         }
         setContent { DnieTheme {
             val state by model.state.collectAsStateWithLifecycle()

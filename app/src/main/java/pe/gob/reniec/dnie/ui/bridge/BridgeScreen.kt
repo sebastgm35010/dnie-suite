@@ -17,13 +17,18 @@ fun BridgeScreen(state: BridgeUiState, nfcEnabled: Boolean, onImport: () -> Unit
     onTailnetHost: (String) -> Unit, onConnectTailnet: () -> Unit,
     onMethod: (pe.gob.reniec.dnie.bridge.BridgeConnectionMethod) -> Unit,
     onSettings: (pe.gob.reniec.dnie.bridge.BridgeRuntimeSettings) -> Unit, development: Boolean = false, onForgetPc: () -> Unit = {}) {
+    if (state.sessionStage.visible) {
+        BridgeSessionScreen(state, onStop)
+        return
+    }
+    var details by remember { mutableStateOf(false) }
     var settings by remember { mutableStateOf(false) }
     var advanced by remember { mutableStateOf(false) }
     if (advanced) BridgeAdvancedSettings(state.settings, onSettings) { advanced = false }
     pe.gob.reniec.dnie.ui.design.FeatureScaffold("Puente NFC · PC", "Lector compatible", onBack = onBack, bottomBar = { pe.gob.reniec.dnie.ui.navigation.ActivityNavigation() }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            pe.gob.reniec.dnie.ui.design.FeatureSection("1 · Conexión", "Elige el transporte y empareja tu PC.") {
+            pe.gob.reniec.dnie.ui.design.FeatureSection("Conectar PC") {
                 TextButton(onClick = { settings = !settings }, enabled = !state.busy && !state.armed) { Text("Configuración de conexión") }
                 TextButton(onClick = { advanced = true }, enabled = !state.busy && !state.armed) { Text("Configuración avanzada") }
                 if (settings || state.peer.isEmpty()) BridgeConnectionSettings(state.method, !state.busy && !state.armed, onMethod)
@@ -34,26 +39,23 @@ fun BridgeScreen(state: BridgeUiState, nfcEnabled: Boolean, onImport: () -> Unit
             }
             if(state.method == pe.gob.reniec.dnie.bridge.BridgeConnectionMethod.LOCAL_NETWORK)
                 Text("IP Wi-Fi del teléfono: ${state.localWifiAddress.ifEmpty { "Conecta a Wi-Fi" }} · puerto 39444")
-            Text(if (state.tailscale) "Conexión cifrada por Tailscale." else "Conexión cifrada con la PC mediante TLS.")
-            Text(if (state.translatePace) "Traducción PACE · modo recomendado" else if (state.windowsPace) "Modo directo · PACE gestionado por Windows" else "PACE en Android · instrucciones lógicas")
-            Text("El teléfono mantiene protegido el acceso NFC al DNI y lo presenta como tarjeta inteligente a la PC.")
             if (development) pe.gob.reniec.dnie.development.BridgeDevelopmentSettings(state, onWindowsPace, onTranslatePace, onExportTrace, onClearTrace)
-            Text(if (state.tailscale) "La PC sincroniza la sesión automáticamente al acercar el DNI." else "Empareja la PC y compara su huella antes de autorizar.",
-                style = MaterialTheme.typography.bodySmall)
             if (state.method.usesPairing) Button(onClick = onScan, enabled = !state.busy && !state.armed) { Text("Escanear QR de la PC") }
             if (state.method.usesPairing) OutlinedButton(onClick = onImport, enabled = !state.busy && !state.armed) { Text("Importar archivo de emparejamiento") }
             if (state.peer.isNotEmpty()) {
                 Text("PC: ${state.peer}", style = MaterialTheme.typography.titleMedium)
                 if (!state.tailscale) TextButton(onClick=onForgetPc, enabled=!state.busy && !state.armed) {Text("Olvidar PC") }
                 if (!state.tailscale) {
-                Text("Huella SHA-256 del servidor")
-                Text(state.fingerprint, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall)
-                Text("Compara la huella en ambos equipos. Importa el archivo por un canal de confianza; contiene la autorización de conexión.",
-                    style = MaterialTheme.typography.bodySmall)
-                } else Text("Conexión directa a la PC por Tailscale, con autorización de sesión.")
+                    TextButton(onClick = { details = !details }) { Text(if (details) "Ocultar huella" else "Comparar huella con la PC") }
+                    if (details) {
+                        Text(state.fingerprint, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall)
+                        Text("Compara esta huella con la PC antes de autorizar.", style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+
             }
             }
-            pe.gob.reniec.dnie.ui.design.FeatureSection("2 · Autorizar DNI", "El acceso NFC y la conexión con Windows son sesiones distintas.") {
+            pe.gob.reniec.dnie.ui.design.FeatureSection("Tu DNI") {
                 OutlinedTextField(value = state.can, onValueChange = onCan, label = { Text("CAN del DNI") },
                     modifier = Modifier.fillMaxWidth(), enabled = !state.busy && !state.armed,
                     singleLine = true, visualTransformation = PasswordVisualTransformation(),
@@ -61,12 +63,10 @@ fun BridgeScreen(state: BridgeUiState, nfcEnabled: Boolean, onImport: () -> Unit
                 if (!nfcEnabled) Text("Activa NFC para conectar el DNI.", color = MaterialTheme.colorScheme.error)
                 Text(state.message)
                 Button(onClick = onAuthorize, enabled = nfcEnabled && state.peer.isNotEmpty() && (state.windowsPace || state.can.length == 6) && !state.busy && !state.armed) {
-                    Text("Autorizar puente en esta PC")
+                    Text("Iniciar puente")
             }
             if (state.busy) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-            OutlinedButton(onClick = onStop, enabled = state.busy || state.armed) { Text("Detener sesión") }
-            Text("Solo permanece activo en esta pantalla. Al salir o bloquear el teléfono se detiene. Retirar el DNI cierra la sesión de tarjeta y permite iniciar otra al acercarlo.",
-                style = MaterialTheme.typography.bodySmall)
+
             }
         }
     }
