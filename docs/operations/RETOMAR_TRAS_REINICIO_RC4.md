@@ -1,5 +1,7 @@
 # Estado guardado y retomar tras reiniciar
 
+2026-10-08 · Rediseño Android R1: APK73 / 3.0.0-alpha01-interface instalada. Inicio, navegación de cinco secciones, acceso diferenciado Bridge/Suite y tema Aether adaptados a funciones reales. Cierre inicial de navegación corregido (lista lazy); 77 pruebas JVM pasan, una omitida y 28 Android pasan. Interiores y medición de rendimiento pendientes. [Detalle](../architecture/REDISENO_ANDROID_3_0_R1.md).
+
 Comprobado antes del reinicio: 2026-10-07 02:42 UTC (2026-10-06, America/Bogota). Este documento no inicia sesiones, no modifica controladores y no ejecuta el reinicio.
 
 ## Referencia guardada

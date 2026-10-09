@@ -3,7 +3,13 @@ package pe.gob.reniec.dnie.ui.navigation
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.dp
+import pe.gob.reniec.dnie.ui.home.HomeRoute
+import pe.gob.reniec.dnie.ui.home.PcConnectionScreen
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -66,12 +72,13 @@ fun NavGraph(
 
     Scaffold(
         bottomBar = {
-            if (currentRoute != Screen.Vault.route) NavigationBar {
+            if (currentRoute != Screen.Vault.route) NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                 Screen.items.forEach { screen ->
                     NavigationBarItem(
                         icon = { Icon(screen.icon, contentDescription = screen.title) },
                         label = { Text(screen.title) },
-                        selected = currentRoute == screen.route,
+                        modifier = Modifier.testTag("nav_" + screen.route),
+                        selected = currentRoute == screen.route || (screen == Screen.Signer && currentRoute == Screen.BatchSigner.route),
                         onClick = {
                             if (currentRoute != screen.route) {
                                 navController.navigate(screen.route) {
@@ -90,7 +97,7 @@ fun NavGraph(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Certificates.route,
+            startDestination = Screen.Home.route,
             modifier = Modifier.padding(innerPadding),
             // Bottom tabs switch immediately: avoid laying out and drawing two
             // feature screens together during Navigation's default crossfade.
@@ -99,6 +106,23 @@ fun NavGraph(
             popEnterTransition = { EnterTransition.None },
             popExitTransition = { ExitTransition.None }
         ) {
+            composable(Screen.Home.route) {
+                fun open(route: String) { navController.navigate(route) { launchSingleTop = true } }
+                HomeRoute(certificatesViewModel, identityViewModel,
+                    onRead = {
+                        open(Screen.Certificates.route)
+                        if (!certificatesViewModel.busy && !signerViewModel.busy && !batchSignerViewModel.busy &&
+                            !identityViewModel.uiState.value.reading && !vaultViewModel.uiState.value.running &&
+                            !consoleViewModel.busy && !consoleViewModel.isProbeActive) certificatesViewModel.requestCanEntry()
+                    },
+                    onIdentity = { open(Screen.Identity.route) }, onCertificates = { open(Screen.Certificates.route) },
+                    onPdf = { open(Screen.Signer.route) }, onBatch = { open(Screen.BatchSigner.route) },
+                    onVault = { open(Screen.Vault.route) }, onPc = { open(Screen.Pc.route) },
+                    onDevelopment = if (pe.gob.reniec.dnie.BuildConfig.DEBUG) ({ open(Screen.Console.route) }) else null)
+            }
+            composable(Screen.Pc.route) {
+                PcConnectionScreen(onBack = { navController.popBackStack() }, onBridge = onOpenBridge, onSuite = onOpenSuite)
+            }
             composable(Screen.Certificates.route) {
                 CertificatesScreen(viewModel = certificatesViewModel,
                     onOpenBridge = onOpenBridge,
@@ -106,17 +130,23 @@ fun NavGraph(
                     onOpenVault = { navController.navigate(Screen.Vault.route) { launchSingleTop = true } })
             }
             composable(Screen.Signer.route) {
-                SignerScreen(viewModel = signerViewModel,
+                Column {
+                SigningModeNavigation(false, navController)
+                Box(Modifier.weight(1f)) { SignerScreen(viewModel = signerViewModel,
                     onReadIdentity = { navController.navigate(Screen.Identity.route) { launchSingleTop = true } },
-                    onReadCertificates = { navController.navigate(Screen.Certificates.route) { launchSingleTop = true } })
+                    onReadCertificates = { navController.navigate(Screen.Certificates.route) { launchSingleTop = true } }) }
+                }
             }
             if (pe.gob.reniec.dnie.BuildConfig.DEBUG) composable(Screen.Console.route) {
                 DevelopmentScreen(consoleViewModel)
             }
             composable(Screen.BatchSigner.route) {
-                SignerScreen(viewModel = batchSignerViewModel, batch = true,
+                Column {
+                SigningModeNavigation(true, navController)
+                Box(Modifier.weight(1f)) { SignerScreen(viewModel = batchSignerViewModel, batch = true,
                     onReadIdentity = { navController.navigate(Screen.Identity.route) { launchSingleTop = true } },
-                    onReadCertificates = { navController.navigate(Screen.Certificates.route) { launchSingleTop = true } })
+                    onReadCertificates = { navController.navigate(Screen.Certificates.route) { launchSingleTop = true } }) }
+                }
             }
             composable(Screen.Identity.route) {
                 IdentityScreen(viewModel = identityViewModel)
@@ -168,6 +198,17 @@ fun NavGraph(
                         trashMany = vaultViewModel::trashMany, organizeMany = vaultViewModel::organizeMany),
                     onBack = leaveVault)
             }
+        }
+    }
+}
+
+/** PDF and batch retain separate routes and ViewModels. */
+@Composable
+private fun SigningModeNavigation(batch: Boolean, navController: NavHostController) {
+    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        listOf(Screen.Signer to "PDF individual", Screen.BatchSigner to "Lotes").forEach { (screen, label) ->
+            TextButton(modifier = Modifier.weight(1f), enabled = (screen == Screen.BatchSigner) != batch,
+                onClick = { navController.navigate(screen.route) { launchSingleTop = true } }) { Text(label) }
         }
     }
 }

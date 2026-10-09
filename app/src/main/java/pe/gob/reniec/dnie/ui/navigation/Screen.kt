@@ -6,6 +6,8 @@ import androidx.compose.material.icons.filled.DriveFileRenameOutline
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -19,13 +21,13 @@ sealed class Screen(
 ) {
     data object Certificates : Screen(
         route = "certificates",
-        title = "Certificados",
+        title = "DNIe",
         icon = Icons.Default.Badge
     )
 
     data object Signer : Screen(
         route = "signer",
-        title = "Firmar PDF",
+        title = "Firma",
         icon = Icons.Default.DriveFileRenameOutline
     )
 
@@ -36,8 +38,12 @@ sealed class Screen(
     )
 
     companion object {
-        val items = listOf(Identity, Certificates, Signer, BatchSigner) + pe.gob.reniec.dnie.development.developmentDestinations()
+        // Defer nested objects until Screen superclass initialization has completed.
+        val items: List<Screen> by lazy { listOf(Home, Identity, Certificates, Signer, Vault) }
     }
+
+    data object Home : Screen("home", "Inicio", Icons.Default.Home)
+    data object Pc : Screen("pc", "PC", Icons.Default.Computer)
 
     data object Identity : Screen("identity", "Identidad", Icons.Default.Person)
     data object BatchSigner : Screen("batchSigner", "Lotes", Icons.AutoMirrored.Filled.LibraryBooks)

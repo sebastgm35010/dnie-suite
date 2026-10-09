@@ -26,7 +26,8 @@
     "docs/architecture/BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md": "current_vault_picker_lifecycle_fix",
     "docs/architecture/RETIRO_PASSKEYS_R3.md": "current_feature_retirement_and_upgrade_cleanup",
     "docs/architecture/DIAGNOSTICOS_DIRECTOS_Y_CAPAS_R1.md": "current_diagnostics_runtime_and_direct_export",
-    "docs/architecture/DIAGNOSTICO_RENDIMIENTO_UI_R2.md": "current_ui_performance_diagnosis"
+    "docs/architecture/DIAGNOSTICO_RENDIMIENTO_UI_R2.md": "current_ui_performance_diagnosis",
+    "docs/architecture/REDISENO_ANDROID_3_0_R1.md": "current_android_redesign_3_0_first_stage"
   },
   "features": [
     {
@@ -417,6 +418,37 @@
           "app/src/androidTest/java/pe/gob/reniec/dnie/RetiredCredentialUpgradeInstrumentedTest.kt"
         ]
       }
+    },
+    {
+      "id": "android_redesign",
+      "name": "Interfaz Android 3.0 basada en Aether",
+      "status": "first_stage_runtime_validated",
+      "note": "2026-10-08 · Rediseño Android R1: APK73 / 3.0.0-alpha01-interface instalada. Inicio, navegación de cinco secciones, acceso diferenciado Bridge/Suite y tema Aether adaptados a funciones reales. Cierre inicial de navegación corregido (lista lazy); 77 pruebas JVM pasan, una omitida y 28 Android pasan. Interiores y medición de rendimiento pendientes.",
+      "evidence": "docs/architecture/REDISENO_ANDROID_3_0_R1.md",
+      "files": {
+        "frontend": [
+          "app/src/main/java/pe/gob/reniec/dnie/ui/home/",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/navigation/",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/theme/"
+        ],
+        "test": [
+          "app/src/androidTest/java/pe/gob/reniec/dnie/ui/HomeNavigationTest.kt",
+          "app/src/androidTest/java/pe/gob/reniec/dnie/ui/UiInteractionStressTest.kt",
+          "app/src/test/java/pe/gob/reniec/dnie/ui/NavigationDestinationsTest.kt"
+        ],
+        "architecture": [
+          "docs/architecture/REDISENO_ANDROID_3_0_R1.md"
+        ]
+      },
+      "depends_on": [
+        "certificates",
+        "icao",
+        "pdf_android",
+        "batch_android",
+        "vault",
+        "suite",
+        "bridge"
+      ]
     }
   ],
   "pending": [
@@ -552,14 +584,21 @@
       "state": "open",
       "description": "R2 diagnóstico cotidiano ejecutado: navegación P50 6 ms y edición 11 ms, picos de medición/recomposición UI. Falta optimización y comparar variante optimizada, biblioteca grande y firma/lote/bóveda con DNI, Bridge/Suite. No extrapolar fixtures a NFC físico.",
       "evidence": "docs/architecture/DIAGNOSTICO_RENDIMIENTO_UI_R2.md"
+    },
+    {
+      "id": "android_redesign_inner_screens",
+      "feature": "android_redesign",
+      "state": "open",
+      "description": "Continuar el rediseño de interiores identidad/certificados/firma/bóveda y configuración Bridge/Suite. Medir entrada, edición y biblioteca real; preservar motores, lectura por bloques, recuperación y exclusión debug de producción.",
+      "evidence": "docs/architecture/REDISENO_ANDROID_3_0_R1.md"
     }
   ],
   "facts": [
     {
       "id": "android_current",
       "category": "artifact",
-      "value": "APK72 / 2.0.0-rc24-diagnostics instalada por ADB; D:/DNIeToolchain/AndroidPackages/dnie-evolution-2.0.0-rc24-diagnostics-debug.apk. SHA256 53E57C84A493F0D71BC923B6BC2E68165058B50A047DC36FC5135B1034745D3C. Passkeys retiradas. Diagnósticos directos y tres capturas en frío verificados; 26 pruebas Android pasan.",
-      "evidence": "docs/architecture/DIAGNOSTICOS_DIRECTOS_Y_CAPAS_R1.md"
+      "value": "APK73 / 3.0.0-alpha01-interface instalada por ADB. D:/DNIeToolchain/AndroidPackages/dnie-evolution-3.0.0-alpha01-interface-debug.apk. SHA256 88D5C658B8B03C84F55820C7F2BE02F400A60DC446FC0489E47CE74741487384. Primera etapa UI; cierre de navegación corregido, 77 JVM pasan + un omitido, 28 Android pasan; arranque normal final visible.",
+      "evidence": "docs/architecture/REDISENO_ANDROID_3_0_R1.md"
     },
     {
       "id": "desktop_current",

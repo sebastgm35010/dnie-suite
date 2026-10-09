@@ -189,6 +189,8 @@ class MainActivity : ComponentActivity() {
      */
     private fun dispatchNfcTag(tag: Tag) {
         pe.gob.reniec.dnie.diagnostics.DiagnosticLog.event("nfc", "tag_detected", "state" to currentRoute)
+        // Landing and connection chooser are navigation surfaces, not card operations.
+        if (currentRoute == Screen.Home.route || currentRoute == Screen.Pc.route) return
         if (certificatesViewModel.busy || identityViewModel.uiState.value.reading) return
         if (vaultViewModel.uiState.value.running) return
         if (signerViewModel.uiState.value is SignerUiState.Signing || batchSignerViewModel.uiState.value is SignerUiState.Signing) return

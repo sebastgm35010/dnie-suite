@@ -12,7 +12,7 @@ import pe.gob.reniec.dnie.MainActivity
 class SignerNavigationTest {
     @get:Rule val rule = createAndroidComposeRule<MainActivity>()
     @Test fun pdfAndBatchSigningHaveDifferentImportScreens() {
-        rule.onNodeWithText("Firmar PDF").performClick()
+        rule.onNodeWithTag("nav_signer").performClick()
         rule.onNodeWithText("Firma PDF").assertIsDisplayed()
         rule.onNodeWithText("Seleccionar PDF").assertIsDisplayed()
         rule.onNodeWithText("Añadir archivos").assertDoesNotExist()
