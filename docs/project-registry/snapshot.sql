@@ -3,6 +3,7 @@ CREATE TABLE checkpoints(name TEXT PRIMARY KEY, commit_hash TEXT NOT NULL, subje
 INSERT INTO "checkpoints" VALUES('checkpoint/android-pades-profile-h6','1638a666609660eb2841e3bea247090e64004c9e','fix(android): encode PDF CMS as DER without signingTime for PAdES profile');
 INSERT INTO "checkpoints" VALUES('checkpoint/android-redesign-r1-apk73','fcab0649dc0ffa35b01db4390548198a4c2f5c55','feat(android): start modular Aether redesign with home and PC entry');
 INSERT INTO "checkpoints" VALUES('checkpoint/android-redesign-r2-apk74','7abb133f6046b22460d97d9b976cf0c3b67e5145','feat(android): unify all feature screens, vault navigation and theme settings');
+INSERT INTO "checkpoints" VALUES('checkpoint/android-redesign-r3-apk75','9ca188e5477e68b962be313c9f6f0ff6ee035d9b','feat(android): streamline Aether screens and full-screen bridge session feedback');
 INSERT INTO "checkpoints" VALUES('checkpoint/android-tsa-reniec-h11','fc5e995db33ad54ecc4671ba348a4792c036eb8c','Add optional verified RENIEC timestamps to Android PDF signing');
 INSERT INTO "checkpoints" VALUES('checkpoint/certificate-validation-h8','8b8442acbfc1692d74290a1a3b60627a8053f921','feat(android): add modular certificate and OCSP CRL validation');
 INSERT INTO "checkpoints" VALUES('checkpoint/chain-revocation-detail-h9b','278d269d0bf8243b8c6443217d4d881e29619eaf','Expose per-CA revocation evidence and safe Android diagnostics');
@@ -5562,7 +5563,7 @@ INSERT INTO "metadata" VALUES('catalog_review_date','2026-10-09');
 INSERT INTO "metadata" VALUES('index_method','tracked files; lexical symbols/imports, not runtime call graph');
 INSERT INTO "metadata" VALUES('project','DnieSignerPeruEvolution');
 INSERT INTO "metadata" VALUES('schema_version','1');
-INSERT INTO "metadata" VALUES('source_commit','0a8a94c74ad09d19cd4b9a8c0d12777245c3dafd');
+INSERT INTO "metadata" VALUES('source_commit','9ca188e5477e68b962be313c9f6f0ff6ee035d9b');
 CREATE TABLE module_dependencies(source TEXT REFERENCES modules(id), target TEXT REFERENCES modules(id),
  scope TEXT NOT NULL, line INTEGER NOT NULL, PRIMARY KEY(source,target,scope,line));
 INSERT INTO "module_dependencies" VALUES('app','dnie-core','implementation',103);
