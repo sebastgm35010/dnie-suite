@@ -25,7 +25,8 @@
     "docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md": "current_unified_vault_archive_architecture",
     "docs/architecture/BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md": "current_vault_picker_lifecycle_fix",
     "docs/architecture/RETIRO_PASSKEYS_R3.md": "current_feature_retirement_and_upgrade_cleanup",
-    "docs/architecture/DIAGNOSTICOS_DIRECTOS_Y_CAPAS_R1.md": "current_diagnostics_runtime_and_direct_export"
+    "docs/architecture/DIAGNOSTICOS_DIRECTOS_Y_CAPAS_R1.md": "current_diagnostics_runtime_and_direct_export",
+    "docs/architecture/DIAGNOSTICO_RENDIMIENTO_UI_R2.md": "current_ui_performance_diagnosis"
   },
   "features": [
     {
@@ -337,7 +338,7 @@
       "id": "diagnostics",
       "name": "Diagnóstico aislado de producción",
       "status": "implemented_runtime_validated",
-      "note": "2026-10-08 · Diagnóstico R1: APK72 / 2.0.0-rc24-diagnostics instalada. Extracción directa ADB debug sin exportación manual; metadatos de hilo/proceso/capa y spans. 26 pruebas Android pasan; endpoint revalidado y tres lecturas con proceso cerrado pasan. CAN asíncrono, transacciones por lotes y protección de captura incompleta. Cuadros lentos instrumentados siguen pendientes de atribución.",
+      "note": "APK72 mantiene diagnóstico directo validado. R2 mide navegación caliente y edición por ADB: picos de medición/recomposición Compose; no atribuir a NFC. Trazas con pérdida descartadas. Optimización concreta pendiente.",
       "evidence": "docs/architecture/DIAGNOSTICOS_DIRECTOS_Y_CAPAS_R1.md",
       "files": {
         "engine": [
@@ -356,6 +357,10 @@
           "app/src/androidTest/java/pe/gob/reniec/dnie/DiagnosticsRuntimeInstrumentedTest.kt",
           "app/src/androidTest/java/pe/gob/reniec/dnie/ui/UiInteractionStressTest.kt",
           "dnie-diagnostics-core/src/test/"
+        ],
+        "architecture": [
+          "docs/architecture/DIAGNOSTICOS_DIRECTOS_Y_CAPAS_R1.md",
+          "docs/architecture/DIAGNOSTICO_RENDIMIENTO_UI_R2.md"
         ]
       },
       "depends_on": []
@@ -545,8 +550,8 @@
       "id": "diagnostics_live_nfc_and_ui_performance",
       "feature": "diagnostics",
       "state": "open",
-      "description": "Cuadros lentos bajo instrumental pendientes de atribución y medición cotidiana; comparar firma/lote/bóveda con DNI y Bridge/Suite por sus transportes. No extrapolar fixtures a operación NFC física.",
-      "evidence": "docs/architecture/DIAGNOSTICOS_DIRECTOS_Y_CAPAS_R1.md"
+      "description": "R2 diagnóstico cotidiano ejecutado: navegación P50 6 ms y edición 11 ms, picos de medición/recomposición UI. Falta optimización y comparar variante optimizada, biblioteca grande y firma/lote/bóveda con DNI, Bridge/Suite. No extrapolar fixtures a NFC físico.",
+      "evidence": "docs/architecture/DIAGNOSTICO_RENDIMIENTO_UI_R2.md"
     }
   ],
   "facts": [
@@ -627,6 +632,12 @@
       "category": "installed_ui_validated",
       "value": "APK69 / 2.0.0-rc21-vault-picker instalada y versión comprobada; D:/DNIeToolchain/AndroidPackages/dnie-evolution-2.0.0-rc21-vault-picker-debug.apk. 79 pruebas app pasan; 3 instrumentadas de interfaz pasan (8,537 s), con selector simulado. SAF real y DNI físico pendientes.",
       "evidence": "docs/architecture/BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md"
+    },
+    {
+      "id": "ui_performance_r2",
+      "category": "diagnosis",
+      "value": "APK72 sin modificación: navegación 2350/2348 cuadros, jank moderno 0,13%/0,04%, P50 6 ms; edición 528 cuadros, 0,95%, P50 11 ms. Trazas completas: medición Compose hasta 42,175 ms y recomposición al editar hasta 35,728 ms. Sin prueba física NFC.",
+      "evidence": "docs/architecture/DIAGNOSTICO_RENDIMIENTO_UI_R2.md"
     }
   ]
 }

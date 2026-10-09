@@ -6,6 +6,7 @@ INSERT INTO "checkpoints" VALUES('checkpoint/certificate-validation-h8','8b8442a
 INSERT INTO "checkpoints" VALUES('checkpoint/chain-revocation-detail-h9b','278d269d0bf8243b8c6443217d4d881e29619eaf','Expose per-CA revocation evidence and safe Android diagnostics');
 INSERT INTO "checkpoints" VALUES('checkpoint/ciudadano-digital-android22','aadb115ad55e268ef63333d507744d08f17600e9','docs: record Android22 successful official RENIEC bridge flow');
 INSERT INTO "checkpoints" VALUES('checkpoint/desktop-pades-profile-h7','38863f369c185dca27115c5c253a32dede8fd5be','fix(desktop): adopt Android-validated PAdES baseline PDF profile');
+INSERT INTO "checkpoints" VALUES('checkpoint/diagnostics-direct-apk72','b1d4d9fea76898d52e31ff926a3d82bf8fca141d','feat: add direct debug diagnostics and layered performance tracing');
 INSERT INTO "checkpoints" VALUES('checkpoint/firma-windows-1.8.14','91a3d4a05013e54fb086c9f1e0e39744cfbbcd3c','Validated Android18 RENIEC reading and Android21 Firma Peru PDF signing before core cleanup');
 INSERT INTO "checkpoints" VALUES('checkpoint/passkeys-independent-r2-apk70','5ae338ba5b507aaf6e3dc009602431a74ca0263d','feat(passkeys): add opt-in independent biometric store and restore navigation');
 INSERT INTO "checkpoints" VALUES('checkpoint/pre-android-pades-baseline-2026-10-07','247f3c02fa8727e22adf1dd5159a73aa96ca2d0a','docs: record unified scan and PAdES compliance investigation with CRL audit');
@@ -224,17 +225,17 @@ INSERT INTO "document_sections" VALUES('dnie-signing-link/README.md',1,'Canal pr
 INSERT INTO "document_sections" VALUES('dnie-signing-link/README.md',47,'Extensión H2');
 INSERT INTO "document_sections" VALUES('dnie-signing-ui/README.md',1,'Interfaz aislada de DNIe Suite');
 INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',1,'Estado vigente · corrección USB tras reinicio');
-INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',103,'Registro previo conservado: antes del reinicio');
-INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',106,'Por dónde retomar');
-INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',113,'Versión y checkpoint');
-INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',121,'Estado comprobado');
-INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',129,'Evidencia y límites');
-INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',137,'Historia');
+INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',105,'Registro previo conservado: antes del reinicio');
+INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',108,'Por dónde retomar');
+INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',115,'Versión y checkpoint');
+INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',123,'Estado comprobado');
+INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',131,'Evidencia y límites');
+INSERT INTO "document_sections" VALUES('docs/CONTEXTO_ACTUAL.md',139,'Historia');
 INSERT INTO "document_sections" VALUES('docs/PENDIENTES_ACTUALES.md',1,'Pendientes actuales · Windows rc4 USB / Android rc4-usb');
-INSERT INTO "document_sections" VALUES('docs/PENDIENTES_ACTUALES.md',71,'Siguiente secuencia');
-INSERT INTO "document_sections" VALUES('docs/PENDIENTES_ACTUALES.md',85,'Seguridad y distribución');
-INSERT INTO "document_sections" VALUES('docs/PENDIENTES_ACTUALES.md',100,'Otras funciones y deuda restante');
-INSERT INTO "document_sections" VALUES('docs/PENDIENTES_ACTUALES.md',110,'Ya resuelto: no reabrir sin una regresión nueva');
+INSERT INTO "document_sections" VALUES('docs/PENDIENTES_ACTUALES.md',73,'Siguiente secuencia');
+INSERT INTO "document_sections" VALUES('docs/PENDIENTES_ACTUALES.md',87,'Seguridad y distribución');
+INSERT INTO "document_sections" VALUES('docs/PENDIENTES_ACTUALES.md',102,'Otras funciones y deuda restante');
+INSERT INTO "document_sections" VALUES('docs/PENDIENTES_ACTUALES.md',112,'Ya resuelto: no reabrir sin una regresión nueva');
 INSERT INTO "document_sections" VALUES('docs/README.md',1,'Mapa de documentación');
 INSERT INTO "document_sections" VALUES('docs/README.md',5,'Entrada al proyecto');
 INSERT INTO "document_sections" VALUES('docs/README.md',24,'Funciones existentes');
@@ -337,6 +338,11 @@ INSERT INTO "document_sections" VALUES('docs/architecture/DIAGNOSTICO_PUENTE_QR_
 INSERT INTO "document_sections" VALUES('docs/architecture/DIAGNOSTICO_PUENTE_QR_6.md',9,'Resultado observado');
 INSERT INTO "document_sections" VALUES('docs/architecture/DIAGNOSTICO_PUENTE_QR_6.md',20,'Rendimiento y observabilidad');
 INSERT INTO "document_sections" VALUES('docs/architecture/DIAGNOSTICO_PUENTE_QR_6.md',26,'Siguiente trabajo');
+INSERT INTO "document_sections" VALUES('docs/architecture/DIAGNOSTICO_RENDIMIENTO_UI_R2.md',1,'Diagnóstico de tirones · APK72 · 2026-10-08');
+INSERT INTO "document_sections" VALUES('docs/architecture/DIAGNOSTICO_RENDIMIENTO_UI_R2.md',5,'Captura y aislamiento');
+INSERT INTO "document_sections" VALUES('docs/architecture/DIAGNOSTICO_RENDIMIENTO_UI_R2.md',19,'Hallazgos');
+INSERT INTO "document_sections" VALUES('docs/architecture/DIAGNOSTICO_RENDIMIENTO_UI_R2.md',27,'Integridad de las trazas');
+INSERT INTO "document_sections" VALUES('docs/architecture/DIAGNOSTICO_RENDIMIENTO_UI_R2.md',35,'Prioridad de corrección');
 INSERT INTO "document_sections" VALUES('docs/architecture/EMPAREJAMIENTO_QR_1_8_1.md',1,'Emparejamiento QR 1.8.1');
 INSERT INTO "document_sections" VALUES('docs/architecture/EMPAREJAMIENTO_QR_1_8_1.md',5,'Cambios');
 INSERT INTO "document_sections" VALUES('docs/architecture/EMPAREJAMIENTO_QR_1_8_1.md',14,'Validación realizada');
@@ -891,6 +897,7 @@ INSERT INTO "documents" VALUES('docs/architecture/DIAGNOSTICO_APERTURA_1_8_6.md'
 INSERT INTO "documents" VALUES('docs/architecture/DIAGNOSTICO_COMPLETO_MAC_SELECT77.md','Diagnóstico completo: MAC del SELECT 77','historical_or_reference');
 INSERT INTO "documents" VALUES('docs/architecture/DIAGNOSTICO_IDPLUG_APDU_2.md','IDplug: segundo registro APDU y captura conjunta','historical_or_reference');
 INSERT INTO "documents" VALUES('docs/architecture/DIAGNOSTICO_PUENTE_QR_6.md','Revisión del diagnóstico 6: puente QR','historical_or_reference');
+INSERT INTO "documents" VALUES('docs/architecture/DIAGNOSTICO_RENDIMIENTO_UI_R2.md','Diagnóstico de tirones · APK72 · 2026-10-08','current_ui_performance_diagnosis');
 INSERT INTO "documents" VALUES('docs/architecture/EMPAREJAMIENTO_QR_1_8_1.md','Emparejamiento QR 1.8.1','historical_or_reference');
 INSERT INTO "documents" VALUES('docs/architecture/GESTOR_NATIVO_WINDOWS_RC4.md','Gestor nativo Windows · rc4','historical_or_reference');
 INSERT INTO "documents" VALUES('docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md','Identidad estable entre certificados frente a clave de descifrado','identity_research_not_implemented');
@@ -1010,6 +1017,7 @@ INSERT INTO "facts" VALUES('password_recovery_requested','android_integrated_phy
 INSERT INTO "facts" VALUES('recovery_copy_and_rotation_limits','design_constraint','Archivo de respaldo + contraseña permite acceso independiente del DNI antiguo. Cambiar contraseña no revoca copias anteriores. DNIEBKP2 implementado; bóveda cotidiana continúa CIF hard + PIN.','docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md');
 INSERT INTO "facts" VALUES('vault_lifecycle_windows_first','android_integrated_physical_pending','2026-10-08 · Bóveda R6: APK68 instalada; biblioteca única con Cifrar/Descifrar/Importar/Exportar. Respaldo autosuficiente DNIEBKP2 comprimido y cifrado por contraseña. Importar verifica DNI destino y recifra todo, actualiza UUID coincidentes sin duplicarlos, conserva archivos ajenos y usa journal durable. 137 pruebas JVM y 4 instrumentadas Android pasan; NFC/SAF reales y cruce Windows pendientes.','docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md');
 INSERT INTO "facts" VALUES('android_candidate_vault_picker','installed_ui_validated','APK69 / 2.0.0-rc21-vault-picker instalada y versión comprobada; D:/DNIeToolchain/AndroidPackages/dnie-evolution-2.0.0-rc21-vault-picker-debug.apk. 79 pruebas app pasan; 3 instrumentadas de interfaz pasan (8,537 s), con selector simulado. SAF real y DNI físico pendientes.','docs/architecture/BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md');
+INSERT INTO "facts" VALUES('ui_performance_r2','diagnosis','APK72 sin modificación: navegación 2350/2348 cuadros, jank moderno 0,13%/0,04%, P50 6 ms; edición 528 cuadros, 0,95%, P50 11 ms. Trazas completas: medición Compose hasta 42,175 ms y recomposición al editar hasta 35,728 ms. Sin prueba física NFC.','docs/architecture/DIAGNOSTICO_RENDIMIENTO_UI_R2.md');
 CREATE TABLE feature_dependencies(source TEXT REFERENCES features(id), target TEXT REFERENCES features(id),
  PRIMARY KEY(source,target));
 INSERT INTO "feature_dependencies" VALUES('pdf_android','cms');
@@ -1392,6 +1400,8 @@ INSERT INTO "feature_files" VALUES('diagnostics','tools/android-diagnostics/test
 INSERT INTO "feature_files" VALUES('diagnostics','app/src/androidTest/java/pe/gob/reniec/dnie/DiagnosticsRuntimeInstrumentedTest.kt','tests');
 INSERT INTO "feature_files" VALUES('diagnostics','app/src/androidTest/java/pe/gob/reniec/dnie/ui/UiInteractionStressTest.kt','tests');
 INSERT INTO "feature_files" VALUES('diagnostics','dnie-diagnostics-core/src/test/java/pe/gob/reniec/dnie/diagnostics/DiagnosticLogTest.kt','tests');
+INSERT INTO "feature_files" VALUES('diagnostics','docs/architecture/DIAGNOSTICOS_DIRECTOS_Y_CAPAS_R1.md','architecture');
+INSERT INTO "feature_files" VALUES('diagnostics','docs/architecture/DIAGNOSTICO_RENDIMIENTO_UI_R2.md','architecture');
 INSERT INTO "feature_files" VALUES('vault_recovery','dnie-vault-recovery/src/main/java/pe/gob/reniec/dnie/vault/recovery/RecoveryKdf.kt','engine');
 INSERT INTO "feature_files" VALUES('vault_recovery','dnie-vault-recovery/src/main/java/pe/gob/reniec/dnie/vault/recovery/RecoveryModels.kt','engine');
 INSERT INTO "feature_files" VALUES('vault_recovery','dnie-vault-recovery/src/main/java/pe/gob/reniec/dnie/vault/recovery/RecoveryPackageCodec.kt','engine');
@@ -1432,7 +1442,7 @@ INSERT INTO "features" VALUES('passkeys','Proveedor passkeys Android','removed_b
 INSERT INTO "features" VALUES('bridge','Puente NFC ↔ PCSC','validated_real','Compatibilidad abierta ReFirma/Firma Perú y Ciudadano Digital probada; traducción PACE y modo privado separados.','docs/architecture/ARQUITECTURA_ACTUAL_2_0.md');
 INSERT INTO "features" VALUES('windows_host','Gestor, servicio y lector virtual Windows','validated_real','Instalación PCSC sigue siendo requerida para compatibilidad abierta; suite privada no depende de exposición PCSC.','docs/architecture/ARQUITECTURA_ACTUAL_2_0.md');
 INSERT INTO "features" VALUES('orchestration','Coordinación modular Suite + Bridge','implemented_partial','Adaptador .NET opcional; permiso de modo solo local a GUI, sin exclusión global entre procesos.','docs/suite/INTEGRACION_BRIDGE_MODULAR_H13.md');
-INSERT INTO "features" VALUES('diagnostics','Diagnóstico aislado de producción','implemented_runtime_validated','2026-10-08 · Diagnóstico R1: APK72 / 2.0.0-rc24-diagnostics instalada. Extracción directa ADB debug sin exportación manual; metadatos de hilo/proceso/capa y spans. 26 pruebas Android pasan; endpoint revalidado y tres lecturas con proceso cerrado pasan. CAN asíncrono, transacciones por lotes y protección de captura incompleta. Cuadros lentos instrumentados siguen pendientes de atribución.','docs/architecture/DIAGNOSTICOS_DIRECTOS_Y_CAPAS_R1.md');
+INSERT INTO "features" VALUES('diagnostics','Diagnóstico aislado de producción','implemented_runtime_validated','APK72 mantiene diagnóstico directo validado. R2 mide navegación caliente y edición por ADB: picos de medición/recomposición Compose; no atribuir a NFC. Trazas con pérdida descartadas. Optimización concreta pendiente.','docs/architecture/DIAGNOSTICOS_DIRECTOS_Y_CAPAS_R1.md');
 INSERT INTO "features" VALUES('vault_recovery','Recuperación portable con paquete separado','android_integrated_physical_pending','2026-10-08 · Bóveda R7: corregido inicio tras SAF: selector primero, credenciales después y autorización explícita. onPause limpiaba PIN y R6 rechazaba el inicio automático, dejando destino vacío. APK69 instalada por ADB y versión comprobada; 79 pruebas app pasan y 3 pruebas instrumentadas de interfaz pasan (8,537 s). El selector se simula con registro aislado; exportación/importación con SAF real y DNI físico pendientes.','docs/architecture/BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md');
 INSERT INTO "features" VALUES('upgrade_cleanup','Limpieza de funciones retiradas al actualizar','implemented_verified_on_android','Limpieza automática al primer arranque comprobada con datos previos reales; aliases y proveedor ausentes. Receptor de actualización implementado; en este dispositivo no se observó ejecución antes de abrir la app. 5 pruebas Android pasan.','docs/architecture/RETIRO_PASSKEYS_R3.md');
 CREATE TABLE files(path TEXT PRIMARY KEY, module TEXT REFERENCES modules(id), kind TEXT NOT NULL,
@@ -1900,8 +1910,8 @@ INSERT INTO "files" VALUES('dnie-vault-recovery/src/main/java/pe/gob/reniec/dnie
 INSERT INTO "files" VALUES('dnie-vault-recovery/src/test/java/pe/gob/reniec/dnie/vault/recovery/RecoveryFailureScenariosTest.kt','dnie-vault-recovery','.kt','test','16b0afd495f352a650bd797e3a34e3fd68e86ea4a004ae39e417128e6d2f651e',10683);
 INSERT INTO "files" VALUES('dnie-vault-recovery/src/test/java/pe/gob/reniec/dnie/vault/recovery/RecoveryPackageTest.kt','dnie-vault-recovery','.kt','test','2d20452a07db228d33d3caef45ae67cf1022303c489347d8dc52487b97fb6646',10596);
 INSERT INTO "files" VALUES('dnie-vault-recovery/src/test/java/pe/gob/reniec/dnie/vault/recovery/VaultArchiveTest.kt','dnie-vault-recovery','.kt','test','146a79e6018c3c8264d420b32ba7a78086ff4fe368b95128f9186a3ba92b9d16',10048);
-INSERT INTO "files" VALUES('docs/CONTEXTO_ACTUAL.md',NULL,'.md','documentation','8ccd069369d7ca5b517aca298bd656f40c535543d45cc949cbe9340b5a35a5fc',26882);
-INSERT INTO "files" VALUES('docs/PENDIENTES_ACTUALES.md',NULL,'.md','documentation','260699e2706c9d41c83ff95700f73d2fa28f2584122ded3c9ea2216b91009bf8',22875);
+INSERT INTO "files" VALUES('docs/CONTEXTO_ACTUAL.md',NULL,'.md','documentation','c8ad51b4b029a0fe0674ddec728e587dc2684bc70e83ca28c2c45fd85ac1dc06',27217);
+INSERT INTO "files" VALUES('docs/PENDIENTES_ACTUALES.md',NULL,'.md','documentation','0f75b92729084336f0f9cbee31e01137e8b631ea68c434a164447d0753262e7a',23210);
 INSERT INTO "files" VALUES('docs/README.md',NULL,'.md','documentation','f8a67f28622d75a7891437265bc3eae8228a7b295059225c5e7894c0a0384c6e',5012);
 INSERT INTO "files" VALUES('docs/architecture/AISLAMIENTO_USB_USBDK.md',NULL,'.md','documentation','dd2fd5c975277088907e2c70b9bca34c8d5fb8a13d4a51ae3abc58ff475b3477',4647);
 INSERT INTO "files" VALUES('docs/architecture/ALCANCE_AISLAMIENTO_MINIDRIVER.md',NULL,'.md','documentation','6f942a4e2a78c9b0c2f4a53e5f403d6133a96305935ee60315554b31f3f31bea',2639);
@@ -1925,6 +1935,7 @@ INSERT INTO "files" VALUES('docs/architecture/DIAGNOSTICO_APERTURA_1_8_6.md',NUL
 INSERT INTO "files" VALUES('docs/architecture/DIAGNOSTICO_COMPLETO_MAC_SELECT77.md',NULL,'.md','documentation','59790eea142c69520a171a5d6dd98440a9b0794f51e2fd8ccd814510b3371ac4',2973);
 INSERT INTO "files" VALUES('docs/architecture/DIAGNOSTICO_IDPLUG_APDU_2.md',NULL,'.md','documentation','7b70b321afede8c43acc1b7af2a7c64a91f33332fcba0bd1417b04e9dac23f10',10376);
 INSERT INTO "files" VALUES('docs/architecture/DIAGNOSTICO_PUENTE_QR_6.md',NULL,'.md','documentation','b162f7e35453c35987b14805f709ce9da84cd20ea84b37b8cca94e6d812e2f3c',3609);
+INSERT INTO "files" VALUES('docs/architecture/DIAGNOSTICO_RENDIMIENTO_UI_R2.md',NULL,'.md','documentation','ca5de98a560af251f7db266e166d725fee0fbf48403684543578b9370fc9e346',7104);
 INSERT INTO "files" VALUES('docs/architecture/EMPAREJAMIENTO_QR_1_8_1.md',NULL,'.md','documentation','72f10dc2686fde5db98b6c7ec0192eb77e3bcd433744d608733d3edebb51b799',2954);
 INSERT INTO "files" VALUES('docs/architecture/GESTOR_NATIVO_WINDOWS_RC4.md',NULL,'.md','documentation','b4e7455707236adcee0c06c336c3584a74023b374807e59ffdc0fc99ecc7b5c2',4133);
 INSERT INTO "files" VALUES('docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md',NULL,'.md','documentation','63cb947db7b8f508ef3c223e5a098362d410997cea1597e356126163d10ef73b',7658);
@@ -2180,7 +2191,7 @@ INSERT INTO "files" VALUES('tools/host-diagnostics/watch-phone-apdu.py',NULL,'.p
 INSERT INTO "files" VALUES('tools/host-diagnostics/watch-process-events.ps1',NULL,'.ps1','tool','752d70e4e89f05d28ca38f7f10138b4ac794abc58b9e32f755db0add3e98547f',2239);
 INSERT INTO "files" VALUES('tools/host-diagnostics/watch-reniec-reader.py',NULL,'.py','tool','ef5bbb0b336d6d3f0a10f015cb635bf52e2db6777a71e1e8b11489681dcb0cb7',8461);
 INSERT INTO "files" VALUES('tools/host-diagnostics/watch-tailnet-session.py',NULL,'.py','tool','12d422cc108d2b81535e51453ce599e900bbe1b1ad5696d61fd2a81e4c33c913',6365);
-INSERT INTO "files" VALUES('tools/project-registry/catalog.json',NULL,'.json','tool','18e65d8ffa7d3ff209b0eecb8add22c757491d9587e656197c5c4940a8021288',27619);
+INSERT INTO "files" VALUES('tools/project-registry/catalog.json',NULL,'.json','tool','21762384b8cd516d22740c413696d61a3ded4d14cfad55c25c5f91d0e91ff2c0',28195);
 INSERT INTO "files" VALUES('tools/project-registry/registry.py',NULL,'.py','tool','34c9eeb70779c4c9968250b8542d94b4a29d35d048f87624679b2c5a879fa986',11521);
 INSERT INTO "files" VALUES('tools/project-registry/schema.sql',NULL,'.sql','tool','3ab4590979168acbb2e9b654cd5abc9a929fd97eac37f24bea142cd30647a2fb',2808);
 INSERT INTO "files" VALUES('tools/project-registry/test_registry.py',NULL,'.py','tool','df595b00d8a8bd25c579e1e6c41f81dc248a8511417ebf599a24b0d39682e289',4254);
@@ -5333,7 +5344,7 @@ INSERT INTO "metadata" VALUES('catalog_review_date','2026-10-08');
 INSERT INTO "metadata" VALUES('index_method','tracked files; lexical symbols/imports, not runtime call graph');
 INSERT INTO "metadata" VALUES('project','DnieSignerPeruEvolution');
 INSERT INTO "metadata" VALUES('schema_version','1');
-INSERT INTO "metadata" VALUES('source_commit','3fbdec484fee492526be0f399f9e4411572ddabf');
+INSERT INTO "metadata" VALUES('source_commit','b1d4d9fea76898d52e31ff926a3d82bf8fca141d');
 CREATE TABLE module_dependencies(source TEXT REFERENCES modules(id), target TEXT REFERENCES modules(id),
  scope TEXT NOT NULL, line INTEGER NOT NULL, PRIMARY KEY(source,target,scope,line));
 INSERT INTO "module_dependencies" VALUES('app','dnie-core','implementation',103);
@@ -5421,7 +5432,7 @@ INSERT INTO "pending" VALUES('icao_other_documents','icao','needs_physical_test'
 INSERT INTO "pending" VALUES('passkeys_navigation_regression','passkeys','cancelled_by_user','Función retirada por decisión del usuario; no continuar su implementación ni pruebas de uso.','docs/architecture/RETIRO_PASSKEYS_R3.md');
 INSERT INTO "pending" VALUES('passkeys_independent_store','passkeys','cancelled_by_user','Función retirada por decisión del usuario; no continuar su implementación ni pruebas de uso.','docs/architecture/RETIRO_PASSKEYS_R3.md');
 INSERT INTO "pending" VALUES('passkeys_independent_recovery','passkeys','cancelled_by_user','Función retirada por decisión del usuario; no continuar su implementación ni pruebas de uso.','docs/architecture/RETIRO_PASSKEYS_R3.md');
-INSERT INTO "pending" VALUES('diagnostics_live_nfc_and_ui_performance','diagnostics','open','Cuadros lentos bajo instrumental pendientes de atribución y medición cotidiana; comparar firma/lote/bóveda con DNI y Bridge/Suite por sus transportes. No extrapolar fixtures a operación NFC física.','docs/architecture/DIAGNOSTICOS_DIRECTOS_Y_CAPAS_R1.md');
+INSERT INTO "pending" VALUES('diagnostics_live_nfc_and_ui_performance','diagnostics','open','R2 diagnóstico cotidiano ejecutado: navegación P50 6 ms y edición 11 ms, picos de medición/recomposición UI. Falta optimización y comparar variante optimizada, biblioteca grande y firma/lote/bóveda con DNI, Bridge/Suite. No extrapolar fixtures a NFC físico.','docs/architecture/DIAGNOSTICO_RENDIMIENTO_UI_R2.md');
 CREATE TABLE symbols(id INTEGER PRIMARY KEY, path TEXT NOT NULL REFERENCES files(path),
  name TEXT NOT NULL, qualified_name TEXT NOT NULL, kind TEXT NOT NULL, line INTEGER NOT NULL);
 INSERT INTO "symbols" VALUES(1,'app/src/androidTest/java/pe/gob/reniec/dnie/DiagnosticsRuntimeInstrumentedTest.kt','DiagnosticsRuntimeInstrumentedTest','pe.gob.reniec.dnie.DiagnosticsRuntimeInstrumentedTest','class',17);

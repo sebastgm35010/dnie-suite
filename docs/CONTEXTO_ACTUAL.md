@@ -1,5 +1,7 @@
 # Estado vigente · corrección USB tras reinicio
 
+2026-10-08 · Rendimiento R2: capturas ADB fuera de instrumental localizan picos de medición de Compose al entrar en pestañas y recomposición al editar. Navegación caliente P50 6 ms; edición 11 ms. APK72 intacta; optimización y NFC físico pendientes. [Diagnóstico y límites](architecture/DIAGNOSTICO_RENDIMIENTO_UI_R2.md).
+
 2026-10-08 · Diagnóstico R1: APK72 / 2.0.0-rc24-diagnostics instalada. Extracción directa ADB debug sin exportación manual; metadatos de hilo/proceso/capa y spans. 26 pruebas Android pasan; endpoint revalidado y tres lecturas con proceso cerrado pasan. CAN asíncrono, transacciones por lotes y protección de captura incompleta. Cuadros lentos instrumentados siguen pendientes de atribución. [Detalle](architecture/DIAGNOSTICOS_DIRECTOS_Y_CAPAS_R1.md).
 
 2026-10-08 · Retiro R3: passkeys eliminadas. APK71 / 2.0.0-rc23-core-only instalada por ADB. Limpieza automática al primer arranque verificada: catálogo y aliases ausentes, proveedor no registrado. 165 pruebas JVM y 5 Android pasan; un caso Windows omitido por permisos se verifica en Android. Bóveda y emparejamientos fuera del alcance de borrado. [Detalle](architecture/RETIRO_PASSKEYS_R3.md).
