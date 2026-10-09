@@ -431,7 +431,7 @@
       "id": "android_redesign",
       "name": "Interfaz Android 3.0 basada en Aether",
       "status": "implemented_runtime_validated",
-      "note": "2026-10-09 · Conexiones R5: APK77 / 3.0.0-alpha05-mobility instalada sin borrar datos. Suite y Bridge Wi-Fi ya no fijan identidad a la IP; TLS y token siguen obligatorios. Windows conserva la identidad DPAPI al cambiar IP. TLS directo permite editar destino; Suite tiene pantalla completa independiente y limpia conexión al finalizar lote único. 159 JVM pasan / 3 omitidas, release compilado. Pruebas de pantallas y cambio físico de IP pendientes.",
+      "note": "2026-10-09 · Conexiones R5: APK77 / 3.0.0-alpha05-mobility instalada sin borrar datos. Suite y Bridge Wi-Fi ya no fijan identidad a la IP; TLS y token siguen obligatorios. Windows conserva la identidad DPAPI al cambiar IP. TLS directo permite editar destino; Suite tiene pantalla completa independiente y limpia conexión al finalizar lote único. 159 JVM pasan / 3 omitidas, release compilado y 3 pruebas instrumentadas de Suite/Bridge pasan en el móvil. Cambio físico de IP con DNI pendiente.",
       "evidence": "docs/architecture/CONEXIONES_DIRECCION_E_IDENTIDAD_R5.md",
       "files": {
         "frontend": [
@@ -635,7 +635,7 @@
       "id": "android_redesign_physical_workflows",
       "feature": "android_redesign",
       "state": "open",
-      "description": "Validar cambio real de IP PC con emparejamiento existente (sin QR nuevo), PC autenticada antes de NFC, retirada/presencia en Bridge LAN/Tailscale/USB y Suite. R5 instalada, TLS/DPAPI sintéticos pasan; prueba instrumentada preparada pendiente de desbloqueo. No confundirlo con firma física.",
+      "description": "Validar cambio real de IP PC con emparejamiento existente (sin QR nuevo), PC autenticada antes de NFC, retirada/presencia en Bridge LAN/Tailscale/USB y Suite. R5 instalada, TLS/DPAPI sintéticos pasan; 3 pruebas instrumentadas de pantallas Suite/Bridge pasan en el móvil. No confundirlo con firma física.",
       "evidence": "docs/architecture/CONEXIONES_DIRECCION_E_IDENTIDAD_R5.md"
     },
     {
@@ -657,7 +657,7 @@
     {
       "id": "android_current",
       "category": "installed_ui_validated",
-      "value": "2026-10-09 · Conexiones R5: APK77 / 3.0.0-alpha05-mobility instalada sin borrar datos. Suite y Bridge Wi-Fi ya no fijan identidad a la IP; TLS y token siguen obligatorios. Windows conserva la identidad DPAPI al cambiar IP. TLS directo permite editar destino; Suite tiene pantalla completa independiente y limpia conexión al finalizar lote único. 159 JVM pasan / 3 omitidas, release compilado. Pruebas de pantallas y cambio físico de IP pendientes.",
+      "value": "2026-10-09 · Conexiones R5: APK77 / 3.0.0-alpha05-mobility instalada sin borrar datos. Suite y Bridge Wi-Fi ya no fijan identidad a la IP; TLS y token siguen obligatorios. Windows conserva la identidad DPAPI al cambiar IP. TLS directo permite editar destino; Suite tiene pantalla completa independiente y limpia conexión al finalizar lote único. 159 JVM pasan / 3 omitidas, release compilado y 3 pruebas instrumentadas de Suite/Bridge pasan en el móvil. Cambio físico de IP con DNI pendiente.",
       "evidence": "docs/architecture/CONEXIONES_DIRECCION_E_IDENTIDAD_R5.md"
     },
     {

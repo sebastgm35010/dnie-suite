@@ -33,7 +33,7 @@ APK77 `3.0.0-alpha05-mobility` compilada e instalada por ADB conservando datos. 
 - Windows GUI: `D:/DNIeToolchain/Builds/mobility77/signing-ui/install/dnie-signing-ui/DNIe Suite.lnk`. Distribución con adaptador Bridge actual, separado y recompilado; el servicio y controlador instalados no se sustituyen. La GUI ya no indica renovar emparejamiento por IP.
 - CLI: `D:/DNIeToolchain/Builds/mobility77/signing-desktop/install/dnie-signing-desktop/bin/dnie-signing-desktop.bat`.
 - Logs de compilación fuera de Git: `D:/DNIeToolchain/address-mobility-build-d.log`, `address-mobility-ui-build.log`, `address-mobility-integration-build.log`.
-- Prueba instrumentada de pantallas preparada; pendiente de desbloqueo del móvil.
+- Android físico por ADB: OK (3 tests), 4.954 s. Dos pruebas Suite: formulario → pantalla completa → Detener, IP autenticada actual, PC antes de DNI y único botón ante fallo. Una prueba Bridge: LAN/Tailscale/USB con progresión real de los estados proyectados y cancelación. Fixtures aislados: no abren DNI ni sesión remota real. Registro: `D:/DNIeToolchain/address-mobility-instrumented.log`.
 
 La primera batería ejecutada sobre G: pasó los casos TLS de movilidad, pero falló en pruebas que requieren ACL Windows sobre el sistema de archivos de Google Drive. Se repitió en D: manteniendo las ACL y DPAPI de producción.
 
