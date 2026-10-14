@@ -44,11 +44,16 @@ internal object ModernStampRenderer {
                 element.fill?.let { fill(it);box(element);content.fill() }
                 element.stroke?.let { stroke(it);content.setLineWidth(element.thickness);box(element);content.stroke() }
             }
+            is StampElement.Circle -> {
+                val circle=StampElement.Box(element.cx-element.radius,element.cy-element.radius,2*element.radius,2*element.radius,element.radius)
+                element.fill?.let { fill(it);box(circle);content.fill() }
+                element.stroke?.let { stroke(it);content.setLineWidth(element.thickness);box(circle);content.stroke() }
+            }
             is StampElement.Line -> { stroke(element.color);content.setLineWidth(element.thickness)
                 content.moveTo(element.x,height-element.y);content.lineTo(element.endX,height-element.endY);content.stroke() }
             is StampElement.Path -> { stroke(element.color);content.setLineWidth(element.thickness)
                 element.points.forEachIndexed { index,p -> if(index==0) content.moveTo(p.first,height-p.second) else content.lineTo(p.first,height-p.second) }
-                if(element.closed) content.closePath();content.stroke() }
+                if(element.closed) content.closePath();val pathFill=element.fill;if(pathFill!=null) { fill(pathFill);content.fillAndStroke() } else content.stroke() }
             is StampElement.Text -> { fill(element.color);content.beginText();content.setFont(if(element.bold) bold else regular,element.size)
                 content.newLineAtOffset(element.x,height-element.baseline);content.showText(safe(element.text,element.bold));content.endText() }
             is StampElement.Handwriting -> {

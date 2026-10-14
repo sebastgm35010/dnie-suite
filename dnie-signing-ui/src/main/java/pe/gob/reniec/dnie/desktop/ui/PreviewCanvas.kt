@@ -4,13 +4,29 @@ import java.awt.*
 import java.awt.event.*
 import java.awt.image.BufferedImage
 import javax.swing.JPanel
+import javax.swing.JViewport
+import javax.swing.Scrollable
+import javax.swing.SwingConstants
 import pe.gob.reniec.dnie.pdf.*
 import pe.gob.reniec.dnie.pdf.StampPlacementGeometry.Handle
 
 /** Pointer events only; PDF adapter supplies page and stamp images. */
-class PreviewCanvas : JPanel() {
+class PreviewCanvas : JPanel(), Scrollable {
+    var zoom=1.0
+        set(value) { field=value.coerceIn(.5,3.0);revalidate();repaint() }
+    private fun extent()=(parent as? JViewport)?.extentSize?.takeIf { it.width>40 && it.height>40 }?:size.takeIf { it.width>40 && it.height>40 }?:Dimension(650,720)
+    private fun pageSize()=image?.let { Dimension(it.width,it.height) }?:Dimension(595,842)
+    override fun getPreferredSize(): Dimension {
+        val view=extent();val page=pageSize();val fit=minOf((view.width-40).toDouble()/page.width,(view.height-40).toDouble()/page.height).coerceAtLeast(.01)
+        return Dimension(maxOf(view.width,(page.width*fit*zoom+40).toInt()),maxOf(view.height,(page.height*fit*zoom+40).toInt()))
+    }
+    override fun getPreferredScrollableViewportSize()=Dimension(650,720)
+    override fun getScrollableTracksViewportWidth()=zoom<=1.0
+    override fun getScrollableTracksViewportHeight()=zoom<=1.0
+    override fun getScrollableUnitIncrement(r: Rectangle,orientation: Int,direction: Int)=24
+    override fun getScrollableBlockIncrement(r: Rectangle,orientation: Int,direction: Int)=if(orientation==SwingConstants.VERTICAL) (r.height-24).coerceAtLeast(24) else (r.width-24).coerceAtLeast(24)
     var image: BufferedImage?=null
-        set(value) { field=value;repaint() }
+        set(value) { field?.takeIf {it!==value}?.flush();field=value;revalidate();repaint() }
     var stampImage: BufferedImage?=null
         set(value) { field?.takeIf { it!==value }?.flush();field=value;repaint() }
     var stampError: String?=null
@@ -54,8 +70,9 @@ class PreviewCanvas : JPanel() {
         addMouseListener(mouse);addMouseMotionListener(mouse)
     }
     internal fun pageBounds(): Rectangle? {
-        val img=image?:return null
-        val scale=minOf((width-40).toDouble()/img.width,(height-40).toDouble()/img.height).coerceAtLeast(.01)
+        if(width<40 || height<40)return null
+        val img=pageSize();val view=extent()
+        val scale=minOf((view.width-40).toDouble()/img.width,(view.height-40).toDouble()/img.height).coerceAtLeast(.01)*zoom
         val w=(img.width*scale).toInt();val h=(img.height*scale).toInt()
         return Rectangle((width-w)/2,(height-h)/2,w,h)
     }
@@ -78,7 +95,17 @@ class PreviewCanvas : JPanel() {
             val page=pageBounds()
             if(page==null) { g.color=AetherSwingTheme.muted;g.drawString("Selecciona un PDF para colocar tu firma",28,48);return }
             g.color=Color(11,28,48,28);g.fillRoundRect(page.x-2,page.y+4,page.width+4,page.height+4,6,6)
-            g.drawImage(image,page.x,page.y,page.width,page.height,null);g.color=Color(0xCBDBF5);g.drawRect(page.x,page.y,page.width,page.height)
+            if(image!=null) g.drawImage(image,page.x,page.y,page.width,page.height,null) else {
+                g.color=Color.WHITE;g.fillRect(page.x,page.y,page.width,page.height)
+                val margin=(page.width*.10).toInt();val left=page.x+margin;val lineWidth=page.width-2*margin
+                g.color=AetherSwingTheme.container
+                for(i in 0..9) { val y=page.y+(page.height*(.10+i*.035)).toInt();g.fillRoundRect(left,y,if(i%3==2) (lineWidth*.65).toInt() else lineWidth,4,4,4) }
+                g.color=AetherSwingTheme.muted;g.font=font.deriveFont(Font.BOLD,13f)
+                val hint="Tu diseño empieza aquí";g.drawString(hint,page.x+(page.width-g.fontMetrics.stringWidth(hint))/2,page.y+page.height/2)
+                g.font=font.deriveFont(11f)
+                val detail="Añade un PDF para firmar";g.drawString(detail,page.x+(page.width-g.fontMetrics.stringWidth(detail))/2,page.y+page.height/2+20)
+            }
+            g.color=Color(0xCBDBF5);g.drawRect(page.x,page.y,page.width,page.height)
             if(visibleStamp) {
                 val r=stampBounds(page)
                 stampImage?.let { g.drawImage(it,r.x,r.y,r.width,r.height,null) }

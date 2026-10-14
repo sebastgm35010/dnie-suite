@@ -13,7 +13,8 @@ sealed interface StampElement {
         val fill: Int?=null,val stroke: Int?=null,val thickness: Float=.6f): StampElement
     data class Line(val x: Float,val y: Float,val endX: Float,val endY: Float,val color: Int,val thickness: Float=.5f): StampElement
     data class Text(val x: Float,val baseline: Float,val text: String,val size: Float,val bold: Boolean,val color: Int): StampElement
-    data class Path(val points: List<Pair<Float,Float>>,val color: Int,val thickness: Float=1f,val closed: Boolean=false): StampElement
+    data class Path(val points: List<Pair<Float,Float>>,val color: Int,val thickness: Float=1f,val closed: Boolean=false,val fill: Int?=null): StampElement
+    data class Circle(val cx: Float,val cy: Float,val radius: Float,val fill: Int?=null,val stroke: Int?=null,val thickness: Float=.6f): StampElement
     data class Handwriting(val x: Float,val y: Float,val width: Float,val height: Float): StampElement
 }
 
@@ -79,7 +80,7 @@ object StampLayoutEngine {
             val x=(column-side)/2f;val y=(height-side)/2f
             when {
                 a.requiresHandwritten -> elements+=StampElement.Handwriting(padding,padding,column-2*padding,height-2*padding)
-                a.badge==StampBadgeType.SEAL_VECTOR -> seal(elements,x,y,side,c.accentRgb,measure)
+                a.badge==StampBadgeType.SEAL_VECTOR -> seal(elements,x,y,side,c,measure)
                 a.badge==StampBadgeType.QR_VERIFICATION -> qr(elements,x,y,side,publicQrPayload(name,dni,options,timestamp),c.accentRgb)
             }
         } else if(a.requiresHandwritten) {
@@ -164,13 +165,15 @@ object StampLayoutEngine {
             }
         }
     }
-    private fun seal(out: MutableList<StampElement>,x: Float,y: Float,side: Float,color: Int,measure: (String,Boolean,Float)->Float) {
-        // Original geometric emblem, not an assertion of certification or government endorsement.
-        out+=StampElement.Box(x+side*.08f,y+side*.08f,side*.84f,side*.84f,side*.42f,null,color,.8f)
-        out+=StampElement.Box(x+side*.14f,y+side*.14f,side*.72f,side*.72f,side*.36f,null,color,.45f)
-        out+=StampElement.Path(listOf(.34f to .25f,.66f to .25f,.64f to .48f,.50f to .58f,.36f to .48f).map { (a,b)->x+side*a to y+side*b },color,.9f,true)
-        out+=StampElement.Path(listOf(.40f to .40f,.47f to .47f,.60f to .33f).map { (a,b)->x+side*a to y+side*b },color,1.2f)
-        val size=side*.16f;val label="DNIe"
-        out+=StampElement.Text(x+(side-measure(label,true,size))/2,y+side*.77f,label,size,true,color)
+    private fun seal(out: MutableList<StampElement>,x: Float,y: Float,side: Float,theme: StampColorTheme,measure: (String,Boolean,Float)->Float) {
+        // Decorative product emblem, not a government seal or trust assertion.
+        val color=theme.accentRgb
+        out+=StampElement.Circle(x+side*.5f,y+side*.5f,side*.44f,theme.backgroundRgb,color,.8f)
+        out+=StampElement.Circle(x+side*.5f,y+side*.5f,side*.39f,null,theme.borderRgb,.45f)
+        out+=StampElement.Path(listOf(.29f to .23f,.71f to .23f,.67f to .49f,.60f to .59f,.50f to .66f,.40f to .59f,.33f to .49f).map { (a,b)->x+side*a to y+side*b },color,.6f,true,color)
+        out+=StampElement.Path(listOf(.39f to .41f,.47f to .49f,.62f to .33f).map { (a,b)->x+side*a to y+side*b },0xFFFFFF,side*.025f)
+        out+=StampElement.Box(x+side*.28f,y+side*.69f,side*.44f,side*.18f,side*.06f,color)
+        val size=side*.13f;val label="DNIe"
+        out+=StampElement.Text(x+(side-measure(label,true,size))/2,y+side*.83f,label,size,true,0xFFFFFF)
     }
 }

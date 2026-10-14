@@ -10,11 +10,19 @@ import pe.gob.reniec.dnie.desktop.model.*
 import pe.gob.reniec.dnie.pdf.*
 
 /** Isolated user-mode frontend. No bridge service, driver or reader registration. */
-class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite 3.1 · firma privada") {
+class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=Preferences.userRoot().node("pe/gob/reniec/dnie/suite-ui"), private val desktopActions: SuiteDesktopActions=SystemSuiteDesktopActions) : JFrame("DNIe Suite 3.1 · firma privada") {
     private val product=DesktopIntegration.coordinator()
     private val controller=SuiteController(product)
     private val bridgePanel=if(DesktopIntegration.helper()!=null) BridgePanel(product) else null
-    private val prefs=Preferences.userRoot().node("pe/gob/reniec/dnie/suite-ui")
+    private val prefs=settings
+    private val designStore=SuiteDesignPreferences(settings)
+    private val savedDesign=designStore.load()
+    private var preferredPage: Int?=savedDesign.options.pageNumber
+    private var firstSelection=true
+    private var restoringDesign=false
+    private var resourcesClosed=false
+    private var previewDni="00000000"
+    private val signedOutputs=mutableMapOf<Path,Path>()
     private val phone=JTextField(prefs.get("phone",""),12).apply { name="suite-phone" }
     private val pc=JTextField(pe.gob.reniec.dnie.desktop.remote.SuiteNetworkAddress.choose(prefs.get("pc",""),phone.text),12).apply { name="suite-pc" }
     private val workspace=JTextField(prefs.get("workspace",defaultPath("SuiteContinuousJobs")),38).apply { name="suite-workspace" }
@@ -27,13 +35,13 @@ class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite 3
     private val files=DefaultListModel<Path>()
     private val list=JList(files)
     private val canvas=PreviewCanvas()
-    private val page=JSpinner(SpinnerNumberModel(1,1,10000,1))
-    private val pageInfo=JLabel("Sin PDF seleccionado")
-    private val mode=JComboBox(arrayOf("Sello visible","PDF invisible","Firma separada (.p7s)"))
+    private val page=AetherSpinner(SpinnerNumberModel(1,1,10000,1))
+    private val pageInfo=JLabel("Muestra A4")
+    private val mode=AetherComboBox(arrayOf("Sello visible","PDF invisible","Firma separada (.p7s)"))
     private val tsa=AetherToggleChip("Sello de tiempo RENIEC")
-    private val style=JComboBox(arrayOf(StampStyle.INSTITUTIONAL,StampStyle.CARD,StampStyle.MINIMAL))
-    private val badge=JComboBox(StampBadgeType.entries.toTypedArray())
-    private val target=JComboBox(StampPageTarget.entries.toTypedArray())
+    private val style=AetherComboBox(arrayOf(StampStyle.INSTITUTIONAL,StampStyle.CARD,StampStyle.MINIMAL))
+    private val badge=AetherComboBox(StampBadgeType.entries.toTypedArray())
+    private val target=AetherComboBox(StampPageTarget.entries.toTypedArray())
     private val colors=ColorSwatchSelector()
     private val title=JTextField("FIRMADO DIGITALMENTE")
     private val previewName=JTextField("",18)
@@ -90,7 +98,7 @@ class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite 3
                     } finally { copy.dispose() } }
             }
         }
-        filePanel.add(listArea,BorderLayout.CENTER)
+        listArea.aetherScroll();filePanel.add(listArea,BorderLayout.CENTER)
         filePanel.add(JPanel().apply { isOpaque=false;layout=BoxLayout(this,BoxLayout.Y_AXIS)
             add(JPanel(FlowLayout(FlowLayout.LEFT,0,0)).apply { isOpaque=false;add(add);add(remove) })
             add(Box.createVerticalStrut(18));add(JLabel("Nombre para previsualizar el sello"));add(Box.createVerticalStrut(6));add(previewName)
@@ -106,7 +114,13 @@ class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite 3
                 }
             })
         },BorderLayout.NORTH)
-        preview.add(canvas,BorderLayout.CENTER)
+        val zoomInfo=JLabel("100%")
+        val less=AetherButton("−",ButtonVariant.GHOST);val fit=AetherButton("Ajustar",ButtonVariant.GHOST);val more=AetherButton("+",ButtonVariant.GHOST)
+        less.name="preview-zoom-out";more.name="preview-zoom-in";fit.name="preview-fit"
+        fun zoom(value: Double) { canvas.zoom=value;zoomInfo.text="${(canvas.zoom*100).toInt()}%" }
+        less.addActionListener { zoom(canvas.zoom-.25) };more.addActionListener { zoom(canvas.zoom+.25) };fit.addActionListener { zoom(1.0) }
+        (preview.getComponent(0) as JPanel).add(JPanel(FlowLayout(FlowLayout.RIGHT,5,0)).apply { isOpaque=false;add(less);add(zoomInfo);add(more);add(fit) })
+        preview.add(JScrollPane(canvas).aetherScroll(),BorderLayout.CENTER)
         preview.add(JLabel("Arrastra para mover · Esquinas y bordes para ajustar · Guías de alineación").apply { font=font.deriveFont(11f);foreground=AetherSwingTheme.muted },BorderLayout.SOUTH)
         previous.addActionListener { if((page.value as Int)>1) page.value=(page.value as Int)-1 }
         next.addActionListener { if((page.value as Int)<pageCount) page.value=(page.value as Int)+1 }
@@ -128,8 +142,9 @@ class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite 3
             panel.add(JPanel(java.awt.GridLayout(0,2,4,2)).apply { isOpaque=false;fields.values.forEach(::add) });panel.add(Box.createVerticalStrut(10))
             option(panel,"Título del sello",title);option(panel,"Motivo",reason);option(panel,"Lugar",location);panel.add(tsaBadge)
         }
+        inspector.add(AetherButton("Restaurar diseño por defecto",ButtonVariant.GHOST).apply { name="restore-stamp-design";addActionListener { if(!busy) { restoreDesign(SuiteDesign());previewDni="00000000";scheduleStamp();status.text="Diseño restablecido. La conexión se conserva." } };mutableControls.add(this) })
         inspector.add(Box.createVerticalGlue())
-        val options=JScrollPane(inspector).apply { preferredSize=Dimension(310,500);horizontalScrollBarPolicy=JScrollPane.HORIZONTAL_SCROLLBAR_NEVER;verticalScrollBar.unitIncrement=16 }
+        val options=JScrollPane(inspector).aetherScroll().apply { preferredSize=Dimension(310,500);horizontalScrollBarPolicy=JScrollPane.HORIZONTAL_SCROLLBAR_NEVER;verticalScrollBar.unitIncrement=16 }
         val body=JPanel(BorderLayout(14,0)).apply { isOpaque=false;border=EmptyBorder(0,20,0,20) }
         val split=JSplitPane(JSplitPane.HORIZONTAL_SPLIT,filePanel,preview).apply { resizeWeight=0.0;dividerLocation=280;dividerSize=10;border=null;isOpaque=false }
         body.add(split,BorderLayout.CENTER);body.add(options,BorderLayout.EAST);add(body,BorderLayout.CENTER)
@@ -139,7 +154,7 @@ class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite 3
         mutableControls.addAll(listOf(pc,phone,workspace,identity,add,remove,list,page,mode,style,reason,location,tsa,badge,target,colors,title,previewName,tsaBadge,network,previous,next)+fields.values)
         fun enumRenderer(box: JComboBox<*>) { box.renderer=DefaultListCellRenderer().let { delegate -> ListCellRenderer { l,value,index,selected,focus ->
             val label=when(value) { is StampStyle->value.label;is StampBadgeType->value.label;is StampPageTarget->value.label;else->value.toString() }
-            delegate.getListCellRendererComponent(l,label,index,selected,focus) } } }
+            delegate.getListCellRendererComponent(l,label,index,selected,focus).also { (it as JComponent).border=EmptyBorder(6,10,6,10) } } } }
         listOf(style,badge,target).forEach(::enumRenderer)
         list.transferHandler=object: TransferHandler() {
             override fun canImport(support: TransferSupport)=!busy && support.isDataFlavorSupported(java.awt.datatransfer.DataFlavor.javaFileListFlavor)
@@ -149,7 +164,23 @@ class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite 3
                 addFiles(dropped,javax.swing.filechooser.FileSystemView.getFileSystemView());return true
             }
         }
-        canvas.resized={scheduleStamp()};colors.changed={scheduleStamp()}
+        canvas.transferHandler=list.transferHandler
+        canvas.resized={scheduleStamp()};canvas.changed={scheduleStamp()};colors.changed={scheduleStamp()}
+        list.addMouseListener(object: MouseAdapter() {
+            override fun mouseClicked(e: MouseEvent) { if(e.clickCount==2 && SwingUtilities.isLeftMouseButton(e)) openSigned(list.selectedValue,false) }
+            override fun mousePressed(e: MouseEvent) { menu(e) }
+            override fun mouseReleased(e: MouseEvent) { menu(e) }
+            private fun menu(e: MouseEvent) {
+                if(!e.isPopupTrigger)return
+                val index=list.locationToIndex(e.point);if(index<0 || list.getCellBounds(index,index)?.contains(e.point)!=true)return
+                list.selectedIndex=index;val input=list.selectedValue
+                JPopupMenu().apply {
+                    add(JMenuItem("Abrir archivo firmado").apply { isEnabled=signedOutputs.containsKey(input);addActionListener { openSigned(input,false) } })
+                    add(JMenuItem("Ver ubicación del resultado").apply { isEnabled=signedOutputs.containsKey(input);addActionListener { openSigned(input,true) } })
+                    show(list,e.x,e.y)
+                }
+            }
+        })
         listOf(style,badge,tsa,tsaBadge).forEach { control -> when(control) { is JComboBox<*>->control.addActionListener { scheduleStamp() };is JCheckBox->control.addActionListener { scheduleStamp() } } }
         fields.values.forEach { it.addActionListener { scheduleStamp() } }
         listOf(title,reason,location,previewName).forEach { input -> input.document.addDocumentListener(object: javax.swing.event.DocumentListener {
@@ -158,7 +189,8 @@ class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite 3
             override fun changedUpdate(e: javax.swing.event.DocumentEvent)=scheduleStamp()
         }) }
         target.addActionListener { val choice=target.selectedItem as StampPageTarget
-            if(pageCount>0 && choice in listOf(StampPageTarget.FIRST_PAGE,StampPageTarget.LAST_PAGE)) page.value=if(choice==StampPageTarget.FIRST_PAGE) 1 else pageCount
+            if(pageCount>0 && canvas.image!=null && choice in listOf(StampPageTarget.FIRST_PAGE,StampPageTarget.LAST_PAGE)) { preferredPage=null;page.value=if(choice==StampPageTarget.FIRST_PAGE) 1 else pageCount }
+            else if(canvas.image==null) preferredPage=when(choice) { StampPageTarget.LAST_PAGE->Int.MAX_VALUE;StampPageTarget.FIRST_PAGE->1;else->(page.value as Number).toInt() }
             scheduleStamp()
         }
         network.addActionListener { advanced.setLocationRelativeTo(this);advanced.isVisible=true }
@@ -177,14 +209,14 @@ class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite 3
             }
         }
         remove.addActionListener { list.selectedIndices.sortedDescending().forEach(files::remove) }
-        list.addListSelectionListener { if(!it.valueIsAdjusting) { if((page.value as Int)!=1) page.value=1 else loadPreview() } }
+        list.addListSelectionListener { if(!it.valueIsAdjusting) { if(!firstSelection || preferredPage==null)preferredPage=1;firstSelection=false;if((page.value as Int)!=1) page.value=1 else loadPreview() } }
         page.addChangeListener { loadPreview() }
         mode.addActionListener { canvas.visibleStamp=mode.selectedIndex==0;tsa.isEnabled=!busy && mode.selectedIndex!=2;scheduleStamp() }
         sign.addActionListener { sign() }
         open.addActionListener { resultDirectory?.let { runCatching { Desktop.getDesktop().open(it.toFile()) }.onFailure { status.text="No se pudo abrir la carpeta de salida." } } }
         addWindowListener(object: WindowAdapter() { override fun windowClosing(e: WindowEvent) {
             if(!busy || JOptionPane.showConfirmDialog(this@SuiteWindow,"Hay una operación activa. Cerrar interrumpe la conexión; no se repetirá.","Cerrar Suite",JOptionPane.OK_CANCEL_OPTION)==JOptionPane.OK_OPTION) {
-                stampTimer.stop();canvas.stampImage=null;pairingQr.close();advanced.dispose();controller.close();bridgePanel?.close();dispose()
+                dispose()
             }
         } })
         fun align(container: Container) {
@@ -196,7 +228,7 @@ class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite 3
         }
         align(contentPane);align(advanced.contentPane)
         status.addPropertyChangeListener("text") { status.toolTipText=status.text }
-        setBusy(false)
+        restoreDesign(savedDesign);setBusy(false);scheduleStamp()
         if(initialFiles.isNotEmpty()) addFiles(initialFiles.map(Path::toFile),javax.swing.filechooser.FileSystemView.getFileSystemView())
     }
     private fun connect(showQr: Boolean=false) {
@@ -222,12 +254,17 @@ class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite 3
     }
     private fun loadPreview() {
         val file=list.selectedValue
-        if(file==null || !file.fileName.toString().endsWith(".pdf",true)) { controller.invalidatePreview();canvas.image=null;pageInfo.text="Sin vista previa para este formato";return }
+        if(file==null || !file.fileName.toString().endsWith(".pdf",true)) { controller.invalidatePreview();canvas.image=null;pageCount=0;pageWidth=595f;pageHeight=842f;pageInfo.text="Muestra A4";scheduleStamp();return }
         canvas.image=null;pageInfo.text="Cargando…"
         controller.preview(file,(page.value as Number).toInt()) { result,message ->
-            if(result==null) { canvas.image=null;pageInfo.text=message } else { canvas.image=result.image;pageInfo.text="${result.number} / ${result.count}"
-                    pageCount=result.count;(page.model as SpinnerNumberModel).maximum=result.count
-                    pageWidth=result.widthPoints;pageHeight=result.heightPoints;scheduleStamp() }
+            if(result==null) { canvas.image=null;pageInfo.text=message;pageWidth=595f;pageHeight=842f;scheduleStamp() } else {
+                pageCount=result.count;(page.model as SpinnerNumberModel).maximum=result.count
+                val desired=if(preferredPage==null)result.number else when(target.selectedItem) { StampPageTarget.FIRST_PAGE->1;StampPageTarget.LAST_PAGE->result.count;else->preferredPage!!.coerceIn(1,result.count) }
+                preferredPage=null
+                if((page.value as Number).toInt()!=desired) { result.image.flush();page.value=desired } else {
+                    canvas.image=result.image;pageInfo.text="${result.number} / ${result.count}";pageWidth=result.widthPoints;pageHeight=result.heightPoints;scheduleStamp()
+                }
+            }
         }
     }
     private fun sign() {
@@ -251,13 +288,17 @@ class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite 3
             val request=DesktopSigningRequest(inputs,Path.of(workspace.text),pdfMode,options)
             setBusy(true);status.text="Lote en curso. Mantén el DNI cerca del teléfono…"
             controller.sign(request,pin) { result,message,sessionUsable ->
-                if(result!=null) { resultDirectory=result.directory
-                    inputs.zip(result.documents).forEach { (path,document) -> documentStates[path]=if(document.signature!=null) "✓ Firmado" else "⚠ No firmado" };list.repaint()
-                }
+                if(result!=null)showCompleted(inputs,result)
                 connected=sessionUsable
                 setBusy(false);status.text=message;open.isEnabled=resultDirectory!=null
             }
         } catch(_: Exception) { pin.fill('\u0000');setBusy(false);status.text="No se pudo preparar el lote." }
+    }
+    internal fun showCompleted(inputs: List<Path>,result: DesktopSigningResult) {
+        resultDirectory=result.directory
+        inputs.forEach(signedOutputs::remove);signedOutputs.putAll(CompletedBatchPresentation.outputs(inputs,result))
+        inputs.zip(result.documents).forEach { (path,document) -> documentStates[path]=if(document.signature!=null) "✓ Firmado" else "⚠ No firmado" };list.repaint()
+        controller.completedCitizen(result) { citizen -> if(citizen!=null) { previewName.text=citizen.fullName;previewDni=citizen.dniNumber;scheduleStamp() } }
     }
     private fun setBusy(value: Boolean) {
         bridgePanel?.setSuiteActive(connected || value)
@@ -278,7 +319,7 @@ class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite 3
         content.add(AetherButton("Copiar huella").apply { addActionListener { Toolkit.getDefaultToolkit().systemClipboard.setContents(java.awt.datatransfer.StringSelection(fingerprint.text),null) } })
         bridgePanel?.let { content.add(Box.createVerticalStrut(18));content.add(it) }
         content.add(Box.createVerticalStrut(16));content.add(AetherButton("Listo",ButtonVariant.PRIMARY).apply { addActionListener { advanced.isVisible=false } })
-        advanced.contentPane=JScrollPane(content).apply { verticalScrollBar.unitIncrement=16;horizontalScrollBarPolicy=JScrollPane.HORIZONTAL_SCROLLBAR_NEVER };advanced.setSize(800,if(bridgePanel!=null) 640 else 440)
+        advanced.contentPane=JScrollPane(content).aetherScroll().apply { verticalScrollBar.unitIncrement=16;horizontalScrollBarPolicy=JScrollPane.HORIZONTAL_SCROLLBAR_NEVER };advanced.setSize(800,if(bridgePanel!=null) 640 else 440)
     }
     private fun addFiles(selected: List<java.io.File>,view: javax.swing.filechooser.FileSystemView) {
         setBusy(true);status.text="Preparando archivos…"
@@ -297,12 +338,35 @@ class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite 3
             customHeader=title.text.take(160),showTsaBadge=tsaBadge.isSelected,
             showDni=fields.getValue("DNI").isSelected,showDate=fields.getValue("Fecha").isSelected,showTime=fields.getValue("Hora").isSelected,
             showReason=fields.getValue("Motivo").isSelected,showLocation=fields.getValue("Lugar").isSelected))
-    private fun scheduleStamp() { stampTimer.restart() }
+    private fun restoreDesign(design: SuiteDesign) {
+        restoringDesign=true
+        try {
+            val o=design.options;val a=o.appearance;preferredPage=o.pageNumber
+            mode.selectedIndex=when(design.mode) { DesktopPdfMode.VISIBLE->0;DesktopPdfMode.INVISIBLE->1;DesktopPdfMode.DETACHED->2 }
+            style.selectedItem=a.style;badge.selectedItem=a.badge;colors.selected=a.colorTheme;title.text=a.customHeader
+            reason.text=o.reason;location.text=o.location;tsa.isSelected=o.reniecTimestamp;tsaBadge.isSelected=a.showTsaBadge
+            previewName.text=design.previewName;canvas.placement=o.placement;target.selectedItem=o.pageTarget
+            fields.getValue("DNI").isSelected=a.showDni;fields.getValue("Fecha").isSelected=a.showDate;fields.getValue("Hora").isSelected=a.showTime
+            fields.getValue("Motivo").isSelected=a.showReason;fields.getValue("Lugar").isSelected=a.showLocation
+            canvas.visibleStamp=design.mode==DesktopPdfMode.VISIBLE
+            if(pageCount>0) { val wanted=o.pageNumber.coerceIn(1,pageCount);if((page.value as Number).toInt()!=wanted)page.value=wanted else loadPreview() }
+        } finally { restoringDesign=false }
+    }
+    private fun currentDesign()=SuiteDesign(options(),when(mode.selectedIndex) { 0->DesktopPdfMode.VISIBLE;1->DesktopPdfMode.INVISIBLE;else->DesktopPdfMode.DETACHED },previewName.text)
+    private fun scheduleStamp() { if(!restoringDesign) { designStore.save(currentDesign());stampTimer.restart() } }
+    private fun openSigned(input: Path?,reveal: Boolean) {
+        val output=signedOutputs[input]?:return
+        controller.openOutput(output,reveal,desktopActions) { ok -> if(!ok)status.text="No se pudo abrir el resultado; comprueba su carpeta." }
+    }
+    override fun dispose() {
+        if(!resourcesClosed) { resourcesClosed=true;stampTimer.stop();canvas.stampImage=null;canvas.image=null;designStore.close();pairingQr.close();advanced.dispose();controller.close();bridgePanel?.close() }
+        super.dispose()
+    }
     private fun renderStamp() {
-        if(canvas.image==null || !canvas.visibleStamp) return
+        if(!canvas.visibleStamp) return
         val configuration=options()
         controller.stamp(pageWidth*configuration.placement.width,pageHeight*configuration.placement.height,
-            previewName.text.ifBlank { "NOMBRE DEL TITULAR" },configuration,previewTime) { image,error -> canvas.stampImage=image;canvas.stampError=error }
+            previewName.text.ifBlank { "NOMBRE DEL TITULAR" },configuration,previewTime,previewDni) { image,error -> canvas.stampImage=image;canvas.stampError=error }
     }
     private fun defaultPath(suffix: String): String = if(Files.isDirectory(Path.of("D:/DNIeToolchain"))) "D:/DNIeToolchain/$suffix"
         else Path.of(System.getProperty("user.home"),"DNIeSuite",suffix).toString()

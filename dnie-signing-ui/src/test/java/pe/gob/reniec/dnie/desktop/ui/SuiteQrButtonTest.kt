@@ -37,7 +37,7 @@ class SuiteQrButtonTest {
             return result!!
         }
         SwingUtilities.invokeAndWait {
-            window=SuiteWindow();window.isVisible=true
+            window=SuiteWindow(settings=SuiteTestSettings.create());window.isVisible=true
             fun field(name: String,value: String) { (components(window)+window.ownedWindows.flatMap { components(it) }).filterIsInstance<JTextField>().single { it.name==name }.text=value }
             field("suite-pc",local!!);field("suite-phone",local.substringBeforeLast('.')+".254")
             field("suite-workspace",folder.root.resolve("jobs").absolutePath);field("suite-identity",folder.root.resolve("state/pc.dpapi").absolutePath)

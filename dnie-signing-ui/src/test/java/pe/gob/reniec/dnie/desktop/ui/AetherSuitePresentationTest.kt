@@ -21,7 +21,7 @@ class AetherSuitePresentationTest {
         val file=folder.root.toPath().resolve("Documento de prueba.pdf")
         PDDocument().use { doc -> repeat(3) {doc.addPage(PDPage())};doc.save(file.toFile()) }
         lateinit var window: SuiteWindow;lateinit var canvas: PreviewCanvas
-        SwingUtilities.invokeAndWait { AetherSwingTheme.install();window=SuiteWindow(listOf(file));window.isVisible=true
+        SwingUtilities.invokeAndWait { AetherSwingTheme.install();window=SuiteWindow(listOf(file),settings=SuiteTestSettings.create());window.isVisible=true
             children(window).filterIsInstance<JTextField>().firstOrNull { it.name=="suite-phone" }?.text="192.168.1.10"
             canvas=children(window).filterIsInstance<PreviewCanvas>().single() }
         fun await(condition: ()->Boolean) {
@@ -43,6 +43,10 @@ class AetherSuitePresentationTest {
                 targets.selectedItem=StampPageTarget.LAST_PAGE
             }
             await { canvas.stampImage!==before && children(window).filterIsInstance<JLabel>().any { it.text=="3 / 3" } }
+            SwingUtilities.invokeAndWait { children(window).filterIsInstance<JButton>().single {it.toolTipText=="Página anterior"}.doClick() }
+            await {children(window).filterIsInstance<JLabel>().any {it.text=="2 / 3"}}
+            SwingUtilities.invokeAndWait { assertEquals(StampPageTarget.LAST_PAGE,children(window).filterIsInstance<JComboBox<*>>().single {it.name=="stamp-target"}.selectedItem) }
+
             SwingUtilities.invokeAndWait {
                 val page=canvas.pageBounds()!!;val p=canvas.placement
                 val corner=Point(page.x+(p.left*page.width).toInt(),page.y+(p.top*page.height).toInt())

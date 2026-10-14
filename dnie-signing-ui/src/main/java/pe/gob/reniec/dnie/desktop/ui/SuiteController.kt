@@ -58,13 +58,13 @@ class SuiteController(private val product: DesktopProductCoordinator = DesktopIn
             ui { done(sizes) }
         }
     }
-    fun stamp(width: Float,height: Float,name: String,options: pe.gob.reniec.dnie.pdf.PdfSigningOptions,timestamp: Long,
+    fun stamp(width: Float,height: Float,name: String,options: pe.gob.reniec.dnie.pdf.PdfSigningOptions,timestamp: Long,dni: String="00000000",
         done: (java.awt.image.BufferedImage?,String?)->Unit) {
         val version=stampGeneration.incrementAndGet()
         stamps.submit {
             if(version!=stampGeneration.get() || closed) return@submit
             val rendered=runCatching { pe.gob.reniec.dnie.pdf.desktop.DesktopStampRenderer.renderPreviewImage(
-                (width*2).toInt().coerceIn(1,1600),(height*2).toInt().coerceIn(1,1600),name,"00000000",options,width,height,timestamp) }
+                (width*2).toInt().coerceIn(1,1600),(height*2).toInt().coerceIn(1,1600),name,dni,options,width,height,timestamp) }
             SwingUtilities.invokeLater {
                 if(closed || version!=stampGeneration.get()) rendered.getOrNull()?.flush()
                 else done(rendered.getOrNull(),rendered.exceptionOrNull()?.message)
@@ -90,6 +90,12 @@ class SuiteController(private val product: DesktopProductCoordinator = DesktopIn
             try { val result=DesktopPdfPreview().render(file,page); ui { if(version==generation.get()) done(result,"") } }
             catch(_: Exception) { ui { if(version==generation.get()) done(null,"No se puede previsualizar esta página; comprueba página, formato o cifrado.") } }
         }
+    }
+    fun completedCitizen(result: DesktopSigningResult,done: (pe.gob.reniec.dnie.domain.model.CitizenData?)->Unit) {
+        previews.submit { val citizen=CompletedBatchPresentation.citizen(result);ui { done(citizen) } }
+    }
+    fun openOutput(path: Path,reveal: Boolean,actions: SuiteDesktopActions,done: (Boolean)->Unit) {
+        previews.submit { val ok=runCatching { if(reveal)actions.reveal(path) else actions.open(path) }.isSuccess;ui { done(ok) } }
     }
     fun invalidatePreview() { generation.incrementAndGet() }
     fun disconnect() { connections.incrementAndGet();session?.close(); session=null;permit?.close();permit=null }

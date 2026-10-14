@@ -68,4 +68,12 @@ class StampLayoutEngineTest {
         assertEquals(.5f,centered.placement.top+centered.placement.height/2,.0001f)
         assertEquals(.05f,StampPlacementGeometry.snap(p.moved(.051f,.051f)).placement.left,.0001f)
     }
+    @Test fun decorativeEmblemHasFilledShieldAndWhiteCheckWithoutChangingQrPayload() {
+        val scene=StampLayoutEngine.layout(350f,135f,"ANA","12345678",PdfSigningOptions(),0,measure)
+        assertEquals(2,scene.elements.filterIsInstance<StampElement.Circle>().size)
+        assertTrue(scene.elements.filterIsInstance<StampElement.Path>().any {it.fill==StampColorTheme.AETHER_BLUE.accentRgb && it.closed})
+        assertTrue(scene.elements.filterIsInstance<StampElement.Path>().any {it.color==0xFFFFFF && !it.closed})
+        assertEquals("DNI:12345678|NOMBRE:ANA|FECHA:1969-12-31T19:00:00-05:00|PAdES",StampLayoutEngine.publicQrPayload("ANA","12345678",PdfSigningOptions(),0))
+    }
+
 }

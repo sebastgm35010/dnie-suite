@@ -27,6 +27,25 @@ internal static class Program {
             Check(Field<System.Windows.Forms.Control>("serviceHealth").AccessibleDescription=="Activo (SYSTEM)","Service health independent from card");
         }
         Check(!Field<Button>("install").Visible,"No repair prompt when service healthy");
+        var segments=Field<Dictionary<string,Button>>("transportButtons");
+        foreach(var transport in new[]{"Tailscale","LAN","USB"}) {
+            method.SelectedItem=transport;Render();
+            foreach(var (key,button) in segments) {
+                Check(!button.Enabled,"Transport cannot change during a session");
+                using var bitmap=new Bitmap(button.Width,button.Height);using var graphics=Graphics.FromImage(bitmap);graphics.Clear(Color.Black);
+                button.GetType().GetMethod("OnPaint",BindingFlags.Instance|BindingFlags.NonPublic)!.Invoke(button,new object[]{new PaintEventArgs(graphics,button.ClientRectangle)});
+                Check(bitmap.GetPixel(0,0).ToArgb()==Color.White.ToArgb(),"Opaque button explicitly paints its outer corner white");
+                Check(bitmap.GetPixel(button.Width/2,6).ToArgb()==(key==transport?Color.FromArgb(0,74,198):Color.FromArgb(239,244,255)).ToArgb(),"Selected transport stays blue while disabled");
+            }
+        }
+        foreach(var name in new[]{"serviceHealth","readerHealth","cardHealth"}) {
+            var control=Field<System.Windows.Forms.Control>(name);using var bitmap=new Bitmap(control.Width,control.Height);using var graphics=Graphics.FromImage(bitmap);graphics.Clear(Color.Black);
+            control.GetType().GetMethod("OnPaint",BindingFlags.Instance|BindingFlags.NonPublic)!.Invoke(control,new object[]{new PaintEventArgs(graphics,control.ClientRectangle)});
+            Check(bitmap.GetPixel(0,0).ToArgb()==control.Parent!.BackColor.ToArgb(),"Health card clears its outer corner");
+        }
+        Check(Field<ComboBox>("pc").Parent!.GetType().Name=="AetherInputBox","PC input uses rounded wrapper");
+        Check(Field<TextBox>("phone").BorderStyle==BorderStyle.None,"Phone input has no sunken border");
+
         if(args.Length==1) {
             Directory.CreateDirectory(args[0]);Set("last",new BridgeStatus("Stopped","idle",ReaderPublished:true));Render();
             foreach(var transport in new[]{"Tailscale","LAN","USB"}) {
@@ -39,6 +58,11 @@ internal static class Program {
         using(var process=System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(Path.Combine(AppContext.BaseDirectory,"DNIeBridge.exe")){UseShellExecute=false,ArgumentList={"--layout-test",probe}})!) {
             Check(process.WaitForExit(5000) && process.ExitCode==2,"Release rejects layout-test command");
         }
-        form.Close();Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(new{passed=true,checks,serviceCalls=0,cardOperations=0}));
+        typeof(MainForm).GetMethod("ConfigureTray",BindingFlags.Instance|BindingFlags.NonPublic)!.Invoke(form,new object[]{true});
+        Check(Field<NotifyIcon>("tray").Visible,"Tray icon available without starting host");
+        form.WindowState=FormWindowState.Minimized;Application.DoEvents();Check(!form.Visible,"Minimize moves manager to tray");
+        typeof(MainForm).GetMethod("ShowManager",BindingFlags.Instance|BindingFlags.NonPublic)!.Invoke(form,null);Application.DoEvents();Check(form.Visible,"Tray can restore manager");
+        Field<CheckBox>("closeToTray").Checked=true;form.Close();Application.DoEvents();Check(!form.IsDisposed && !form.Visible,"Optional close keeps manager in tray");
+        Field<CheckBox>("closeToTray").Checked=false;form.Close();Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(new{passed=true,checks,serviceCalls=0,cardOperations=0}));
     }
 }
