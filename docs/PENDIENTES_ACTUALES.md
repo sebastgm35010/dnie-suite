@@ -1,5 +1,7 @@
 # Pendientes actuales · Windows rc4 USB / Android rc4-usb
 
+2026-10-14 · QR R5 implementado: cotejo de original/certificado e identidad, confianza actual separada. Pendientes prueba física de cámara/papel y firma NFC con QR; validación PDF/CMS y selección de revisión dentro de la app quedan para otra fase. Se observó que PdfRenderer del teléfono no muestra el widget firmado; los renderizadores con anotaciones sí lo muestran y el QR se decodifica. Investigar preview de firmas previas por separado. Ver [QR R5](design/QR_COTEJO_R5.md).
+
 2026-10-14 · Aether R4 / 3.1.0: Bridge corrige pintura y selección, inputs, bandeja y consulta WinSCard. Suite añade hoja de muestra, controles, preferencias visuales, zoom y apertura/autocompletado de resultados; emblema compartido actualizado. 196 pruebas pasan/1 omitida preexistente, 60 comprobaciones nativas y 2 instrumentadas Android pasan. Windows actualizado con identidad y 13 archivos runtime conservados; APK80 instalada. QR enriquecido diferido; firma física nueva y suspensión siguen pendientes. [Detalle](design/RESULTADO_AETHER_R4.md).
 
 2026-10-14 · Aether Android79 / 3.1.0 instalada por ADB con reemplazo sin borrar datos. Dos pruebas instrumentadas pasan (4,01 s): cinco estilos/rúbrica transparente y selector de páginas/preview Compose. Arranque normal comprobado, sin fatal en el PID observado; auxiliar retirado. Firma con DNI/TSA y regresión física Suite/puente pendientes. [Detalle](design/VALIDACION_ANDROID_AETHER_R3.md).

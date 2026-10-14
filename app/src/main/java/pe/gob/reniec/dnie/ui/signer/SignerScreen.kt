@@ -121,7 +121,7 @@ fun SignerScreen(viewModel: SignerViewModel, batch: Boolean = false, onReadIdent
                                 FlowRow(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
                                     StampBadgeType.entries.forEach { badge -> FilterChip(selected=look.badge==badge,enabled=enabled,onClick={appearance { it.copy(badge=badge) }},label={Text(badge.label)}) }
                                 }
-                                if(look.badge==StampBadgeType.QR_VERIFICATION) Text("El QR contiene un resumen público. La firma se verifica con el PDF original.",style=MaterialTheme.typography.bodySmall)
+                                if(look.badge==StampBadgeType.QR_VERIFICATION) Text("El QR incluye huellas públicas para cotejar el original y el certificado. Escanearlo no valida la firma.",style=MaterialTheme.typography.bodySmall)
                                 OutlinedTextField(look.customHeader,{ value->appearance { it.copy(customHeader=value.take(160)) } },enabled=enabled,label={Text("Título del sello")},modifier=Modifier.fillMaxWidth())
                                 if(config.reniecTimestamp) SwitchRow("Mostrar distintivo TSA",look.showTsaBadge,enabled) { value->appearance { it.copy(showTsaBadge=value) } }
                             }

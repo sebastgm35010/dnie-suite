@@ -1,0 +1,120 @@
+{
+  "review_date": "2026-10-14",
+  "scope": "Enriched stamp QR and Android local comparison; not standalone PDF/CMS validation",
+  "checkpoint_before": "checkpoint/pre-stamp-qr-r5",
+  "checkpoint_complete": "checkpoint/stamp-qr-r5-complete",
+  "build_directory": "D:\\DNIeToolchain\\Builds\\stamp-qr-r5",
+  "tests": {
+    "modules": {
+      "dnie-signing-core": {
+        "tests": 24,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "dnie-pdf-desktop": {
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "dnie-pdf": {
+        "tests": 26,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "dnie-signing-desktop": {
+        "tests": 29,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "dnie-signing-ui": {
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "dnie-desktop-orchestration": {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "app": {
+        "tests": 85,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1
+      }
+    },
+    "totals": {
+      "tests": 208,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1
+    },
+    "skipped_cases": [
+      "pe.gob.reniec.dnie.data.migrations.RetiredCredentialDataTest.directoryLinkCannotDeleteVaultContents"
+    ],
+    "instrumented_android_tests": {
+      "compiled": 6,
+      "executed": 6,
+      "passed": 6,
+      "seconds": 9.717
+    }
+  },
+  "invariants": {
+    "baseline": "checkpoint/pre-stamp-qr-r5",
+    "protected_files_changed": [],
+    "local_hashes_verified": 136,
+    "local_hash_mismatches": [],
+    "pdf_crypto_callbacks_unchanged": {
+      "dnie-pdf-desktop/src/main/java/pe/gob/reniec/dnie/pdf/desktop/JvmPdfSigner.kt": true,
+      "dnie-pdf/src/main/java/pe/gob/reniec/dnie/pdf/PadesSignerEngine.kt": true
+    }
+  },
+  "android_production": {
+    "passed": true,
+    "release_debug_classes": 0,
+    "diagnostics_entry_points": 0,
+    "debuggable": false,
+    "qr_mit_notice_packaged": true,
+    "debug_signer_matches_previous": true,
+    "version_code": 81,
+    "version_name": "3.1.0",
+    "debug_sha256": "e9d189064a71e2d3279f448d42baa75365c86f8953860225767400c23ec69c92",
+    "release_sha256": "6529ed39d9f12be87a4fa98aa118ceeae44077b273d85598ea8cea413b475d7d"
+  },
+  "android_runtime": {
+    "installed_apk_hash_matches_final_build": true,
+    "debug_sha256": "e9d189064a71e2d3279f448d42baa75365c86f8953860225767400c23ec69c92",
+    "versionCode": 81,
+    "versionName": "3.1.0",
+    "route_from_certificates_verified": true,
+    "qr_controls_present": true,
+    "fatal_in_current_pid_androidruntime": false,
+    "auxiliary_test_package_removed": true,
+    "camera_physical_scan_not_asserted": true
+  },
+  "pdf_crypto_verification": "Synthetic signed PDF CMS verified on desktop and Android; QR decoded independently by ZXing, exact certificate/original hashes compared.",
+  "android_render_observation": "Platform PdfRenderer omitted signature widget on this device; annotation-aware PDFBox Android and external renderer display QR. Initial failed decode retained as diagnosis, final annotation-aware test passed.",
+  "windows": {
+    "suite_distribution": "D:\\DNIeToolchain\\Builds\\stamp-qr-r5\\signing-ui\\install\\dnie-signing-ui",
+    "cli_distribution": "D:\\DNIeToolchain\\Builds\\stamp-qr-r5\\signing-desktop\\install\\dnie-signing-desktop",
+    "desktop_shortcut_updated": true,
+    "bridge_native_service_and_driver_not_changed": true
+  },
+  "apk_directory_keeps_versions": [
+    80,
+    81
+  ],
+  "pending": [
+    "Physical DNI signature with new QR",
+    "Camera scan of displayed/printed final QR not asserted",
+    "In-app PDF/CMS/revision validation deferred",
+    "Platform preview of existing signature widgets needs separate analysis"
+  ],
+  "evidence_directory": "G:/Mi unidad/BOT TRADER/DNI_CODEX/revision-qr-r5-20261014"
+}

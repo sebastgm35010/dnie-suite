@@ -106,9 +106,18 @@ class PadesSignerEngine(private val timestampService: pe.gob.reniec.dnie.timesta
 
             try {
                 // Copiar el stream de entrada al archivo temporal
+                val originalDigest = java.security.MessageDigest.getInstance("SHA-256")
+                var originalSize = 0L
                 FileOutputStream(tempSourceFile).use { out ->
-                    pdfInputStream.copyTo(out)
+                    val buffer = ByteArray(65536)
+                    while (true) {
+                        val count = pdfInputStream.read(buffer); if (count < 0) break
+                        originalSize += count
+                        require(originalSize <= StampQrCodec.MAX_FILE_BYTES) { "PDF mayor de 256 MiB" }
+                        originalDigest.update(buffer, 0, count); out.write(buffer, 0, count)
+                    }
                 }
+                val derivedOptions = modernOptions?.copy(qrMetadata = StampQrMetadata.derived(signerCert, originalDigest.digest(), originalSize))
 
                 PDDocument.load(tempSourceFile, com.tom_roush.pdfbox.io.MemoryUsageSetting.setupMixed(32L * 1024 * 1024)).use { document ->
                 require(document.numberOfPages > 0) { "El PDF no tiene páginas" }
@@ -208,7 +217,7 @@ class PadesSignerEngine(private val timestampService: pe.gob.reniec.dnie.timesta
 
                 // 5. Agregar firma al documento y ejecutar guardado incremental
                 document.addSignature(pdSignature, signatureInterface, signatureOptions)
-                if(modernOptions != null && modernOptions.visible) AndroidStampAppearance.apply(document,pdSignature,modernOptions,
+                if(derivedOptions != null && derivedOptions.visible) AndroidStampAppearance.apply(document,pdSignature,derivedOptions,
                     citizenData.fullName,citizenData.dniNumber,signingTimestamp)
 
                 FileOutputStream(tempSignedFile).use { fos ->

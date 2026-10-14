@@ -85,5 +85,7 @@ data class PdfSigningOptions(
     val reason: String = "Doy conformidad",
     val location: String = "",
     val reniecTimestamp: Boolean = false,
-    val pageTarget: StampPageTarget = StampPageTarget.SPECIFIC_PAGE
+    val pageTarget: StampPageTarget = StampPageTarget.SPECIFIC_PAGE,
+    /** Per-document engine-derived data, never a persisted visual preference. Null means PREVIEW. */
+    val qrMetadata: StampQrMetadata? = null
 )

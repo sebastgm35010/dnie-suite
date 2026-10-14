@@ -95,7 +95,8 @@ fun NavGraph(
                         icon = { Icon(screen.icon, contentDescription = screen.title) },
                         label = { Text(screen.title) },
                         modifier = Modifier.testTag("nav_" + screen.route),
-                        selected = currentRoute == screen.route || (screen == Screen.Signer && currentRoute == Screen.BatchSigner.route),
+                        selected = currentRoute == screen.route || (screen == Screen.Signer && currentRoute == Screen.BatchSigner.route) ||
+                            (screen == Screen.Certificates && currentRoute == "stamp-qr"),
                         onClick = {
                             if (currentRoute != screen.route) {
                                 navController.navigate(screen.route) {
@@ -146,8 +147,12 @@ fun NavGraph(
             composable(Screen.Pc.route) {
                 PcConnectionScreen(onBack = { navController.popBackStack() }, onBridge = onOpenBridge, onSuite = onOpenSuite)
             }
+            composable("stamp-qr") {
+                pe.gob.reniec.dnie.ui.verification.StampQrRoute { navController.popBackStack() }
+            }
             composable(Screen.Certificates.route) {
                 CertificatesScreen(viewModel = certificatesViewModel,
+                    onVerifyQr = { navController.navigate("stamp-qr") { launchSingleTop=true } },
                     onOpenBridge = onOpenBridge,
                     onOpenSuite = onOpenSuite,
                     onOpenVault = { navController.navigate(Screen.Vault.route) { launchSingleTop = true } })

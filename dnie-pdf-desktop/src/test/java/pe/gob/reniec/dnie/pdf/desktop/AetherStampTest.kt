@@ -23,6 +23,40 @@ import pe.gob.reniec.dnie.pdf.*
 
 class AetherStampTest {
     @get:Rule val folder=TemporaryFolder()
+    @Test fun signedQrUsesActualCertificateAndOriginalOverridingCallerMetadata()=runBlocking<Unit> {
+        val source=ByteArrayOutputStream().also { out -> PDDocument().use { doc -> doc.addPage(PDPage());doc.save(out) } }.toByteArray()
+        val identity=TestSigningIdentity();val out=ByteArrayOutputStream()
+        val options=PdfSigningOptions(placement=NormalizedStampPlacement(.1f,.3f,.8f,.3f),
+            appearance=SignatureAppearance(badge=StampBadgeType.QR_VERIFICATION,showDni=false,showDate=false,showTime=false),
+            qrMetadata=StampQrMetadata("AB".repeat(32),"DEAD","CD".repeat(32),1))
+        JvmPdfSigner(folder.root.toPath()).signConfiguredPdf(source.inputStream(),out,identity.certificate.encoded,
+            { kotlin.Result.success(identity.sign(it)) },options).getOrThrow()
+        val signed=out.toByteArray()
+        Loader.loadPDF(signed).use { doc ->
+            val image=PDFRenderer(doc).renderImage(0,3f)
+            val pixels=image.getRGB(0,0,image.width,image.height,null,0,image.width)
+            val payload=MultiFormatReader().decode(BinaryBitmap(HybridBinarizer(RGBLuminanceSource(image.width,image.height,pixels)))).text
+            val record=StampQrCodec.decode(payload)
+            assertFalse(record.metadata.preview);assertNull(record.dni);assertNull(record.moment)
+            assertEquals(StampQrMatch.MATCH,StampQrCodec.compareCertificate(record,identity.certificate))
+            assertEquals(StampQrMatch.DIFFERENT,StampQrCodec.compareCertificate(record,TestSigningIdentity().certificate))
+            assertEquals(StampQrMatch.MATCH,StampQrCodec.compareOriginal(record,StampQrCodec.digest(source.inputStream())))
+            assertEquals(StampQrMatch.DIFFERENT,StampQrCodec.compareOriginal(record,StampQrCodec.digest(signed.inputStream())))
+            val signature=doc.signatureDictionaries.single()
+            val cms=CMSSignedData(CMSProcessableByteArray(signature.getSignedContent(signed)),signature.getContents(signed))
+            assertTrue(cms.signerInfos.signers.single().verify(JcaSimpleSignerInfoVerifierBuilder().build(identity.certificate)))
+            System.getProperty("dnie.pdf.visibleEvidence")?.let { path ->
+                val dir=Path.of(path);Files.createDirectories(dir)
+                Files.write(dir.resolve("qr-sintetico-firmado.pdf"),signed)
+                Files.write(dir.resolve("qr-sintetico-original.pdf"),source)
+                Files.write(dir.resolve("qr-sintetico-certificado.cer"),identity.certificate.encoded)
+                ImageIO.write(image,"png",dir.resolve("qr-sintetico-firmado.png").toFile())
+                Files.writeString(dir.resolve("qr-sintetico-payload.txt"),payload)
+            }
+            image.flush()
+        }
+        assertEquals(1,identity.operations)
+    }
     @Test fun allPagesOneWidgetAndSignedReplicasPreserveOriginalAndCryptographicValidity()=runBlocking<Unit> {
         val source=ByteArrayOutputStream().also { output -> PDDocument().use { doc ->
             for(rotation in listOf(0,90,180,270)) doc.addPage(PDPage(PDRectangle(700f,800f)).apply { cropBox=PDRectangle(30f,40f,500f,650f);this.rotation=rotation })
@@ -89,7 +123,8 @@ class AetherStampTest {
         // Composite transparent pixels on white for a scanner, without changing the PDF.
         for(i in pixels.indices) if(pixels[i] ushr 24==0) pixels[i]=0xFFFFFF
         val result=MultiFormatReader().decode(BinaryBitmap(HybridBinarizer(RGBLuminanceSource(image.width,image.height,pixels))))
-        assertEquals("DNI:12345678|NOMBRE:ANA MARIA QUISPE|FECHA:1969-12-31T19:00:00-05:00|PAdES",result.text)
+        val record=StampQrCodec.decode(result.text)
+        assertTrue(record.metadata.preview);assertEquals("ANA MARIA QUISPE",record.name);assertEquals("12345678",record.dni)
         image.flush()
     }
     @Test fun galleryExercisesEveryStyleColorAndTypography() {

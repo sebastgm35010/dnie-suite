@@ -28,8 +28,9 @@ class StampLayoutEngineTest {
     @Test fun hiddenDataDoesNotLeakInQrAndBadgeIsOptional() {
         val options=PdfSigningOptions(appearance=SignatureAppearance(showDni=false,showDate=false,showTime=false,showTsaBadge=false))
         val payload=StampLayoutEngine.publicQrPayload("ANA|TEST","SECRET",options,0)
-        assertFalse(payload.contains("SECRET"));assertFalse(payload.contains("FECHA:"));assertTrue(payload.contains("NOMBRE:ANA TEST"))
-        assertTrue(StampLayoutEngine.publicQrPayload("ANA","123",options.copy(appearance=options.appearance.copy(showTime=true)),0).endsWith("HORA:19:00:00-05:00|PAdES"))
+        val decoded=StampQrCodec.decode(payload)
+        assertNull(decoded.dni);assertNull(decoded.moment);assertEquals("ANA|TEST",decoded.name)
+        assertEquals("19:00:00-05:00",StampQrCodec.decode(StampLayoutEngine.publicQrPayload("ANA","123",options.copy(appearance=options.appearance.copy(showTime=true)),0)).moment)
         val scene=StampLayoutEngine.layout(300f,110f,"ANA","12345678",options.copy(reniecTimestamp=true),0,measure)
         assertFalse(scene.elements.filterIsInstance<StampElement.Text>().any { it.text.contains("TSA") })
     }
@@ -73,7 +74,8 @@ class StampLayoutEngineTest {
         assertEquals(2,scene.elements.filterIsInstance<StampElement.Circle>().size)
         assertTrue(scene.elements.filterIsInstance<StampElement.Path>().any {it.fill==StampColorTheme.AETHER_BLUE.accentRgb && it.closed})
         assertTrue(scene.elements.filterIsInstance<StampElement.Path>().any {it.color==0xFFFFFF && !it.closed})
-        assertEquals("DNI:12345678|NOMBRE:ANA|FECHA:1969-12-31T19:00:00-05:00|PAdES",StampLayoutEngine.publicQrPayload("ANA","12345678",PdfSigningOptions(),0))
+        val record=StampQrCodec.decode(StampLayoutEngine.publicQrPayload("ANA","12345678",PdfSigningOptions(),0))
+        assertTrue(record.metadata.preview);assertEquals("12345678",record.dni);assertEquals("1969-12-31T19:00:00-05:00",record.moment)
     }
 
 }

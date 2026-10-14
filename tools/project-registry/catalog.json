@@ -49,7 +49,9 @@
     "docs/design/RESULTADO_AETHER_R4.md": "current_aether_r4_results",
     "docs/design/ALCANCE_AETHER_R4.md": "approved_aether_r4_scope_qr_deferred",
     "docs/design/ESPECIFICACION_PULIDO_AETHER_R4.md": "external_aether_r4_recommendations",
-    "docs/operations/AETHER_R4_RESULTADOS.json": "aether_r4_machine_readable_results"
+    "docs/operations/AETHER_R4_RESULTADOS.json": "aether_r4_machine_readable_results",
+    "docs/design/QR_COTEJO_R5.md": "current_stamp_qr_format_and_comparison",
+    "docs/operations/QR_R5_RESULTADOS.json": "stamp_qr_r5_verifiable_results"
   },
   "features": [
     {
@@ -637,7 +639,7 @@
       "id": "stamp_aether",
       "name": "Apariencia vectorial Aether y selección de páginas PDF",
       "status": "implemented_runtime_validated",
-      "note": "Aether R4: escena pura con círculos/escudo relleno; adaptadores Android/Desktop, texto y geometría compartidos. Una firma/widget y réplicas Stamp; DocMDP P=2 intacto. Android80 instalada, 18 core/17 PDF desktop/26 PDF Android y 2 instrumentadas pasan. QR público anterior conservado; enriquecimiento difiere. Firma física nueva pendiente.",
+      "note": "Aether R4: escena pura con círculos/escudo relleno; adaptadores Android/Desktop, texto y geometría compartidos. Una firma/widget y réplicas Stamp; DocMDP P=2 intacto. Android80 instalada, 18 core/17 PDF desktop/26 PDF Android y 2 instrumentadas pasan. QR público anterior conservado; enriquecimiento difiere. Firma física nueva pendiente. QR R5 implementado; ver stamp_qr para alcance y validaciones.",
       "evidence": "docs/design/RESULTADO_AETHER_R4.md",
       "files": {
         "model": [
@@ -675,7 +677,7 @@
       "id": "desktop_aether",
       "name": "Presentación Aether Suite y Manager Windows",
       "status": "installed_ui_synthetic_validated",
-      "note": "Aether R4 instalado: pintura y transporte activos, inputs, bandeja y consulta WinSCard; Suite hoja A4, controles, preferencias públicas, zoom, navegación independiente, autocompletado desde certificado exportado y apertura de outputs. 17 UI/60 nativas pasan. Identidad y runtime servicio conservados. No acredita firma física nueva. QR enriquecido diferido.",
+      "note": "Aether R4 instalado: pintura y transporte activos, inputs, bandeja y consulta WinSCard; Suite hoja A4, controles, preferencias públicas, zoom, navegación independiente, autocompletado desde certificado exportado y apertura de outputs. 17 UI/60 nativas pasan. Identidad y runtime servicio conservados. No acredita firma física nueva. QR enriquecido diferido. Suite QR R5 distribuida, con metadatos derivados por documento; Bridge nativo permanece R4.",
       "evidence": "docs/design/RESULTADO_AETHER_R4.md",
       "files": {
         "frontend": [
@@ -708,6 +710,42 @@
         "suite",
         "windows_host",
         "orchestration"
+      ]
+    },
+    {
+      "id": "stamp_qr",
+      "name": "Sello QR público y cotejo Android",
+      "status": "implemented_synthetic_and_runtime_validated",
+      "note": "2026-10-14 · QR R5: DNIEQR1 con SHA-256 completo del certificado DER y original, serie/identidad, muestra explícita y cotejo Android por cámara/texto. SAF IO acotado; huella/serie/identidad separadas de consulta manual TSL/OCSP/CRL. No valida CMS/papel por QR. APK81 instalada, Suite/CLI actualizadas, 207 pruebas pasan/1 omitida y 6 instrumentadas pasan. Nueva firma/cámara física pendiente.",
+      "evidence": "docs/design/QR_COTEJO_R5.md",
+      "files": {
+        "model": [
+          "dnie-signing-core/src/main/java/pe/gob/reniec/dnie/pdf/StampQrCodec.kt",
+          "dnie-signing-core/src/main/java/pe/gob/reniec/dnie/pdf/SignatureAppearance.kt"
+        ],
+        "engine": [
+          "dnie-signing-core/src/main/java/pe/gob/reniec/dnie/pdf/StampLayoutEngine.kt"
+        ],
+        "adapter": [
+          "dnie-pdf/src/main/java/pe/gob/reniec/dnie/pdf/PadesSignerEngine.kt",
+          "dnie-pdf-desktop/src/main/java/pe/gob/reniec/dnie/pdf/desktop/JvmPdfSigner.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/data/qr/AndroidQrScanner.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/data/qr/StampQrRepository.kt"
+        ],
+        "frontend": [
+          "app/src/main/java/pe/gob/reniec/dnie/ui/verification/StampQrScreen.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/verification/StampQrViewModel.kt"
+        ],
+        "test": [
+          "dnie-signing-core/src/test/java/pe/gob/reniec/dnie/pdf/StampQrCodecTest.kt",
+          "app/src/test/java/pe/gob/reniec/dnie/ui/verification/StampQrViewModelTest.kt",
+          "app/src/androidTest/java/pe/gob/reniec/dnie/ui/StampQrPresentationTest.kt",
+          "dnie-pdf-desktop/src/test/java/pe/gob/reniec/dnie/pdf/desktop/AetherStampTest.kt"
+        ]
+      },
+      "depends_on": [
+        "stamp_aether",
+        "validation"
       ]
     }
   ],
@@ -896,10 +934,31 @@
     },
     {
       "id": "aether_qr_enrichment",
-      "feature": "stamp_aether",
+      "feature": "stamp_qr",
+      "state": "implemented_synthetic_validated",
+      "description": "2026-10-14 · QR R5: DNIEQR1 con SHA-256 completo del certificado DER y original, serie/identidad, muestra explícita y cotejo Android por cámara/texto. SAF IO acotado; huella/serie/identidad separadas de consulta manual TSL/OCSP/CRL. No valida CMS/papel por QR. APK81 instalada, Suite/CLI actualizadas, 207 pruebas pasan/1 omitida y 6 instrumentadas pasan. Nueva firma/cámara física pendiente.",
+      "evidence": "docs/design/QR_COTEJO_R5.md"
+    },
+    {
+      "id": "stamp_qr_physical",
+      "feature": "stamp_qr",
+      "state": "needs_physical_test",
+      "description": "Firma NFC nueva con sello QR y lectura de cámara apuntando a pantalla/papel. Pruebas sintéticas y scanner independiente superadas; no asumir prueba física.",
+      "evidence": "docs/design/QR_COTEJO_R5.md"
+    },
+    {
+      "id": "stamp_qr_pdf_cms_validation",
+      "feature": "stamp_qr",
       "state": "deferred",
-      "description": "Usuario pide QR después de Bridge/Suite R4. Diseñar metadata pública con hashes completos, certificado DER/cadena y cotejo de PDF/revisión; escanear QR no valida firmas ni papel. No implementado; payload anterior y QR de emparejamiento conservados.",
-      "evidence": "docs/design/ALCANCE_AETHER_R4.md"
+      "description": "Validación PDF/CMS dentro del cotejador, elección de firma/revisión y extracción autenticada de certificado/original. Hoy requiere original/CER y validador externo.",
+      "evidence": "docs/design/QR_COTEJO_R5.md"
+    },
+    {
+      "id": "android_pdf_widget_preview",
+      "feature": "pdf_android",
+      "state": "open",
+      "description": "PdfRenderer del teléfono omitió widget de firma en PDF sintético. PDFBox Android y render externo sí lo muestran/decodifican. Adaptador de preview de PDFs previos requiere análisis aparte.",
+      "evidence": "docs/design/QR_COTEJO_R5.md"
     }
   ],
   "facts": [
@@ -1058,6 +1117,12 @@
       "category": "installed_synthetic_and_instrumented_ui_validated",
       "value": "2026-10-14 · Aether R4 / 3.1.0: Bridge corrige pintura y selección, inputs, bandeja y consulta WinSCard. Suite añade hoja de muestra, controles, preferencias visuales, zoom y apertura/autocompletado de resultados; emblema compartido actualizado. 196 pruebas pasan/1 omitida preexistente, 60 comprobaciones nativas y 2 instrumentadas Android pasan. Windows actualizado con identidad y 13 archivos runtime conservados; APK80 instalada. QR enriquecido diferido; firma física nueva y suspensión siguen pendientes.",
       "evidence": "docs/design/RESULTADO_AETHER_R4.md"
+    },
+    {
+      "id": "stamp_qr_r5",
+      "category": "installed_synthetic_and_instrumented_validated",
+      "value": "2026-10-14 · QR R5: DNIEQR1 con SHA-256 completo del certificado DER y original, serie/identidad, muestra explícita y cotejo Android por cámara/texto. SAF IO acotado; huella/serie/identidad separadas de consulta manual TSL/OCSP/CRL. No valida CMS/papel por QR. APK81 instalada, Suite/CLI actualizadas, 207 pruebas pasan/1 omitida y 6 instrumentadas pasan. Nueva firma/cámara física pendiente.",
+      "evidence": "docs/design/QR_COTEJO_R5.md"
     }
   ]
 }

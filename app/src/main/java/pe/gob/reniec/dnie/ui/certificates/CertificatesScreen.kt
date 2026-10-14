@@ -62,7 +62,8 @@ fun CertificatesScreen(
     modifier: Modifier = Modifier,
     onOpenVault: () -> Unit = {},
     onOpenBridge: () -> Unit = {},
-    onOpenSuite: () -> Unit = {}
+    onOpenSuite: () -> Unit = {},
+    onVerifyQr: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -99,6 +100,7 @@ fun CertificatesScreen(
         title = "Mi DNIe", category = "Certificados e identidad",
         subtitle = "Identidad y certificados en una sola lectura.",
         modifier = modifier, actions = {
+            TextButton(onClick=onVerifyQr, enabled=uiState !is CertificatesUiState.ReadingCard) { Text("Cotejar QR") }
             IconButton(onClick = { viewModel.requestCanEntry() }, enabled = uiState !is CertificatesUiState.ReadingCard) {
                 Icon(Icons.Default.Nfc, "Leer DNIe con NFC")
             }

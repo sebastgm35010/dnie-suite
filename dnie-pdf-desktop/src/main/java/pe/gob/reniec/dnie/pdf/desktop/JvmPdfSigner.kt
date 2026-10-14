@@ -40,16 +40,19 @@ class JvmPdfSigner(private val temporaryRoot: Path,
             PrivatePdfWorkspace(temporaryRoot).use { workspace ->
                 val source = workspace.directory.resolve("source.pdf")
                 var total = 0L
+                val originalDigest = java.security.MessageDigest.getInstance("SHA-256")
                 Files.newOutputStream(source).use { out ->
                     val bytes = ByteArray(65536)
                     while (true) {
                         coroutineContext.ensureActive()
                         val count = input.read(bytes); if (count < 0) break
                         total += count; require(total <= MAX_INPUT_BYTES) { "PDF mayor de 256 MiB" }
+                        originalDigest.update(bytes, 0, count)
                         out.write(bytes, 0, count)
                     }
                 }
                 val signed = workspace.directory.resolve("signed.pdf")
+                val derivedOptions = options.copy(qrMetadata = StampQrMetadata.derived(signer, originalDigest.digest(), total))
                 val memory = MemoryUsageSetting.setupMixed(32L * 1024 * 1024).setTempDir(workspace.directory.toFile())
                 Loader.loadPDF(source.toFile(), "", null, null, { ScratchFile(memory) }).use { document ->
                     PdfSigningPolicy.validate(document, options.visible)
@@ -65,7 +68,7 @@ class JvmPdfSigner(private val temporaryRoot: Path,
                         signingOptions.preferredSignatureSize = SIGNATURE_RESERVE
                         if(options.visible) signingOptions.page=options.pageTarget.pages(document.numberOfPages,options.pageNumber).first()-1
                         document.addSignature(signature, null, signingOptions)
-                        if(options.visible) DesktopStampRenderer.apply(document,signature,options,citizen.fullName,citizen.dniNumber,timestamp)
+                        if(options.visible) DesktopStampRenderer.apply(document,signature,derivedOptions,citizen.fullName,citizen.dniNumber,timestamp)
                         Files.newOutputStream(signed).use { stream ->
                             val signing = document.saveIncrementalForExternalSigning(stream)
                             val context = coroutineContext

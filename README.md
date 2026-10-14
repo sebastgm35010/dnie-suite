@@ -6,7 +6,7 @@ El teléfono gestiona NFC/PACE y las operaciones del DNI. La Suite procesa docum
 
 ## Empezar aquí
 
-- [Rediseño Aether 3.1: cambios y pruebas](docs/design/RESULTADO_AETHER_R2.md). Windows y Android80 actualizados. [Pulido R4 y pruebas](docs/design/RESULTADO_AETHER_R4.md).
+- [Rediseño Aether 3.1: cambios y pruebas](docs/design/RESULTADO_AETHER_R2.md). Windows y Android81 actualizados. [Pulido R4 y pruebas](docs/design/RESULTADO_AETHER_R4.md). [QR y cotejo R5](docs/design/QR_COTEJO_R5.md).
 
 - [Estado actual](docs/CONTEXTO_ACTUAL.md), [pendientes](docs/PENDIENTES_ACTUALES.md) y [arquitectura](docs/architecture/ARQUITECTURA_ACTUAL_2_0.md).
 - [Versión 3.1 y verificaciones](docs/architecture/SEGURIDAD_BACKEND_3_1_V4.md).

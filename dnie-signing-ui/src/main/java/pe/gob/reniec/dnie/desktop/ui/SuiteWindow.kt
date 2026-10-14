@@ -137,7 +137,7 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
         card("Modalidad de firma") { option(it,"Formato",mode);it.add(tsa)
             it.add(JLabel("<html>Requiere internet. Se publica solo<br>si el sello de tiempo se verifica.</html>").apply { font=font.deriveFont(11f);foreground=AetherSwingTheme.muted }) }
         card("Apariencia del sello") { option(it,"Estilo",style);option(it,"Insignia",badge);it.add(JLabel("Color del sello"));it.add(colors)
-            it.add(JLabel("<html>El QR contiene un resumen público.<br>La firma se valida con el PDF.</html>").apply { font=font.deriveFont(11f);foreground=AetherSwingTheme.muted }) }
+            it.add(JLabel("<html>QR con huellas públicas para cotejo.<br>Escanearlo no valida la firma.</html>").apply { font=font.deriveFont(11f);foreground=AetherSwingTheme.muted }) }
         card("Datos visibles") { panel ->
             panel.add(JPanel(java.awt.GridLayout(0,2,4,2)).apply { isOpaque=false;fields.values.forEach(::add) });panel.add(Box.createVerticalStrut(10))
             option(panel,"Título del sello",title);option(panel,"Motivo",reason);option(panel,"Lugar",location);panel.add(tsaBadge)

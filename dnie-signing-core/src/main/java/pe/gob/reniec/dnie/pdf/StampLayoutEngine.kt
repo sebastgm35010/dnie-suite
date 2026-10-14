@@ -63,6 +63,7 @@ object StampLayoutEngine {
             return StampLayout(width,height,0f,listOf(StampElement.Handwriting(0f,0f,width,height)))
         }
         val padding=minOf(9f,width*.04f,height*.10f)
+        require(!(a.requiresHandwritten && a.badge==StampBadgeType.QR_VERIFICATION)) { "Elige QR o rúbrica para la insignia del sello" }
         val radius=minOf(5f,height*.08f)
         when(a.style) {
             StampStyle.INSTITUTIONAL -> {
@@ -83,6 +84,8 @@ object StampLayoutEngine {
                 a.badge==StampBadgeType.SEAL_VECTOR -> seal(elements,x,y,side,c,measure)
                 a.badge==StampBadgeType.QR_VERIFICATION -> qr(elements,x,y,side,publicQrPayload(name,dni,options,timestamp),c.accentRgb)
             }
+        } else if(a.badge==StampBadgeType.QR_VERIFICATION) {
+            error("Amplía el sello para incluir el QR")
         } else if(a.requiresHandwritten) {
             error("Amplía el sello para incluir la rúbrica y sus datos")
         }
@@ -138,23 +141,21 @@ object StampLayoutEngine {
     }
 
     fun publicQrPayload(name: String,dni: String,options: PdfSigningOptions,timestamp: Long): String {
-        fun clean(value: String)=value.replace('|',' ').replace(':',' ').replace(Regex("\\s+")," ").trim().take(160)
         val a=options.appearance
-        return buildList {
-            if(a.showDni && dni.isNotBlank()) add("DNI:${clean(dni)}")
-            add("NOMBRE:${clean(name)}")
-            when {
-                a.showDate && a.showTime -> add("FECHA:${date("yyyy-MM-dd'T'HH:mm:ssXXX",timestamp)}")
-                a.showDate -> add("FECHA:${date("yyyy-MM-dd",timestamp)}")
-                a.showTime -> add("HORA:${date("HH:mm:ssXXX",timestamp)}")
-            }
-            add("PAdES")
-        }.joinToString("|")
+        val moment=when {
+            a.showDate && a.showTime -> date("yyyy-MM-dd'T'HH:mm:ssXXX",timestamp)
+            a.showDate -> date("yyyy-MM-dd",timestamp)
+            a.showTime -> date("HH:mm:ssXXX",timestamp)
+            else -> null
+        }
+        return StampQrCodec.encode(StampQrRecord(options.qrMetadata ?: StampQrMetadata.PREVIEW,
+            name.trim(),dni.takeIf { a.showDni && it.isNotBlank() },moment,if(options.reniecTimestamp) "T" else "B"))
     }
     private fun date(pattern: String,time: Long)=SimpleDateFormat(pattern,Locale.ROOT).apply { timeZone=TimeZone.getTimeZone("America/Lima") }.format(Date(time))
 
     private fun qr(out: MutableList<StampElement>,x: Float,y: Float,side: Float,payload: String,color: Int) {
         val code=QrCode.encodeText(payload,QrCode.Ecc.MEDIUM);val unit=side/(code.size+8)
+        require(unit>=.5f) { "Amplía el sello: el QR necesita más espacio para poder escanearse" }
         out+=StampElement.Box(x,y,side,side,0f,0xFFFFFF)
         for(row in 0 until code.size) {
             var col=0
