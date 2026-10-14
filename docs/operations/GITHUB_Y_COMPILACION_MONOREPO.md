@@ -49,3 +49,5 @@ Para actualizar un teléfono que ya tenga nuestra app, conservar el keystore que
 El nuevo punto de compilación permite elegir rutas y no instala componentes. El instalador/servicio Bridge actual conserva `D:/DNIeBridgeApp`, y varias herramientas históricas documentan rutas de esta PC. Generalizar ese almacenamiento y el despliegue del driver a otro equipo es un trabajo independiente; no se modifican esos componentes al publicar el código.
 
 Los informes de G:/D: son evidencias históricas. Usar el README raíz y los documentos vigentes como entrada, sin repetir comandos de diagnóstico o instalación antiguos.
+
+El registro SQL usa rutas relativas, pero sus huellas representan los bytes del checkout donde se generó. Después de clonar, si Git convierte finales de línea, reconstruir el inventario local con `python tools/project-registry/registry.py refresh` y comprobarlo con `check`. Una diferencia de finales de línea no demuestra un cambio del motor; revisar el diff antes de publicar otro snapshot.
