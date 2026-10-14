@@ -72,6 +72,7 @@ INSERT INTO "checkpoints" VALUES('checkpoint/puente-2.0.0-rc3','77992328f018216f
 INSERT INTO "checkpoints" VALUES('checkpoint/refirma-issuer-serial-h15','4351ba5a53ca47b08a8bb88dc6d3ae942340f2cc','fix(crypto): bind ESS issuer and serial for ReFirma PE policy');
 INSERT INTO "checkpoints" VALUES('checkpoint/remove-passkeys-apk71','3fbdec484fee492526be0f399f9e4411572ddabf','refactor: remove passkeys and clean retired credentials on upgrade');
 INSERT INTO "checkpoints" VALUES('checkpoint/signing-core-rc5','c97e6e3b27669d3c93a78fb8fbd0fe452f92582b','fix: share signing engine and keep batch authorization in one card session');
+INSERT INTO "checkpoints" VALUES('checkpoint/stamp-qr-r5-complete','cb65fef52ecd6a1df3dc10b4315a13698dd77124','docs(registry): index stamp QR engine, Android flow and results');
 INSERT INTO "checkpoints" VALUES('checkpoint/stamp-qr-r5-tested','5a405aa1a52ef5e36ac28f963e4a953a980170c0','feat(qr): derive public stamp fingerprints and add Android comparison');
 INSERT INTO "checkpoints" VALUES('checkpoint/suite-bridge-modular-h13','44befef509e8c463c25932c0da7a207197672703','Add optional modular bridge coordination to signing suite GUI');
 INSERT INTO "checkpoints" VALUES('checkpoint/suite-continuous-h2','a0daced1c84969f320b9d2f0d992c6e0c916ae34','H2 synthetic validation: persistent pairing and continuous private jobs');
@@ -6346,7 +6347,7 @@ INSERT INTO "metadata" VALUES('catalog_review_date','2026-10-14');
 INSERT INTO "metadata" VALUES('index_method','tracked files; lexical symbols/imports, not runtime call graph');
 INSERT INTO "metadata" VALUES('project','DnieSignerPeruEvolution');
 INSERT INTO "metadata" VALUES('schema_version','1');
-INSERT INTO "metadata" VALUES('source_commit','5a405aa1a52ef5e36ac28f963e4a953a980170c0');
+INSERT INTO "metadata" VALUES('source_commit','cb65fef52ecd6a1df3dc10b4315a13698dd77124');
 CREATE TABLE module_dependencies(source TEXT REFERENCES modules(id), target TEXT REFERENCES modules(id),
  scope TEXT NOT NULL, line INTEGER NOT NULL, PRIMARY KEY(source,target,scope,line));
 INSERT INTO "module_dependencies" VALUES('app','dnie-core','implementation',112);
