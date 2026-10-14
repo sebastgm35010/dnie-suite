@@ -103,6 +103,19 @@ static class PcscBackendTests
         catch (OperationCanceledException) { }
         Check(heartbeatStream.Written.ToArray().SequenceEqual(new byte[] { 0, 1, 4, 0, 1, 5 }) && heartbeatDevice.Detached);
 
+        // A stalled idle pulse must not occupy the driver's entire 30s budget.
+        // Cancel the stream and detach; never continue reading a late response
+        // as though it belonged to the next command.
+        using (var pulseLimit = new CancellationTokenSource(TimeSpan.FromSeconds(8)))
+        using (var stalledDevice = new FakeDevice(new Queue<PcscRequest>()))
+        using (var stalledStream = new ScriptedStream([0, 5, .. atr], waitAtEof: true))
+        {
+            try { await PcscBackend.RunAsync(stalledDevice, stalledStream, pulseLimit.Token, heartbeatInterval: TimeSpan.FromMilliseconds(1)); throw new Exception("Expected heartbeat deadline."); }
+            catch (OperationCanceledException) { Check(!pulseLimit.IsCancellationRequested); }
+            Check(stalledDevice.Detached&&stalledDevice.Results.Count==0);
+            Check(stalledStream.Written.ToArray().SequenceEqual(new byte[] { 0, 1, 4, 0, 1, 5 }));
+        }
+
         // Malformed ATR never establishes ownership; do not detach another owner.
         using var invalidDevice = new FakeDevice(new Queue<PcscRequest>());
         using var invalidStream = new ScriptedStream([0, 2, 0x3B, 0x8F]);
@@ -174,7 +187,7 @@ static class PcscBackendTests
         public override long Seek(long o,SeekOrigin origin)=>throw new NotSupportedException();
         public override void SetLength(long length)=>throw new NotSupportedException();
     }
-    private sealed class ScriptedStream(byte[] input) : Stream
+    private sealed class ScriptedStream(byte[] input, bool waitAtEof=false) : Stream
     {
         private readonly MemoryStream incoming = new(input);
         public readonly MemoryStream Written = new();
@@ -182,7 +195,11 @@ static class PcscBackendTests
         public override long Length => throw new NotSupportedException();
         public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
         public override int Read(byte[] buffer, int offset, int count) => incoming.Read(buffer, offset, count);
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken ct = default) => incoming.ReadAsync(buffer, ct);
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken ct = default) {
+            int count=await incoming.ReadAsync(buffer, ct);
+            if(count==0&&waitAtEof) await Task.Delay(Timeout.Infinite, ct);
+            return count;
+        }
         public override void Write(byte[] buffer, int offset, int count) => Written.Write(buffer, offset, count);
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken ct = default) { Written.Write(buffer.Span); return ValueTask.CompletedTask; }
         public override void Flush() { }

@@ -74,7 +74,8 @@ try
                     ? new byte[] { 0xDE, 0xAD, 0x90, 0 } : new byte[] { 0x6A, 0x82 },
                 _ => throw new Exception("unexpected driver opcode")
             };
-            backend.Complete(request.Id, 0, answer);
+            if (answer.Length > request.OutputCapacity) backend.Complete(request.Id, PcscAbi.BufferTooSmall, []);
+            else backend.Complete(request.Id, 0, answer);
         }
     });
     state[0].CurrentState = 0;
@@ -91,8 +92,15 @@ try
     }
     Check(Send([0, 0xA4, 4, 0, 0]).SequenceEqual(new byte[] { 0x6A, 0x82 }), "card status word 6A82 preserved");
     Check(Send([0, 0xB0, 0, 0, 1]).SequenceEqual(new byte[] { 0xDE, 0xAD, 0x90, 0 }), "response bytes preserved");
+    var shortPci = new Native.Pci { Protocol = protocol, Length = 8 };
+    byte[] shortResponse = new byte[2], read = [0, 0xB0, 0, 0, 1]; uint shortSize = 2;
+    Check(Native.SCardTransmit(card, ref shortPci, read, (uint)read.Length, IntPtr.Zero, shortResponse, ref shortSize)==0x80100008, "short caller buffer reports insufficient buffer");
+    Check(Send([0, 0xA4, 4, 0, 0]).SequenceEqual(new byte[] { 0x6A, 0x82 }), "same card/backend remain usable after insufficient buffer");
     Ok(Native.SCardReconnect(card, 2, 2, 1, out protocol), "warm reset via backend");
     Ok(Native.SCardDisconnect(card, 2), "disconnect with power off"); card = IntPtr.Zero;
+    Ok(Native.SCardConnectW(context, reader, 2, 2, out card, out protocol), "new client connects after power off");
+    Check(Send([0, 0xA4, 4, 0, 0]).SequenceEqual(new byte[] { 0x6A, 0x82 }), "transmit works after power-off reconnect");
+    Ok(Native.SCardDisconnect(card, 0), "disconnect reconnected client"); card = IntPtr.Zero;
     stop.Cancel(); await worker.WaitAsync(TimeSpan.FromSeconds(5)); worker = null;
     // Power-off can already have queued an intermediate present/unpowered change.
     // Consume changes until actual absence, keeping the entire wait bounded.

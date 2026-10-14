@@ -88,6 +88,11 @@ public static class PcscAbi
 /// <summary>Sequential PC/SC backend over authenticated session-local VPCD framing.</summary>
 public static class PcscBackend
 {
+    // Driver requests expire after 30s from enqueue, including time spent behind
+    // an idle pulse. Keep the serialized pulse + command below that budget.
+    // A timed-out exchange closes the session; never consume late frames/retry.
+    private static readonly TimeSpan CardReplyTimeout = TimeSpan.FromSeconds(25);
+    private static readonly TimeSpan HeartbeatReplyTimeout = TimeSpan.FromSeconds(2);
     public static async Task RunAsync(IPcscDevice device, Stream card, CancellationToken cancellation,
         Action<string>? log = null, TimeSpan? heartbeatInterval = null)
     {
@@ -114,7 +119,7 @@ public static class PcscBackend
                 {
                     if (Environment.TickCount64 - lastTraffic >= pulseMs)
                     {
-                        byte[] pulse = await ExchangeAsync(card, [5], cancellation);
+                        byte[] pulse = await ExchangeAsync(card, [5], cancellation, timeout: HeartbeatReplyTimeout);
                         try { if (!pulse.AsSpan().SequenceEqual(new byte[] { 1 })) throw new InvalidDataException("Heartbeat rejected."); }
                         finally { CryptographicOperations.ZeroMemory(pulse); }
                         lastTraffic = Environment.TickCount64;
@@ -191,11 +196,12 @@ public static class PcscBackend
         }
     }
 
-    private static async Task<byte[]> ExchangeAsync(Stream stream, byte[] command, CancellationToken cancellation, bool waitForCard = false)
+    private static async Task<byte[]> ExchangeAsync(Stream stream, byte[] command, CancellationToken cancellation, bool waitForCard = false, TimeSpan? timeout = null)
     {
         if (command.Length is < 1 or > PcscAbi.MaxPayload) throw new InvalidDataException("Invalid card frame.");
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
-        deadline.CancelAfter(TimeSpan.FromSeconds(30));
+        var budget = timeout ?? (waitForCard ? TimeSpan.FromSeconds(30) : CardReplyTimeout);
+        deadline.CancelAfter(budget);
         byte[] header = [(byte)(command.Length >> 8), (byte)command.Length];
         await stream.WriteAsync(header, deadline.Token);
         await stream.WriteAsync(command, deadline.Token);
@@ -203,7 +209,7 @@ public static class PcscBackend
         if (waitForCard) {
             deadline.CancelAfter(Timeout.InfiniteTimeSpan);
             await stream.ReadExactlyAsync(header.AsMemory(0, 1), cancellation);
-            deadline.CancelAfter(TimeSpan.FromSeconds(30));
+            deadline.CancelAfter(budget);
             await stream.ReadExactlyAsync(header.AsMemory(1, 1), deadline.Token);
         } else await stream.ReadExactlyAsync(header, deadline.Token);
         int size = (header[0] << 8) | header[1];

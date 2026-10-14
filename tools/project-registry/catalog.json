@@ -36,7 +36,8 @@
     "docs/architecture/SEGURIDAD_BACKEND_3_1_V4.md": "current_backend_hardening_3_1",
     "README.md": "repository_entrypoint",
     "docs/operations/GITHUB_Y_COMPILACION_MONOREPO.md": "current_repository_workflow",
-    "docs/operations/PUBLICACION_GITHUB_20261013.md": "repository_publication_evidence"
+    "docs/operations/PUBLICACION_GITHUB_20261013.md": "repository_publication_evidence",
+    "docs/architecture/CONTROLADOR_COMPLETADOS_Y_PROTOCOLO_R2.md": "current_driver_completion_and_protocol_architecture"
   },
   "features": [
     {
@@ -281,7 +282,7 @@
       "id": "bridge",
       "name": "Puente NFC ↔ PCSC",
       "status": "validated_real",
-      "note": "Compatibilidad abierta ReFirma/Firma Perú y Ciudadano Digital probada; traducción PACE y modo privado separados. R5: receptor Wi-Fi admite IP privada distinta sin cambiar confianza TLS; TLS directo permite cambiar destino. Prueba física de movilidad pendiente. 3.1: autenticación e integridad v4 integradas, pruebas sintéticas/de interfaz superadas; nueva sesión/firma física pendiente.",
+      "note": "Compatibilidad abierta ReFirma/Firma Perú y Ciudadano Digital probada; traducción PACE y modo privado separados. R5: receptor Wi-Fi admite IP privada distinta sin cambiar confianza TLS; TLS directo permite cambiar destino. Prueba física de movilidad pendiente. 3.1: autenticación e integridad v4 integradas, pruebas sintéticas/de interfaz superadas; nueva sesión/firma física pendiente. R2: driver2.0.0.4 y backend instalados; pruebas PCSC/TLS sintéticas pasan. Ver función pcsc_reader para alcance y pendientes físicos.",
       "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md",
       "files": {
         "engine": [
@@ -541,6 +542,31 @@
         ]
       },
       "depends_on": []
+    },
+    {
+      "id": "pcsc_reader",
+      "name": "Controlador UMDF y backend PCSC",
+      "status": "installed_synthetic_validated",
+      "note": "2026-10-13 · Controlador R2 2.0.0.4/oem239 y backend Windows instalados sin reinicio. Errores locales de transmisión ya no retiran la tarjeta; protocolo tras apagado y cancelación antes de entrega corregidos. Pulsos 2 s/operaciones 25 s frente a plazo del driver 30 s. 7860 comprobaciones C++, 137 backend, 31 PCSC nativas y 13 TLSrelay pasan. PnP0 y ReaderPublished=true al finalizar, sin tarjeta. Firma DNI y suspensión físicas pendientes; Android78 no cambia.",
+      "evidence": "docs/architecture/CONTROLADOR_COMPLETADOS_Y_PROTOCOLO_R2.md",
+      "files": {
+        "driver": [
+          "tools/windows-pcsc-driver/DniBridgeReader.cpp",
+          "tools/windows-pcsc-driver/BridgeAbi.h",
+          "tools/windows-pcsc-driver/DniBridgeReader.inf"
+        ],
+        "adapter": [
+          "tools/windows-bridge/PcscBackend.cs"
+        ],
+        "test": [
+          "tools/windows-pcsc-driver/power-tests/",
+          "tools/windows-pcsc-driver/synthetic-tests/",
+          "tools/windows-bridge/tests/PcscBackendTests.cs"
+        ]
+      },
+      "depends_on": [
+        "bridge"
+      ]
     }
   ],
   "pending": [
@@ -702,8 +728,8 @@
       "id": "reader_resume_recovery",
       "feature": "bridge",
       "state": "open",
-      "description": "Correcciones R1 instaladas driver2.0.0.3 y observabilidad ReaderPublished, pruebas C++/PCSC/TLSrelay pasan. Falta reproducción física suspensión/reanudación, sesión y firma DNI nueva, demostrar causa de incidencias con trazas/dump; no replay de operaciones.",
-      "evidence": "docs/architecture/CONTROLADOR_ENERGIA_Y_PUBLICACION_R1.md"
+      "description": "R2 instalado driver2.0.0.4/oem239 y backend acotado; 7860 C++, 137 backend, 31 PCSC y 13 TLSrelay pasan. Lector ya estaba no publicado con PnP0 antes de actualizar y se publica después. Falta reproducir suspensión/reanudación y nueva firma DNI real; no se demuestra causa original ni se permite replay.",
+      "evidence": "docs/architecture/CONTROLADOR_COMPLETADOS_Y_PROTOCOLO_R2.md"
     },
     {
       "id": "backend_3_1_physical_regression",
@@ -827,6 +853,12 @@
       "category": "repository_workflow",
       "value": "https://github.com/sebastgm35010/dnie-suite · privado · main · OAuth navegador · historial y checkpoints conservados; sin claves, artefactos ni registros personales de ejecución.",
       "evidence": "docs/operations/GITHUB_Y_COMPILACION_MONOREPO.md"
+    },
+    {
+      "id": "driver_completion_r2",
+      "category": "installed_synthetic_validated",
+      "value": "2026-10-13 · Controlador R2 2.0.0.4/oem239 y backend Windows instalados sin reinicio. Errores locales de transmisión ya no retiran la tarjeta; protocolo tras apagado y cancelación antes de entrega corregidos. Pulsos 2 s/operaciones 25 s frente a plazo del driver 30 s. 7860 comprobaciones C++, 137 backend, 31 PCSC nativas y 13 TLSrelay pasan. PnP0 y ReaderPublished=true al finalizar, sin tarjeta. Firma DNI y suspensión físicas pendientes; Android78 no cambia.",
+      "evidence": "docs/architecture/CONTROLADOR_COMPLETADOS_Y_PROTOCOLO_R2.md"
     }
   ]
 }

@@ -91,7 +91,77 @@ static void StaleReplyAndEarlyCancel() {
     Check(f.context()->payloadLength==0,"early cancellation wipes command");
     auto actual=f.transmit(); f.ioctl(actual,IOCTL_SMARTCARD_TRANSMIT); actual.cancelQueued=true; actual.cancelRunning=true; CancelPending(&actual);
     IoStop(f.device->defaultQueue,&actual,WdfRequestStopActionSuspend);
-    Check(actual.completions==1&&!f.context()->attached,"cancel before stop invalidates session without double completion");
+    Check(actual.completions==1&&f.context()->attached,"undelivered cancel preserves session without double completion");
+}
+static void RecoverableCompletion() {
+    for(NTSTATUS failure : {STATUS_BUFFER_TOO_SMALL, STATUS_NOT_SUPPORTED}) {
+        Fixture f; f.attach(); auto absent=f.request(); f.ioctl(absent,IOCTL_SMARTCARD_IS_ABSENT);
+        auto r=f.transmit(); f.ioctl(r,IOCTL_SMARTCARD_TRANSMIT); f.deliver(); auto id=f.context()->pendingId;
+        auto complete=f.request(); complete.file=&f.backend; CompleteHeader header{id,static_cast<uint32_t>(failure),0};
+        complete.input.resize(sizeof(header)); memcpy(complete.input.data(),&header,sizeof(header)); f.ioctl(complete,BRIDGE_COMPLETE);
+        Check(complete.status==STATUS_SUCCESS&&r.completions==1&&r.status==failure,"request-local error reaches original caller");
+        Check(f.context()->attached&&f.context()->backendOwner==&f.backend&&!absent.completed,"local error does not remove card or revoke owner");
+        Check(!f.context()->pending&&f.context()->payloadLength==0,"local error retires payload without replay");
+        auto empty=f.request(sizeof(RequestHeader)+8); empty.file=&f.backend; f.ioctl(empty,BRIDGE_GET_REQUEST);
+        Check(empty.status==STATUS_NO_MORE_ENTRIES,"owner can poll after local error");
+        auto next=f.transmit(); f.ioctl(next,IOCTL_SMARTCARD_TRANSMIT); Check(f.context()->pendingId>id,"next operation uses a new id");
+        f.deliver(); f.reply(); Check(next.status==STATUS_SUCCESS&&next.completions==1,"subsequent operation completes normally");
+        // Transport loss still removes the card, with no second completion.
+        auto fatal=f.transmit(); f.ioctl(fatal,IOCTL_SMARTCARD_TRANSMIT); f.deliver(); header={f.context()->pendingId,static_cast<uint32_t>(STATUS_DEVICE_NOT_CONNECTED),0};
+        auto lost=f.request(); lost.file=&f.backend; lost.input.resize(sizeof(header)); memcpy(lost.input.data(),&header,sizeof(header)); f.ioctl(lost,BRIDGE_COMPLETE);
+        Check(fatal.completions==1&&!f.context()->attached&&absent.completed,"transport failure still detaches and notifies");
+    }
+}
+static void CompletionBoundaries() {
+    Fixture f; f.attach(); auto r=f.transmit(); f.ioctl(r,IOCTL_SMARTCARD_TRANSMIT); f.deliver();
+    // Exercise failure to retrieve the caller buffer after a successful response.
+    r.output.resize(1); f.reply();
+    Check(r.status==STATUS_BUFFER_TOO_SMALL&&r.completions==1&&f.context()->attached,"local output-copy failure preserves synchronized transmit session");
+    ULONG protocol=SCARD_PROTOCOL_T0; auto unsupported=f.request(sizeof(protocol)); unsupported.input.resize(sizeof(protocol)); memcpy(unsupported.input.data(),&protocol,sizeof(protocol)); f.ioctl(unsupported,IOCTL_SMARTCARD_SET_PROTOCOL);
+    Check(unsupported.status==STATUS_NOT_SUPPORTED&&f.context()->protocol==SCARD_PROTOCOL_T1,"unsupported protocol leaves selected protocol unchanged");
+    auto pending=f.transmit(); f.ioctl(pending,IOCTL_SMARTCARD_TRANSMIT);
+    auto other=f.transmit(); f.ioctl(other,IOCTL_SMARTCARD_TRANSMIT);
+    Check(other.status==STATUS_DEVICE_BUSY&&f.context()->pending==&pending,"overlapping transmit cannot replace an in-flight command");
+    protocol=SCARD_PROTOCOL_T1; memcpy(unsupported.input.data(),&protocol,sizeof(protocol)); auto select=f.request(sizeof(protocol)); select.input=unsupported.input; f.ioctl(select,IOCTL_SMARTCARD_SET_PROTOCOL);
+    Check(select.status==STATUS_DEVICE_BUSY&&f.context()->pending==&pending,"negotiation cannot race a pending operation");
+    f.deliver(); f.reply(); Check(pending.completions==1&&pending.status==STATUS_SUCCESS,"parallel queue still accepts backend completion");
+    // A reset failure is not covered by the transmit-only recovery allowlist.
+    ULONG power=SCARD_WARM_RESET; auto reset=f.request(33); reset.input.resize(sizeof(power)); memcpy(reset.input.data(),&power,sizeof(power)); f.ioctl(reset,IOCTL_SMARTCARD_POWER); f.deliver();
+    auto failed=f.request(); failed.file=&f.backend; CompleteHeader header{f.context()->pendingId,static_cast<uint32_t>(STATUS_NOT_SUPPORTED),0}; failed.input.resize(sizeof(header)); memcpy(failed.input.data(),&header,sizeof(header)); f.ioctl(failed,BRIDGE_COMPLETE);
+    Check(reset.status==STATUS_NOT_SUPPORTED&&!f.context()->attached,"reset failure still invalidates the session");
+}
+static void CancelDeliveryRace() {
+    Fixture f; f.attach(); auto r=f.transmit(); f.ioctl(r,IOCTL_SMARTCARD_TRANSMIT); r.cancelQueued=true; r.cancelRunning=true;
+    auto poll=f.request(sizeof(RequestHeader)+8); poll.file=&f.backend;
+    std::thread backend([&] { f.ioctl(poll,BRIDGE_GET_REQUEST); });
+    std::thread cancel([&] { CancelPending(&r); }); backend.join(); cancel.join();
+    Check(r.completions==1&&r.status==STATUS_CANCELLED&&!f.context()->pending,"delivery/cancel race completes once without replay");
+    Check(poll.status==STATUS_SUCCESS ? !f.context()->attached : poll.status==STATUS_NO_MORE_ENTRIES&&f.context()->attached,"only a delivered canceled command invalidates session");
+}
+static void PowerDownReconnect() {
+    Fixture f; f.attach(); ULONG power=SCARD_POWER_DOWN;
+    auto down=f.request(); down.input.resize(sizeof(power)); memcpy(down.input.data(),&power,sizeof(power)); f.ioctl(down,IOCTL_SMARTCARD_POWER); f.deliver();
+    auto complete=f.request(); complete.file=&f.backend; CompleteHeader header{f.context()->pendingId,0,0}; complete.input.resize(sizeof(header)); memcpy(complete.input.data(),&header,sizeof(header)); f.ioctl(complete,BRIDGE_COMPLETE);
+    Check(down.status==STATUS_SUCCESS&&f.context()->attached&&f.context()->state==SCARD_PRESENT&&f.context()->protocol==0,"powerdown retains present card with no selected protocol");
+    auto invalid=f.transmit(); f.ioctl(invalid,IOCTL_SMARTCARD_TRANSMIT); Check(invalid.status==STATUS_INVALID_DEVICE_STATE,"transmit requires negotiation after powerdown");
+    ULONG protocol=SCARD_PROTOCOL_T1;
+    auto shortOutput=f.request(); shortOutput.input.resize(sizeof(protocol)); memcpy(shortOutput.input.data(),&protocol,sizeof(protocol)); f.ioctl(shortOutput,IOCTL_SMARTCARD_SET_PROTOCOL);
+    Check(shortOutput.status==STATUS_BUFFER_TOO_SMALL&&f.context()->protocol==0,"invalid output cannot change negotiated state");
+    auto negotiate=f.request(sizeof(protocol)); negotiate.input=shortOutput.input; f.ioctl(negotiate,IOCTL_SMARTCARD_SET_PROTOCOL);
+    ULONG selected=0; memcpy(&selected,negotiate.output.data(),sizeof(selected));
+    Check(negotiate.status==STATUS_SUCCESS&&selected==SCARD_PROTOCOL_T1&&f.context()->state==SCARD_SPECIFIC,"contactless protocol can be selected again without cached success for reset");
+    auto next=f.transmit(); f.ioctl(next,IOCTL_SMARTCARD_TRANSMIT); f.deliver(); f.reply(); Check(next.status==STATUS_SUCCESS,"next APDU reaches backend after logical reconnect");
+    // A short reset buffer is rejected before any physical reset is sent.
+    power=SCARD_WARM_RESET; auto reset=f.request(1); reset.input.resize(sizeof(power)); memcpy(reset.input.data(),&power,sizeof(power)); f.ioctl(reset,IOCTL_SMARTCARD_POWER);
+    Check(reset.status==STATUS_BUFFER_TOO_SMALL&&!f.context()->pending&&f.context()->attached,"undersized reset does not reach card or expel it");
+}
+static void CancelBeforeDelivery() {
+    Fixture f; f.attach(); auto r=f.transmit(); f.ioctl(r,IOCTL_SMARTCARD_TRANSMIT); auto id=f.context()->pendingId;
+    r.cancelQueued=true; r.cancelRunning=true; CancelPending(&r);
+    Check(r.status==STATUS_CANCELLED&&r.completions==1&&!f.context()->pending,"undelivered cancellation completes once");
+    Check(f.context()->attached&&f.context()->backendOwner==&f.backend&&f.context()->payloadLength==0,"undelivered cancellation preserves session and clears command");
+    auto next=f.transmit(); f.ioctl(next,IOCTL_SMARTCARD_TRANSMIT); Check(f.context()->pendingId>id,"canceled command is never reused"); f.deliver(); f.reply();
+    Check(next.status==STATUS_SUCCESS,"owner remains usable after undelivered cancellation");
 }
 static void EmptyPollWithoutSystemClients() {
     Fixture f; f.attach(); auto empty=f.request(sizeof(RequestHeader)+8); empty.file=&f.backend;
@@ -100,10 +170,20 @@ static void EmptyPollWithoutSystemClients() {
     auto unowned=f.request(sizeof(RequestHeader)+8); f.ioctl(unowned,BRIDGE_GET_REQUEST);
     Check(unowned.status==STATUS_ACCESS_DENIED,"unowned empty poll remains denied");
 }
-int main() {
+int main(int argc, char** argv) {
     try {
+        if(argc==2) {
+            std::string name=argv[1];
+            if(name=="completion") RecoverableCompletion();
+            else if(name=="protocol") PowerDownReconnect();
+            else if(name=="cancel") CancelBeforeDelivery();
+            else throw std::runtime_error("Unknown test group");
+            std::cout << "PASS regression group " << name << ": " << checks << " checks\n"; return 0;
+        }
         Stop(false); Stop(true); Cancellation(false); QueueLifecycle(); TimeoutAndCompletion(); PowerOperations(); StaleReplyAndEarlyCancel(); EmptyPollWithoutSystemClients();
+        RecoverableCompletion(); PowerDownReconnect(); CancelBeforeDelivery(); CompletionBoundaries();
         for(int i=0;i<200;++i) { Cancellation(true); Stop(i%2==0); QueueLifecycle(); }
+        for(int i=0;i<200;++i) CancelDeliveryRace();
         std::cout << "PASS production driver callbacks: " << checks << " checks; 200 concurrent cancellation/stop races and 200 power cycles. No PnP/power/DNI operations.\n";
         return 0;
     } catch(const std::exception& error) { std::cerr << "FAIL: " << error.what() << '\n'; return 1; }

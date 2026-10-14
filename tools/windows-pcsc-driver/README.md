@@ -1,5 +1,7 @@
 # DNIe Android NFC: base de lector Windows PC/SC
 
+Revisión vigente del código: [completados/protocolo R2](../../docs/architecture/CONTROLADOR_COMPLETADOS_Y_PROTOCOLO_R2.md), driver 2.0.0.4. Distingue errores locales de transmisión y pérdida de enlace; conserva sesión solo si una cancelación ocurre antes de entregar el comando al backend. La revisión de energía R1 siguiente se conserva como antecedente.
+
 Fuente **original MIT**, separada de Bix y de los ejemplos MS-PL de Microsoft. No contiene código GPL. El controlador x64 **compila con cero errores y advertencias** y el INF pasa InfVerif `/w`. Por autorización explícita se firmó para pruebas y se instaló en esta PC: PnP OK y enumeración PC/SC comprobada. Pasaron 25 comprobaciones del lector instalado con tarjeta simulada y 45 comprobaciones del puente. Esto no demuestra todavía el flujo NFC/PACE ni compatibilidad con RENIEC. Build Tools, SDK y WDK están en D:.
 
 El objetivo del dispositivo `Root\DNIeBridgeReader` es exponer la interfaz estándar SmartCardReader al administrador PC/SC y una interfaz privada para nuestro host. El host TLS mantiene el canal Android; el lector no usa red, VPCD ni firewall.

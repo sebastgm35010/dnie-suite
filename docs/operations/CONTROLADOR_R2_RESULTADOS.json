@@ -1,0 +1,141 @@
+{
+  "review_date": "2026-10-13",
+  "checkpoint": "checkpoint/pre-driver-completion-r2",
+  "base_git": "94ce9ba",
+  "driver": {
+    "DeviceName": "DNIe Android NFC Private Smart Card Reader",
+    "DriverVersion": "2.0.0.4",
+    "InfName": "oem239.inf"
+  },
+  "deployment": {
+    "signer": "821F6725626C6944169C77F319FB83659A8C43D7",
+    "ok": true,
+    "version": "2.0.0.4",
+    "package": "D:/DNIeToolchain/ReaderCompletionR2/package"
+  },
+  "host_install": {
+    "exitCode": 0
+  },
+  "installed_service": {
+    "directory": "D:\\DNIeBridgeApp\\versions\\0280814ff01945b5aad7246415c49226",
+    "ownerSid": "S-1-5-21-997377505-3040432098-3113143193-1001",
+    "configuration": "Release"
+  },
+  "final_status": {
+    "state": "Stopped",
+    "phase": "idle",
+    "cardPresent": false,
+    "readerPublished": true
+  },
+  "cpp": {
+    "checks": 7860,
+    "cancel_stop_races": 200,
+    "cancel_delivery_races": 200,
+    "simulated_power_cycles": 200,
+    "production_cpp_included": true,
+    "actual_windows_suspend_tested": false
+  },
+  "backend": {
+    "full_checks": 137,
+    "pcsc_checks": 37,
+    "passed": true
+  },
+  "native_pcsc": {
+    "success": true,
+    "checks": [
+      "test runs as SYSTEM under initial device ACL",
+      "one original backend interface",
+      "PCSC context (0x00000000)",
+      "reader list size (0x00000000)",
+      "reader list (0x00000000)",
+      "original reader visible to SCardListReaders",
+      "initial presence query (0x00000000)",
+      "card initially absent",
+      "non-owner cannot poll",
+      "second attach rejected",
+      "attached presence query (0x00000000)",
+      "card present after attach",
+      "T1 connect and synthetic reset (0x00000000)",
+      "T1 negotiation",
+      "transmit (0x00000000)",
+      "card status word 6A82 preserved",
+      "transmit (0x00000000)",
+      "response bytes preserved",
+      "short caller buffer reports insufficient buffer",
+      "transmit (0x00000000)",
+      "same card/backend remain usable after insufficient buffer",
+      "warm reset via backend (0x00000000)",
+      "disconnect with power off (0x00000000)",
+      "new client connects after power off (0x00000000)",
+      "transmit (0x00000000)",
+      "transmit works after power-off reconnect",
+      "disconnect reconnected client (0x00000000)",
+      "owner-close query (0x00000000)",
+      "owner close removes card",
+      "cancel context wait (0x00000000)",
+      "presence wait cancellation"
+    ],
+    "syntheticOnly": true
+  },
+  "tls_relay": {
+    "success": true,
+    "checks": [
+      "TLS and token accepted by integrated host",
+      "native PCSC context",
+      "native reader list size",
+      "native reader list",
+      "native connect through TLS reset",
+      "native transmit via TLS",
+      "unsuccessful status preserved end to end",
+      "35 seconds idle survive using transport heartbeats",
+      "native transmit via TLS",
+      "transmit works after prolonged idle",
+      "native warm reset crosses TLS and completes",
+      "native power off crosses TLS and completes",
+      "phone disconnect removes native card"
+    ],
+    "resets": 1,
+    "pulses": 3,
+    "powerOffs": 1,
+    "syntheticOnly": true
+  },
+  "task_results": [
+    {
+      "taskResult": 0,
+      "resultExists": true,
+      "mode": "native",
+      "state": "Ready"
+    },
+    {
+      "taskResult": 0,
+      "resultExists": true,
+      "mode": "relay",
+      "state": "Ready"
+    }
+  ],
+  "compile": {
+    "driver_release_errors": 0,
+    "driver_release_warnings": 0,
+    "native_package_release_errors": 0,
+    "native_package_release_warnings": 0
+  },
+  "signed_driver_files": [
+    {
+      "path": "D:\\DNIeToolchain\\ReaderCompletionR2\\package\\DniBridgeReader.dll",
+      "bytes": 115000,
+      "sha256": "1edbec1817f8db7181a5c538593c6137068e6df5e8fb5825c304ec28fc630f33"
+    },
+    {
+      "path": "D:\\DNIeToolchain\\ReaderCompletionR2\\package\\DniBridgeReader.inf",
+      "bytes": 1449,
+      "sha256": "78d1e91af03371c540b21952abb0433e7d1b7ca548f11e09a5c06f68718d0db1"
+    },
+    {
+      "path": "D:\\DNIeToolchain\\ReaderCompletionR2\\package\\dnibridgereader.cat",
+      "bytes": 2880,
+      "sha256": "bd22485734a25ea3169fde1ec5e840e8bdb6fc423d3c316e57ffb6260f77ae5c"
+    }
+  ],
+  "physical_dni_tested_this_iteration": false,
+  "android_changed": false
+}

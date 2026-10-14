@@ -12,6 +12,12 @@ if (args.Length == 2 && args[0] == "--interop-fixture")
     return;
 }
 
+if (args.Length == 1 && args[0] == "--pcsc-only")
+{
+    Console.WriteLine($"PASS {await PcscBackendTests.RunAsync()} PCSC backend checks.");
+    return;
+}
+
 using var rsa = RSA.Create(2048);
 using var generated = new CertificateRequest("CN=bridge-test", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1).CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-1), DateTimeOffset.UtcNow.AddHours(1));
 // Windows Schannel cannot use an ephemeral private key; default temporary user container

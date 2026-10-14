@@ -92,13 +92,15 @@ void CancelPending(WDFREQUEST request) {
     {
         Guard guard(context->lock);
         if (context->pending == request) {
+            bool delivered = context->delivered;
             context->pending = nullptr;
             context->delivered = false;
             SecureZeroMemory(context->payload, context->payloadLength);
             context->payloadLength = 0;
-            // A canceled command may already have executed on the physical card.
-            // Invalidate this backend session; never accept another APDU on it.
-            Detach(context);
+            // Only GET_REQUEST transfers the command to the backend, under this
+            // same lock. Before that transfer no physical operation is possible.
+            // After transfer execution is uncertain: retire the entire session.
+            if (delivered) Detach(context);
         }
     }
     WdfRequestComplete(request, STATUS_CANCELLED);
@@ -172,6 +174,13 @@ static NTSTATUS CopyOutput(WDFREQUEST request, const void* bytes, size_t size) {
     return status;
 }
 
+static bool RequestLocalTransmitError(ULONG opcode, NTSTATUS status) {
+    // The backend has consumed a complete response, or rejected this APDU
+    // locally. Neither outcome loses the stream/SSC. Never retry the command.
+    // Unknown statuses and errors on reset/power-off still invalidate the link.
+    return opcode == OP_TRANSMIT && (status == STATUS_BUFFER_TOO_SMALL || status == STATUS_NOT_SUPPORTED);
+}
+
 static NTSTATUS QueueBackend(ReaderContext* context, WDFREQUEST request, ULONG opcode,
     const BYTE* bytes, ULONG length, ULONG capacity, ULONG pciLength = 0) {
     if (!context->attached) return STATUS_DEVICE_NOT_CONNECTED;
@@ -243,7 +252,13 @@ void DeviceControl(WDFQUEUE queue, WDFREQUEST request, size_t outputLength, size
                 auto header = static_cast<CompleteHeader*>(input);
                 if (header->id != context->pendingId || header->length > BRIDGE_MAX_APDU || inputLength != sizeof(*header) + header->length ||
                     header->length > context->outputCapacity || (header->status && NT_SUCCESS(static_cast<NTSTATUS>(header->status))) || (!NT_SUCCESS(static_cast<NTSTATUS>(header->status)) && header->length)) status = STATUS_INVALID_PARAMETER;
-                else if (!NT_SUCCESS(static_cast<NTSTATUS>(header->status))) { FinishPending(context, static_cast<NTSTATUS>(header->status)); Detach(context); status = STATUS_SUCCESS; }
+                else if (!NT_SUCCESS(static_cast<NTSTATUS>(header->status))) {
+                    NTSTATUS result = static_cast<NTSTATUS>(header->status);
+                    bool requestLocal = RequestLocalTransmitError(context->opcode, result);
+                    FinishPending(context, result);
+                    if (!requestLocal) Detach(context);
+                    status = STATUS_SUCCESS;
+                }
                 else {
                     auto payload = static_cast<BYTE*>(input) + sizeof(*header);
                     size_t prefix = context->opcode == OP_TRANSMIT ? sizeof(SCARD_IO_REQUEST) : 0;
@@ -266,7 +281,12 @@ void DeviceControl(WDFQUEUE queue, WDFREQUEST request, size_t outputLength, size
                             WdfRequestCompleteWithInformation(pending, STATUS_SUCCESS, prefix + header->length);
                         } else {
                             WdfRequestComplete(pending, status);
-                            Detach(context);
+                            if (RequestLocalTransmitError(opcode, status)) {
+                                // The backend completion itself was accepted.
+                                // Returning this caller's error to the backend
+                                // would make its DeviceIoControl throw/detach.
+                                status = STATUS_SUCCESS;
+                            } else Detach(context);
                         }
                     }
                 }
@@ -298,13 +318,27 @@ void DeviceControl(WDFQUEUE queue, WDFREQUEST request, size_t outputLength, size
     } else if (code == IOCTL_SMARTCARD_SET_PROTOCOL && inputLength == sizeof(ULONG)) {
         ULONG protocols = *static_cast<ULONG*>(input);
         if (!context->attached) status = STATUS_DEVICE_NOT_CONNECTED;
-        else if (!context->protocol) status = STATUS_INVALID_DEVICE_STATE;
+        else if (context->pending) status = STATUS_DEVICE_BUSY;
+        else if (!context->protocol && context->state != SCARD_PRESENT) status = STATUS_INVALID_DEVICE_STATE;
         else if (!(protocols & context->supported)) status = STATUS_NOT_SUPPORTED;
-        else { context->protocol = context->supported; context->state = SCARD_SPECIFIC; status = CopyOutput(request, &context->protocol, sizeof(ULONG)); if (NT_SUCCESS(status)) return; }
+        else {
+            void* output = nullptr;
+            status = WdfRequestRetrieveOutputBuffer(request, sizeof(ULONG), &output, nullptr);
+            if (NT_SUCCESS(status)) {
+                // NFC power is virtual; Android reopens its physical session on
+                // the next APDU after powerOff. Selecting a protocol does not
+                // substitute a cached ATR for an explicit OP_RESET.
+                context->protocol = context->supported; context->state = SCARD_SPECIFIC;
+                memcpy(output, &context->protocol, sizeof(ULONG));
+                WdfRequestCompleteWithInformation(request, STATUS_SUCCESS, sizeof(ULONG)); return;
+            }
+        }
     } else if (code == IOCTL_SMARTCARD_POWER && inputLength == sizeof(ULONG)) {
         ULONG power = *static_cast<ULONG*>(input);
         ULONG operation = power == SCARD_POWER_DOWN ? OP_POWER_OFF : power == SCARD_COLD_RESET || power == SCARD_WARM_RESET ? OP_RESET : 0;
-        status = operation ? QueueBackend(context, request, operation, static_cast<BYTE*>(input), sizeof(ULONG), operation == OP_RESET ? 33 : 0) : STATUS_NOT_SUPPORTED;
+        // Reject a known undersized ATR buffer before sending a physical reset.
+        if (operation == OP_RESET && context->attached && outputLength < context->atrLength) status = STATUS_BUFFER_TOO_SMALL;
+        else status = operation ? QueueBackend(context, request, operation, static_cast<BYTE*>(input), sizeof(ULONG), operation == OP_RESET ? static_cast<ULONG>(min(outputLength, static_cast<size_t>(33))) : 0) : STATUS_NOT_SUPPORTED;
         if (NT_SUCCESS(status)) return;
     } else if (code == IOCTL_SMARTCARD_TRANSMIT && inputLength >= sizeof(SCARD_IO_REQUEST) && outputLength >= sizeof(SCARD_IO_REQUEST) + 2) {
         auto pci = static_cast<SCARD_IO_REQUEST*>(input);
