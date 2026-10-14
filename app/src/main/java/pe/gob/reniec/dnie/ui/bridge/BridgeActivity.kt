@@ -1,5 +1,6 @@
 package pe.gob.reniec.dnie.ui.bridge
 
+import pe.gob.reniec.dnie.data.feedback.observeReadingFeedback
 import android.nfc.NfcAdapter
 import android.os.Bundle
 import android.view.WindowManager
@@ -29,6 +30,8 @@ class BridgeActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        observeReadingFeedback(this,model.feedback)
+
         window.addFlags(WindowManager.LayoutParams.FLAG_SECURE or WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         reader = NfcReaderManager(NfcAdapter.getDefaultAdapter(this))
         scanner = BridgeQrScanner(this)

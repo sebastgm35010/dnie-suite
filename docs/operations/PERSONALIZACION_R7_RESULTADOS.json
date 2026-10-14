@@ -1,0 +1,53 @@
+{
+  "date": "2026-10-14",
+  "version": "3.1.0",
+  "jvm": {
+    "tests": 242,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1,
+    "suites": 61
+  },
+  "windowsManager": {
+    "checks": 44,
+    "serviceCalls": 0,
+    "cardOperations": 0
+  },
+  "android": {
+    "candidateApkCode": 83,
+    "lastInstalledApkCode": 82,
+    "versionName": "3.1.0",
+    "adbUsed": false,
+    "samePackageSigner": true,
+    "debugApk": "D:\\DNIeToolchain\\AndroidPackages\\dnie-evolution-3.1.0-v83-personalization-r7-debug.apk",
+    "sha256": "974ed7a3b3de6a8d19149499397a1b4a14a0e685a74a17764a48606eedb13bcb",
+    "releaseDebugExcluded": true,
+    "physicalTestsExecuted": false,
+    "retainedApks": [
+      "dnie-evolution-3.1.0-v82-network-r6-debug.apk",
+      "dnie-evolution-3.1.0-v83-personalization-r7-debug.apk"
+    ]
+  },
+  "windowsUi": {
+    "suiteShortcutUpdated": true,
+    "bridgeShortcutUpdated": true,
+    "idleManagerReplaced": true,
+    "manager": "D:/DNIeToolchain/Builds/personalization-r7/native-package/Release-7300fff641da4c74825616edda158f9e/DNIeBridge.exe",
+    "serviceUpdated": false,
+    "driverUpdated": false,
+    "adbUsed": false,
+    "statusBefore": {
+      "Ok": true,
+      "State": "Stopped",
+      "Phase": "idle",
+      "CardPresent": false,
+      "ReaderPublished": true
+    }
+  },
+  "instrumentedExecuted": false,
+  "dniPhysicalTestExecuted": false,
+  "newSyntheticPdfCmsVerified": true,
+  "newSyntheticPdfPages": 2,
+  "privateSignatureOperationsInSyntheticTest": 1,
+  "checkpointBefore": "checkpoint/pre-personalization-r7"
+}

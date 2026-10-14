@@ -1,5 +1,7 @@
 # Pendientes actuales · Windows rc4 USB / Android rc4-usb
 
+2026-10-14 · R7 compilada: APK83 pendiente de instalación. **No hay ADB hasta nuevo aviso explícito del usuario; no intentar conectar ni pedir pruebas ahora.** APK82 es la última instalada. Pendientes háptica/preferencias/UI Android, firma física PAdES-T transparente, PNG/DnD Windows y regresión R6 de conexiones. [Resultado y límites](design/PERSONALIZACION_SELLO_HAPTICA_R7.md).
+
 2026-10-14 · R6 vigente: APK82, Suite/Bridge actualizados. Descubrimiento LAN/Tailscale y preview instrumentado superados. Pendientes firma NFC/TSA nueva por ambas redes, USB y cambio real de IP entre sesiones. QR de sello y cotejador retirados: sus pendientes anteriores quedan cancelados; se conserva QR de emparejamiento. Suspensión del driver sigue aplazada. Los párrafos siguientes registran estados históricos, no reabren pendientes cancelados. [Resultado R6](architecture/RED_COORDINADA_R6.md).
 
 2026-10-14 · QR R5 implementado: cotejo de original/certificado e identidad, confianza actual separada. Pendientes prueba física de cámara/papel y firma NFC con QR; validación PDF/CMS y selección de revisión dentro de la app quedan para otra fase. Se observó que PdfRenderer del teléfono no muestra el widget firmado; los renderizadores con anotaciones sí lo muestran y el QR se decodifica. Investigar preview de firmas previas por separado. Ver [QR R5](design/QR_COTEJO_R5.md).

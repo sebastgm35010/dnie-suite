@@ -1,5 +1,6 @@
 package pe.gob.reniec.dnie.ui.identity
 
+import pe.gob.reniec.dnie.domain.feedback.*
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CancellationException
@@ -20,6 +21,9 @@ data class IdentityUiState(
 )
 
 class IdentityViewModel : ViewModel() {
+    private val feedbackEvents=ReadingFeedbackEvents()
+    val feedback=feedbackEvents.flow
+
     private val _uiState = MutableStateFlow(IdentityUiState())
     val uiState = _uiState.asStateFlow()
     private var enteredCan: String? = null
@@ -56,6 +60,7 @@ class IdentityViewModel : ViewModel() {
         reader = newReader
         _uiState.value = IdentityUiState(document = IcaoDocument(), reading = true, message = "Abriendo canal seguro ICAO…")
         job = viewModelScope.launch {
+            var cue: ReadingCue?=null
             try {
                 val result = newReader.read { document ->
                     if (operation == generation) {
@@ -65,10 +70,12 @@ class IdentityViewModel : ViewModel() {
                                 ?: "Abriendo canal seguro ICAO…")
                     }
                 }
+                cue=if(result.blocks.values.any {it.status==BlockStatus.AVAILABLE} && result.blocks.values.none {it.status==BlockStatus.INTERRUPTED}) ReadingCue.SUCCESS else ReadingCue.ERROR
                 if (operation == generation) _uiState.value = IdentityUiState(document = result, message = result.sessionMessage)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                cue=ReadingCue.ERROR
                 pe.gob.reniec.dnie.diagnostics.DiagnosticLog.failure("identity", "read", e)
                 if (operation == generation) _uiState.value = _uiState.value.copy(reading = false, message = e.message)
             } finally {
@@ -76,6 +83,7 @@ class IdentityViewModel : ViewModel() {
                 if (operation == generation) {
                     reader = null
                     enteredCan = null
+                    cue?.let(feedbackEvents::report)
                 }
             }
         }

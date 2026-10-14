@@ -17,6 +17,7 @@ import pe.gob.reniec.dnie.ui.design.*
 
 @Composable
 fun SettingsScreen(preferences: AppearancePreferences, onBack: () -> Unit) {
+    val haptics by preferences.hapticsEnabled.collectAsStateWithLifecycle()
     val selected by preferences.mode.collectAsStateWithLifecycle()
     FeatureScaffold("Configuración", "Preferencias", onBack = onBack) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -28,6 +29,12 @@ fun SettingsScreen(preferences: AppearancePreferences, onBack: () -> Unit) {
                         RadioButton(selected == mode, onClick = null)
                         Text(mode.label, Modifier.padding(top = 12.dp))
                     }
+                }
+            }
+            FeatureSection("Respuesta táctil (NFC)") {
+                Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {
+                    Text("Vibrar al leer, firmar y avisar errores",Modifier.weight(1f))
+                    Switch(checked=haptics,onCheckedChange=preferences::setHaptics,modifier=Modifier.testTag("haptics_enabled"))
                 }
             }
             FeatureSection("Privacidad") {

@@ -1,5 +1,6 @@
 package pe.gob.reniec.dnie.ui.suite
 
+import pe.gob.reniec.dnie.domain.feedback.*
 import android.app.Application
 import android.net.Uri
 import android.nfc.Tag
@@ -21,6 +22,9 @@ data class RemoteSigningState(val can: String = "", val pc: String = "", val fin
 
 /** Owns one foreground job. Socket/card/PIN never enter Compose state or another ViewModel. */
 class RemoteSigningViewModel(application: Application) : AndroidViewModel(application) {
+    private val feedbackEvents=ReadingFeedbackEvents()
+    val feedback=feedbackEvents.flow
+
     private val mutable = MutableStateFlow(RemoteSigningState(can = CanStorage.getSavedCan(application)))
     val state = mutable.asStateFlow()
     private val adapter = pe.gob.reniec.dnie.data.suite.RemoteSigningAndroidAdapter(application)
@@ -65,6 +69,9 @@ class RemoteSigningViewModel(application: Application) : AndroidViewModel(applic
                     message = "Suite conectada. Puedes acercar el DNI; envía archivos y PIN desde Windows.") }
                 cardStateTask = viewModelScope.launch {
                     cardSlot.state.collect { state -> if (generation == epoch) {
+                        val previous=mutable.value.cardState
+                        if(state==SuiteCardState.READY && previous!=state) feedbackEvents.report(ReadingCue.PROGRESS)
+                        if(state==SuiteCardState.FAILED && previous!=state) feedbackEvents.report(ReadingCue.ERROR)
                         mutable.update { it.copy(cardState = state) }
                         DiagnosticLog.event("suite", "card_state", "state" to state.name)
                     } }
@@ -75,12 +82,14 @@ class RemoteSigningViewModel(application: Application) : AndroidViewModel(applic
                         delay(750)
                     }
                 }
+                var jobSigned=0;var jobExpected=0
                 var jobFailed = false
                 val session = ContinuousSigningConnection(stream, cardSlot::acquire, cardSlot::invalidate,
-                    onJob = { count -> jobFailed = false; DiagnosticLog.event("suite", "job_requested", "count" to count); if (generation == epoch) mutable.update { it.copy(count = count, busy = true, message = "Windows solicitó $count firma(s). Si no hay DNI conectado, acércalo; luego mantenlo junto al teléfono.") } },
+                    onJob = { count -> jobSigned=0;jobExpected=count;jobFailed = false; DiagnosticLog.event("suite", "job_requested", "count" to count); if (generation == epoch) mutable.update { it.copy(count = count, busy = true, message = "Windows solicitó $count firma(s). Si no hay DNI conectado, acércalo; luego mantenlo junto al teléfono.") } },
                     onStatus = { status -> if (status != SigningStatus.OK) jobFailed = true; if (generation == epoch && status != SigningStatus.OK) mutable.update { it.copy(message = "El lote fue rechazado o interrumpido. No se reintenta. Revisa Windows y vuelve a presentar el DNI.") } },
-                    onIdle = { if (generation == epoch) mutable.update { it.copy(busy = false, count = 0, message = if (jobFailed) it.message else "Lote terminado. Suite permanece conectada para la siguiente solicitud desde Windows.") } }, finishJob = cardSlot::finishJob,
+                    onIdle = { if(generation==epoch && jobExpected>0) {feedbackEvents.report(if(jobFailed) ReadingCue.ERROR else ReadingOutcome.batch(jobSigned,jobExpected));jobExpected=0}; if (generation == epoch) mutable.update { it.copy(busy = false, count = 0, message = if (jobFailed) it.message else "Lote terminado. Suite permanece conectada para la siguiente solicitud desde Windows.") } }, finishJob = cardSlot::finishJob,
                     onOperation = { operation, result ->
+                        if(generation==epoch && operation==SigningOperation.SIGN_SHA256 && result==SigningStatus.OK) {jobSigned++;if(jobExpected>1)feedbackEvents.report(ReadingCue.PROGRESS)}
                         DiagnosticLog.event("suite", "operation_result", "operation" to operation.name, "status" to result.name)
                         if (generation == epoch && result != SigningStatus.OK) mutable.update { it.copy(message = when {
                             result == SigningStatus.INVALID_PIN -> "PIN rechazado. Lote detenido sin reintentar; Suite permanece conectada."
@@ -193,7 +202,14 @@ class RemoteSigningViewModel(application: Application) : AndroidViewModel(applic
         val pin = credentials ?: return
         if (System.currentTimeMillis() >= pair.expiresAt) { stop(); status("Solicitud vencida. Genera otra en la PC."); return }
         val card = adapter.card(tag, mutable.value.can) ?: return
-        val endpoint = AuthorizedSigningEndpoint(pair.sessionId, card, pin, pair.count)
+        val generation = epoch
+        var signedCount=0
+        val observedCard=object: pe.gob.reniec.dnie.core.nfc.DnieTransceiverInterface by card {
+            override suspend fun signSha256Hash(hash32Bytes: ByteArray): Result<ByteArray> = card.signSha256Hash(hash32Bytes).also {result->
+                if(result.isSuccess && generation==epoch) {signedCount++;if(pair.count>1)feedbackEvents.report(ReadingCue.PROGRESS)}
+            }
+        }
+        val endpoint = AuthorizedSigningEndpoint(pair.sessionId, observedCard, pin, pair.count)
         credentials?.fill('\u0000'); credentials = null
         var rejected: String? = null
         val session = AuthorizedSigningConnection(stream, endpoint) { status ->
@@ -205,15 +221,15 @@ class RemoteSigningViewModel(application: Application) : AndroidViewModel(applic
             }
         }
         connection = session
-        val generation = epoch
         mutable.update { it.copy(armed = false, busy = true, cardState = SuiteCardState.IN_USE, message = "Abriendo PACE y firmando el lote. Mantén el DNI junto al teléfono.") }
         task = viewModelScope.launch {
             try {
                 withContext(Dispatchers.IO) { session.run() }
+                if(generation==epoch) feedbackEvents.report(if(rejected==null) ReadingOutcome.batch(signedCount,pair.count) else ReadingCue.ERROR)
                 if (generation == epoch) mutable.update { it.copy(message = rejected ?: "Sesión finalizada. Comprueba los resultados en la suite PC.") }
                 DiagnosticLog.event("suite", "session_ended")
             } catch (cancelled: CancellationException) { throw cancelled }
-            catch (_: Exception) { if (generation == epoch) mutable.update { it.copy(message = "Sesión interrumpida. Conserva los resultados de PC; no se repite ninguna firma.") } }
+            catch (_: Exception) { if(generation==epoch) feedbackEvents.report(ReadingCue.ERROR); if (generation == epoch) mutable.update { it.copy(message = "Sesión interrumpida. Conserva los resultados de PC; no se repite ninguna firma.") } }
             finally { session.close(); if (generation == epoch) { release(); mutable.update { it.copy(busy = false, armed = false, connected = false, pc = "", fingerprint = "", count = 0) } } }
         }
     }

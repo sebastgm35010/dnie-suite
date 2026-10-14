@@ -17,6 +17,8 @@ public sealed class ManagerPreferences {
         }catch(Exception){ }
         return new();
     }
+    public bool Dark {get {try{return File.ReadAllText(Path.Combine(Directory,"theme"))=="dark";}catch{return false;}}}
+    public void SetDark(bool value){System.IO.Directory.CreateDirectory(Directory);File.WriteAllText(Path.Combine(Directory,"theme"),value?"dark":"light");}
     public bool PairingShown=>File.Exists(Path.Combine(Directory,"pairing-shown"));
     public void MarkPairingShown(){System.IO.Directory.CreateDirectory(Directory);File.WriteAllText(Path.Combine(Directory,"pairing-shown"),"1");}
     public string[] History(){try {return System.Text.Json.JsonSerializer.Deserialize<string[]>(File.ReadAllText(Path.Combine(Directory,"phone-history.json")))?.Where(ValidHint).Distinct().Take(4).ToArray()??[];}catch{return [];}}

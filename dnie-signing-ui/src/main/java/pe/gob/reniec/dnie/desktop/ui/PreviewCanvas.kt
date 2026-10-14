@@ -12,6 +12,8 @@ import pe.gob.reniec.dnie.pdf.StampPlacementGeometry.Handle
 
 /** Pointer events only; PDF adapter supplies page and stamp images. */
 class PreviewCanvas : JPanel(), Scrollable {
+    var dropHighlight=false
+        set(value) {field=value;repaint()}
     var zoom=1.0
         set(value) { field=value.coerceIn(.5,3.0);revalidate();repaint() }
     private fun extent()=(parent as? JViewport)?.extentSize?.takeIf { it.width>40 && it.height>40 }?:size.takeIf { it.width>40 && it.height>40 }?:Dimension(650,720)
@@ -45,6 +47,7 @@ class PreviewCanvas : JPanel(), Scrollable {
     init {
         background=AetherSwingTheme.container;preferredSize=Dimension(650,720)
         val mouse=object: MouseAdapter() {
+            override fun mouseExited(e: MouseEvent) {if(dropHighlight)dropHighlight=false}
             override fun mousePressed(e: MouseEvent) {
                 if(!interactive || !visibleStamp) return
                 val page=pageBounds()?:return;if(!page.contains(e.point)) return
@@ -93,6 +96,7 @@ class PreviewCanvas : JPanel(), Scrollable {
             g.setRenderingHint(RenderingHints.KEY_INTERPOLATION,RenderingHints.VALUE_INTERPOLATION_BILINEAR)
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON)
             val page=pageBounds()
+            if(dropHighlight) {g.color=AetherSwingTheme.primary;g.stroke=BasicStroke(3f);g.drawRoundRect(3,3,width-7,height-7,12,12)}
             if(page==null) { g.color=AetherSwingTheme.muted;g.drawString("Selecciona un PDF para colocar tu firma",28,48);return }
             g.color=Color(11,28,48,28);g.fillRoundRect(page.x-2,page.y+4,page.width+4,page.height+4,6,6)
             if(image!=null) g.drawImage(image,page.x,page.y,page.width,page.height,null) else {

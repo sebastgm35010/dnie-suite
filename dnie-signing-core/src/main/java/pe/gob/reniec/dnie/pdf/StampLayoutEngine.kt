@@ -59,28 +59,35 @@ object StampLayoutEngine {
         require(width.isFinite() && height.isFinite() && width>0 && height>0)
         val a=options.appearance;val c=a.colorTheme;val elements=mutableListOf<StampElement>()
         if(a.style==StampStyle.HANDWRITTEN_ONLY) {
-            require(a.handwrittenPng!=null) { "Lee la firma manuscrita antes de incluirla" }
+            require(a.handwrittenPng!=null) { "Añade la imagen de rúbrica antes de incluirla" }
             return StampLayout(width,height,0f,listOf(StampElement.Handwriting(0f,0f,width,height)))
         }
         val padding=minOf(9f,width*.04f,height*.10f)
         require(!(a.requiresHandwritten && a.badge==StampBadgeType.QR_VERIFICATION)) { "Elige QR o rúbrica para la insignia del sello" }
         val radius=minOf(5f,height*.08f)
+        val fill=when(a.backgroundMode) {StampBackgroundMode.TRANSPARENT->null;StampBackgroundMode.SOLID_WHITE->0xFFFFFF;else->if(a.style==StampStyle.CARD) 0xFFFFFF else c.backgroundRgb}
+        val border=c.borderRgb.takeIf {a.showBorder}
         when(a.style) {
             StampStyle.INSTITUTIONAL -> {
-                elements+=StampElement.Box(.35f,.35f,width-.7f,height-.7f,radius,c.backgroundRgb,c.borderRgb)
+                elements+=StampElement.Box(.35f,.35f,width-.7f,height-.7f,radius,fill,border)
                 elements+=StampElement.Box(.65f,radius,3.5f,height-2*radius,1.5f,c.accentRgb)
             }
-            StampStyle.CARD -> elements+=StampElement.Box(.35f,.35f,width-.7f,height-.7f,radius,0xFFFFFF,c.borderRgb,.7f)
+            StampStyle.CARD -> {
+                elements+=StampElement.Box(.35f,.35f,width-.7f,height-.7f,radius,fill,border,.7f)
+                if(a.backgroundMode==StampBackgroundMode.TRANSPARENT) elements+=StampElement.Box(.65f,radius,3.5f,height-2*radius,1.5f,c.accentRgb)
+            }
             else -> elements+=StampElement.Line(padding*.4f,padding,padding*.4f,height-padding,c.accentRgb,2f)
         }
         val column=if(width>=110 && (a.badge!=StampBadgeType.NONE || a.requiresHandwritten)) width*if(a.requiresHandwritten) .34f else .26f else 0f
-        if(a.requiresHandwritten) require(a.handwrittenPng!=null) { "Lee la firma manuscrita antes de incluirla" }
+        if(a.requiresHandwritten) require(a.handwrittenPng!=null) { "Añade la imagen de rúbrica antes de incluirla" }
         if(column>0f) {
             elements+=StampElement.Line(column,padding,column,height-padding,c.borderRgb)
             val side=minOf(column-2*padding,height-2*padding)
             val x=(column-side)/2f;val y=(height-side)/2f
             when {
                 a.requiresHandwritten -> elements+=StampElement.Handwriting(padding,padding,column-2*padding,height-2*padding)
+                a.badge==StampBadgeType.CHECK_SEAL -> medallion(elements,x,y,side,c,false)
+                a.badge==StampBadgeType.LOCK_SEAL -> medallion(elements,x,y,side,c,true)
                 a.badge==StampBadgeType.SEAL_VECTOR -> seal(elements,x,y,side,c,measure)
                 a.badge==StampBadgeType.QR_VERIFICATION -> qr(elements,x,y,side,publicQrPayload(name,dni,options,timestamp),c.accentRgb)
             }
@@ -94,8 +101,8 @@ object StampLayoutEngine {
             if(a.customHeader.isNotBlank()) add(Block(a.customHeader,.74f,true,c.accentRgb))
             add(Block(name,1.05f,true,c.titleRgb))
             if(a.showDni && dni.isNotBlank()) add(Block(dni,.82f,false,c.bodyRgb,"DNI: "))
-            val moment=listOfNotNull(if(a.showDate) date("dd/MM/yyyy",timestamp) else null,
-                if(a.showTime) date("HH:mm:ss 'UTC-05'",timestamp) else null).joinToString(" ")
+            val moment=listOfNotNull(if(a.showDate) date(a.dateFormat.datePattern,timestamp) else null,
+                if(a.showTime) date(a.dateFormat.timePattern,timestamp) else null).joinToString(" ")
             if(moment.isNotBlank()) add(Block(moment,.82f,false,c.bodyRgb,if(a.showDate) "Fecha: " else "Hora: "))
             if(a.showReason && options.reason.isNotBlank()) add(Block(options.reason,.82f,false,c.bodyRgb,"Motivo: "))
             if(a.showLocation && options.location.isNotBlank()) add(Block(options.location,.82f,false,c.bodyRgb,"Lugar: "))
@@ -111,7 +118,7 @@ object StampLayoutEngine {
                 }
         }
         val tsa=options.reniecTimestamp && a.showTsaBadge
-        fun used(rows: List<Row>,base: Float)=rows.sumOf { (it.size*1.34f).toDouble() }.toFloat()+if(tsa) base*1.45f+2f else 0f
+        fun used(rows: List<Row>,base: Float)=rows.sumOf { (it.size*a.density.lineSpacing).toDouble() }.toFloat()+if(tsa) base*1.45f+2f else 0f
         val available=height-2*padding
         fun fits(rows: List<Row>,base: Float)=used(rows,base)<=available &&
             rows.count { kotlin.math.abs(it.size-base*1.05f)<.001f }<=2
@@ -129,7 +136,7 @@ object StampLayoutEngine {
                 if(text.isNotEmpty()) elements+=StampElement.Text(runX,baseline,text,row.size,bold,row.color)
                 runX+=measure(text,bold,row.size)
             }
-            top+=row.size*1.34f
+            top+=row.size*a.density.lineSpacing
         }
         if(tsa) {
             val text="PAdES-T · TSA RENIEC";val size=minOf(low*.65f,usableWidth/measure(text,true,1f))
@@ -151,7 +158,7 @@ object StampLayoutEngine {
         return StampQrCodec.encode(StampQrRecord(options.qrMetadata ?: StampQrMetadata.PREVIEW,
             name.trim(),dni.takeIf { a.showDni && it.isNotBlank() },moment,if(options.reniecTimestamp) "T" else "B"))
     }
-    private fun date(pattern: String,time: Long)=SimpleDateFormat(pattern,Locale.ROOT).apply { timeZone=TimeZone.getTimeZone("America/Lima") }.format(Date(time))
+    private fun date(pattern: String,time: Long)=SimpleDateFormat(pattern,Locale.forLanguageTag("es-PE")).apply { timeZone=TimeZone.getTimeZone("America/Lima") }.format(Date(time))
 
     private fun qr(out: MutableList<StampElement>,x: Float,y: Float,side: Float,payload: String,color: Int) {
         val code=QrCode.encodeText(payload,QrCode.Ecc.MEDIUM);val unit=side/(code.size+8)
@@ -164,6 +171,20 @@ object StampLayoutEngine {
                 val start=col;while(col<code.size && code.getModule(col,row)) col++
                 out+=StampElement.Box(x+(start+4)*unit,y+(row+4)*unit,(col-start)*unit,unit,0f,color)
             }
+        }
+    }
+    private fun medallion(out: MutableList<StampElement>,x: Float,y: Float,side: Float,c: StampColorTheme,lock: Boolean) {
+        val cx=x+side/2;val cy=y+side/2
+        out+=StampElement.Circle(cx,cy,side*.44f,c.backgroundRgb,c.accentRgb,side*.012f)
+        out+=StampElement.Circle(cx,cy,side*.38f,null,c.borderRgb,side*.008f)
+        if(lock) {
+            out+=StampElement.Path(listOf(.34f to .43f,.34f to .30f,.40f to .23f,.60f to .23f,.66f to .30f,.66f to .43f).map {(a,b)->x+side*a to y+side*b},c.accentRgb,side*.05f)
+            out+=StampElement.Box(x+side*.27f,y+side*.40f,side*.46f,side*.34f,side*.05f,c.accentRgb)
+            out+=StampElement.Circle(cx,y+side*.54f,side*.04f,0xFFFFFF)
+            out+=StampElement.Line(cx,y+side*.54f,cx,y+side*.65f,0xFFFFFF,side*.035f)
+        } else {
+            out+=StampElement.Circle(cx,cy,side*.29f,c.accentRgb)
+            out+=StampElement.Path(listOf(.32f to .50f,.46f to .64f,.70f to .36f).map {(a,b)->x+side*a to y+side*b},0xFFFFFF,side*.045f)
         }
     }
     private fun seal(out: MutableList<StampElement>,x: Float,y: Float,side: Float,theme: StampColorTheme,measure: (String,Boolean,Float)->Float) {

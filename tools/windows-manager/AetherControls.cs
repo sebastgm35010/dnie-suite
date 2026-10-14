@@ -2,10 +2,31 @@ using System.Drawing.Drawing2D;
 namespace DniBridge.Manager;
 
 internal static class Aether {
-    public static readonly Color Primary=Color.FromArgb(0,74,198), Background=Color.FromArgb(248,249,255),
-        Surface=Color.White, Container=Color.FromArgb(239,244,255), Border=Color.FromArgb(220,233,255),
-        Text=Color.FromArgb(11,28,48), Muted=Color.FromArgb(67,70,85), Success=Color.FromArgb(0,106,99),
-        Error=Color.FromArgb(186,26,26), Amber=Color.FromArgb(217,119,6);
+    public static bool Dark {get;private set;}
+    public static Color Primary=>Color.FromArgb(Dark?0x4C:0,Dark?0x8E:74,Dark?0xFF:198);
+    private static Color C(int light,int dark)=>Color.FromArgb(unchecked((int)0xFF000000)|(Dark?dark:light));
+    public static Color Background=>C(0xF8F9FF,0x0B1326);
+    public static Color Surface=>C(0xFFFFFF,0x131B2E);
+    public static Color Container=>C(0xEFF4FF,0x1E293B);
+    public static Color Border=>C(0xDCE9FF,0x2E3C56);
+    public static Color Text=>C(0x0B1C30,0xE2E8F0);
+    public static Color Muted=>C(0x434655,0xA9B5CB);
+    public static Color Success=>C(0x006A63,0x67D9C8);
+    public static Color Error=>C(0xBA1A1A,0xFFB4AB);
+    public static Color Amber=>C(0xD97706,0xFBBF24);
+    public static Color SecondaryFill=>C(0xE5EEFF,0x1E293B);
+    public static Color SecondaryText=>C(0x00174B,0xE2E8F0);
+    private static Color[] Palette()=>[Primary,Background,Surface,Container,Border,Text,Muted,Success,Error,Amber,SecondaryFill,SecondaryText];
+    public static void Apply(System.Windows.Forms.Control root,bool dark) {
+        var before=Palette();Dark=dark;var after=Palette();
+        void Refresh(System.Windows.Forms.Control c) {
+            int background=Array.IndexOf(before,c.BackColor),foreground=Array.IndexOf(before,c.ForeColor);
+            if(background>=0)c.BackColor=after[background];if(foreground>=0)c.ForeColor=after[foreground];
+            if(c is ComboBox or TextBoxBase or ListBox) {c.BackColor=Surface;c.ForeColor=Text;}
+            foreach(System.Windows.Forms.Control child in c.Controls)Refresh(child);c.Invalidate();
+        }
+        Refresh(root);
+    }
     public static GraphicsPath Rounded(RectangleF r,float radius) {
         float d=Math.Min(radius*2,Math.Min(r.Width,r.Height));var path=new GraphicsPath();
         path.AddArc(r.X,r.Y,d,d,180,90);path.AddArc(r.Right-d,r.Y,d,d,270,90);
@@ -13,7 +34,7 @@ internal static class Aether {
     }
     public static void Style(Button button,bool primary=false) {
         button.FlatStyle=FlatStyle.Flat;button.FlatAppearance.BorderSize=0;
-        button.BackColor=primary?Primary:Color.FromArgb(229,238,255);button.ForeColor=primary?Color.White:Color.FromArgb(0,23,75);
+        button.BackColor=primary?Primary:SecondaryFill;button.ForeColor=primary?Color.White:SecondaryText;
         button.Font=new Font("Segoe UI",10,FontStyle.Bold);button.Padding=new Padding(12,7,12,7);button.AutoSize=true;button.Cursor=Cursors.Hand;
     }
     public static Color SurfaceBehind(System.Windows.Forms.Control control) {

@@ -148,6 +148,7 @@ fun NavGraph(
             }
             composable(Screen.Certificates.route) {
                 CertificatesScreen(viewModel = certificatesViewModel,
+                    onOpenSigner = {navController.navigate(Screen.Signer.route) {launchSingleTop=true}},
                     onOpenBridge = onOpenBridge,
                     onOpenSuite = onOpenSuite,
                     onOpenVault = { navController.navigate(Screen.Vault.route) { launchSingleTop = true } })

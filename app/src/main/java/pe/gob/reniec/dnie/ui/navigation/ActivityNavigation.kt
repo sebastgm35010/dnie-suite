@@ -11,11 +11,11 @@ import pe.gob.reniec.dnie.MainActivity
 
 /** Continuous navigation across separate foreground NFC owners; onPause revokes their sessions. */
 @Composable
-fun ActivityNavigation() {
+fun ActivityNavigation(active: Screen = Screen.Pc) {
     val activity = LocalContext.current as? Activity
     NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
         Screen.items.forEach { screen ->
-            NavigationBarItem(selected = false, modifier = Modifier.testTag("nav_" + screen.route),
+            NavigationBarItem(selected = screen == active, modifier = Modifier.testTag("nav_" + screen.route),
                 icon = { Icon(screen.icon, screen.title) }, label = { Text(screen.title) },
                 onClick = {
                     activity?.startActivity(Intent(activity, MainActivity::class.java)

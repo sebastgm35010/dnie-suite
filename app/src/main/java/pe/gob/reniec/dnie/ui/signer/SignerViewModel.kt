@@ -1,5 +1,6 @@
 package pe.gob.reniec.dnie.ui.signer
 
+import pe.gob.reniec.dnie.domain.feedback.*
 import android.content.Context
 import android.net.Uri
 import androidx.core.content.FileProvider
@@ -35,6 +36,9 @@ import pe.gob.reniec.dnie.crypto.X509CertificateParser
  * ViewModel que orquesta el ciclo de firma digital PAdES con verificación de credenciales (CAN + PIN).
  */
 class SignerViewModel(private val signerEngine: PadesSignerEngineInterface? = null) : ViewModel() {
+    private val feedbackEvents=ReadingFeedbackEvents()
+    val feedback=feedbackEvents.flow
+
     private val _uiState = MutableStateFlow<SignerUiState>(SignerUiState.NoDocument)
     val uiState = _uiState.asStateFlow()
     private val _workspace = MutableStateFlow(SigningWorkspace())
@@ -47,6 +51,7 @@ class SignerViewModel(private val signerEngine: PadesSignerEngineInterface? = nu
     private var signingJob: Job? = null
     private var importJob: Job? = null
     private var activeCard: DnieTransceiverInterface? = null
+    private var stampPreferences: pe.gob.reniec.dnie.data.preferences.AndroidStampPreferences?=null
     private var operation = 0
     private var importOperation = 0
     val busy: Boolean get() = _uiState.value is SignerUiState.Signing || _uiState.value is SignerUiState.AwaitingCard || _uiState.value is SignerUiState.EnteringPin
@@ -57,6 +62,9 @@ class SignerViewModel(private val signerEngine: PadesSignerEngineInterface? = nu
         val app = context.applicationContext
         _workspace.update { it.copy(importing = true, importErrors = emptyList()) }
         importJob = viewModelScope.launch {
+            val preferences=(app as? pe.gob.reniec.dnie.DnieApplication)?.stampPreferences ?: pe.gob.reniec.dnie.data.preferences.AndroidStampPreferences(app)
+            stampPreferences=preferences
+            val design=runCatching {preferences.load()}.getOrDefault(PdfSigningOptions())
             val imported = mutableListOf<SigningDocument>()
             val errors = mutableListOf<String>()
             try {
@@ -64,7 +72,7 @@ class SignerViewModel(private val signerEngine: PadesSignerEngineInterface? = nu
                     import = { DocumentImportService.import(app, it) },
                     discard = { DocumentImportService.discard(it) },
                     failed = { pe.gob.reniec.dnie.diagnostics.DiagnosticLog.failure("signer", "import", it) })
-                imported += result.documents
+                imported += result.documents.map {doc->doc.copy(options=design.copy(pageNumber=design.pageNumber.coerceIn(1,doc.pages.size.coerceAtLeast(1))))}
                 errors += result.errors
                 if (token == importOperation) {
                     val replacing = singlePdf && imported.isNotEmpty()
@@ -111,8 +119,10 @@ class SignerViewModel(private val signerEngine: PadesSignerEngineInterface? = nu
         if (_workspace.value.artifacts.any { it.document.id == selected.id && it.status == DocumentSignStatus.SIGNED }) return
         _workspace.update { w -> w.copy(documents = w.documents.map { if (it.id == selected.id) it.copy(options = transform(it.options)) else it }) }
         val options = _workspace.value.selected!!.options
+        stampPreferences?.save(options)
         (_uiState.value as? SignerUiState.DocumentLoaded)?.let { _uiState.value = it.copy(reason = options.reason, location = options.location) }
     }
+    fun restoreDefaultDesign() {updateOptions {pe.gob.reniec.dnie.pdf.PdfSigningOptions()}}
     fun applyOptionsToAll() {
         if (busy) return
         val options = _workspace.value.selected?.options ?: return
@@ -133,7 +143,7 @@ class SignerViewModel(private val signerEngine: PadesSignerEngineInterface? = nu
     }
     fun confirmMark(value: Boolean) { if (!busy) _workspace.update { it.copy(markConfirmed = value) } }
     fun setPublicCertificate(bytes: ByteArray?) {
-        if (bytes == null) return
+        if (bytes == null) { _workspace.update {it.copy(certificate=null,previewName="NOMBRE DEL TITULAR",previewDni="00000000")};return }
         val citizen = runCatching { X509CertificateParser.extractCitizenData(X509CertificateParser.toX509Certificate(bytes)) }.getOrNull() ?: return
         _workspace.update { it.copy(certificate = bytes, previewName = citizen.fullName, previewDni = citizen.dniNumber) }
     }
@@ -184,6 +194,7 @@ class SignerViewModel(private val signerEngine: PadesSignerEngineInterface? = nu
         if (approved.isEmpty()) { transceiver.close(); _uiState.value = SignerUiState.Error("No hay archivos preparados para firmar."); return }
         val token = ++operation
         val app = context.applicationContext
+        var lastTick=0
         val documents = approved
         val mark = approvedMark
         if (transceiver is DnieTransceiver) { transceiver.can = awaiting.can; transceiver.pin = awaiting.pin }
@@ -206,12 +217,15 @@ class SignerViewModel(private val signerEngine: PadesSignerEngineInterface? = nu
                         if (token == operation) {
                             _uiState.value = SignerUiState.Signing("$count de ${documents.size} · $name", count, documents.size)
                             _workspace.update { it.copy(artifacts = previous + artifacts) }
+                            val signed=artifacts.count {it.status==DocumentSignStatus.SIGNED}
+                            if(documents.size>1 && signed>lastTick) {lastTick=signed;feedbackEvents.report(ReadingCue.PROGRESS)}
                             if (cert != null) setPublicCertificate(cert)
                         }
                     }
                 }
                 if (token != operation) return@launch
                 _workspace.update { it.copy(artifacts = previous + result.artifacts) }
+                feedbackEvents.report(ReadingOutcome.batch(result.artifacts.count {it.status==DocumentSignStatus.SIGNED},documents.size))
                 val success = result.artifacts.firstOrNull { it.status == DocumentSignStatus.SIGNED }
                 if (success == null) _uiState.value = SignerUiState.Error(result.sessionError ?: result.artifacts.firstOrNull()?.message ?: "No se firmó ningún archivo")
                 else {
@@ -220,7 +234,7 @@ class SignerViewModel(private val signerEngine: PadesSignerEngineInterface? = nu
                     _uiState.value = SignerUiState.SignedSuccess(uri, output.absolutePath, success.signerName, success.signerDni, success.timestamp, success.signatureSize)
                 }
             } catch (e: CancellationException) { throw e }
-            catch (e: Exception) { pe.gob.reniec.dnie.diagnostics.DiagnosticLog.failure("signer", "sign_batch", e); if (token == operation) _uiState.value = SignerUiState.Error(e.message ?: "Error en el lote") }
+            catch (e: Exception) { pe.gob.reniec.dnie.diagnostics.DiagnosticLog.failure("signer", "sign_batch", e); if (token == operation) {feedbackEvents.report(ReadingCue.ERROR);_uiState.value = SignerUiState.Error(e.message ?: "Error en el lote")} }
             finally { if (token == operation) { activeCard = null; enteredCan = null; approved = emptyList(); approvedMark = null } }
         }
     }

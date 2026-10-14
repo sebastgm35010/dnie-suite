@@ -1,5 +1,6 @@
 package pe.gob.reniec.dnie
 
+import pe.gob.reniec.dnie.data.feedback.observeReadingFeedback
 import android.content.Context
 import android.content.Intent
 import android.nfc.NfcAdapter
@@ -55,6 +56,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        observeReadingFeedback(this,certificatesViewModel.feedback)
+        observeReadingFeedback(this,signerViewModel.feedback)
+        observeReadingFeedback(this,batchSignerViewModel.feedback)
+        observeReadingFeedback(this,identityViewModel.feedback)
+        observeReadingFeedback(this,vaultViewModel.feedback)
+
         pe.gob.reniec.dnie.diagnostics.AppFlowDiagnostics.observe(this, "certificates", certificatesViewModel.uiState) { it.javaClass.simpleName }
         pe.gob.reniec.dnie.diagnostics.AppFlowDiagnostics.observe(this, "signer", signerViewModel.uiState) { it.javaClass.simpleName }
         pe.gob.reniec.dnie.diagnostics.AppFlowDiagnostics.observe(this, "batch", batchSignerViewModel.uiState) { it.javaClass.simpleName }
@@ -75,6 +82,23 @@ class MainActivity : ComponentActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 certificatesViewModel.identitySnapshot.collect { snapshot ->
                     if(snapshot.generation>0) identityViewModel.acceptUnifiedReading(snapshot.document,snapshot.message,snapshot.reading)
+                }
+            }
+        }
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                var fingerprint="<not-observed>"
+                certificatesViewModel.uiState.collect {state->
+                    if(state is pe.gob.reniec.dnie.ui.certificates.CertificatesUiState.Loaded) {
+                        val certificate=state.certificates[pe.gob.reniec.dnie.domain.model.CertificateType.SIGNATURE]
+                        val next=certificate?.sha256FingerprintHex.orEmpty()
+                        if(next!=fingerprint) {
+                            fingerprint=next
+                            signerViewModel.setPublicCertificate(certificate?.rawDerBytes)
+                            batchSignerViewModel.setPublicCertificate(certificate?.rawDerBytes)
+                        }
+                    }
                 }
             }
         }

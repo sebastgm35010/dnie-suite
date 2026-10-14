@@ -28,6 +28,8 @@ public sealed partial class MainForm {
         pair.Click+=async(_,_)=>await ActionAsync(ShowPairingAsync);
         refresh.Click+=async(_,_)=>await ActionAsync(async()=>{ReloadInterfaces();if(method.Text=="USB")await ReloadUsbAsync();});
         selectorToggle.Click+=(_,_)=>{try{if(selector.Running)selector.Stop();else selector.Start(preferences.Directory);error.Text="";Render();}catch(Exception failure){error.Text=failure.Message;}};
+        Aether.Apply(this,preferences.Dark);themeToggle.Text=Aether.Dark?"Claro":"Oscuro";
+        themeToggle.Click+=(_,_)=>{Aether.Apply(this,!Aether.Dark);preferences.SetDark(Aether.Dark);themeToggle.Text=Aether.Dark?"Claro":"Oscuro";Render();};
         ConfigureTray(monitor);timer.Tick+=async(_,_)=>await PollAsync();
         if(monitor)Shown+=async(_,_)=>{timer.Start();await PollAsync();};
         FormClosed+=(_,_)=>{timer.Stop();timer.Dispose();selector.Dispose();};
@@ -103,7 +105,7 @@ public sealed partial class MainForm {
         start.Enabled=!busy && !running && last.State!="Unavailable";stop.Enabled=!busy && running;
         install.Enabled=!busy && !running;pair.Enabled=!busy && last.State!="Unavailable";
         method.Enabled=!busy && !running;
-        foreach(var (key,button) in transportButtons){button.Enabled=method.Enabled;if(button is AetherButton segment)segment.IsSelectedSegment=method.Text==key;button.BackColor=method.Text==key?Aether.Primary:Color.FromArgb(229,238,255);button.ForeColor=method.Text==key?Color.White:Aether.Text;}
+        foreach(var (key,button) in transportButtons){button.Enabled=method.Enabled;if(button is AetherButton segment)segment.IsSelectedSegment=method.Text==key;button.BackColor=method.Text==key?Aether.Primary:Aether.SecondaryFill;button.ForeColor=method.Text==key?Color.White:Aether.Text;}
         pcRow.Visible=false;phoneRow.Visible=method.Text!="USB";usbRow.Visible=method.Text=="USB";
         install.Visible=serviceState!=4;
         serviceHealth.ShowState("Servicio base",serviceState==4?"Activo (SYSTEM)":serviceState==1?"Detenido":serviceKnown?"No instalado":"Sin verificar",serviceState==4?HealthTone.Good:HealthTone.Idle);

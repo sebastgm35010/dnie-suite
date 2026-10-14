@@ -26,9 +26,12 @@ class DnieApplication : Application() {
 
     val appearance by lazy { pe.gob.reniec.dnie.data.preferences.AppearancePreferences(this) }
 
+    val stampPreferences by lazy { pe.gob.reniec.dnie.data.preferences.AndroidStampPreferences(this) }
+
     override fun onCreate() {
         super.onCreate()
         instance = this
+        appearance // Load tactile and visual preferences before any NFC operation.
         pe.gob.reniec.dnie.data.migrations.RemovedFeatureMigration.schedule(this)
         pe.gob.reniec.dnie.core.logging.ApduLogger.configureDefault(BuildConfig.DEBUG)
         pe.gob.reniec.dnie.diagnostics.AppDiagnostics.initialize(this)

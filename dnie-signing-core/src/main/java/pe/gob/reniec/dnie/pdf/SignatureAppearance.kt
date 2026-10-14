@@ -10,12 +10,22 @@ enum class StampColorTheme(val label: String, val accentRgb: Int, val background
     AETHER_BLUE("Azul Aether",0x004AC6,0xF8F9FF,0xB8CCF0,0x0B1C30,0x434655),
     CRIMSON_SEAL("Rojo institucional",0xB91C1C,0xFFFBFB,0xE5C4C4,0x1E293B,0x475569),
     EMERALD_TRUST("Esmeralda",0x006A63,0xF4FBF9,0xB2DFDB,0x00201D,0x37474F),
-    SLATE_MONO("Monocromo impresión",0x1E293B,0xFFFFFF,0x64748B,0x0F172A,0x334155)
+    SLATE_MONO("Monocromo impresión",0x1E293B,0xFFFFFF,0x64748B,0x0F172A,0x334155),
+    ROYAL_INDIGO("Índigo notarial",0x3730A3,0xF5F6FF,0xC7D2FE,0x1E1B4B,0x312E81),
+    AMBER_GOLD("Dorado ejecutivo",0x92400E,0xFFFBEB,0xFDE68A,0x451A03,0x57534E)
 }
 
 enum class StampBadgeType(val label: String) {
-    SEAL_VECTOR("Escudo DNIe"), QR_VERIFICATION("QR de verificación"), NONE("Sin insignia")
+    SEAL_VECTOR("Escudo DNIe"), QR_VERIFICATION("QR de verificación"), NONE("Sin insignia"), CHECK_SEAL("Sello de verificación"), LOCK_SEAL("Candado")
 }
+
+enum class StampBackgroundMode(val label: String) { TINTED("Fondo suave"), SOLID_WHITE("Fondo blanco"), TRANSPARENT("Transparente") }
+enum class StampDateFormat(val label: String,val datePattern: String,val timePattern: String) {
+    CLASSIC_PE("Estándar", "dd/MM/yyyy", "HH:mm:ss 'UTC-05'"),
+    COMPACT_HUMAN("Fecha corta", "dd MMM yyyy", "HH:mm"),
+    ISO_8601("ISO 8601", "yyyy-MM-dd", "HH:mm:ssXXX")
+}
+enum class StampDensity(val label: String,val lineSpacing: Float) { COMPACT("Compacto",1.22f), NORMAL("Equilibrado",1.34f), SPACIOUS("Amplio",1.46f) }
 
 enum class StampPageTarget(val label: String) {
     SPECIFIC_PAGE("Página seleccionada"), FIRST_PAGE("Primera página"), LAST_PAGE("Última página"), ALL_PAGES("Todas las páginas");
@@ -42,9 +52,13 @@ data class SignatureAppearance(
     val colorTheme: StampColorTheme = StampColorTheme.AETHER_BLUE,
     val badge: StampBadgeType = StampBadgeType.SEAL_VECTOR,
     val customHeader: String = "FIRMADO DIGITALMENTE",
-    val showTsaBadge: Boolean = true
+    val showTsaBadge: Boolean = true,
+    val backgroundMode: StampBackgroundMode = StampBackgroundMode.TINTED,
+    val dateFormat: StampDateFormat = StampDateFormat.CLASSIC_PE,
+    val density: StampDensity = StampDensity.NORMAL,
+    val showBorder: Boolean = true
 ) {
-    val requiresHandwritten: Boolean get() = showHandwritten || style == StampStyle.HANDWRITTEN_ONLY
+    val requiresHandwritten: Boolean get() = showHandwritten || style == StampStyle.INK || style == StampStyle.HANDWRITTEN_ONLY
 }
 
 /** Coordinates in the visible cropped/rotated page, measured from its TOP LEFT. */

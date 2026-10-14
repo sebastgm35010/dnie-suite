@@ -52,7 +52,9 @@
     "docs/operations/AETHER_R4_RESULTADOS.json": "aether_r4_machine_readable_results",
     "docs/design/QR_COTEJO_R5.md": "current_stamp_qr_format_and_comparison",
     "docs/operations/QR_R5_RESULTADOS.json": "stamp_qr_r5_verifiable_results",
-    "docs/architecture/RED_COORDINADA_R6.md": "current_network_coordination_and_r6_runtime_evidence"
+    "docs/architecture/RED_COORDINADA_R6.md": "current_network_coordination_and_r6_runtime_evidence",
+    "docs/design/PERSONALIZACION_SELLO_HAPTICA_R7.md": "current_stamp_personalization_haptics_and_r7_evidence",
+    "docs/design/ESPECIFICACION_R7_RECIBIDA.md": "received_specification_not_runtime_evidence"
   },
   "features": [
     {
@@ -639,22 +641,25 @@
     {
       "id": "stamp_aether",
       "name": "Apariencia vectorial Aether y selección de páginas PDF",
-      "status": "implemented_runtime_validated",
-      "note": "Aether R4: escena pura con círculos/escudo relleno; adaptadores Android/Desktop, texto y geometría compartidos. Una firma/widget y réplicas Stamp; DocMDP P=2 intacto. Android80 instalada, 18 core/17 PDF desktop/26 PDF Android y 2 instrumentadas pasan. QR público anterior conservado; enriquecimiento difiere. Firma física nueva pendiente. QR R5 implementado; ver stamp_qr para alcance y validaciones. R6 usa sello/ninguno; migra preferencia histórica QR a sello y corrige preview de anotaciones.",
-      "evidence": "docs/design/RESULTADO_AETHER_R4.md",
+      "status": "implemented_local_validated_android_install_pending",
+      "note": "2026-10-14 · Personalización R7 / APK83 (3.1.0) compilada debug/release; no instalada: ADB suspendido hasta nuevo aviso del usuario. APK82 sigue siendo la última instalada. Sello con fondo transparente, insignias check/candado, fecha/densidad/colores, plantillas y esquinas al6%; diseño Android persistente, navegación y acciones Mi DNIe. Respuesta táctil por eventos NFC con ajuste de usuario. Windows añade PNG de rúbrica, DnD visual y tema claro/oscuro. 241 JVM pasan/1 omitida por permisos Windows y 44 comprobaciones Manager pasan. Interfaces Windows y accesos actualizados; servicio, driver, identidad y motores criptográficos conservados. Pruebas Android y firma física R7 pendientes.",
+      "evidence": "docs/design/PERSONALIZACION_SELLO_HAPTICA_R7.md",
       "files": {
         "model": [
           "dnie-signing-core/src/main/java/pe/gob/reniec/dnie/pdf/SignatureAppearance.kt"
         ],
         "engine": [
           "dnie-signing-core/src/main/java/pe/gob/reniec/dnie/pdf/StampLayoutEngine.kt",
-          "dnie-signing-core/src/main/java/pe/gob/reniec/dnie/pdf/StampPlacementGeometry.kt"
+          "dnie-signing-core/src/main/java/pe/gob/reniec/dnie/pdf/StampPlacementGeometry.kt",
+          "dnie-signing-core/src/main/java/pe/gob/reniec/dnie/pdf/StampDesignCodec.kt"
         ],
         "adapter": [
           "dnie-pdf-desktop/src/main/java/pe/gob/reniec/dnie/pdf/desktop/DesktopStampRenderer.kt",
           "dnie-pdf/src/main/java/pe/gob/reniec/dnie/pdf/AndroidStampAppearance.kt",
           "dnie-pdf/src/main/java/pe/gob/reniec/dnie/pdf/ModernStampRenderer.kt",
-          "app/src/main/java/pe/gob/reniec/dnie/data/signing/AndroidStampPreview.kt"
+          "app/src/main/java/pe/gob/reniec/dnie/data/signing/AndroidStampPreview.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/data/preferences/AndroidStampPreferences.kt",
+          "dnie-signing-ui/src/main/java/pe/gob/reniec/dnie/desktop/ui/StampImageLoader.kt"
         ],
         "frontend": [
           "app/src/main/java/pe/gob/reniec/dnie/ui/signer/StampPreviewCard.kt",
@@ -669,7 +674,9 @@
           "dnie-signing-core/src/test/java/pe/gob/reniec/dnie/pdf/StampLayoutEngineTest.kt",
           "dnie-pdf-desktop/src/test/java/pe/gob/reniec/dnie/pdf/desktop/AetherStampTest.kt",
           "dnie-pdf/src/test/java/pe/gob/reniec/dnie/pdf/AetherAndroidAppearanceTest.kt",
-          "app/src/androidTest/java/pe/gob/reniec/dnie/ui/AetherStampPresentationTest.kt"
+          "app/src/androidTest/java/pe/gob/reniec/dnie/ui/AetherStampPresentationTest.kt",
+          "dnie-signing-core/src/test/java/pe/gob/reniec/dnie/pdf/StampPersonalizationTest.kt",
+          "dnie-pdf-desktop/src/test/java/pe/gob/reniec/dnie/pdf/desktop/PersonalizedStampTest.kt"
         ]
       },
       "depends_on": []
@@ -677,9 +684,9 @@
     {
       "id": "desktop_aether",
       "name": "Presentación Aether Suite y Manager Windows",
-      "status": "installed_ui_synthetic_validated",
-      "note": "Aether R4 instalado: pintura y transporte activos, inputs, bandeja y consulta WinSCard; Suite hoja A4, controles, preferencias públicas, zoom, navegación independiente, autocompletado desde certificado exportado y apertura de outputs. 17 UI/60 nativas pasan. Identidad y runtime servicio conservados. No acredita firma física nueva. QR enriquecido diferido. Suite QR R5 distribuida, con metadatos derivados por documento; Bridge nativo permanece R4.",
-      "evidence": "docs/design/RESULTADO_AETHER_R4.md",
+      "status": "installed_ui_local_validated",
+      "note": "2026-10-14 · Personalización R7 / APK83 (3.1.0) compilada debug/release; no instalada: ADB suspendido hasta nuevo aviso del usuario. APK82 sigue siendo la última instalada. Sello con fondo transparente, insignias check/candado, fecha/densidad/colores, plantillas y esquinas al6%; diseño Android persistente, navegación y acciones Mi DNIe. Respuesta táctil por eventos NFC con ajuste de usuario. Windows añade PNG de rúbrica, DnD visual y tema claro/oscuro. 241 JVM pasan/1 omitida por permisos Windows y 44 comprobaciones Manager pasan. Interfaces Windows y accesos actualizados; servicio, driver, identidad y motores criptográficos conservados. Pruebas Android y firma física R7 pendientes.",
+      "evidence": "docs/design/PERSONALIZACION_SELLO_HAPTICA_R7.md",
       "files": {
         "frontend": [
           "dnie-signing-ui/src/main/java/pe/gob/reniec/dnie/desktop/ui/AetherSwingTheme.kt",
@@ -776,6 +783,36 @@
       "depends_on": [
         "bridge",
         "suite"
+      ]
+    },
+    {
+      "id": "reading_feedback",
+      "name": "Respuesta táctil NFC por eventos de operación",
+      "status": "implemented_local_validated_physical_pending",
+      "note": "Eventos de dominio sin replay; Activities adaptan a Vibrator. Éxito de lote exige todas las firmas; cancelación no emite éxito. Ajuste persistente. No medido en hardware sin ADB.",
+      "evidence": "docs/design/PERSONALIZACION_SELLO_HAPTICA_R7.md",
+      "files": {
+        "model": [
+          "app/src/main/java/pe/gob/reniec/dnie/domain/feedback/ReadingCue.kt"
+        ],
+        "adapter": [
+          "app/src/main/java/pe/gob/reniec/dnie/data/feedback/ReadingFeedback.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/data/feedback/ObserveReadingFeedback.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/data/preferences/AppearancePreferences.kt"
+        ],
+        "frontend": [
+          "app/src/main/java/pe/gob/reniec/dnie/ui/settings/SettingsScreen.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/MainActivity.kt"
+        ],
+        "test": [
+          "app/src/test/java/pe/gob/reniec/dnie/domain/feedback/ReadingFeedbackEventsTest.kt"
+        ]
+      },
+      "depends_on": [
+        "android_redesign",
+        "batch_android",
+        "suite",
+        "bridge"
       ]
     }
   ],
@@ -996,6 +1033,20 @@
       "state": "needs_physical_test",
       "description": "Firma con DNI por Red LAN/Tailscale, regresión USB y cambio físico de IP entre sesiones; HMAC físico sintético y TLS loopback ya probados. No migrar TCP ni reenviar firmas.",
       "evidence": "docs/architecture/RED_COORDINADA_R6.md"
+    },
+    {
+      "id": "r7_android_install_and_physical_feedback",
+      "feature": "reading_feedback",
+      "state": "waiting_user_adb_notice",
+      "description": "Usuario sin ADB hasta nuevo aviso. APK83 compila, APK82 última instalada. Instalar/testear UI, preferencias, inicio/avance/éxito/error y ajuste táctil con DNI real; no asumir percepción desde JVM.",
+      "evidence": "docs/design/PERSONALIZACION_SELLO_HAPTICA_R7.md"
+    },
+    {
+      "id": "r7_visual_physical_signing",
+      "feature": "stamp_aether",
+      "state": "needs_physical_test",
+      "description": "PAdES-T real transparente/insignias/réplicas, PNG Windows y drag/drop Explorer; comparar ReFirma/Firma Perú. PDF/CMS sintético local ya verificado. Rendimiento Android pendiente con dispositivo.",
+      "evidence": "docs/design/PERSONALIZACION_SELLO_HAPTICA_R7.md"
     }
   ],
   "facts": [
@@ -1166,6 +1217,12 @@
       "category": "installed_synthetic_and_device_discovery_validated",
       "value": "2026-10-14 · Red R6 / APK82 (3.1.0) instalada: Bridge Red (Wi-Fi/Tailscale) + USB; descubrimiento autenticado y TLS fijado por huella/token, IP opcional en Suite/gestor y CLI. Vista previa Android muestra anotaciones existentes. QR de sello/cotejador retirados de UI; QR de emparejamiento conservado. 283 pruebas JVM pasan, 3 optativas/privilegios omitidas; 261 Bridge + 48 Control + 41 Manager + 3 servicio instalado pasan; 8 instrumentadas Android pasan. Descubrimiento Windows→Android verificado por LAN y Tailscale por separado, credenciales sintéticas, sin DNI. Gestor/servicio/Suite actualizados, identidad conservada y driver sin reinstalar. Firma NFC y cambio físico de red pendientes.",
       "evidence": "docs/architecture/RED_COORDINADA_R6.md"
+    },
+    {
+      "id": "personalization_r7_candidate83",
+      "category": "compiled_local_validated_android_not_installed",
+      "value": "2026-10-14 · Personalización R7 / APK83 (3.1.0) compilada debug/release; no instalada: ADB suspendido hasta nuevo aviso del usuario. APK82 sigue siendo la última instalada. Sello con fondo transparente, insignias check/candado, fecha/densidad/colores, plantillas y esquinas al6%; diseño Android persistente, navegación y acciones Mi DNIe. Respuesta táctil por eventos NFC con ajuste de usuario. Windows añade PNG de rúbrica, DnD visual y tema claro/oscuro. 241 JVM pasan/1 omitida por permisos Windows y 44 comprobaciones Manager pasan. Interfaces Windows y accesos actualizados; servicio, driver, identidad y motores criptográficos conservados. Pruebas Android y firma física R7 pendientes.",
+      "evidence": "docs/design/PERSONALIZACION_SELLO_HAPTICA_R7.md"
     }
   ]
 }

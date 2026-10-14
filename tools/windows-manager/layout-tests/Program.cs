@@ -63,6 +63,11 @@ internal static class Program {
         form.WindowState=FormWindowState.Minimized;Application.DoEvents();Check(!form.Visible,"Minimize moves manager to tray");
         typeof(MainForm).GetMethod("ShowManager",BindingFlags.Instance|BindingFlags.NonPublic)!.Invoke(form,null);Application.DoEvents();Check(form.Visible,"Tray can restore manager");
         Field<CheckBox>("closeToTray").Checked=true;form.Close();Application.DoEvents();Check(!form.IsDisposed && !form.Visible,"Optional close keeps manager in tray");
+        Aether.Apply(form,true);Field<Button>("themeToggle").Text="Claro";Application.DoEvents();
+        Check(form.BackColor==Color.FromArgb(11,19,38),"Dark background matches Android palette");
+        Check(Aether.Surface==Color.FromArgb(19,27,46),"Dark surface matches Android palette");
+        if(args.Length>0) {using var darkImage=new Bitmap(form.Width,form.Height);form.DrawToBitmap(darkImage,new Rectangle(Point.Empty,form.Size));darkImage.Save(Path.Combine(args[0],"bridge-dark-r7.png"));}
+        Aether.Apply(form,false);Application.DoEvents();Check(form.BackColor==Aether.Background,"Light theme restored without changing service state");
         Field<CheckBox>("closeToTray").Checked=false;form.Close();Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(new{passed=true,checks,serviceCalls=0,cardOperations=0}));
     }
 }

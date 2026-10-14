@@ -13,6 +13,9 @@ class AppearancePreferences(context: Context) {
     private val app = context.applicationContext
     private val selected = MutableStateFlow<ThemeMode?>(null)
     val mode = selected.asStateFlow()
+    private val tactile=MutableStateFlow(true)
+    val hapticsEnabled=tactile.asStateFlow()
+    private val tactileChanges=Channel<Boolean>(Channel.CONFLATED)
     private val changes = Channel<ThemeMode>(Channel.UNLIMITED)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     init {
@@ -20,11 +23,18 @@ class AppearancePreferences(context: Context) {
             val prefs = app.getSharedPreferences("appearance", Context.MODE_PRIVATE)
             selected.value = runCatching { ThemeMode.valueOf(prefs.getString("theme", "SYSTEM")!!) }
                 .getOrDefault(ThemeMode.SYSTEM)
+            tactile.value=prefs.getBoolean("haptics",true)
+            pe.gob.reniec.dnie.data.feedback.ReadingFeedback.enabled=tactile.value
+            launch {for(value in tactileChanges) {
+                prefs.edit().putBoolean("haptics",value).apply();tactile.value=value
+                pe.gob.reniec.dnie.data.feedback.ReadingFeedback.enabled=value
+            }}
             for (value in changes) {
                 prefs.edit().putString("theme", value.name).apply()
                 selected.value = value
             }
         }
     }
+    fun setHaptics(value: Boolean) { tactileChanges.trySend(value) }
     fun select(mode: ThemeMode) { changes.trySend(mode) }
 }

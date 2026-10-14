@@ -1,5 +1,6 @@
 package pe.gob.reniec.dnie.ui.certificates
 
+import pe.gob.reniec.dnie.domain.feedback.*
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -52,6 +53,9 @@ sealed interface CertificatesUiState {
  * ViewModel para la lectura e inspección de certificados X.509 públicos del DNIe.
  */
 class CertificatesViewModel(private val closeDispatcher: CoroutineDispatcher = Dispatchers.IO) : ViewModel() {
+    private val feedbackEvents=ReadingFeedbackEvents()
+    val feedback=feedbackEvents.flow
+
     private var readingJob: Job? = null
     @Volatile private var activeReader: DnieTransceiverInterface? = null
     val busy: Boolean get() = readingJob?.isActive == true || activeReader != null
@@ -130,6 +134,7 @@ class CertificatesViewModel(private val closeDispatcher: CoroutineDispatcher = D
         _uiState.value = CertificatesUiState.ReadingCard("Conectando con Applet del DNIe...")
 
         readingJob = viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
+            var cue: ReadingCue?=null
             var retained: pe.gob.reniec.dnie.domain.scan.CertificateSnapshot?=null
             try {
                 val generation=_identitySnapshot.value.generation+1
@@ -148,6 +153,7 @@ class CertificatesViewModel(private val closeDispatcher: CoroutineDispatcher = D
                 else CertificatesUiState.Loaded(certMap,
                     if(CertificateType.SIGNATURE in certMap) CertificateType.SIGNATURE else certMap.keys.first(),
                     if(identityFactory==null) null else result.identityIssue ?: "Certificados e identidad leídos. Consulta la pestaña Identidad.")
+                cue=if(certMap.isNotEmpty()) ReadingCue.SUCCESS else ReadingCue.ERROR
             } catch (cancelled: CancellationException) {
                 retained?.certificates?.takeIf { it.isNotEmpty() }?.let { certs ->
                     _uiState.value=CertificatesUiState.Loaded(certs,
@@ -163,6 +169,7 @@ class CertificatesViewModel(private val closeDispatcher: CoroutineDispatcher = D
                 throw cancelled
             } catch (e: Exception) {
                 if (!kotlin.coroutines.coroutineContext[kotlinx.coroutines.Job]!!.isActive) return@launch
+                cue=ReadingCue.ERROR
                 pe.gob.reniec.dnie.diagnostics.DiagnosticLog.failure("certificates", "read", e)
                 _uiState.value = CertificatesUiState.Error(
                     e.message ?: "Error al leer certificados digitales del DNIe."
@@ -171,7 +178,7 @@ class CertificatesViewModel(private val closeDispatcher: CoroutineDispatcher = D
                 try {
                     withContext(NonCancellable + closeDispatcher) { runCatching { scan.close() } }
                 } finally {
-                    if (activeReader === transceiver) { activeReader = null;activeScan=null }
+                    if (activeReader === transceiver) { activeReader = null;activeScan=null;cue?.let(feedbackEvents::report) }
                 }
             }
         }

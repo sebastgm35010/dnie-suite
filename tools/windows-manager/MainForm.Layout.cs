@@ -6,6 +6,7 @@ public sealed partial class MainForm : Form {
     private readonly ComboBox usb=new(){DropDownStyle=ComboBoxStyle.DropDownList};
     private readonly Label serviceStatus=new(),hostStatus=new(),error=new(),help=new();
     private readonly Button install=new AetherButton(){Text="Instalar / reparar servicio"},start=new AetherButton(){Text="Iniciar puente"},stop=new AetherButton(){Text="Detener puente"},pair=new AetherButton(){Text="Mostrar QR"},refresh=new AetherButton(){Text="Actualizar dispositivos"};
+    private readonly Button themeToggle=new AetherButton(){Text="Oscuro",Name="bridge-theme"};
     private readonly Button selectorToggle=new AetherButton(){Text="Activar selector"};
     private readonly Label selectorStatus=new();
     private readonly HealthCard serviceHealth=new(),readerHealth=new(),cardHealth=new();
@@ -21,7 +22,7 @@ public sealed partial class MainForm : Form {
         void Whole(System.Windows.Forms.Control control,int row){control.Dock=DockStyle.Fill;control.Margin=new Padding(0,0,0,16);layout.Controls.Add(control,0,row);}
         var header=new FlowLayoutPanel{AutoSize=true,FlowDirection=FlowDirection.TopDown,WrapContents=false};
         header.Controls.Add(new Label{Text="◈ DNIe Bridge",Font=new Font("Segoe UI",23,FontStyle.Bold),AutoSize=true});
-        header.Controls.Add(new Label{Text="Tu DNI, conectado a las aplicaciones de Windows",ForeColor=Aether.Muted,AutoSize=true});Whole(header,0);
+        header.Controls.Add(new Label{Text="Tu DNI, conectado a las aplicaciones de Windows",ForeColor=Aether.Muted,AutoSize=true});Aether.Style(themeToggle);header.Controls.Add(themeToggle);Whole(header,0);
         var health=new TableLayoutPanel{ColumnCount=3,RowCount=1,Height=114};
         foreach(var card in new[]{serviceHealth,readerHealth,cardHealth}){health.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,33.33f));card.Dock=DockStyle.Fill;card.Margin=new Padding(0,0,10,0);health.Controls.Add(card);}
         Whole(health,1);

@@ -44,8 +44,17 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
     private val pageInfo=JLabel("Muestra A4")
     private val mode=AetherComboBox(arrayOf("Sello visible","PDF invisible","Firma separada (.p7s)"))
     private val tsa=AetherToggleChip("Sello de tiempo RENIEC")
-    private val style=AetherComboBox(arrayOf(StampStyle.INSTITUTIONAL,StampStyle.CARD,StampStyle.MINIMAL))
-    private val badge=AetherComboBox(arrayOf(StampBadgeType.SEAL_VECTOR,StampBadgeType.NONE))
+    private val style=AetherComboBox(arrayOf(StampStyle.INSTITUTIONAL,StampStyle.CARD,StampStyle.MINIMAL,StampStyle.INK,StampStyle.HANDWRITTEN_ONLY))
+    private val badge=AetherComboBox(arrayOf(StampBadgeType.SEAL_VECTOR,StampBadgeType.CHECK_SEAL,StampBadgeType.LOCK_SEAL,StampBadgeType.NONE))
+    private val backgroundMode=AetherComboBox(StampBackgroundMode.entries.toTypedArray())
+    private val dateFormat=AetherComboBox(StampDateFormat.entries.toTypedArray())
+    private val density=AetherComboBox(StampDensity.entries.toTypedArray())
+    private val showBorder=AetherToggleChip("Mostrar borde",true)
+    private val imageButton=AetherButton("Imagen de rúbrica…")
+    private val clearWhite=AetherToggleChip("Limpiar fondo blanco",true)
+    private var handwrittenImage: ByteArray?=null
+    private var imageLoading=false
+    private val themeButton=AetherButton("Oscuro",ButtonVariant.GHOST)
     private val target=AetherComboBox(StampPageTarget.entries.toTypedArray())
     private val colors=ColorSwatchSelector()
     private val title=JTextField("FIRMADO DIGITALMENTE")
@@ -87,7 +96,7 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
         brand.add(JLabel("Firma digital PAdES y lotes privados").apply { foreground=AetherSwingTheme.muted;font=font.deriveFont(11f) })
         header.add(brand,BorderLayout.WEST)
         header.add(JPanel(FlowLayout(FlowLayout.RIGHT,7,0)).apply { isOpaque=false
-            add(pill);add(JLabel("Teléfono").apply { border=EmptyBorder(0,0,0,5) });phone.preferredSize=Dimension(155,36);add(phone);add(connect);add(qr);add(disconnect);add(network)
+            add(pill);add(JLabel("Teléfono").apply { border=EmptyBorder(0,0,0,5) });phone.preferredSize=Dimension(155,36);add(phone);add(connect);add(qr);add(disconnect);add(network);add(themeButton)
         },BorderLayout.EAST);add(header,BorderLayout.NORTH)
         buildAdvancedDialog()
         val add=AetherButton("+ Añadir archivos");val remove=AetherButton("Quitar",ButtonVariant.GHOST)
@@ -132,7 +141,10 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
         val inspector=JPanel().apply { isOpaque=false;layout=BoxLayout(this,BoxLayout.Y_AXIS) }
         fun card(caption: String,build: (JPanel)->Unit) {
             val card=AetherCardPanel().apply { layout=BoxLayout(this,BoxLayout.Y_AXIS);alignmentX=LEFT_ALIGNMENT }
-            card.add(JLabel(caption).apply { font=font.deriveFont(Font.BOLD,15f) });card.add(Box.createVerticalStrut(12));build(card)
+            val contents=JPanel().apply {isOpaque=false;layout=BoxLayout(this,BoxLayout.Y_AXIS)}
+            val toggle=AetherButton(caption+"  -",ButtonVariant.GHOST).apply {alignmentX=LEFT_ALIGNMENT}
+            toggle.addActionListener {contents.isVisible=!contents.isVisible;toggle.text=caption+if(contents.isVisible) "  -" else "  +";inspector.revalidate()}
+            card.add(toggle);card.add(Box.createVerticalStrut(12));build(contents);card.add(contents)
             inspector.add(card);inspector.add(Box.createVerticalStrut(12))
         }
         fun option(panel: JPanel,label: String,component: JComponent) {
@@ -141,9 +153,13 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
         }
         card("Modalidad de firma") { option(it,"Formato",mode);it.add(tsa)
             it.add(JLabel("<html>Requiere internet. Se publica solo<br>si el sello de tiempo se verifica.</html>").apply { font=font.deriveFont(11f);foreground=AetherSwingTheme.muted }) }
-        card("Apariencia del sello") { option(it,"Estilo",style);option(it,"Insignia",badge);it.add(JLabel("Color del sello"));it.add(colors)
- }
-        card("Datos visibles") { panel ->
+        card("Estilo y plantilla") { panel ->
+            for(template in StampTemplate.entries) panel.add(AetherButton(template.label,ButtonVariant.GHOST).apply {addActionListener {if(!busy) {restoreDesign(currentDesign().copy(options=template.apply(options())));scheduleStamp()}};mutableControls.add(this)})
+            option(panel,"Estilo",style);panel.add(imageButton);panel.add(clearWhite)
+            panel.add(JLabel("Color del sello"));panel.add(colors);option(panel,"Fondo",backgroundMode);option(panel,"Espaciado",density);panel.add(showBorder)
+        }
+        card("Insignia y contenido") { panel ->
+            option(panel,"Insignia",badge);option(panel,"Formato de fecha",dateFormat)
             panel.add(JPanel(java.awt.GridLayout(0,2,4,2)).apply { isOpaque=false;fields.values.forEach(::add) });panel.add(Box.createVerticalStrut(10))
             option(panel,"Título del sello",title);option(panel,"Motivo",reason);option(panel,"Lugar",location);panel.add(tsaBadge)
         }
@@ -156,20 +172,34 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
         val footer=JPanel(BorderLayout(10,10)).apply { isOpaque=false;border=EmptyBorder(8,22,16,22) }
         status.font=status.font.deriveFont(12f);footer.add(status,BorderLayout.CENTER)
         footer.add(JPanel(FlowLayout(FlowLayout.RIGHT)).apply { isOpaque=false;add(open);sign.preferredSize=Dimension(210,44);add(sign) },BorderLayout.EAST);add(footer,BorderLayout.SOUTH)
-        mutableControls.addAll(listOf(pc,phone,workspace,identity,add,remove,list,page,mode,style,reason,location,tsa,badge,target,colors,title,previewName,tsaBadge,network,previous,next)+fields.values)
+        mutableControls.addAll(listOf(pc,phone,workspace,identity,add,remove,list,page,mode,style,reason,location,tsa,badge,target,colors,title,previewName,tsaBadge,network,previous,next,backgroundMode,dateFormat,density,showBorder,imageButton,clearWhite)+fields.values)
         fun enumRenderer(box: JComboBox<*>) { box.renderer=DefaultListCellRenderer().let { delegate -> ListCellRenderer { l,value,index,selected,focus ->
-            val label=when(value) { is StampStyle->value.label;is StampBadgeType->value.label;is StampPageTarget->value.label;else->value.toString() }
+            val label=when(value) { is StampStyle->value.label;is StampBadgeType->value.label;is StampPageTarget->value.label;is StampBackgroundMode->value.label;is StampDateFormat->value.label;is StampDensity->value.label;else->value.toString() }
             delegate.getListCellRendererComponent(l,label,index,selected,focus).also { (it as JComponent).border=EmptyBorder(6,10,6,10) } } } }
-        listOf(style,badge,target).forEach(::enumRenderer)
+        listOf(style,badge,target,backgroundMode,dateFormat,density).forEach(::enumRenderer)
         list.transferHandler=object: TransferHandler() {
-            override fun canImport(support: TransferSupport)=!busy && support.isDataFlavorSupported(java.awt.datatransfer.DataFlavor.javaFileListFlavor)
+            override fun canImport(support: TransferSupport): Boolean {
+                val accepted=!busy && support.isDataFlavorSupported(java.awt.datatransfer.DataFlavor.javaFileListFlavor)
+                if(support.isDrop)canvas.dropHighlight=accepted
+                return accepted
+            }
             override fun importData(support: TransferSupport): Boolean {
+                canvas.dropHighlight=false
                 if(!canImport(support)) return false
                 val dropped=runCatching { (support.transferable.getTransferData(java.awt.datatransfer.DataFlavor.javaFileListFlavor) as List<*>).filterIsInstance<java.io.File>() }.getOrNull()?:return false
-                addFiles(dropped,javax.swing.filechooser.FileSystemView.getFileSystemView());return true
+                canvas.dropHighlight=false
+                addFiles(dropped.filter {it.extension.equals("pdf",true)},javax.swing.filechooser.FileSystemView.getFileSystemView());return true
             }
         }
         canvas.transferHandler=list.transferHandler
+        imageButton.name="stamp-image";backgroundMode.name="stamp-background";dateFormat.name="stamp-date-format";density.name="stamp-density";themeButton.name="suite-theme"
+        imageButton.addActionListener {if(!busy && !imageLoading)chooseImage()}
+        themeButton.addActionListener {
+            AetherSwingTheme.apply(this,!AetherSwingTheme.dark);prefs.putBoolean("theme.dark",AetherSwingTheme.dark)
+            themeButton.text=if(AetherSwingTheme.dark) "Claro" else "Oscuro"
+        }
+        listOf(canvas,list).forEach {component->PdfDropSupport.install(component,{!busy},{canvas.dropHighlight=it}) {dropped->addFiles(dropped,javax.swing.filechooser.FileSystemView.getFileSystemView())}}
+
         canvas.resized={scheduleStamp()};canvas.changed={scheduleStamp()};colors.changed={scheduleStamp()}
         list.addMouseListener(object: MouseAdapter() {
             override fun mouseClicked(e: MouseEvent) { if(e.clickCount==2 && SwingUtilities.isLeftMouseButton(e)) openSigned(list.selectedValue,false) }
@@ -186,7 +216,7 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
                 }
             }
         })
-        listOf(style,badge,tsa,tsaBadge).forEach { control -> when(control) { is JComboBox<*>->control.addActionListener { scheduleStamp() };is JCheckBox->control.addActionListener { scheduleStamp() } } }
+        listOf(style,badge,tsa,tsaBadge,backgroundMode,dateFormat,density,showBorder).forEach { control -> when(control) { is JComboBox<*>->control.addActionListener { scheduleStamp() };is JCheckBox->control.addActionListener { scheduleStamp() } } }
         fields.values.forEach { it.addActionListener { scheduleStamp() } }
         listOf(title,reason,location,previewName).forEach { input -> input.document.addDocumentListener(object: javax.swing.event.DocumentListener {
             override fun insertUpdate(e: javax.swing.event.DocumentEvent)=scheduleStamp()
@@ -233,6 +263,7 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
         }
         align(contentPane);align(advanced.contentPane)
         status.addPropertyChangeListener("text") { status.toolTipText=status.text }
+        AetherSwingTheme.apply(this,prefs.getBoolean("theme.dark",false));themeButton.text=if(AetherSwingTheme.dark) "Claro" else "Oscuro"
         restoreDesign(savedDesign);setBusy(false);scheduleStamp()
         if(initialFiles.isNotEmpty()) addFiles(initialFiles.map(Path::toFile),javax.swing.filechooser.FileSystemView.getFileSystemView())
     }
@@ -290,6 +321,7 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
         }
     }
     private fun signValidated(inputs: List<Path>) {
+        if(imageLoading) {status.text="Espera a que termine de cargar la rúbrica.";return}
         val password=SigningPinPanel(inputs.size);password.focusPin()
         if(JOptionPane.showConfirmDialog(this,password,"Autorizar firma",JOptionPane.OK_CANCEL_OPTION,JOptionPane.PLAIN_MESSAGE)!=JOptionPane.OK_OPTION) { password.clear();return }
         val pin=password.takePin()
@@ -344,17 +376,37 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
             status.text=when { rejected>0->"$rejected archivo(s) no disponibles. Selecciona el original desde su carpeta.";paths.size>room->"Límite de 50 archivos. Se añadieron ${accepted.size}.";else->"Archivos preparados." }
         }
     }
+    private fun chooseImage() {
+        val chooser=JFileChooser().apply {fileFilter=javax.swing.filechooser.FileNameExtensionFilter("Imagen PNG","png")}
+        if(chooser.showOpenDialog(this)!=JFileChooser.APPROVE_OPTION)return
+        val path=chooser.selectedFile.toPath();val clean=clearWhite.isSelected
+        imageLoading=true;imageButton.isEnabled=false;status.text="Preparando imagen…"
+        object: SwingWorker<ByteArray,Unit>() {
+            override fun doInBackground()=StampImageLoader.load(path,clean)
+            override fun done() {
+                imageLoading=false
+                if(resourcesClosed)return
+                imageButton.isEnabled=!busy
+                runCatching {get()}.onSuccess {bytes->handwrittenImage=bytes;style.selectedItem=if(style.selectedItem==StampStyle.HANDWRITTEN_ONLY) StampStyle.HANDWRITTEN_ONLY else StampStyle.INK;scheduleStamp();status.text="Rúbrica cargada para esta sesión."}
+                    .onFailure {status.text="No se pudo cargar PNG: máximo 512 KiB y 4 megapíxeles."}
+            }
+        }.execute()
+    }
     private fun options()=PdfSigningOptions(pageNumber=(page.value as Number).toInt(),pageTarget=target.selectedItem as StampPageTarget,
         placement=canvas.placement,visible=mode.selectedIndex==0,reniecTimestamp=tsa.isSelected,reason=reason.text,location=location.text,
         appearance=SignatureAppearance(style=style.selectedItem as StampStyle,colorTheme=colors.selected,badge=badge.selectedItem as StampBadgeType,
             customHeader=title.text.take(160),showTsaBadge=tsaBadge.isSelected,
+            handwrittenPng=handwrittenImage?.copyOf(),showHandwritten=style.selectedItem in listOf(StampStyle.INK,StampStyle.HANDWRITTEN_ONLY),
+            backgroundMode=backgroundMode.selectedItem as StampBackgroundMode,dateFormat=dateFormat.selectedItem as StampDateFormat,density=density.selectedItem as StampDensity,showBorder=showBorder.isSelected,
             showDni=fields.getValue("DNI").isSelected,showDate=fields.getValue("Fecha").isSelected,showTime=fields.getValue("Hora").isSelected,
             showReason=fields.getValue("Motivo").isSelected,showLocation=fields.getValue("Lugar").isSelected))
     private fun restoreDesign(design: SuiteDesign) {
         restoringDesign=true
         try {
+            handwrittenImage=design.options.appearance.handwrittenPng?.copyOf()
             val o=design.options;val a=o.appearance;preferredPage=o.pageNumber
             mode.selectedIndex=when(design.mode) { DesktopPdfMode.VISIBLE->0;DesktopPdfMode.INVISIBLE->1;DesktopPdfMode.DETACHED->2 }
+            backgroundMode.selectedItem=a.backgroundMode;dateFormat.selectedItem=a.dateFormat;density.selectedItem=a.density;showBorder.isSelected=a.showBorder
             style.selectedItem=a.style;badge.selectedItem=a.badge;colors.selected=a.colorTheme;title.text=a.customHeader
             reason.text=o.reason;location.text=o.location;tsa.isSelected=o.reniecTimestamp;tsaBadge.isSelected=a.showTsaBadge
             previewName.text=design.previewName;canvas.placement=o.placement;target.selectedItem=o.pageTarget

@@ -55,14 +55,15 @@ import pe.gob.reniec.dnie.ui.components.NfcTapPromptSheet
 /**
  * Pantalla principal del Inspector de Certificados Digitales del DNIe.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class,androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun CertificatesScreen(
     viewModel: CertificatesViewModel,
     modifier: Modifier = Modifier,
     onOpenVault: () -> Unit = {},
     onOpenBridge: () -> Unit = {},
-    onOpenSuite: () -> Unit = {}
+    onOpenSuite: () -> Unit = {},
+    onOpenSigner: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -156,6 +157,16 @@ fun CertificatesScreen(
                             }
                         }
 
+                        Column(Modifier.fillMaxWidth().padding(16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                            Text("Usar este DNIe",style=MaterialTheme.typography.titleSmall)
+                            if(state.certificates.containsKey(CertificateType.SIGNATURE)) Text("Certificado público listo para la vista previa de firma PDF",style=MaterialTheme.typography.bodySmall)
+                            androidx.compose.foundation.layout.FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                                androidx.compose.material3.OutlinedButton(onClick=onOpenSigner) {Text("Firmar PDF")}
+                                androidx.compose.material3.OutlinedButton(onClick=onOpenVault) {Text("Bóveda")}
+                                androidx.compose.material3.OutlinedButton(onClick=onOpenBridge) {Text("Puente PC")}
+                                androidx.compose.material3.OutlinedButton(onClick=onOpenSuite) {Text("Firma remota")}
+                            }
+                        }
                         val activeCert = state.certificates[state.selectedType]
 
                         if (activeCert != null) {

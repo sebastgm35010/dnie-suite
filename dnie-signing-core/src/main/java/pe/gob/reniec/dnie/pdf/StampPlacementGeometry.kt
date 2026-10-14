@@ -24,6 +24,6 @@ object StampPlacementGeometry {
         return Snap(p.moved(x?.second?:p.left,y?.second?:p.top),x?.first,y?.first)
     }
     fun preset(p: NormalizedStampPlacement,preset: SignaturePreset): NormalizedStampPlacement = p.moved(
-        if(preset in listOf(SignaturePreset.TOP_LEFT,SignaturePreset.BOTTOM_LEFT)) .05f else .95f-p.width,
-        if(preset in listOf(SignaturePreset.TOP_LEFT,SignaturePreset.TOP_RIGHT)) .05f else .95f-p.height)
+        if(preset in listOf(SignaturePreset.TOP_LEFT,SignaturePreset.BOTTOM_LEFT)) .06f else .94f-p.width,
+        if(preset in listOf(SignaturePreset.TOP_LEFT,SignaturePreset.TOP_RIGHT)) .06f else .94f-p.height)
 }

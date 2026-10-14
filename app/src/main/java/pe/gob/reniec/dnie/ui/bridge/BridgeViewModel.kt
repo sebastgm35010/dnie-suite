@@ -1,4 +1,5 @@
 package pe.gob.reniec.dnie.ui.bridge
+import pe.gob.reniec.dnie.domain.feedback.*
 import android.app.Application
 import android.net.Uri
 import android.nfc.Tag
@@ -20,6 +21,9 @@ import pe.gob.reniec.dnie.data.preferences.CanStorage
 import pe.gob.reniec.dnie.diagnostics.DiagnosticLog
 /** Coordinates import and exclusive foreground sessions; secrets never enter Compose state. */
 class BridgeViewModel(application: Application) : AndroidViewModel(application) {
+    private val feedbackEvents=ReadingFeedbackEvents()
+    val feedback=feedbackEvents.flow
+
     private val trustedPc = pe.gob.reniec.dnie.data.bridge.TrustedPcStorage(application)
     private val preferences = pe.gob.reniec.dnie.data.bridge.BridgePreferences(application)
     private val mutable = MutableStateFlow(BridgeUiState(can = CanStorage.getSavedCan(application),
@@ -182,6 +186,7 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
                 withContext(Dispatchers.IO) {
                     prepared.connection.runAwaitingCard(current.can, current.mode, prepared.awaitAtr,
                         onEvent = { event -> DiagnosticLog.event("bridge", event) }) { phase ->
+                        if(epoch==generation && phase in listOf(BridgeConnection.Phase.PACE_ACTIVE,BridgeConnection.Phase.RAW_ACTIVE)) feedbackEvents.report(ReadingCue.PROGRESS)
                         if (phase == BridgeConnection.Phase.PACE_ACTIVE || phase == BridgeConnection.Phase.RAW_ACTIVE) opened = true
                         if (epoch == generation) mutable.update { it.copy(
                             armed = phase == BridgeConnection.Phase.WAITING_CARD,
@@ -199,9 +204,11 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
                             }) }
                     }
                 }
+                if(epoch==generation && opened) feedbackEvents.report(ReadingCue.SUCCESS)
                 DiagnosticLog.event("bridge", "session_closed", "state" to "peer_closed")
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (failure: Exception) {
+                if(epoch==generation) feedbackEvents.report(ReadingCue.ERROR)
                 DiagnosticLog.failure("bridge", "session", failure)
                 if (epoch == generation) mutable.update { it.copy(message = "Conexión cerrada. Comprueba la PC y vuelve a iniciar el puente.") }
             } finally {

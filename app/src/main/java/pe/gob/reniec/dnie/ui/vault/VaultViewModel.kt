@@ -1,5 +1,6 @@
 package pe.gob.reniec.dnie.ui.vault
 
+import pe.gob.reniec.dnie.domain.feedback.*
 import android.content.Context
 import android.net.Uri
 import pe.gob.reniec.dnie.data.vault.AndroidVaultRepository
@@ -17,6 +18,9 @@ import java.security.interfaces.RSAPublicKey
 
 class VaultViewModel(private val cryptoDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private var canStore: pe.gob.reniec.dnie.domain.vault.RememberedCanStore? = null) : ViewModel() {
+    private val feedbackEvents=ReadingFeedbackEvents()
+    val feedback=feedbackEvents.flow
+
     private var rememberedCan = ""
     private val state = MutableStateFlow(VaultUiState())
     val uiState = state.asStateFlow()
@@ -194,6 +198,7 @@ class VaultViewModel(private val cryptoDispatcher: CoroutineDispatcher = Dispatc
         state.value = state.value.copy(can = "", pin = "", awaitingCard = false, running = true,
             message = "Abriendo canal seguro PKI…")
         job = viewModelScope.launch {
+            var cue: ReadingCue?=null
             var secret: ByteArray? = null
             var recoveryBatch: pe.gob.reniec.dnie.domain.vault.UnlockedRecoveryBatch? = null
             try {
@@ -291,12 +296,15 @@ class VaultViewModel(private val cryptoDispatcher: CoroutineDispatcher = Dispatc
                         pairedFingerprint = if (repository != null) fingerprint else state.value.pairedFingerprint,
                         message = "Prueba completa: clave y contenido verificados. Certificado público listo para cifrar archivos.")
                 }
+                cue=ReadingCue.SUCCESS
             } catch (e: CancellationException) { throw e }
             catch (e: LinkageError) {
+                cue=ReadingCue.ERROR
                 if (generation == operation) state.value = state.value.copy(verified = false,
                     message = "Incompatibilidad interna de bibliotecas. Actualice la app; el contenedor cifrado se conserva.")
             }
             catch (e: Exception) {
+                cue=ReadingCue.ERROR
                 if (generation == operation) state.value = state.value.copy(verified = false,
                     message = e.message ?: "No se pudo completar la operación NFC.")
             } finally {
@@ -309,6 +317,7 @@ class VaultViewModel(private val cryptoDispatcher: CoroutineDispatcher = Dispatc
                     card = null
                     clearSelection()
                     state.value = state.value.copy(can = idleCan(), pin = "", running = false, awaitingCard = false)
+                    cue?.let(feedbackEvents::report)
                 }
             }
         }

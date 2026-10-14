@@ -101,14 +101,20 @@ fun SignerScreen(viewModel: SignerViewModel, batch: Boolean = false, onReadIdent
                         if (config.reniecTimestamp) Text("Requiere internet. Solo se envía el resumen de la firma. Si el sello no se verifica, no se publica el PDF firmado.", style = MaterialTheme.typography.bodySmall)
                         val look = config.appearance
                         Text("Sello · " + doc.name, style = MaterialTheme.typography.titleMedium)
+                        TextButton(enabled=enabled,onClick=viewModel::restoreDefaultDesign) {Text("Restaurar diseño predeterminado")}
                         SwitchRow("Mostrar sello en el PDF", config.visible, enabled) { viewModel.updateOptions { c -> c.copy(visible = it) } }
                         if (config.visible) {
+                            fun appearance(change: (SignatureAppearance) -> SignatureAppearance) { viewModel.updateOptions { it.copy(appearance = change(it.appearance)) } }
+                            StampDesignSection("Estilo y plantilla") {
+                            FlowRow(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                                StampTemplate.entries.forEach {template->OutlinedButton(enabled=enabled,onClick={viewModel.updateOptions(template::apply)}) {Text(template.label)}}
+                            }
+
                             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 listOf(StampStyle.INSTITUTIONAL,StampStyle.CARD,StampStyle.MINIMAL,StampStyle.INK,StampStyle.HANDWRITTEN_ONLY).forEach { style ->
                                     FilterChip(selected = look.style == style, enabled = enabled, onClick = { viewModel.updateOptions { c -> c.copy(appearance = c.appearance.copy(style = style, showHandwritten = if (style == StampStyle.INK) true else c.appearance.showHandwritten)) } }, label = { Text(style.label) })
                                 }
                             }
-                            fun appearance(change: (SignatureAppearance) -> SignatureAppearance) { viewModel.updateOptions { it.copy(appearance = change(it.appearance)) } }
                             if(look.style != StampStyle.HANDWRITTEN_ONLY) {
                                 Text("Color del sello",style=MaterialTheme.typography.labelLarge)
                                 FlowRow(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
@@ -117,17 +123,27 @@ fun SignerScreen(viewModel: SignerViewModel, batch: Boolean = false, onReadIdent
                                             leadingIcon={ androidx.compose.foundation.Canvas(Modifier.size(12.dp)) { drawCircle(androidx.compose.ui.graphics.Color(0xFF000000 or color.accentRgb.toLong())) } },label={Text(color.label)})
                                     }
                                 }
+                                Text("Fondo y espaciado",style=MaterialTheme.typography.titleSmall)
+                                FlowRow(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                                    StampBackgroundMode.entries.forEach {value->FilterChip(selected=look.backgroundMode==value,enabled=enabled,onClick={appearance {it.copy(backgroundMode=value)}},label={Text(value.label)})}
+                                }
+                                FlowRow(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                                    StampDensity.entries.forEach {value->FilterChip(selected=look.density==value,enabled=enabled,onClick={appearance {it.copy(density=value)}},label={Text(value.label)})}
+                                }
+                                SwitchRow("Mostrar borde",look.showBorder,enabled) {value->appearance {it.copy(showBorder=value)}}
+                            }
+                            }
+                            StampDesignSection("Insignia y contenido") {
+                            if(look.style != StampStyle.HANDWRITTEN_ONLY) {
                                 Text("Insignia",style=MaterialTheme.typography.labelLarge)
                                 FlowRow(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
-                                    listOf(StampBadgeType.SEAL_VECTOR,StampBadgeType.NONE).forEach { badge -> FilterChip(selected=look.badge==badge,enabled=enabled,onClick={appearance { it.copy(badge=badge) }},label={Text(badge.label)}) }
+                                    listOf(StampBadgeType.SEAL_VECTOR,StampBadgeType.CHECK_SEAL,StampBadgeType.LOCK_SEAL,StampBadgeType.NONE).forEach { badge -> FilterChip(selected=look.badge==badge,enabled=enabled,onClick={appearance { it.copy(badge=badge) }},label={Text(badge.label)}) }
+                                }
+                                FlowRow(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                                    StampDateFormat.entries.forEach {value->FilterChip(selected=look.dateFormat==value,enabled=enabled,onClick={appearance {it.copy(dateFormat=value)}},label={Text(value.label)})}
                                 }
                                 OutlinedTextField(look.customHeader,{ value->appearance { it.copy(customHeader=value.take(160)) } },enabled=enabled,label={Text("Título del sello")},modifier=Modifier.fillMaxWidth())
                                 if(config.reniecTimestamp) SwitchRow("Mostrar distintivo TSA",look.showTsaBadge,enabled) { value->appearance { it.copy(showTsaBadge=value) } }
-                            }
-                            StampPageTargetSelector(config.pageTarget,enabled) { value->viewModel.updateOptions { it.copy(pageTarget=value,
-                                pageNumber=when(value) { StampPageTarget.FIRST_PAGE->1;StampPageTarget.LAST_PAGE->doc.pages.size;else->it.pageNumber }) } }
-                            if (look.style == StampStyle.HANDWRITTEN_ONLY) Text("Solo se verá la imagen manuscrita: sin texto, fondo añadido ni borde. La firma digital sigue incorporada en el PDF.", style = MaterialTheme.typography.bodySmall)
-                            else {
                             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 FilterChip(look.showDni, { appearance { it.copy(showDni = !it.showDni) } }, enabled = enabled, label = { Text("DNI") })
                                 FilterChip(look.showDate, { appearance { it.copy(showDate = !it.showDate) } }, enabled = enabled, label = { Text("Fecha") })
@@ -139,6 +155,11 @@ fun SignerScreen(viewModel: SignerViewModel, batch: Boolean = false, onReadIdent
                             if (look.showLocation) OutlinedTextField(config.location, { text -> viewModel.updateOptions { it.copy(location = text.take(120)) } }, enabled = enabled, label = { Text("Lugar") }, modifier = Modifier.fillMaxWidth())
                             SwitchRow("Incluir firma manuscrita del DNI", look.showHandwritten, enabled && look.style != StampStyle.INK && (workspace.mark != null || look.showHandwritten)) { value -> appearance { it.copy(showHandwritten = value) } }
                             }
+                            }
+                            Text("Ubicación en página",style=MaterialTheme.typography.titleSmall)
+                            StampPageTargetSelector(config.pageTarget,enabled) { value->viewModel.updateOptions { it.copy(pageTarget=value,
+                                pageNumber=when(value) { StampPageTarget.FIRST_PAGE->1;StampPageTarget.LAST_PAGE->doc.pages.size;else->it.pageNumber }) } }
+                            if (look.style == StampStyle.HANDWRITTEN_ONLY) Text("Solo se verá la imagen manuscrita: sin texto, fondo añadido ni borde. La firma digital sigue incorporada en el PDF.", style = MaterialTheme.typography.bodySmall)
                             if (workspace.mark == null) {
                                 Text(workspace.markError ?: "Lee Identidad para obtener la imagen manuscrita (DG7), si está disponible.")
                                 OutlinedButton(enabled = editing, onClick = onReadIdentity) { Text("Leer firma manuscrita") }
@@ -210,5 +231,14 @@ private fun SwitchRow(text: String, checked: Boolean, enabled: Boolean, change: 
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(text, modifier = Modifier.weight(1f).padding(top = 12.dp, end = 8.dp))
         Switch(checked = checked, onCheckedChange = change, enabled = enabled)
+    }
+}
+
+@Composable
+private fun StampDesignSection(title: String,content: @Composable ColumnScope.()->Unit) {
+    var expanded by androidx.compose.runtime.saveable.rememberSaveable(title) {mutableStateOf(true)}
+    Column(verticalArrangement=Arrangement.spacedBy(8.dp)) {
+        TextButton(onClick={expanded=!expanded}) {Text(title+if(expanded) " ▾" else " ▸")}
+        if(expanded)content()
     }
 }
