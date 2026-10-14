@@ -1,6 +1,7 @@
 package pe.gob.reniec.dnie.ui.signer
 
 import android.graphics.Bitmap
+import androidx.compose.foundation.background
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -45,15 +46,15 @@ internal fun StampPreviewCard(width: Float,height: Float,name: String,dni: Strin
     ElevatedCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
             Text("Vista previa del sello",style=MaterialTheme.typography.labelLarge)
-            val grid=MaterialTheme.colorScheme.outlineVariant.copy(alpha=.32f)
-            Box(Modifier.fillMaxWidth().height(180.dp),contentAlignment=Alignment.Center) {
+            val grid=androidx.compose.ui.graphics.Color(0xFFDCE9FF).copy(alpha=.55f)
+            Box(Modifier.fillMaxWidth().height(180.dp).background(androidx.compose.ui.graphics.Color.White),contentAlignment=Alignment.Center) {
                 Canvas(Modifier.fillMaxSize()) {
                     val step=16.dp.toPx()
                     var x=0f;while(x<size.width) { drawLine(grid,Offset(x,0f),Offset(x,size.height),1f);x+=step }
                     var y=0f;while(y<size.height) { drawLine(grid,Offset(0f,y),Offset(size.width,y),1f);y+=step }
                 }
                 bitmap?.let { Image(it.asImageBitmap(),"Vista previa del sello configurado",Modifier.fillMaxSize().padding(8.dp),contentScale=ContentScale.Fit) }
-                if(bitmap==null && error==null) Text("Preparando sello…",style=MaterialTheme.typography.bodySmall)
+                if(bitmap==null && error==null) Text("Preparando sello…",style=MaterialTheme.typography.bodySmall,color=androidx.compose.ui.graphics.Color(0xFF434655))
             }
             if(preparing) LinearProgressIndicator(Modifier.fillMaxWidth())
             error?.let { Text(it,color=MaterialTheme.colorScheme.error,style=MaterialTheme.typography.bodySmall) }

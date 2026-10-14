@@ -23,7 +23,7 @@ import pe.gob.reniec.dnie.pdf.*
 
 class AetherStampTest {
     @get:Rule val folder=TemporaryFolder()
-    @Test fun allPagesOneSignaturePreservesOriginalAndIsCryptographicallyValid()=runBlocking<Unit> {
+    @Test fun allPagesOneWidgetAndSignedReplicasPreserveOriginalAndCryptographicValidity()=runBlocking<Unit> {
         val source=ByteArrayOutputStream().also { output -> PDDocument().use { doc ->
             for(rotation in listOf(0,90,180,270)) doc.addPage(PDPage(PDRectangle(700f,800f)).apply { cropBox=PDRectangle(30f,40f,500f,650f);this.rotation=rotation })
             doc.save(output)
@@ -36,22 +36,51 @@ class AetherStampTest {
         Loader.loadPDF(bytes).use { doc ->
             assertEquals(1,doc.signatureDictionaries.size)
             val field=doc.documentCatalog.acroForm.fields.single() as PDSignatureField
-            assertEquals(4,field.widgets.size)
+            assertEquals(1,field.widgets.size)
             val fontObjects=mutableSetOf<org.apache.pdfbox.cos.COSDictionary>()
-            field.widgets.forEachIndexed { index,widget ->
-                assertTrue(widget.cosObject.getDictionaryObject("Parent")===field.cosObject)
-                assertTrue(doc.getPage(index).annotations.any { it.cosObject===widget.cosObject })
+            for(index in 0 until doc.numberOfPages) {
+                val widget=doc.getPage(index).annotations.single()
+                if(index==0) assertTrue(widget.cosObject===field.widgets.single().cosObject)
+                else {
+                    assertTrue(widget is org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationRubberStamp)
+                    assertFalse(widget.cosObject.containsKey(org.apache.pdfbox.cos.COSName.PARENT))
+                    assertFalse(widget.cosObject.containsKey(org.apache.pdfbox.cos.COSName.V))
+                }
                 assertNotNull(widget.appearance.normalAppearance.appearanceStream)
                 val resources=widget.appearance.normalAppearance.appearanceStream.resources
                 resources.fontNames.forEach { fontObjects+=resources.getFont(it).cosObject }
-                val rendered=PDFRenderer(doc).renderImage(index,.5f)
-                assertTrue(rendered.width>0);rendered.flush()
+                val rendered=PDFRenderer(doc).renderImage(index,1f)
+                var left=rendered.width;var top=rendered.height;var right=0;var bottom=0;var ink=0
+                for(y in 0 until rendered.height) for(x in 0 until rendered.width) {
+                    val rgb=rendered.getRGB(x,y)
+                    if(minOf((rgb shr 16) and 255,(rgb shr 8) and 255,rgb and 255)<235) {
+                        ink++;left=minOf(left,x);top=minOf(top,y);right=maxOf(right,x);bottom=maxOf(bottom,y)
+                    }
+                }
+                assertTrue("Each replica is actually rendered",ink>100)
+                assertEquals(rendered.width*.1f,left.toFloat(),3f);assertEquals(rendered.height*.2f,top.toFloat(),3f)
+                assertEquals(rendered.width*.8f,right.toFloat(),3f);assertEquals(rendered.height*.6f,bottom.toFloat(),3f)
+                rendered.flush()
             }
             assertEquals("Fonts are shared, never embedded again per page",2,fontObjects.size)
             val sig=doc.signatureDictionaries.single();assertPadesProfile(sig,bytes,identity.certificate)
             val cms=CMSSignedData(CMSProcessableByteArray(sig.getSignedContent(bytes)),sig.getContents(bytes))
             assertTrue(cms.signerInfos.signers.single().verify(JcaSimpleSignerInfoVerifierBuilder().build(identity.certificate)))
         }
+    }
+    @Test fun certifiedP2RejectsReplicasBeforeCallingPrivateSigner()=runBlocking<Unit> {
+        val source=ByteArrayOutputStream().also { out -> PDDocument().use { doc ->
+            repeat(2) { doc.addPage(PDPage()) }
+            val parameters=org.apache.pdfbox.cos.COSDictionary().apply { setInt(org.apache.pdfbox.cos.COSName.P,2) }
+            val reference=org.apache.pdfbox.cos.COSDictionary().apply { setName(org.apache.pdfbox.cos.COSName.TRANSFORM_METHOD,"DocMDP");setItem(org.apache.pdfbox.cos.COSName.TRANSFORM_PARAMS,parameters) }
+            val signature=org.apache.pdfbox.cos.COSDictionary().apply { setItem(org.apache.pdfbox.cos.COSName.REFERENCE,org.apache.pdfbox.cos.COSArray().apply { add(reference) }) }
+            doc.documentCatalog.cosObject.setItem(org.apache.pdfbox.cos.COSName.PERMS,org.apache.pdfbox.cos.COSDictionary().apply { setItem(org.apache.pdfbox.cos.COSName.DOCMDP,signature) })
+            doc.save(out)
+        } }.toByteArray()
+        val identity=TestSigningIdentity();val output=ByteArrayOutputStream()
+        val result=JvmPdfSigner(folder.root.toPath()).signConfiguredPdf(source.inputStream(),output,identity.certificate.encoded,
+            { kotlin.Result.success(identity.sign(it)) },PdfSigningOptions(pageTarget=StampPageTarget.ALL_PAGES))
+        assertTrue(result.isFailure);assertEquals(0,identity.operations);assertEquals(0,output.size())
     }
     @Test fun vectorQrCanBeDecodedIndependentlyAndMatchesPublicSummary() {
         val options=PdfSigningOptions(appearance=SignatureAppearance(badge=StampBadgeType.QR_VERIFICATION))

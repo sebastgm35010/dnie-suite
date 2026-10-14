@@ -110,7 +110,7 @@ fun PdfPlacementEditor(document: SigningDocument, name: String, dni: String, opt
                         if (pageBitmap == null) Text(error ?: "Preparando página…", color = Color.DarkGray, modifier = Modifier.padding(16.dp))
                         val p = draft.placement
                         Box(Modifier.offset { IntOffset((p.left * size.width).roundToInt(), (p.top * size.height).roundToInt()) }
-                            .fillMaxWidth(p.width).fillMaxHeight(p.height).border(1.dp, MaterialTheme.colorScheme.primary)
+                            .fillMaxWidth(p.width).fillMaxHeight(p.height).border(1.dp, Color(0xFF004AC6))
                             .semantics { contentDescription = "Sello: arrastrar para mover, pellizcar para cambiar tamaño" }
                             .pointerInput(document.id) {
                                 detectTransformGestures { centroid, pan, zoom, _ ->
@@ -161,6 +161,6 @@ private fun ResizeHandle(label: String, modifier: Modifier, onDrag: (Offset) -> 
     Box(modifier.size(36.dp).semantics { contentDescription = label }.pointerInput(Unit) {
         detectDragGestures { event, drag -> event.consume(); change(drag) }
     }, contentAlignment = Alignment.Center) {
-        Box(Modifier.size(13.dp).background(Color.White, CircleShape).border(2.dp, MaterialTheme.colorScheme.primary, CircleShape))
+        Box(Modifier.size(13.dp).background(Color.White, CircleShape).border(2.dp, Color(0xFF004AC6), CircleShape))
     }
 }

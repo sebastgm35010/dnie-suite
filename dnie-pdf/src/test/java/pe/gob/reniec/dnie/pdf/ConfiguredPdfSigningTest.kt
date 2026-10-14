@@ -89,7 +89,7 @@ class ConfiguredPdfSigningTest {
         }
         assertEquals(1,calls)
     }
-    @Test fun allPagesSharesOneSignatureAndEveryWidgetSurvivesIncrementalSave() = runTest {
+    @Test fun allPagesUsesOneWidgetAndSignedVisualReplicas() = runTest {
         val source=PDDocument().use { doc ->
             for(rotation in listOf(0,90,180,270)) doc.addPage(PDPage(PDRectangle(600f,800f)).apply {
                 cropBox=PDRectangle(10f,20f,400f,600f);this.rotation=rotation
@@ -101,12 +101,18 @@ class ConfiguredPdfSigningTest {
             { calls++;Result.success(sign(it)) },PdfSigningOptions(pageTarget=StampPageTarget.ALL_PAGES,
                 placement=NormalizedStampPlacement(.1f,.2f,.7f,.4f))).getOrThrow()
         val bytes=out.toByteArray();assertEquals(1,calls);assertArrayEquals(source,bytes.copyOf(source.size))
+        System.getProperty("dnie.android.pdf.evidence")?.let { java.io.File(it,"android-all-pages-signed.pdf").writeBytes(bytes) }
         PDDocument.load(bytes).use { doc ->
             val field=doc.documentCatalog.acroForm.fields.single() as PDSignatureField
-            assertEquals(4,field.widgets.size);assertEquals(1,doc.signatureDictionaries.size)
-            field.widgets.forEachIndexed { index,widget ->
-                assertTrue(widget.cosObject.getDictionaryObject("Parent")===field.cosObject)
-                assertTrue(doc.getPage(index).annotations.any { it.cosObject===widget.cosObject })
+            assertEquals(1,field.widgets.size);assertEquals(1,doc.signatureDictionaries.size)
+            for(index in 0 until doc.numberOfPages) {
+                val widget=doc.getPage(index).annotations.single()
+                if(index==0) assertTrue(widget.cosObject===field.widgets.single().cosObject)
+                else {
+                    assertTrue(widget is com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationRubberStamp)
+                    assertFalse(widget.cosObject.containsKey(com.tom_roush.pdfbox.cos.COSName.PARENT))
+                    assertFalse(widget.cosObject.containsKey(com.tom_roush.pdfbox.cos.COSName.V))
+                }
                 assertNotNull(widget.appearance.normalAppearance.appearanceStream)
             }
             val sig=doc.signatureDictionaries.single()
@@ -114,6 +120,20 @@ class ConfiguredPdfSigningTest {
             assertTrue(cms.signerInfos.signers.single().verify(JcaSimpleSignerInfoVerifierBuilder().build(cert)))
             assertEquals("ETSI.CAdES.detached",sig.subFilter)
         }
+    }
+    @Test fun certifiedP2RefusesVisualReplicasWithoutCallingTheCard()=runTest {
+        val source=PDDocument().use { doc ->
+            repeat(2) { doc.addPage(PDPage()) }
+            val parameters=com.tom_roush.pdfbox.cos.COSDictionary().apply { setInt(com.tom_roush.pdfbox.cos.COSName.P,2) }
+            val reference=com.tom_roush.pdfbox.cos.COSDictionary().apply { setName(com.tom_roush.pdfbox.cos.COSName.TRANSFORM_METHOD,"DocMDP");setItem(com.tom_roush.pdfbox.cos.COSName.TRANSFORM_PARAMS,parameters) }
+            val signature=com.tom_roush.pdfbox.cos.COSDictionary().apply { setItem(com.tom_roush.pdfbox.cos.COSName.REFERENCE,com.tom_roush.pdfbox.cos.COSArray().apply { add(reference) }) }
+            doc.documentCatalog.cosObject.setItem(com.tom_roush.pdfbox.cos.COSName.PERMS,com.tom_roush.pdfbox.cos.COSDictionary().apply { setItem(com.tom_roush.pdfbox.cos.COSName.DOCMDP,signature) })
+            ByteArrayOutputStream().also { doc.save(it) }.toByteArray()
+        }
+        val out=ByteArrayOutputStream();var calls=0
+        val result=PadesSignerEngine().signConfiguredPdf(source.inputStream(),out,cert.encoded,
+            { calls++;Result.success(sign(it)) },PdfSigningOptions(pageTarget=StampPageTarget.ALL_PAGES))
+        assertTrue(result.isFailure);assertEquals(0,calls);assertEquals(0,out.size())
     }
     @Test fun normalizedPlacementHandlesEveryRotationAndCropOrigin() {
         val page = PDPage(PDRectangle(600f, 800f)).apply { cropBox = PDRectangle(10f, 20f, 400f, 600f) }
