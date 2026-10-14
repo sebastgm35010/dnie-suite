@@ -21,13 +21,13 @@ sealed class Screen(
 ) {
     data object Certificates : Screen(
         route = "certificates",
-        title = "DNIe",
+        title = "Mi DNIe",
         icon = Icons.Default.Badge
     )
 
     data object Signer : Screen(
         route = "signer",
-        title = "Firma",
+        title = "Firmar",
         icon = Icons.Default.DriveFileRenameOutline
     )
 
@@ -39,7 +39,13 @@ sealed class Screen(
 
     companion object {
         // Defer nested objects until Screen superclass initialization has completed.
-        val items: List<Screen> by lazy { listOf(Home, Identity, Certificates, Signer, Vault) }
+        val items: List<Screen> by lazy { listOf(Home, Certificates, Signer, Vault, Pc) }
+        val destinations: List<Screen> get() = items + listOf(Identity, BatchSigner)
+        fun primaryFor(route: String?): Screen? = when (route) {
+            Identity.route -> Certificates
+            BatchSigner.route -> Signer
+            else -> items.firstOrNull { it.route == route }
+        }
     }
 
     data object Home : Screen("home", "Inicio", Icons.Default.Home)

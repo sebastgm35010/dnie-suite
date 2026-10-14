@@ -1,283 +1,102 @@
 package pe.gob.reniec.dnie.ui.components
 
-import pe.gob.reniec.dnie.data.preferences.CanStorage
-
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CreditCard
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import pe.gob.reniec.dnie.data.preferences.CanStorage
 
-/**
- * Diálogo unificado de solicitud previa de credenciales (CAN y/o PIN) antes del escaneo NFC.
- *
- * Solicita en pantalla:
- * 1. CAN (Card Access Number): 6 dígitos numéricos impresos en el frontal del DNIe 3.0
- *    con opción para recordar en el dispositivo.
- * 2. PIN: 6 dígitos secretos del titular (para operaciones de firma o lectura protegida),
- *    con advertencia crítica de límite de 3 intentos antes del bloqueo de chip.
- */
+/** Legacy call sites share the same sheet and form as continuous operations. */
 @Composable
-fun CredentialsDialog(
-    show: Boolean,
-    title: String = "Credenciales del DNIe",
-    subtitle: String? = null,
-    requireCan: Boolean = true,
-    requirePin: Boolean = false,
-    initialCan: String = "",
-    onConfirm: (can: String, pin: String) -> Unit,
-    onDismiss: () -> Unit
-) {
-    if (!show) return
+fun CredentialsDialog(show: Boolean, title: String = "Credenciales del DNIe", subtitle: String? = null,
+    requireCan: Boolean = true, requirePin: Boolean = false, initialCan: String = "",
+    onConfirm: (String, String) -> Unit, onDismiss: () -> Unit) {
+    DnieOperationSheet(show, DnieOperationPhase.CREDENTIALS, title, onDismiss = onDismiss,
+        credentials = { CredentialsForm(subtitle, requireCan, requirePin, initialCan, onConfirm, onDismiss) })
+}
 
+@Composable
+fun SavedCanChip(can: String, saved: Boolean = true, onChange: () -> Unit) {
+    Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = MaterialTheme.shapes.medium) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween) {
+            Text((if (saved) "CAN guardado: ••••" else "CAN de esta sesión: ••••") + can.takeLast(2), style = MaterialTheme.typography.bodyMedium)
+            TextButton(onClick = onChange) { Text("Cambiar") }
+        }
+    }
+}
+
+/** Credentials are transient, never saveable. Clear PIN on pause, confirm, dismissal and disposal. */
+@Composable
+fun CredentialsForm(subtitle: String? = null, requireCan: Boolean = true, requirePin: Boolean = false,
+    initialCan: String = "", onConfirm: (String, String) -> Unit, onDismiss: () -> Unit) {
     val context = LocalContext.current
-    var canText by remember(show) { mutableStateOf(initialCan) }
-    var rememberCan by remember(show) { mutableStateOf(initialCan.isNotBlank()) }
-    var loaded by remember(show) { mutableStateOf(false) }
-    var canEdited by remember(show) { mutableStateOf(false) }
-    var rememberEdited by remember(show) { mutableStateOf(false) }
-    LaunchedEffect(show) {
-        val savedCan = CanStorage.loadSavedCan(context)
-        if (!canEdited && initialCan.isBlank()) canText = savedCan
-        if (!rememberEdited) rememberCan = savedCan.isNotBlank() || initialCan.isNotBlank()
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    var can by remember { mutableStateOf(initialCan) }
+    var pin by remember { mutableStateOf("") }
+    var loaded by remember { mutableStateOf(false) }
+    var remembered by remember { mutableStateOf(false) }
+    var editingCan by remember { mutableStateOf(true) }
+    var visible by remember { mutableStateOf(false) }
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(Unit) {
+        val saved = CanStorage.loadSavedCan(context)
+        if (can.isBlank()) can = saved
+        remembered = saved.isNotBlank() && saved == can
+        editingCan = can.length != 6
         loaded = true
     }
-
-    var pinText by remember(show) { mutableStateOf("") }
-    var passwordVisible by remember(show) { mutableStateOf(false) }
-
-    val isCanValid = !requireCan || (canText.length == 6 && canText.all { it.isDigit() })
-    val isPinValid = !requirePin || (pinText.length in 4..8 && pinText.all { it.isDigit() })
-    val isValid = loaded && isCanValid && isPinValid
-
-    AlertDialog(
-        containerColor = MaterialTheme.colorScheme.surface,
-        shape = MaterialTheme.shapes.large,
-        onDismissRequest = onDismiss,
-        icon = {
-            Icon(
-                imageVector = if (requirePin) Icons.Default.Lock else Icons.Default.CreditCard,
-                contentDescription = "Credenciales DNIe",
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(32.dp)
-            )
-        },
-        title = {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-        },
-        text = {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                if (subtitle != null) {
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+    DisposableEffect(lifecycle) {
+        val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_PAUSE) { pin = ""; visible = false } }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer); pin = "" }
+    }
+    LaunchedEffect(loaded, editingCan, requirePin) { if (loaded && requirePin && (!requireCan || !editingCan)) focus.requestFocus() }
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        subtitle?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
+        if (requireCan) {
+            if (!editingCan) SavedCanChip(can, saved = remembered) { editingCan = true }
+            else {
+                OutlinedTextField(can, { if (it.length <= 6 && it.all { c -> c in '0'..'9' }) can = it },
+                    enabled = loaded, label = { Text("CAN (6 dígitos)") }, singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(remembered, { remembered = it })
+                    Text("Recordar CAN en este dispositivo", style = MaterialTheme.typography.bodySmall)
                 }
-
-                // Campo CAN (6 dígitos)
-                if (requireCan) {
-                    OutlinedTextField(
-                        value = canText,
-                        onValueChange = { input ->
-                            if (input.length <= 6 && input.all { it.isDigit() }) {
-                                canText = input
-                                canEdited = true
-                            }
-                        },
-                        label = { Text("CAN (6 dígitos)") },
-                        placeholder = { Text("Ej. 123456") },
-                        singleLine = true,
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.CreditCard,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        supportingText = {
-                            Text(
-                                text = if (canText.isEmpty()) {
-                                    "6 dígitos en el frente inferior de su DNIe"
-                                } else {
-                                    "${canText.length}/6 dígitos"
-                                }
-                            )
-                        },
-                        isError = canText.isNotEmpty() && canText.length != 6,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    // Casilla para recordar CAN en este dispositivo
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { rememberEdited = true; rememberCan = !rememberCan }
-                            .padding(vertical = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Checkbox(
-                            checked = rememberCan,
-                            onCheckedChange = { rememberEdited = true; rememberCan = it }
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Recordar CAN en este dispositivo",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                }
-
-                // Sección PIN si es requerida (operaciones de firma o autenticación)
-                if (requirePin) {
-                    // Banner crítico de advertencia de bloqueo
-                    Surface(
-                        color = MaterialTheme.colorScheme.errorContainer,
-                        shape = MaterialTheme.shapes.medium,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.Top
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Warning,
-                                contentDescription = "Alerta de bloqueo",
-                                tint = MaterialTheme.colorScheme.error,
-                                modifier = Modifier
-                                    .size(24.dp)
-                                    .padding(top = 2.dp)
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = "¡ATENCIÓN! MÁXIMO 3 INTENTOS",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onErrorContainer
-                                )
-                                Text(
-                                    text = "Si ingresa un PIN incorrecto 3 veces consecutivas, el chip del DNIe se bloqueará (error 69 83). Desbloquearlo requiere acudir presencialmente a una oficina de RENIEC con el código PUK.",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onErrorContainer
-                                )
-                            }
-                        }
-                    }
-
-                    // Campo numérico de ingreso de PIN
-                    OutlinedTextField(
-                        value = pinText,
-                        onValueChange = { input ->
-                            if (input.length <= 8 && input.all { it.isDigit() }) {
-                                pinText = input
-                            }
-                        },
-                        label = { Text("PIN de Firma (6 dígitos)") },
-                        placeholder = { Text("••••••") },
-                        singleLine = true,
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Lock,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        },
-                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-                        trailingIcon = {
-                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                                Icon(
-                                    imageVector = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                    contentDescription = if (passwordVisible) "Ocultar PIN" else "Mostrar PIN"
-                                )
-                            }
-                        },
-                        supportingText = {
-                            Text(
-                                text = if (pinText.isEmpty()) {
-                                    "PIN de 6 dígitos del titular"
-                                } else {
-                                    "${pinText.length} dígitos ingresados"
-                                }
-                            )
-                        },
-                        isError = pinText.isNotEmpty() && pinText.length < 4,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    if (isValid) {
-                        if (requireCan) {
-                            if (rememberCan) {
-                                CanStorage.saveCan(context, canText)
-                            } else {
-                                CanStorage.clearCan(context)
-                            }
-                        }
-                        onConfirm(canText, pinText)
-                    }
-                },
-                enabled = isValid,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
-            ) {
-                Text("Continuar a lectura NFC")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancelar")
             }
         }
-    )
+        if (requirePin) {
+            OutlinedTextField(pin, { if (it.length <= 8 && it.all { c -> c in '0'..'9' }) pin = it },
+                label = { Text("PIN de firma") }, singleLine = true,
+                visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                trailingIcon = { IconButton(onClick = { visible = !visible }) {
+                    Icon(if (visible) Icons.Default.VisibilityOff else Icons.Default.Visibility, if (visible) "Ocultar PIN" else "Mostrar PIN")
+                } }, modifier = Modifier.fillMaxWidth().focusRequester(focus).testTag("operation_pin"))
+            Text("Usa el PIN que configuraste. Los intentos incorrectos consumen los intentos del chip y pueden bloquearlo.",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Button(enabled = loaded && (!requireCan || can.length == 6) && (!requirePin || pin.length in 4..8),
+            modifier = Modifier.fillMaxWidth(), onClick = {
+                if (requireCan) { if (remembered) CanStorage.saveCan(context, can) else CanStorage.clearCan(context) }
+                val submitted = pin; pin = ""; visible = false
+                onConfirm(can, submitted)
+            }) { Text("Continuar a lectura NFC") }
+        TextButton(onClick = { pin = ""; onDismiss() }, modifier = Modifier.fillMaxWidth()) { Text("Cancelar") }
+    }
 }

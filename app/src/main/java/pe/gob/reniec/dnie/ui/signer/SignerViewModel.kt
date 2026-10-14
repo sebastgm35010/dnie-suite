@@ -47,6 +47,7 @@ class SignerViewModel(private val signerEngine: PadesSignerEngineInterface? = nu
         private set
     private var editor: SignerUiState.DocumentLoaded? = null
     private var approved = emptyList<SigningDocument>()
+    private var preferHandwritten = false
     private var approvedMark: HandwrittenMark? = null
     private var signingJob: Job? = null
     private var importJob: Job? = null
@@ -64,7 +65,8 @@ class SignerViewModel(private val signerEngine: PadesSignerEngineInterface? = nu
         importJob = viewModelScope.launch {
             val preferences=(app as? pe.gob.reniec.dnie.DnieApplication)?.stampPreferences ?: pe.gob.reniec.dnie.data.preferences.AndroidStampPreferences(app)
             stampPreferences=preferences
-            val design=runCatching {preferences.load()}.getOrDefault(PdfSigningOptions())
+            val savedDesign=runCatching {preferences.load()}.getOrDefault(PdfSigningOptions())
+            val design=if(preferHandwritten) savedDesign.copy(visible=true,appearance=savedDesign.appearance.copy(showHandwritten=true)) else savedDesign
             val imported = mutableListOf<SigningDocument>()
             val errors = mutableListOf<String>()
             try {
@@ -82,6 +84,7 @@ class SignerViewModel(private val signerEngine: PadesSignerEngineInterface? = nu
                         artifacts = if (singlePdf && imported.isNotEmpty()) emptyList() else it.artifacts,
                         importing = false, importErrors = errors,
                         selectedId = if (singlePdf && imported.isNotEmpty()) imported.first().id else it.selectedId ?: imported.firstOrNull()?.id) }
+                    if (imported.isNotEmpty()) preferHandwritten = false
                     imported.clear() // Ownership transferred to the workspace before any suspension.
                     selectDocument(_workspace.value.selectedId)
                     if (previous != null) withContext(NonCancellable + Dispatchers.IO) {
@@ -141,6 +144,8 @@ class SignerViewModel(private val signerEngine: PadesSignerEngineInterface? = nu
         _workspace.update { w -> if (w.mark?.png?.contentEquals(mark?.png ?: byteArrayOf()) == true && w.mark?.personalNumber == mark?.personalNumber && w.mark?.sourceName == mark?.sourceName && w.markError == error) w
             else w.copy(mark = mark, markError = error, markConfirmed = false) }
     }
+    /** Selecting DG7 never silently confirms that it belongs to the signing certificate. */
+    fun useHandwrittenAppearance() { preferHandwritten = _workspace.value.selected == null; updateOptions { it.copy(visible = true, appearance = it.appearance.copy(showHandwritten = true)) } }
     fun confirmMark(value: Boolean) { if (!busy) _workspace.update { it.copy(markConfirmed = value) } }
     fun setPublicCertificate(bytes: ByteArray?) {
         if (bytes == null) { _workspace.update {it.copy(certificate=null,previewName="NOMBRE DEL TITULAR",previewDni="00000000")};return }
@@ -209,13 +214,13 @@ class SignerViewModel(private val signerEngine: PadesSignerEngineInterface? = nu
                     val engine = signerEngine ?: PadesSignerEngine(pe.gob.reniec.dnie.timestamp.CmsTimestampService { cms ->
                         _uiState.update { current ->
                             if (token == operation && current is SignerUiState.Signing)
-                                current.copy(message = "Solicitando y verificando sello de tiempo RENIEC…") else current
+                                current.copy(message = "Solicitando y verificando sello de tiempo RENIEC…", indeterminate = true) else current
                         }
                         timestampService.stamp(cms)
                     })
                     BatchSigner(engine).sign(documents, transceiver, awaiting.pin, File(app.cacheDir, "signed_docs"), mark) { count, name, artifacts, cert ->
                         if (token == operation) {
-                            _uiState.value = SignerUiState.Signing("$count de ${documents.size} · $name", count, documents.size)
+                            _uiState.value = SignerUiState.Signing("$count de ${documents.size} · $name", count, documents.size, indeterminate = false)
                             _workspace.update { it.copy(artifacts = previous + artifacts) }
                             val signed=artifacts.count {it.status==DocumentSignStatus.SIGNED}
                             if(documents.size>1 && signed>lastTick) {lastTick=signed;feedbackEvents.report(ReadingCue.PROGRESS)}

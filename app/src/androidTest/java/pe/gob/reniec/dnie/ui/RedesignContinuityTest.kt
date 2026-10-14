@@ -18,8 +18,9 @@ class RedesignContinuityTest {
         rule.onNodeWithText("ARCHIVOS PROTEGIDOS").assertExists()
         rule.onNodeWithTag("nav_home").assertIsDisplayed()
         rule.onNodeWithTag("nav_certificates").performClick()
-        rule.onNodeWithText("Mi DNIe").assertExists()
+        rule.onNodeWithTag("nav_certificates").assertIsSelected()
         rule.onNodeWithTag("nav_vault").performClick()
+        rule.onNodeWithTag("nav_certificates").performClick()
         rule.onNodeWithTag("nav_identity").performClick()
         rule.onNodeWithText("Identidad del DNI").assertExists()
     }

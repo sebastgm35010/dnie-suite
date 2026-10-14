@@ -10,16 +10,15 @@ import pe.gob.reniec.dnie.MainActivity
 class HomeNavigationTest {
     @get:Rule val rule = createAndroidComposeRule<MainActivity>()
     @Test fun homeDoesNotPretendToHaveAnActiveCardAndReadUsesExistingCredentials() {
-        rule.onNodeWithText("Sin lectura").assertExists()
-        rule.onNodeWithText("Tu DNI, en un solo lugar").assertExists()
+        rule.onNodeWithText("Tu DNIe en tu teléfono").assertExists()
         rule.onNodeWithText("Leer mi DNIe").performClick()
-        rule.onNodeWithText("CAN (6 dígitos)").assertExists()
+        rule.onNodeWithText("Continuar a lectura NFC").assertExists()
         rule.onNodeWithText("Cancelar").performClick()
-        rule.onNodeWithText("Mi DNIe").assertExists()
+        rule.onNodeWithTag("nav_certificates").assertIsSelected()
     }
     @Test fun pcHubDistinguishesReaderFromOwnSuite() {
-        rule.onNode(hasScrollAction()).performScrollToNode(hasText("Conexión con PC"))
-        rule.onNodeWithText("Conexión con PC").performClick()
+        rule.onNode(hasScrollAction()).performScrollToNode(hasText("Conectar con PC"))
+        rule.onNodeWithText("Conectar con PC").performClick()
         rule.onNodeWithText("Conexión PC").assertExists()
         rule.onNodeWithText("Lector para otras aplicaciones").assertExists()
         rule.onNodeWithText("Suite propia de firma").assertExists()

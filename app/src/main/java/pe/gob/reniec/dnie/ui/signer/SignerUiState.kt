@@ -44,7 +44,7 @@ sealed interface SignerUiState {
 
     data class Signing(
         val message: String = "Verificando PIN y generando firma PAdES...",
-        val completed: Int = 0, val total: Int = 1
+        val completed: Int = 0, val total: Int = 1, val indeterminate: Boolean = true
     ) : SignerUiState
 
     data class SignedSuccess(

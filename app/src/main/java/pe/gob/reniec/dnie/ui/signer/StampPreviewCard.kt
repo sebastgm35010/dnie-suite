@@ -30,7 +30,7 @@ internal fun StampPageTargetSelector(target: StampPageTarget,enabled: Boolean,ch
 
 /** UI observes an immutable options snapshot; PDF work is delegated off the render thread. */
 @Composable
-internal fun StampPreviewCard(width: Float,height: Float,name: String,dni: String,options: PdfSigningOptions) {
+internal fun StampPreviewCard(width: Float,height: Float,name: String,dni: String,options: PdfSigningOptions, controls: @Composable ColumnScope.() -> Unit = {}) {
     val context=LocalContext.current
     val date=remember { Date() }
     var bitmap by remember { mutableStateOf<Bitmap?>(null) }
@@ -47,7 +47,7 @@ internal fun StampPreviewCard(width: Float,height: Float,name: String,dni: Strin
         Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
             Text("Vista previa del sello",style=MaterialTheme.typography.labelLarge)
             val grid=androidx.compose.ui.graphics.Color(0xFFDCE9FF).copy(alpha=.55f)
-            Box(Modifier.fillMaxWidth().height(180.dp).background(androidx.compose.ui.graphics.Color.White),contentAlignment=Alignment.Center) {
+            Box(Modifier.fillMaxWidth().height(140.dp).background(androidx.compose.ui.graphics.Color.White),contentAlignment=Alignment.Center) {
                 Canvas(Modifier.fillMaxSize()) {
                     val step=16.dp.toPx()
                     var x=0f;while(x<size.width) { drawLine(grid,Offset(x,0f),Offset(x,size.height),1f);x+=step }
@@ -58,6 +58,7 @@ internal fun StampPreviewCard(width: Float,height: Float,name: String,dni: Strin
             }
             if(preparing) LinearProgressIndicator(Modifier.fillMaxWidth())
             error?.let { Text(it,color=MaterialTheme.colorScheme.error,style=MaterialTheme.typography.bodySmall) }
+            controls()
         }
     }
 }

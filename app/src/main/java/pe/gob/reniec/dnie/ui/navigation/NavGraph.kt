@@ -67,7 +67,7 @@ fun NavGraph(
     LaunchedEffect(currentRoute) { onRouteChanged(currentRoute) }
     LaunchedEffect(requestedDestination, currentRoute) {
         // A return intent can arrive before NavHost installs its graph on cold start.
-        if (currentRoute != null && requestedDestination != null && Screen.items.any { it.route == requestedDestination }) {
+        if (currentRoute != null && requestedDestination != null && Screen.destinations.any { it.route == requestedDestination }) {
             navController.navigate(requestedDestination) {
                 popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                 launchSingleTop = true; restoreState = requestedDestination != Screen.Home.route
@@ -95,7 +95,7 @@ fun NavGraph(
                         icon = { Icon(screen.icon, contentDescription = screen.title) },
                         label = { Text(screen.title) },
                         modifier = Modifier.testTag("nav_" + screen.route),
-                        selected = currentRoute == screen.route || (screen == Screen.Signer && currentRoute == Screen.BatchSigner.route),
+                        selected = screen == Screen.primaryFor(currentRoute),
                         onClick = {
                             if (currentRoute != screen.route) {
                                 navController.navigate(screen.route) {
@@ -147,11 +147,14 @@ fun NavGraph(
                 PcConnectionScreen(onBack = { navController.popBackStack() }, onBridge = onOpenBridge, onSuite = onOpenSuite)
             }
             composable(Screen.Certificates.route) {
-                CertificatesScreen(viewModel = certificatesViewModel,
+                Column {
+                DniSectionNavigation(false, navController)
+                Box(Modifier.weight(1f)) { CertificatesScreen(viewModel = certificatesViewModel,
                     onOpenSigner = {navController.navigate(Screen.Signer.route) {launchSingleTop=true}},
                     onOpenBridge = onOpenBridge,
                     onOpenSuite = onOpenSuite,
-                    onOpenVault = { navController.navigate(Screen.Vault.route) { launchSingleTop = true } })
+                    onOpenVault = { navController.navigate(Screen.Vault.route) { launchSingleTop = true } }) }
+                }
             }
             composable(Screen.Signer.route) {
                 Column {
@@ -173,7 +176,13 @@ fun NavGraph(
                 }
             }
             composable(Screen.Identity.route) {
-                IdentityScreen(viewModel = identityViewModel)
+                Column {
+                    DniSectionNavigation(true, navController)
+                    Box(Modifier.weight(1f)) { IdentityScreen(viewModel = identityViewModel, onUseMark = {
+                        signerViewModel.useHandwrittenAppearance()
+                        navController.navigate(Screen.Signer.route) { launchSingleTop = true }
+                    }) }
+                }
             }
             composable(Screen.Vault.route) {
                 val context = LocalContext.current
@@ -243,4 +252,17 @@ private fun SigningModeNavigation(batch: Boolean, navController: NavHostControll
         }
     }
 }
+}
+
+/** Visual grouping only: each route retains its independent reader and NFC owner. */
+@Composable
+private fun DniSectionNavigation(identity: Boolean, navController: NavHostController) {
+    androidx.compose.material3.TabRow(if (identity) 1 else 0) {
+        listOf(Screen.Certificates to "Certificados", Screen.Identity to "Identidad ICAO").forEach { (screen, title) ->
+            androidx.compose.material3.Tab(selected = (screen == Screen.Identity) == identity,
+                modifier = Modifier.testTag(if (screen == Screen.Identity) "nav_identity" else "dni_certificates"),
+                onClick = { if ((screen == Screen.Identity) != identity) navController.navigate(screen.route) { launchSingleTop = true } },
+                text = { Text(title) })
+        }
+    }
 }

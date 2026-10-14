@@ -9,95 +9,91 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 
-/** Presentation only. Counts describe loaded results, never a live card or trust decision. */
+/** Loaded results describe a session snapshot, never a live card or trust decision. */
 data class HomeSummary(val certificates: Int = 0, val identityAvailable: Boolean = false, val reading: Boolean = false)
 
 @Composable
 fun HomeScreen(summary: HomeSummary, onRead: () -> Unit, onIdentity: () -> Unit,
     onCertificates: () -> Unit, onPdf: () -> Unit, onBatch: () -> Unit,
-    onVault: () -> Unit, onPc: () -> Unit, onSettings: () -> Unit = {}, onDevelopment: (() -> Unit)? = null) {
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    onVault: () -> Unit, onPc: () -> Unit, onSettings: () -> Unit = {}, onDevelopment: (() -> Unit)? = null,
+    savedCan: Boolean = false) {
+    val loaded = summary.certificates > 0 || summary.identityAvailable
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("DNIe", style = MaterialTheme.typography.titleMedium)
+                Text("Inicio", style = MaterialTheme.typography.headlineLarge)
                 IconButton(onClick = onSettings) { Icon(Icons.Default.Settings, "Configuración") }
             }
-            Text("DNIe · IDENTIDAD Y FIRMA", style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.secondary, fontFamily = FontFamily.Monospace)
-            Text("Inicio", style = MaterialTheme.typography.headlineLarge)
         }
         item {
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
                 Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Icon(Icons.Default.Badge, null, tint = MaterialTheme.colorScheme.primary)
-                    Text(if (summary.reading) "Lectura en curso" else "Tu DNI, en un solo lugar", style = MaterialTheme.typography.titleLarge)
-                    Text("Identidad y certificados en una sola lectura.", style = MaterialTheme.typography.bodyMedium)
-                    Button(onClick = onRead, enabled = !summary.reading, modifier = Modifier.fillMaxWidth()) {
-                        Text("Leer mi DNIe")
-                    }
-                    Text("Solo necesitas tu DNI y su CAN.", style = MaterialTheme.typography.bodySmall)
+                    Text(if (summary.reading) "Lectura en curso" else if (loaded) "Datos cargados en sesión" else "Tu DNIe en tu teléfono", style = MaterialTheme.typography.titleLarge)
+                    Text(if (loaded) "${summary.certificates} certificados · " + if (summary.identityAvailable) "identidad disponible" else "identidad sin lectura" else "Identidad y certificados en una sola lectura.")
+                    if (loaded) {
+                        Button(onClick = onCertificates, modifier = Modifier.fillMaxWidth()) { Text("Ver mi DNIe") }
+                        TextButton(enabled = !summary.reading, onClick = onRead) { Text("Actualizar lectura") }
+                    } else Button(enabled = !summary.reading, onClick = onRead, modifier = Modifier.fillMaxWidth()) { Text("Leer mi DNIe") }
+                    Text(if (savedCan) "CAN recordado en este teléfono" else "Necesitas el CAN impreso en tu DNIe", style = MaterialTheme.typography.bodySmall)
                 }
+            }
+        }
+        item { Text("Qué quieres hacer", style = MaterialTheme.typography.titleLarge) }
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                BentoCard("Firmar PDF", "Sello a medida y PAdES-T", Icons.Default.Edit, Modifier.weight(1f), onPdf)
+                BentoCard("Firma por lotes", "Varios archivos con un PIN", Icons.Default.Folder, Modifier.weight(1f), onBatch)
             }
         }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                SummaryCard("Certificados leídos", summary.certificates.toString(), Modifier.weight(1f))
-                SummaryCard("Identidad ICAO", if (summary.identityAvailable) "Disponible" else "Sin lectura", Modifier.weight(1f))
-            }
-            Text("Última lectura · no indica conexión actual",
-                style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 8.dp))
-        }
-        item {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Button(onClick = onPc, modifier = Modifier.weight(1f)) { Text("Conectar PC") }
-                FilledTonalButton(onClick = onPdf, modifier = Modifier.weight(1f)) { Text("Firmar PDF") }
+                BentoCard("Conectar con PC", "Lector virtual y Suite", Icons.Default.Computer, Modifier.weight(1f), onPc)
+                BentoCard("Bóveda segura", "Protege tus archivos", Icons.Default.Lock, Modifier.weight(1f), onVault)
             }
         }
-        item { Text("Qué quieres hacer", style = MaterialTheme.typography.titleLarge) }
-        item { ModuleCard("Ficha de identidad", "Datos e imágenes disponibles del documento", Icons.Default.Person, onIdentity) }
-        item { ModuleCard("Certificados del DNIe", "Ver, exportar y validar", Icons.Default.VerifiedUser, onCertificates) }
-        item { ModuleCard("Firma PDF", "Firma y sello a tu medida", Icons.Default.Edit, onPdf) }
-        item { ModuleCard("Firma por lotes", "Varios documentos en una autorización", Icons.Default.Folder, onBatch) }
-        item { ModuleCard("Archivos protegidos", "Cifrar, descifrar y respaldar tu bóveda", Icons.Default.Lock, onVault) }
-        item { ModuleCard("Conexión con PC", "Lector compatible y suite propia de firma", Icons.Default.Computer, onPc) }
+        if (loaded) item {
+            OutlinedCard(onClick = onIdentity, modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp)) {
+                    Text("Identidad y certificados", style = MaterialTheme.typography.titleMedium)
+                    Text("Resultados de la última lectura; no indican conexión actual.", style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        }
         item {
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text("Antes de renovar tus certificados", style = MaterialTheme.typography.titleSmall)
-                    Text("Exporta tu bóveda con una contraseña de recuperación. Una renovación puede reemplazar las claves del chip.", style = MaterialTheme.typography.bodyMedium)
-                    TextButton(onClick = onVault) { Text("Ir a mis archivos") }
+                    Text("Exporta tu bóveda con contraseña de recuperación. La renovación puede reemplazar las claves del chip.", style = MaterialTheme.typography.bodyMedium)
+                    TextButton(onClick = onVault) { Text("Respaldar mi bóveda") }
                 }
             }
         }
-        if (onDevelopment != null) item { ModuleCard("Desarrollo", "Diagnósticos y herramientas de esta compilación", Icons.Default.Build, onDevelopment) }
+        if (onDevelopment != null) item { ModuleCard("Desarrollo", "Diagnósticos de esta compilación", Icons.Default.Build, onDevelopment) }
     }
 }
 
-@Composable private fun SummaryCard(label: String, value: String, modifier: Modifier) {
-    Card(modifier, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(value, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
-            pe.gob.reniec.dnie.ui.design.StatusCheck(label, value != "0" && value != "Sin lectura")
+@Composable private fun BentoCard(title: String, description: String, icon: ImageVector, modifier: Modifier, onClick: () -> Unit) {
+    Card(onClick = onClick, modifier = modifier.heightIn(min = 150.dp)) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Icon(icon, null, tint = MaterialTheme.colorScheme.primary)
+            Text(title, style = MaterialTheme.typography.titleMedium)
+            Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
 
 @Composable internal fun ModuleCard(title: String, description: String, icon: ImageVector, onClick: () -> Unit) {
-    Card(onClick = onClick, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+    Card(onClick = onClick, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
         Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(10.dp)) {
-                Icon(icon, null, Modifier.padding(12.dp), tint = MaterialTheme.colorScheme.primary)
-            }
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Icon(icon, null, Modifier.padding(12.dp), tint = MaterialTheme.colorScheme.primary)
+            Column(Modifier.weight(1f)) {
                 Text(title, style = MaterialTheme.typography.titleMedium)
-                Text(description, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(description, style = MaterialTheme.typography.bodyMedium)
             }
-            Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Icon(Icons.Default.ChevronRight, null)
         }
     }
 }

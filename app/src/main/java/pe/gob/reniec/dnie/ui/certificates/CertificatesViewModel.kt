@@ -35,7 +35,7 @@ sealed interface CertificatesUiState {
 
     data class ReadingCard(
         val message: String = "Aproxime su DNIe al sensor NFC para leer los certificados...",
-        val can: String? = null
+        val can: String? = null, val engaged: Boolean = false
     ) : CertificatesUiState
 
     data class Loaded(
@@ -131,7 +131,7 @@ class CertificatesViewModel(private val closeDispatcher: CoroutineDispatcher = D
             transceiver.can = enteredCan
         }
 
-        _uiState.value = CertificatesUiState.ReadingCard("Conectando con Applet del DNIe...")
+        _uiState.value = CertificatesUiState.ReadingCard("Conectando con Applet del DNIe...", engaged = true)
 
         readingJob = viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
             var cue: ReadingCue?=null
@@ -141,7 +141,7 @@ class CertificatesViewModel(private val closeDispatcher: CoroutineDispatcher = D
                 _identitySnapshot.value=IdentitySnapshot(generation)
                 val result=withContext(closeDispatcher) { scan.read(
                     { inspection },identityFactory,
-                    progress={ message -> _uiState.value=CertificatesUiState.ReadingCard(message) },
+                    progress={ message -> _uiState.value=CertificatesUiState.ReadingCard(message, engaged = true) },
                     onCertificates={ retained=it },onIdentityProgress={ document ->
                         _identitySnapshot.value=IdentitySnapshot(generation,document,"Leyendo identidad ICAO…",true)
                     }) }

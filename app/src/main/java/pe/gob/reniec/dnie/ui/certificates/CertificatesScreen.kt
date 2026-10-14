@@ -50,7 +50,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pe.gob.reniec.dnie.domain.model.CertificateType
 import pe.gob.reniec.dnie.ui.components.CertificateCard
 import pe.gob.reniec.dnie.ui.components.CredentialsDialog
-import pe.gob.reniec.dnie.ui.components.NfcTapPromptSheet
+import pe.gob.reniec.dnie.ui.components.*
+import androidx.compose.runtime.LaunchedEffect
 
 /**
  * Pantalla principal del Inspector de Certificados Digitales del DNIe.
@@ -67,6 +68,10 @@ fun CertificatesScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    var operationVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(uiState) {
+        if (uiState is CertificatesUiState.EnteringCan || uiState is CertificatesUiState.ReadingCard) operationVisible = true
+    }
 
     // Variables para el tipo y formato de exportación actual
     var pendingExportType by remember { mutableStateOf(CertificateType.SIGNATURE) }
@@ -121,11 +126,7 @@ fun CertificatesScreen(
                     EmptyCertificatesView(
                         onScanClicked = { viewModel.requestCanEntry() }
                     )
-                    NfcTapPromptSheet(
-                        isShowing = true,
-                        statusMessage = state.message,
-                        onCancel = { viewModel.cancelReading() }
-                    )
+
                 }
 
                 is CertificatesUiState.Loaded -> {
@@ -260,16 +261,21 @@ fun CertificatesScreen(
         }
     }
 
-    // Diálogo de solicitud previa de CAN (6 dígitos)
-    val enteringCanState = uiState as? CertificatesUiState.EnteringCan
-    CredentialsDialog(
-        show = enteringCanState != null,
-        title = "Lectura de DNIe 3.0",
-        subtitle = "Ingrese el código CAN (6 dígitos) ubicado en el frente inferior de su DNIe para habilitar la lectura de certificados por NFC.",
-        requireCan = true,
-        requirePin = false,
-        initialCan = enteringCanState?.initialCan ?: viewModel.enteredCan ?: "",
-        onConfirm = { can, _ -> viewModel.onCanConfirmed(can) },
-        onDismiss = { viewModel.cancelCanEntry() }
-    )
+    val phase = when (val state = uiState) {
+        is CertificatesUiState.EnteringCan -> DnieOperationPhase.CREDENTIALS
+        is CertificatesUiState.ReadingCard -> if (state.engaged) DnieOperationPhase.TAG_ENGAGED else DnieOperationPhase.AWAITING_TAG
+        is CertificatesUiState.Loaded -> DnieOperationPhase.COMPLETED
+        else -> DnieOperationPhase.ERROR
+    }
+    DnieOperationSheet(operationVisible && uiState !is CertificatesUiState.Idle, phase, "Leer mi DNIe", onRetry = viewModel::requestCanEntry,
+        message = when (val state = uiState) {
+            is CertificatesUiState.ReadingCard -> state.message
+            is CertificatesUiState.Loaded -> state.scanMessage
+            is CertificatesUiState.Error -> state.message
+            else -> null
+        }, onDismiss = {
+            operationVisible = false
+            if (uiState is CertificatesUiState.EnteringCan) viewModel.cancelCanEntry() else if (uiState is CertificatesUiState.ReadingCard) viewModel.cancelReading()
+        }, credentials = { CredentialsForm(requirePin = false, initialCan = (uiState as? CertificatesUiState.EnteringCan)?.initialCan ?: "",
+            onConfirm = { can, _ -> viewModel.onCanConfirmed(can) }, onDismiss = { operationVisible = false; viewModel.cancelCanEntry() }) })
 }

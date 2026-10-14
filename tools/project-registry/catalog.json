@@ -54,7 +54,10 @@
     "docs/operations/QR_R5_RESULTADOS.json": "stamp_qr_r5_verifiable_results",
     "docs/architecture/RED_COORDINADA_R6.md": "current_network_coordination_and_r6_runtime_evidence",
     "docs/design/PERSONALIZACION_SELLO_HAPTICA_R7.md": "current_stamp_personalization_haptics_and_r7_evidence",
-    "docs/design/ESPECIFICACION_R7_RECIBIDA.md": "received_specification_not_runtime_evidence"
+    "docs/design/ESPECIFICACION_R7_RECIBIDA.md": "received_specification_not_runtime_evidence",
+    "docs/design/PANTALLAS_FLUJOS_NFC_R8.md": "current_android_flows_and_windows_suite_ui_r8",
+    "docs/design/ESPECIFICACION_R8_RECIBIDA.md": "received_specification_not_runtime_evidence",
+    "docs/operations/FLUJOS_R8_RESULTADOS.json": "flows_r8_machine_readable_results"
   },
   "features": [
     {
@@ -95,7 +98,7 @@
       "id": "pdf_android",
       "name": "Firma PDF Android",
       "status": "validated_real",
-      "note": "Visible/invisible, PAdES B y TSA opcional T; issuerSerial compartido corregido. Usuario confirma firma nueva Android 3.1 como PAdES Baseline T; sin PDF recibido para repetir inspección local. Aether R2: nueva apariencia/preview/páginas comprobadas con datos sintéticos; ver stamp_aether/desktop_aether. No acredita firma física nueva. Continuación R3: Android79 instalada, 2 pruebas instrumentadas pasan; Firma física nueva sigue pendiente.",
+      "note": "Visible/invisible, PAdES B y TSA opcional T; issuerSerial compartido corregido. Usuario confirma firma nueva Android 3.1 como PAdES Baseline T; sin PDF recibido para repetir inspección local. Aether R2: nueva apariencia/preview/páginas comprobadas con datos sintéticos; ver stamp_aether/desktop_aether. No acredita firma física nueva. Continuación R3: Android79 instalada, 2 pruebas instrumentadas pasan; Firma física nueva sigue pendiente. R8: interfaz candidata APK84 compilada sin instalar ni ADB, Suite Windows con plantillas/progreso/apertura; motores preservados. Ver android_flows_r8.",
       "evidence": "docs/architecture/SEGURIDAD_BACKEND_3_1_V4.md",
       "files": {
         "engine": [
@@ -118,7 +121,7 @@
       "id": "batch_android",
       "name": "Firma por lotes Android",
       "status": "validated_real",
-      "note": "Lote bajo sesión/autorización compartida; no repetir automáticamente operaciones privadas. Pantalla SignerScreen(batch=true), ViewModel separado por key batchSigner; UI compartida con PDF. 3.1: autenticación e integridad v4 integradas, pruebas sintéticas/de interfaz superadas; nueva sesión/firma física pendiente. Aether R2: nueva apariencia/preview/páginas comprobadas con datos sintéticos; ver stamp_aether/desktop_aether. No acredita firma física nueva. Continuación R3: Android79 instalada, 2 pruebas instrumentadas pasan; Firma física nueva sigue pendiente.",
+      "note": "Lote bajo sesión/autorización compartida; no repetir automáticamente operaciones privadas. Pantalla SignerScreen(batch=true), ViewModel separado por key batchSigner; UI compartida con PDF. 3.1: autenticación e integridad v4 integradas, pruebas sintéticas/de interfaz superadas; nueva sesión/firma física pendiente. Aether R2: nueva apariencia/preview/páginas comprobadas con datos sintéticos; ver stamp_aether/desktop_aether. No acredita firma física nueva. Continuación R3: Android79 instalada, 2 pruebas instrumentadas pasan; Firma física nueva sigue pendiente. R8: interfaz candidata APK84 compilada sin instalar ni ADB, Suite Windows con plantillas/progreso/apertura; motores preservados. Ver android_flows_r8.",
       "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md",
       "files": {
         "engine": [
@@ -141,7 +144,7 @@
       "id": "suite",
       "name": "Suite privada Windows ↔ Android",
       "status": "validated_real",
-      "note": "Lotes reales PDF y CMS; emparejamiento permanente, sesión PC/móvil independiente de presencia NFC. R5: IP variable con huella/token estables; DPAPI y TLS comprobados en sintético, cambio de IP con DNI real pendiente. 3.1: autenticación e integridad v4 integradas, pruebas sintéticas/de interfaz superadas; nueva sesión/firma física pendiente. Aether R2: nueva apariencia/preview/páginas comprobadas con datos sintéticos; ver stamp_aether/desktop_aether. No acredita firma física nueva. Continuación R3: Android79 instalada, 2 pruebas instrumentadas pasan; Firma física nueva sigue pendiente.",
+      "note": "Lotes reales PDF y CMS; emparejamiento permanente, sesión PC/móvil independiente de presencia NFC. R5: IP variable con huella/token estables; DPAPI y TLS comprobados en sintético, cambio de IP con DNI real pendiente. 3.1: autenticación e integridad v4 integradas, pruebas sintéticas/de interfaz superadas; nueva sesión/firma física pendiente. Aether R2: nueva apariencia/preview/páginas comprobadas con datos sintéticos; ver stamp_aether/desktop_aether. No acredita firma física nueva. Continuación R3: Android79 instalada, 2 pruebas instrumentadas pasan; Firma física nueva sigue pendiente. R8: interfaz candidata APK84 compilada sin instalar ni ADB, Suite Windows con plantillas/progreso/apertura; motores preservados. Ver android_flows_r8.",
       "evidence": "docs/suite/CONTEXTO_SUITE_FIRMA.md",
       "files": {
         "application": [
@@ -172,7 +175,7 @@
       "id": "icao",
       "name": "Identidad ICAO por bloques",
       "status": "implemented_real_scan",
-      "note": "Escaneo combinado confirmado; sesión ICAO independiente, interoperabilidad con otros documentos no probada.",
+      "note": "Escaneo combinado confirmado; sesión ICAO independiente, interoperabilidad con otros documentos no probada. R8: interfaz candidata APK84 compilada sin instalar ni ADB, Suite Windows con plantillas/progreso/apertura; motores preservados. Ver android_flows_r8.",
       "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md",
       "files": {
         "engine": [
@@ -453,7 +456,7 @@
       "id": "android_redesign",
       "name": "Interfaz Android 3.0 basada en Aether",
       "status": "implemented_runtime_validated",
-      "note": "2026-10-09 · Conexiones R5: APK77 / 3.0.0-alpha05-mobility instalada sin borrar datos. Suite y Bridge Wi-Fi ya no fijan identidad a la IP; TLS y token siguen obligatorios. Windows conserva la identidad DPAPI al cambiar IP. TLS directo permite editar destino; Suite tiene pantalla completa independiente y limpia conexión al finalizar lote único. 159 JVM pasan / 3 omitidas, release compilado y 3 pruebas instrumentadas de Suite/Bridge pasan en el móvil. Cambio físico de IP con DNI pendiente. Aether R2: nueva apariencia/preview/páginas comprobadas con datos sintéticos; ver stamp_aether/desktop_aether. No acredita firma física nueva. Continuación R3: Android79 instalada, 2 pruebas instrumentadas pasan; Firma física nueva sigue pendiente.",
+      "note": "2026-10-09 · Conexiones R5: APK77 / 3.0.0-alpha05-mobility instalada sin borrar datos. Suite y Bridge Wi-Fi ya no fijan identidad a la IP; TLS y token siguen obligatorios. Windows conserva la identidad DPAPI al cambiar IP. TLS directo permite editar destino; Suite tiene pantalla completa independiente y limpia conexión al finalizar lote único. 159 JVM pasan / 3 omitidas, release compilado y 3 pruebas instrumentadas de Suite/Bridge pasan en el móvil. Cambio físico de IP con DNI pendiente. Aether R2: nueva apariencia/preview/páginas comprobadas con datos sintéticos; ver stamp_aether/desktop_aether. No acredita firma física nueva. Continuación R3: Android79 instalada, 2 pruebas instrumentadas pasan; Firma física nueva sigue pendiente. R8: interfaz candidata APK84 compilada sin instalar ni ADB, Suite Windows con plantillas/progreso/apertura; motores preservados. Ver android_flows_r8.",
       "evidence": "docs/architecture/CONEXIONES_DIRECCION_E_IDENTIDAD_R5.md",
       "files": {
         "frontend": [
@@ -814,6 +817,42 @@
         "suite",
         "bridge"
       ]
+    },
+    {
+      "id": "android_flows_r8",
+      "name": "Hoja continua DNIe y pantallas R8",
+      "status": "compiled_android_not_installed_windows_ui_validated",
+      "note": "2026-10-14 · Pantallas y NFC R8 / APK84 (3.1.0) compilada debug/release, sin instalar ni usar ADB; APK82 sigue siendo la última instalada. Hoja continua credenciales→NFC→progreso→resultado; CAN compacto y PIN transitorio. Firma con preview superior, tres pestañas y barra fija, resultados parciales explícitos. Cinco destinos comunes; Mi DNIe agrupa visualmente Certificados/Identidad, credencial ICAO y detalles plegables. Suite Windows con plantillas 2×2, indicador de actividad y apertura del PDF real. 251 JVM pasan/1 omitida y Manager44 pasan; auxiliar Android compilado, sin ejecutar. Suite preparada y acceso actualizado; Bridge/servicio/driver y motores criptográficos sin cambios. Pruebas Android/NFC pendientes.",
+      "evidence": "docs/design/PANTALLAS_FLUJOS_NFC_R8.md",
+      "files": {
+        "frontend": [
+          "app/src/main/java/pe/gob/reniec/dnie/ui/components/",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/signer/",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/identity/",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/home/",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/navigation/",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/certificates/CertificatesScreen.kt",
+          "dnie-signing-ui/src/main/java/pe/gob/reniec/dnie/desktop/ui/SuiteWindow.kt",
+          "dnie-signing-ui/src/main/java/pe/gob/reniec/dnie/desktop/ui/SuiteTemplateSelection.kt"
+        ],
+        "test": [
+          "app/src/test/java/pe/gob/reniec/dnie/ui/signer/SigningPresentationR8Test.kt",
+          "app/src/test/java/pe/gob/reniec/dnie/ui/identity/IdentityPresentationR8Test.kt",
+          "app/src/androidTest/java/pe/gob/reniec/dnie/ui/OperationSheetR8Test.kt",
+          "app/src/androidTest/java/pe/gob/reniec/dnie/ui/signer/SignerStickyBarR8Test.kt",
+          "dnie-signing-ui/src/test/java/pe/gob/reniec/dnie/desktop/ui/FlowsR8Test.kt"
+        ],
+        "architecture": [
+          "docs/design/PANTALLAS_FLUJOS_NFC_R8.md"
+        ]
+      },
+      "depends_on": [
+        "pdf_android",
+        "batch_android",
+        "icao",
+        "certificates",
+        "suite"
+      ]
     }
   ],
   "pending": [
@@ -1047,6 +1086,13 @@
       "state": "needs_physical_test",
       "description": "PAdES-T real transparente/insignias/réplicas, PNG Windows y drag/drop Explorer; comparar ReFirma/Firma Perú. PDF/CMS sintético local ya verificado. Rendimiento Android pendiente con dispositivo.",
       "evidence": "docs/design/PERSONALIZACION_SELLO_HAPTICA_R7.md"
+    },
+    {
+      "id": "r8_android_install_and_physical_flows",
+      "feature": "android_flows_r8",
+      "state": "needs_physical_test",
+      "description": "APK84 no instalada; no ADB hasta aviso. Ejecutar4 pruebas instrumentadas nuevas + regresión, hoja PIN/NFC/TSA, teclado/tema/scroll, PAdES-T real, DG7 y guardado MIME. No extrapolar fixtures a tarjeta física.",
+      "evidence": "docs/design/PANTALLAS_FLUJOS_NFC_R8.md"
     }
   ],
   "facts": [
@@ -1223,6 +1269,12 @@
       "category": "compiled_local_validated_android_not_installed",
       "value": "2026-10-14 · Personalización R7 / APK83 (3.1.0) compilada debug/release; no instalada: ADB suspendido hasta nuevo aviso del usuario. APK82 sigue siendo la última instalada. Sello con fondo transparente, insignias check/candado, fecha/densidad/colores, plantillas y esquinas al6%; diseño Android persistente, navegación y acciones Mi DNIe. Respuesta táctil por eventos NFC con ajuste de usuario. Windows añade PNG de rúbrica, DnD visual y tema claro/oscuro. 241 JVM pasan/1 omitida por permisos Windows y 44 comprobaciones Manager pasan. Interfaces Windows y accesos actualizados; servicio, driver, identidad y motores criptográficos conservados. Pruebas Android y firma física R7 pendientes.",
       "evidence": "docs/design/PERSONALIZACION_SELLO_HAPTICA_R7.md"
+    },
+    {
+      "id": "flows_r8_candidate84",
+      "category": "compiled_local_validated_android_not_installed",
+      "value": "2026-10-14 · Pantallas y NFC R8 / APK84 (3.1.0) compilada debug/release, sin instalar ni usar ADB; APK82 sigue siendo la última instalada. Hoja continua credenciales→NFC→progreso→resultado; CAN compacto y PIN transitorio. Firma con preview superior, tres pestañas y barra fija, resultados parciales explícitos. Cinco destinos comunes; Mi DNIe agrupa visualmente Certificados/Identidad, credencial ICAO y detalles plegables. Suite Windows con plantillas 2×2, indicador de actividad y apertura del PDF real. 251 JVM pasan/1 omitida y Manager44 pasan; auxiliar Android compilado, sin ejecutar. Suite preparada y acceso actualizado; Bridge/servicio/driver y motores criptográficos sin cambios. Pruebas Android/NFC pendientes.",
+      "evidence": "docs/design/PANTALLAS_FLUJOS_NFC_R8.md"
     }
   ]
 }

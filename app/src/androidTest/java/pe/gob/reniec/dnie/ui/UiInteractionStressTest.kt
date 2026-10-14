@@ -13,7 +13,10 @@ class UiInteractionStressTest {
         repeat(4) {
             for (tab in listOf("Firmar PDF", "Lotes", "Identidad", "Certificados")) {
                 if (tab == "Lotes") rule.onNodeWithText(tab).performClick()
-                else rule.onNodeWithTag(if (tab == "Firmar PDF") "nav_signer" else if (tab == "Identidad") "nav_identity" else "nav_certificates").performClick()
+                else {
+                    if (tab == "Identidad") rule.onNodeWithTag("nav_certificates").performClick()
+                    rule.onNodeWithTag(if (tab == "Firmar PDF") "nav_signer" else if (tab == "Identidad") "nav_identity" else "nav_certificates").performClick()
+                }
                 rule.waitForIdle()
                 val scrollers = rule.onAllNodes(hasScrollAction())
                 if (scrollers.fetchSemanticsNodes().isNotEmpty()) {
@@ -21,17 +24,18 @@ class UiInteractionStressTest {
                 }
             }
         }
-        rule.onNodeWithText("Mi DNIe").assertExists()
+        rule.onNodeWithTag("nav_certificates").assertIsSelected()
     }
     @Test fun typingAndCancellingCredentialsNeverStartsNfc() {
         rule.onNodeWithTag("nav_certificates").performClick()
         rule.onNodeWithContentDescription("Leer DNIe con NFC").performClick()
+        if (rule.onAllNodesWithText("Cambiar").fetchSemanticsNodes().isNotEmpty()) rule.onNodeWithText("Cambiar").performClick()
         repeat(8) {
             rule.onNodeWithText("CAN (6 dígitos)").performTextReplacement("123456")
             rule.onNodeWithText("CAN (6 dígitos)").performTextReplacement("")
         }
         rule.onNodeWithText("Cancelar").performClick()
         rule.onNodeWithText("CAN (6 dígitos)").assertDoesNotExist()
-        rule.onNodeWithText("Mi DNIe").assertExists()
+        rule.onNodeWithTag("nav_certificates").assertIsSelected()
     }
 }

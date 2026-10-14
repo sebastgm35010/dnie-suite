@@ -35,6 +35,8 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
     private val connect=AetherButton("Conectar Android",ButtonVariant.PRIMARY)
     private val disconnect=AetherButton("Desconectar",ButtonVariant.OUTLINE)
     private val qr=AetherButton("Abrir QR")
+    private val progress=JProgressBar().apply { name="suite-progress";preferredSize=Dimension(180,6);isVisible=false }
+    private val templateButtons=linkedMapOf<StampTemplate,AetherToggleChip>()
     private val status=JLabel("Conecta Android desde Suite → Conectar PC guardada.")
     private val fingerprint=JTextField().apply { isEditable=false }
     private val files=DefaultListModel<Path>()
@@ -75,7 +77,8 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
     private val fields=linkedMapOf("DNI" to AetherToggleChip("DNI",true),"Fecha" to AetherToggleChip("Fecha",true),
         "Hora" to AetherToggleChip("Hora",true),"Motivo" to AetherToggleChip("Motivo",true),"Lugar" to AetherToggleChip("Lugar",true))
     private val sign=AetherButton("Firmar lote",ButtonVariant.PRIMARY)
-    private val open=AetherButton("Abrir carpeta de salida")
+    private val open=AetherButton("Abrir carpeta de salida",ButtonVariant.SECONDARY)
+    private val openPdf=AetherButton("Abrir PDF firmado",ButtonVariant.PRIMARY).apply { name="open-signed-pdf";isEnabled=false }
     private var pairing: pe.gob.reniec.dnie.desktop.application.DesktopSuiteSession.PairingInfo?=null
     private val pairingQr=PairingQrDialog(this)
     private var resultDirectory: Path?=null
@@ -102,7 +105,7 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
         val add=AetherButton("+ Añadir archivos");val remove=AetherButton("Quitar",ButtonVariant.GHOST)
         val filePanel=AetherCardPanel(BorderLayout(8,12)).apply { preferredSize=Dimension(280,500) }
         filePanel.add(JLabel("Lote de documentos").apply { font=font.deriveFont(Font.BOLD,16f) },BorderLayout.NORTH)
-        list.cellRenderer=DocumentCardCellRenderer({sizes[it]},{documentStates[it]?:"● Pendiente"});list.fixedCellHeight=78
+        list.cellRenderer=DocumentCardCellRenderer({sizes[it]},{documentStates[it]?:"Pendiente"});list.fixedCellHeight=78
         val listArea=object: JScrollPane(list) {
             override fun paintChildren(g: Graphics) { super.paintChildren(g)
                 if(files.isEmpty) { g.color=AetherSwingTheme.outline;val copy=g.create() as Graphics2D
@@ -154,7 +157,18 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
         card("Modalidad de firma") { option(it,"Formato",mode);it.add(tsa)
             it.add(JLabel("<html>Requiere internet. Se publica solo<br>si el sello de tiempo se verifica.</html>").apply { font=font.deriveFont(11f);foreground=AetherSwingTheme.muted }) }
         card("Estilo y plantilla") { panel ->
-            for(template in StampTemplate.entries) panel.add(AetherButton(template.label,ButtonVariant.GHOST).apply {addActionListener {if(!busy) {restoreDesign(currentDesign().copy(options=template.apply(options())));scheduleStamp()}};mutableControls.add(this)})
+            panel.add(JPanel(GridLayout(2,2,6,6)).apply {
+                isOpaque=false;name="stamp-templates";maximumSize=Dimension(Int.MAX_VALUE,80)
+                for(template in StampTemplate.entries) {
+                    val caption=when(template) {StampTemplate.INSTITUTIONAL->"Institucional";StampTemplate.EXECUTIVE->"Ejecutivo";StampTemplate.APPROVAL->"Visto bueno";StampTemplate.PRINT->"Impresión B/N"}
+                    add(AetherToggleChip(caption).apply {
+                        name="stamp-template-"+template.name.lowercase();toolTipText=template.label
+                        addActionListener {if(!busy) {restoreDesign(currentDesign().copy(options=template.apply(options())));scheduleStamp()}}
+                        templateButtons[template]=this;mutableControls.add(this)
+                    })
+                }
+            })
+            panel.add(Box.createVerticalStrut(10))
             option(panel,"Estilo",style);panel.add(imageButton);panel.add(clearWhite)
             panel.add(JLabel("Color del sello"));panel.add(colors);option(panel,"Fondo",backgroundMode);option(panel,"Espaciado",density);panel.add(showBorder)
         }
@@ -170,8 +184,9 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
         val split=JSplitPane(JSplitPane.HORIZONTAL_SPLIT,filePanel,preview).apply { resizeWeight=0.0;dividerLocation=280;dividerSize=10;border=null;isOpaque=false }
         body.add(split,BorderLayout.CENTER);body.add(options,BorderLayout.EAST);add(body,BorderLayout.CENTER)
         val footer=JPanel(BorderLayout(10,10)).apply { isOpaque=false;border=EmptyBorder(8,22,16,22) }
-        status.font=status.font.deriveFont(12f);footer.add(status,BorderLayout.CENTER)
-        footer.add(JPanel(FlowLayout(FlowLayout.RIGHT)).apply { isOpaque=false;add(open);sign.preferredSize=Dimension(210,44);add(sign) },BorderLayout.EAST);add(footer,BorderLayout.SOUTH)
+        status.font=status.font.deriveFont(12f)
+        footer.add(JPanel(BorderLayout(0,6)).apply {isOpaque=false;add(status,BorderLayout.CENTER);add(progress,BorderLayout.SOUTH)},BorderLayout.CENTER)
+        footer.add(JPanel(FlowLayout(FlowLayout.RIGHT)).apply { isOpaque=false;add(openPdf);add(open);sign.preferredSize=Dimension(210,44);add(sign) },BorderLayout.EAST);add(footer,BorderLayout.SOUTH)
         mutableControls.addAll(listOf(pc,phone,workspace,identity,add,remove,list,page,mode,style,reason,location,tsa,badge,target,colors,title,previewName,tsaBadge,network,previous,next,backgroundMode,dateFormat,density,showBorder,imageButton,clearWhite)+fields.values)
         fun enumRenderer(box: JComboBox<*>) { box.renderer=DefaultListCellRenderer().let { delegate -> ListCellRenderer { l,value,index,selected,focus ->
             val label=when(value) { is StampStyle->value.label;is StampBadgeType->value.label;is StampPageTarget->value.label;is StampBackgroundMode->value.label;is StampDateFormat->value.label;is StampDensity->value.label;else->value.toString() }
@@ -244,10 +259,11 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
             }
         }
         remove.addActionListener { list.selectedIndices.sortedDescending().forEach(files::remove) }
-        list.addListSelectionListener { if(!it.valueIsAdjusting) { if(!firstSelection || preferredPage==null)preferredPage=1;firstSelection=false;if((page.value as Int)!=1) page.value=1 else loadPreview() } }
+        list.addListSelectionListener { if(!it.valueIsAdjusting) {updateResultActions(); if(!firstSelection || preferredPage==null)preferredPage=1;firstSelection=false;if((page.value as Int)!=1) page.value=1 else loadPreview() } }
         page.addChangeListener { loadPreview() }
         mode.addActionListener { canvas.visibleStamp=mode.selectedIndex==0;tsa.isEnabled=!busy && mode.selectedIndex!=2;scheduleStamp() }
         sign.addActionListener { sign() }
+        openPdf.addActionListener { openSigned(list.selectedValue,false) }
         open.addActionListener { resultDirectory?.let { runCatching { Desktop.getDesktop().open(it.toFile()) }.onFailure { status.text="No se pudo abrir la carpeta de salida." } } }
         addWindowListener(object: WindowAdapter() { override fun windowClosing(e: WindowEvent) {
             if(!busy || JOptionPane.showConfirmDialog(this@SuiteWindow,"Hay una operación activa. Cerrar interrumpe la conexión; no se repetirá.","Cerrar Suite",JOptionPane.OK_CANCEL_OPTION)==JOptionPane.OK_OPTION) {
@@ -341,18 +357,18 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
     internal fun showCompleted(inputs: List<Path>,result: DesktopSigningResult) {
         resultDirectory=result.directory
         inputs.forEach(signedOutputs::remove);signedOutputs.putAll(CompletedBatchPresentation.outputs(inputs,result))
-        inputs.zip(result.documents).forEach { (path,document) -> documentStates[path]=if(document.signature!=null) "✓ Firmado" else "⚠ No firmado" };list.repaint()
+        inputs.zip(result.documents).forEach { (path,document) -> documentStates[path]=if(document.signature!=null) "Firmado" else "No firmado" };list.repaint();updateResultActions()
         controller.completedCitizen(result) { citizen -> if(citizen!=null) { previewName.text=citizen.fullName;previewDni=citizen.dniNumber;scheduleStamp() } }
     }
     private fun setBusy(value: Boolean) {
         bridgePanel?.setSuiteActive(connected || value)
-        busy=value;pill.state=if(connected) PillState.CONNECTED else if(connecting) PillState.WAITING else PillState.IDLE
+        busy=value;progress.isVisible=value;progress.isIndeterminate=value;pill.state=if(connected) PillState.CONNECTED else if(connecting) PillState.WAITING else PillState.IDLE
         pill.text=if(connected) "Conectado" else if(connecting) "Esperando móvil" else "Desconectado"
         mutableControls.forEach { it.isEnabled=!value };canvas.interactive=!value
         connect.isEnabled=!connected && !value;disconnect.isEnabled=connected || connecting;sign.isEnabled=connected && !value && !files.isEmpty
         tsa.isEnabled=!value && mode.selectedIndex!=2
         qr.isEnabled=!connected && (pairing!=null || !value)
-        open.isEnabled=resultDirectory!=null
+        updateResultActions()
     }
     private fun buildAdvancedDialog() {
         advanced.defaultCloseOperation=JDialog.HIDE_ON_CLOSE
@@ -369,7 +385,7 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
         setBusy(true);status.text="Preparando archivos…"
         controller.prepareFiles(selected,view) { paths,rejected ->
             val room=50-files.size();val accepted=paths.filterNot(files::contains).take(room)
-            accepted.forEach { files.addElement(it);documentStates[it]="● Pendiente" }
+            accepted.forEach { files.addElement(it);documentStates[it]="Pendiente" }
             controller.fileSizes(accepted) { sizes.putAll(it);list.repaint() }
             if(list.selectedIndex<0 && files.size()>0) list.selectedIndex=0
             setBusy(false)
@@ -417,7 +433,15 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
         } finally { restoringDesign=false }
     }
     private fun currentDesign()=SuiteDesign(options(),when(mode.selectedIndex) { 0->DesktopPdfMode.VISIBLE;1->DesktopPdfMode.INVISIBLE;else->DesktopPdfMode.DETACHED },previewName.text)
-    private fun scheduleStamp() { if(!restoringDesign) { designStore.save(currentDesign());stampTimer.restart() } }
+    private fun scheduleStamp() { if(!restoringDesign) {
+        val design=currentDesign()
+        templateButtons.forEach { (template,button)->button.isSelected=SuiteTemplateSelection.matches(template,design.options) && design.mode==DesktopPdfMode.VISIBLE }
+        designStore.save(design);stampTimer.restart()
+    } }
+    private fun updateResultActions() {
+        open.isEnabled=!busy && resultDirectory!=null
+        openPdf.isEnabled=!busy && signedOutputs[list.selectedValue]?.fileName?.toString()?.endsWith(".pdf",true)==true
+    }
     private fun openSigned(input: Path?,reveal: Boolean) {
         val output=signedOutputs[input]?:return
         controller.openOutput(output,reveal,desktopActions) { ok -> if(!ok)status.text="No se pudo abrir el resultado; comprueba su carpeta." }

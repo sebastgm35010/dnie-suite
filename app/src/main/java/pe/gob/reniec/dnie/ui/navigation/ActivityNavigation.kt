@@ -15,7 +15,7 @@ fun ActivityNavigation(active: Screen = Screen.Pc) {
     val activity = LocalContext.current as? Activity
     NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
         Screen.items.forEach { screen ->
-            NavigationBarItem(selected = screen == active, modifier = Modifier.testTag("nav_" + screen.route),
+            NavigationBarItem(selected = screen == Screen.primaryFor(active.route), modifier = Modifier.testTag("nav_" + screen.route),
                 icon = { Icon(screen.icon, screen.title) }, label = { Text(screen.title) },
                 onClick = {
                     activity?.startActivity(Intent(activity, MainActivity::class.java)

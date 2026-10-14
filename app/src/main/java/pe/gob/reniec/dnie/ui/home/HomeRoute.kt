@@ -16,9 +16,11 @@ fun HomeRoute(viewModel: CertificatesViewModel, identityViewModel: IdentityViewM
     val summaries = remember(viewModel, identityViewModel) {
         combine(viewModel.uiState, identityViewModel.uiState) { state, identity ->
             HomeSummary((state as? CertificatesUiState.Loaded)?.certificates?.size ?: 0,
-                identity.document != null, state is CertificatesUiState.ReadingCard || identity.reading || identity.awaitingCard)
+                identity.document?.blocks?.values?.any { it.status == pe.gob.reniec.dnie.icao.BlockStatus.AVAILABLE && it.file.group != null } == true, state is CertificatesUiState.ReadingCard || identity.reading || identity.awaitingCard)
         }.distinctUntilChanged()
     }
     val summary by summaries.collectAsStateWithLifecycle(initialValue = HomeSummary())
-    HomeScreen(summary, onRead, onIdentity, onCertificates, onPdf, onBatch, onVault, onPc, onSettings, onDevelopment)
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val canSaved by produceState(false, context) { value = pe.gob.reniec.dnie.data.preferences.CanStorage.loadSavedCan(context).length == 6 }
+    HomeScreen(summary, onRead, onIdentity, onCertificates, onPdf, onBatch, onVault, onPc, onSettings, onDevelopment, savedCan = canSaved)
 }

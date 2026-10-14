@@ -22,16 +22,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import pe.gob.reniec.dnie.icao.*
-import pe.gob.reniec.dnie.ui.components.CredentialsDialog
+import pe.gob.reniec.dnie.ui.components.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun IdentityScreen(viewModel: IdentityViewModel) {
+fun IdentityScreen(viewModel: IdentityViewModel, onUseMark: () -> Unit = {}) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val exportScope = rememberCoroutineScope()
     var pendingImage by remember { mutableStateOf<IcaoImage?>(null) }
-    val export = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { uri ->
+    val export = rememberLauncherForActivityResult(IdentityImageExportContract()) { uri ->
         val image = pendingImage
         pendingImage = null
         if (uri != null && image != null) {
@@ -44,6 +44,15 @@ fun IdentityScreen(viewModel: IdentityViewModel) {
                 Toast.makeText(context, if (success) "Imagen guardada" else "No se pudo guardar la imagen", Toast.LENGTH_SHORT).show()
             }
         }
+    }
+    var operationVisible by remember { mutableStateOf(false) }
+    var details by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(state.enteringCan, state.awaitingCard, state.reading) {
+        if (state.enteringCan || state.awaitingCard || state.reading) operationVisible = true
+    }
+    fun exportImage(image: IcaoImage, name: String) {
+        pendingImage = image
+        export.launch(ImageExportRequest(name, image.mimeType))
     }
     DisposableEffect(viewModel) { onDispose { viewModel.cancelReading() } }
     pe.gob.reniec.dnie.ui.design.FeatureScaffold("Identidad del DNI", "Documento ICAO", subtitle = "Datos, foto y firma disponibles.") { padding ->
@@ -63,26 +72,30 @@ fun IdentityScreen(viewModel: IdentityViewModel) {
                     }
                 }
             }
-            if (state.awaitingCard || state.reading || state.message != null) item {
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(if (state.awaitingCard) "Acerque el DNI al sensor NFC y manténgalo inmóvil."
-                            else state.message ?: "Leyendo el documento…")
-                        if (state.reading || state.awaitingCard) LinearProgressIndicator(Modifier.fillMaxWidth())
-                    }
-                }
-            }
+            if (!state.reading && !state.awaitingCard) state.message?.let { item { Text(it, style = MaterialTheme.typography.bodySmall) } }
             val document = state.document
-            if (document != null) items(document.blocks.values.toList(), key = { it.file.name }) { block ->
-                IdentityBlockCard(block) { image ->
-                    pendingImage = image
-                    export.launch("dni_${block.file.name.lowercase()}.${if (image.mimeType == "image/jp2") "jp2" else "jpg"}")
+            if (document != null) {
+                item { DigitalIdCredentialCard(document, onUseMark) { exportImage(it, "dni_firma") } }
+                item { TextButton(onClick = { details = !details }) { Text("Detalles técnicos ICAO (DG1–DG14, EF.COM, EF.SOD)" + if (details) " −" else " +") } }
+                if (details) items(document.blocks.values.toList(), key = { it.file.name }) { block ->
+                    IdentityBlockCard(block) { exportImage(it, "dni_" + block.file.name.lowercase()) }
                 }
             }
         }
     }
-    CredentialsDialog(show = state.enteringCan, title = "Leer identidad del DNI", subtitle = "Ingrese el CAN de 6 dígitos impreso en su DNI.",
-        requireCan = true, requirePin = false, onConfirm = { can, _ -> viewModel.confirmCan(can) }, onDismiss = viewModel::cancelCan)
+    val hasData = state.document?.blocks?.values?.any { it.status == BlockStatus.AVAILABLE } == true
+    val interrupted = state.document?.blocks?.values?.any { it.status == BlockStatus.INTERRUPTED } == true
+    val phase = when {
+        state.enteringCan -> DnieOperationPhase.CREDENTIALS
+        state.awaitingCard -> DnieOperationPhase.AWAITING_TAG
+        state.reading -> DnieOperationPhase.TAG_ENGAGED
+        hasData && !interrupted -> DnieOperationPhase.COMPLETED
+        else -> DnieOperationPhase.ERROR
+    }
+    DnieOperationSheet(operationVisible, phase, "Leer identidad del DNI", message = state.message, onRetry = viewModel::requestReading,
+        onDismiss = { operationVisible = false; if (state.enteringCan) viewModel.cancelCan() else viewModel.cancelReading() },
+        credentials = { CredentialsForm(requirePin = false, onConfirm = { can, _ -> viewModel.confirmCan(can) },
+            onDismiss = { operationVisible = false; viewModel.cancelCan() }) })
 }
 
 @Composable
@@ -101,9 +114,9 @@ private fun IdentityBlockCard(block: IcaoBlock, onExport: (IcaoImage) -> Unit) {
                     Field("Apellidos", content.surnames)
                     Field("Número de documento", content.documentNumber)
                     Field("Nacionalidad", content.nationality)
-                    Field("Nacimiento (AA/MM/DD)", mrzDate(content.birthDateMrz))
+                    Field("Nacimiento", IdentityPresentation.date(content.birthDateMrz, true))
                     Field("Sexo", content.sex)
-                    Field("Vencimiento (AA/MM/DD)", mrzDate(content.expiryDateMrz))
+                    Field("Vencimiento", IdentityPresentation.date(content.expiryDateMrz, false))
                     Field("Estado emisor", content.issuingState)
                     Field("Tipo de documento", content.documentType)
                     Field("Datos opcionales MRZ", content.optionalData)
@@ -151,12 +164,11 @@ private fun Field(label: String, value: String) {
     }
 }
 
-private fun mrzDate(value: String): String = if (value.length == 6) value.chunked(2).joinToString("/") else value
 
 private data class DecodedImage(val bitmap: Bitmap? = null, val error: String? = null)
 
 @Composable
-private fun IdentityImage(image: IcaoImage) {
+internal fun IdentityImage(image: IcaoImage, modifier: Modifier = Modifier.fillMaxWidth().heightIn(max = 300.dp)) {
     val decoded by produceState<DecodedImage?>(null, image) {
         value = try { DecodedImage(bitmap = IdentityImageDecoder.decode(image)) }
         catch (e: CancellationException) { throw e }
@@ -166,7 +178,7 @@ private fun IdentityImage(image: IcaoImage) {
     val bitmap = decoded?.bitmap
     when {
         bitmap != null -> Image(bitmap.asImageBitmap(), contentDescription = "Imagen del documento",
-            modifier = Modifier.fillMaxWidth().heightIn(max = 300.dp), contentScale = ContentScale.Fit)
+            modifier = modifier, contentScale = ContentScale.Fit)
         decoded?.error != null -> Text("Imagen leída; ${decoded?.error}. Puede guardar el original.")
         else -> Text("Preparando imagen…")
     }

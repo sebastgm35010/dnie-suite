@@ -1,0 +1,62 @@
+{
+  "date": "2026-10-14",
+  "version": "3.1.0",
+  "jvm": {
+    "tests": 252,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1,
+    "suites": 64
+  },
+  "windowsManager": {
+    "passed": true,
+    "checks": 44,
+    "serviceCalls": 0,
+    "cardOperations": 0
+  },
+  "android": {
+    "candidateApkCode": 84,
+    "lastInstalledApkCode": 82,
+    "adbUsed": false,
+    "instrumentedCompiled": true,
+    "instrumentedExecuted": false,
+    "samePackageSigner": true,
+    "releaseDebugExcluded": true,
+    "sha256": "bc069229563d22ff07a7fa819db0d5f23b4eca72aca38fbbac3fc43cdcc86d1b",
+    "debugApk": "D:/DNIeToolchain/AndroidPackages/dnie-evolution-3.1.0-v84-flows-r8-debug.apk",
+    "retainedApks": [
+      "dnie-evolution-3.1.0-v83-personalization-r7-debug.apk",
+      "dnie-evolution-3.1.0-v84-flows-r8-debug.apk"
+    ]
+  },
+  "windowsUi": {
+    "suiteDistribution": "D:\\DNIeToolchain\\Builds\\flows-r8\\signing-ui\\install\\dnie-signing-ui",
+    "suiteShortcutUpdated": true,
+    "bridgeUpdated": false,
+    "serviceUpdated": false,
+    "driverUpdated": false,
+    "actualReturnedPdfPathTestPassed": true,
+    "progress": "indeterminate; no per-document event exposed by current SuiteController"
+  },
+  "protectedModulesUnchanged": [
+    "dnie-core",
+    "dnie-protocol",
+    "dnie-icao",
+    "dnie-pdf",
+    "dnie-pdf-desktop",
+    "dnie-signing-core",
+    "dnie-signing-link",
+    "dnie-bridge-core",
+    "dnie-bridge-android",
+    "dnie-network-core",
+    "dnie-vault-core",
+    "dnie-vault-recovery",
+    "dnie-validation-core",
+    "tools/windows-bridge",
+    "tools/windows-pcsc-driver"
+  ],
+  "physicalTestsExecuted": false,
+  "automaticPrivateOperationRetry": false,
+  "checkpointBefore": "checkpoint/pre-flows-r8",
+  "checkpointAfter": "checkpoint/flows-r8-apk84-candidate"
+}

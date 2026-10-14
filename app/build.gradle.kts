@@ -21,7 +21,7 @@ android {
         applicationId = "pe.gob.reniec.dnie.evolution"
         minSdk = 24
         targetSdk = 34
-        versionCode = 83
+        versionCode = 84
         versionName = rootProject.version.toString()
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
