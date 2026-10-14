@@ -1,5 +1,7 @@
 # Arquitectura actual · motor 2.0 y gestor Windows rc4
 
+2026-10-14 · Red R6 / APK82 (3.1.0) instalada: Bridge Red (Wi-Fi/Tailscale) + USB; descubrimiento autenticado y TLS fijado por huella/token, IP opcional en Suite/gestor y CLI. Vista previa Android muestra anotaciones existentes. QR de sello/cotejador retirados de UI; QR de emparejamiento conservado. 283 pruebas JVM pasan, 3 optativas/privilegios omitidas; 261 Bridge + 48 Control + 41 Manager + 3 servicio instalado pasan; 8 instrumentadas Android pasan. Descubrimiento Windows→Android verificado por LAN y Tailscale por separado, credenciales sintéticas, sin DNI. Gestor/servicio/Suite actualizados, identidad conservada y driver sin reinstalar. Firma NFC y cambio físico de red pendientes. [Rutas, pruebas y límites](RED_COORDINADA_R6.md).
+
 2026-10-14 · Extensión QR R5: formato/cotejo puro en dnie-signing-core/StampQrCodec; metadata derivada en adaptadores PDF Android/Desktop, no en UI. Cámara/SAF en app/data/qr y presentación/coordinación en app/ui/verification. Reutiliza CertificateValidationPanel y validación existente; no modifica CMS/PACE/driver. Ver [QR_COTEJO_R5](../design/QR_COTEJO_R5.md).
 
 2026-10-14 · Presentación Aether: contrato/escena/placement puros en signing-core; adaptadores PDF Android/Desktop, bitmap IO Android y previews Swing asíncronos. Interfaces Suite/Manager actualizadas; autorización, criptografía, transportes y driver preservados. [Mapa y verificaciones](../design/RESULTADO_AETHER_R2.md).

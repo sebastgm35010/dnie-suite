@@ -40,19 +40,19 @@ class JvmPdfSigner(private val temporaryRoot: Path,
             PrivatePdfWorkspace(temporaryRoot).use { workspace ->
                 val source = workspace.directory.resolve("source.pdf")
                 var total = 0L
-                val originalDigest = java.security.MessageDigest.getInstance("SHA-256")
+                val originalDigest = if(options.visible && options.appearance.badge==StampBadgeType.QR_VERIFICATION) java.security.MessageDigest.getInstance("SHA-256") else null
                 Files.newOutputStream(source).use { out ->
                     val bytes = ByteArray(65536)
                     while (true) {
                         coroutineContext.ensureActive()
                         val count = input.read(bytes); if (count < 0) break
                         total += count; require(total <= MAX_INPUT_BYTES) { "PDF mayor de 256 MiB" }
-                        originalDigest.update(bytes, 0, count)
+                        originalDigest?.update(bytes, 0, count)
                         out.write(bytes, 0, count)
                     }
                 }
                 val signed = workspace.directory.resolve("signed.pdf")
-                val derivedOptions = options.copy(qrMetadata = StampQrMetadata.derived(signer, originalDigest.digest(), total))
+                val derivedOptions = options.copy(qrMetadata = originalDigest?.let {StampQrMetadata.derived(signer, it.digest(), total)})
                 val memory = MemoryUsageSetting.setupMixed(32L * 1024 * 1024).setTempDir(workspace.directory.toFile())
                 Loader.loadPDF(source.toFile(), "", null, null, { ScratchFile(memory) }).use { document ->
                     PdfSigningPolicy.validate(document, options.visible)

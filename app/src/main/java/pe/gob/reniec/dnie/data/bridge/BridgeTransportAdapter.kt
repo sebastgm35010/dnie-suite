@@ -18,12 +18,14 @@ class BridgeTransportAdapter(private val context: Context) : Closeable {
     @Volatile private var socket: Socket? = null
     @Volatile private var accessory: android.os.ParcelFileDescriptor? = null
     private var workers: java.util.concurrent.ExecutorService? = null
+    private var discovery: AutoCloseable? = null
     @Synchronized fun arm(pairing: BridgePairing): String {
         close()
         if (pairing.transport == "tls_reverse") {
-            val address = localAddresses().firstOrNull() ?: error("Conecta el teléfono a Wi-Fi")
-            listener = ServerSocket(39444, 1, InetAddress.getByName(address))
-            return "$address:39444"
+            listener = ServerSocket(39444, 1)
+            try { discovery = pe.gob.reniec.dnie.data.network.AndroidNetworkPresence(context).bridge(pairing) }
+            catch(_: Exception) {discovery=null}
+            return if(discovery!=null) "Red segura · descubrimiento activo" else "Red segura · indica la dirección del teléfono en la PC"
         }
         if (pairing.transport == "usb_accessory") {
             val manager = context.getSystemService(Context.USB_SERVICE) as UsbManager
@@ -86,15 +88,13 @@ class BridgeTransportAdapter(private val context: Context) : Closeable {
         return client
     }
     @Synchronized override fun close() {
+        runCatching { discovery?.close() }; discovery = null
         runCatching { listener?.close() }; listener = null
         runCatching { socket?.close() }; socket = null
         runCatching { accessory?.close() }; accessory = null
         workers?.shutdownNow(); workers = null
     }
     companion object {
-        fun localAddresses(): List<String> = NetworkInterface.getNetworkInterfaces().toList()
-            .filter { it.isUp && !it.isLoopback && it.name.startsWith("wlan") }
-            .flatMap { it.inetAddresses.toList() }.filterIsInstance<java.net.Inet4Address>()
-            .filter { it.isSiteLocalAddress }.mapNotNull { it.hostAddress }
+        fun localAddresses(): List<String> = pe.gob.reniec.dnie.network.PhoneDiscovery.addresses().mapNotNull {it.hostAddress}
     }
 }

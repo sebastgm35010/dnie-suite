@@ -6,7 +6,7 @@ El teléfono gestiona NFC/PACE y las operaciones del DNI. La Suite procesa docum
 
 ## Empezar aquí
 
-- [Rediseño Aether 3.1: cambios y pruebas](docs/design/RESULTADO_AETHER_R2.md). Windows y Android81 actualizados. [Pulido R4 y pruebas](docs/design/RESULTADO_AETHER_R4.md). [QR y cotejo R5](docs/design/QR_COTEJO_R5.md).
+- [Rediseño Aether 3.1: cambios y pruebas](docs/design/RESULTADO_AETHER_R2.md). Windows y Android82 actualizados. [Pulido R4 y pruebas](docs/design/RESULTADO_AETHER_R4.md). [Red coordinada y simplificación R6](docs/architecture/RED_COORDINADA_R6.md). QR R5 permanece como referencia histórica.
 
 - [Estado actual](docs/CONTEXTO_ACTUAL.md), [pendientes](docs/PENDIENTES_ACTUALES.md) y [arquitectura](docs/architecture/ARQUITECTURA_ACTUAL_2_0.md).
 - [Versión 3.1 y verificaciones](docs/architecture/SEGURIDAD_BACKEND_3_1_V4.md).
@@ -23,6 +23,7 @@ dnie-protocol/                DNI v3, PACE y mensajería segura
 dnie-nfc/                     Adaptación NFC Android
 dnie-icao/                    Lectura de identidad ICAO por bloques
 dnie-signing-core/            Motor de firma por lotes y contratos PDF
+dnie-network-core/            Descubrimiento autenticado independiente de plataforma
 dnie-signing-link/            Protocolo privado teléfono–Suite
 dnie-pdf/                     PDF/PAdES Android
 dnie-pdf-desktop/             PDF/PAdES JVM

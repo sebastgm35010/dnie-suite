@@ -52,7 +52,7 @@ class SuiteDesignPreferences(private val prefs: Preferences) : AutoCloseable {
                 reason=value("reason",d.options.reason).take(512),location=value("location","").take(512),reniecTimestamp=flag("tsa",false),
                 pageTarget=StampPageTarget.entries.firstOrNull { it.name==value("target","") }?:StampPageTarget.SPECIFIC_PAGE,
                 appearance=SignatureAppearance(style=style,colorTheme=StampColorTheme.entries.firstOrNull { it.name==value("color","") }?:a.colorTheme,
-                    badge=StampBadgeType.entries.firstOrNull { it.name==value("badge","") }?:a.badge,customHeader=value("header",a.customHeader).take(160),
+                    badge=StampBadgeType.entries.firstOrNull { it.name==value("badge","") && it!=StampBadgeType.QR_VERIFICATION }?:a.badge,customHeader=value("header",a.customHeader).take(160),
                     showTsaBadge=flag("tsaBadge",true),showDni=flag("dni",true),showDate=flag("date",true),showTime=flag("time",true),showReason=flag("showReason",true),showLocation=flag("showLocation",true))),mode,value("name","").take(160))
         }
         private fun StampStyle.requiresImage()=this==StampStyle.INK || this==StampStyle.HANDWRITTEN_ONLY

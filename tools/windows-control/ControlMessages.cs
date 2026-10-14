@@ -3,7 +3,7 @@ using System.Net;
 using System.Text.RegularExpressions;
 namespace DniBridge.Control;
 
-public sealed record ConnectionProfile(string Method="Tailscale",string Pc="",string Phone="");
+public sealed record ConnectionProfile(string Method="LAN",string Pc="",string Phone="");
 public sealed record ControlRequest(string Command,ConnectionProfile? Profile=null);
 public sealed record BridgeStatus(string State="Stopped",string Phase="idle",bool CardPresent=false,string? Error=null,ConnectionProfile? Profile=null,bool? ReaderPublished=null);
 public sealed record PairingView(string Payload,string Fingerprint,string Expires);
@@ -17,9 +17,11 @@ public static class ControlRules {
                 if(!TailnetTransport.IsHost(profile.Pc) || !TailnetTransport.IsHost(profile.Phone))throw new ArgumentException("Introduce los nombres Tailscale o direcciones 100.x de ambos equipos.");
                 break;
             case "LAN":
-                if(!IPAddress.TryParse(profile.Pc,out var pc) || !IPAddress.TryParse(profile.Phone,out var phone) ||
-                    !LocalNetworkPolicy.IsPrivateAddress(pc) || !LocalNetworkPolicy.IsPrivateAddress(phone) || IPAddress.IsLoopback(pc) || IPAddress.IsLoopback(phone))
-                    throw new ArgumentException("LAN requiere la IP privada de la PC y la IP Wi-Fi del telefono.");
+                if(profile.Pc.Length>0 && (!IPAddress.TryParse(profile.Pc,out var pc) || !NetworkDiscovery.Allowed(pc)))
+                    throw new ArgumentException("La interfaz avanzada debe ser una IPv4 privada.");
+                if(profile.Phone.Length>0 && !TailnetTransport.IsHost(profile.Phone) &&
+                    (!IPAddress.TryParse(profile.Phone,out var phone) || !NetworkDiscovery.Allowed(phone)))
+                    throw new ArgumentException("Usa descubrimiento automático, IPv4 privada o nombre Tailscale.");
                 break;
             case "USB":
                 if(!Regex.IsMatch(profile.Phone,"^[a-zA-Z0-9_&.-]{1,200}$"))throw new ArgumentException("Selecciona el dispositivo USB del telefono.");

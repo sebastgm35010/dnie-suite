@@ -106,7 +106,7 @@ class PadesSignerEngine(private val timestampService: pe.gob.reniec.dnie.timesta
 
             try {
                 // Copiar el stream de entrada al archivo temporal
-                val originalDigest = java.security.MessageDigest.getInstance("SHA-256")
+                val originalDigest = if(modernOptions?.visible==true && modernOptions.appearance.badge==StampBadgeType.QR_VERIFICATION) java.security.MessageDigest.getInstance("SHA-256") else null
                 var originalSize = 0L
                 FileOutputStream(tempSourceFile).use { out ->
                     val buffer = ByteArray(65536)
@@ -114,10 +114,10 @@ class PadesSignerEngine(private val timestampService: pe.gob.reniec.dnie.timesta
                         val count = pdfInputStream.read(buffer); if (count < 0) break
                         originalSize += count
                         require(originalSize <= StampQrCodec.MAX_FILE_BYTES) { "PDF mayor de 256 MiB" }
-                        originalDigest.update(buffer, 0, count); out.write(buffer, 0, count)
+                        originalDigest?.update(buffer, 0, count); out.write(buffer, 0, count)
                     }
                 }
-                val derivedOptions = modernOptions?.copy(qrMetadata = StampQrMetadata.derived(signerCert, originalDigest.digest(), originalSize))
+                val derivedOptions = modernOptions?.copy(qrMetadata = originalDigest?.let {StampQrMetadata.derived(signerCert, it.digest(), originalSize)})
 
                 PDDocument.load(tempSourceFile, com.tom_roush.pdfbox.io.MemoryUsageSetting.setupMixed(32L * 1024 * 1024)).use { document ->
                 require(document.numberOfPages > 0) { "El PDF no tiene páginas" }

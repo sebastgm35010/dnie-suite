@@ -22,6 +22,8 @@ class SuiteController(private val product: DesktopProductCoordinator = DesktopIn
     private val connections=AtomicLong()
     @Volatile private var permit: AutoCloseable?=null
     @Volatile private var session: DesktopSuiteSession?=null
+    fun connectedPhone()=session?.connectedPhone.orEmpty()
+    fun connectedPc()=session?.connectedPc.orEmpty()
     @Volatile private var closed=false
     private fun ui(action: ()->Unit) { SwingUtilities.invokeLater { if(!closed) action() } }
     fun connect(pc: String,phone: String,workspace: Path,identity: Path,

@@ -15,14 +15,14 @@ public sealed partial class MainForm {
     private BridgeStatus last=new();
     public MainForm(): this(true) {}
     internal MainForm(bool monitor) {
-        BuildLayout();var saved=preferences.Load();method.SelectedItem=saved.Method;pc.Text=saved.Pc;phone.Text=saved.Phone;
+        BuildLayout();var saved=preferences.Load();method.SelectedItem=saved.Method=="Tailscale"?"LAN":saved.Method;pc.Text=saved.Pc;phone.Items.AddRange(preferences.History().Cast<object>().ToArray());phone.Text=saved.Phone;
         ReloadInterfaces();loaded=true;ShowMethod();
         method.SelectedIndexChanged+=(_,_)=>ShowMethod();
         install.Click+=async(_,_)=>await ActionAsync(InstallAsync);
         start.Click+=async(_,_)=>await ActionAsync(async()=> {
             var profile=Profile();var response=await client.SendAsync(new("start",profile));Check(response);preferences.Save(profile);
             last=response.Status ?? new();Render();
-            if(profile.Method!="Tailscale")await ShowPairingAsync();
+            if(!preferences.PairingShown)await ShowPairingAsync();
         });
         stop.Click+=async(_,_)=>await ActionAsync(async()=>{var response=await client.SendAsync(new("stop"));Check(response);last=response.Status??new();Render();});
         pair.Click+=async(_,_)=>await ActionAsync(ShowPairingAsync);
@@ -40,18 +40,18 @@ public sealed partial class MainForm {
     }
     private void ShowMethod() {
         if(!loaded)return;
-        bool isUsb=method.Text=="USB";pcRow.Visible=!isUsb;phoneRow.Visible=!isUsb;usbRow.Visible=isUsb;pair.Visible=method.Text!="Tailscale";
+        bool isUsb=method.Text=="USB";pcRow.Visible=false;phoneRow.Visible=!isUsb;usbRow.Visible=isUsb;pair.Visible=true;
         pcLabel.Text=method.Text=="LAN"?"Interfaz LAN PC":"Host/IP Tailscale PC";
-        phoneLabel.Text=method.Text=="LAN"?"IP Wi-Fi teléfono":"Host/IP Tailscale teléfono";
+        phoneLabel.Text="Teléfono (opcional)";
         refresh.Text=isUsb?"Actualizar USB":"Actualizar interfaces";
         help.Text=method.Text switch {
-            "LAN"=>"Selecciona la IP LAN de esta PC e introduce la IP Wi-Fi que muestra Android. La PC inicia la conexión; TLS conserva su identidad.",
+            "LAN"=>"Deja el teléfono vacío para buscarlo automáticamente. Primera vez: escanea Mostrar QR desde Android. Wi-Fi y Tailscale usan la misma identidad y TLS.",
             "USB"=>"Selecciona el teléfono conectado con un cable de datos. Android Open Accessory no requiere ADB ni compartir Internet. Si UsbDk acaba de instalarse, puede requerir reiniciar Windows.",
             _=>"Introduce los nombres Tailscale de ambos equipos. Android sincroniza automáticamente al acercar el DNI; no necesita QR."
         };
         Render();
     }
-    private ConnectionProfile Profile()=>new(method.Text,pc.Text.Trim(),method.Text=="USB"?(usb.SelectedItem as UsbItem)?.Serial??"":phone.Text.Trim());
+    private ConnectionProfile Profile()=>new(method.Text,"",method.Text=="USB"?(usb.SelectedItem as UsbItem)?.Serial??"":phone.Text.Trim());
     private async Task ReloadUsbAsync() {
         var response=await client.SendAsync(new("usb-devices"));Check(response);usb.Items.Clear();
         foreach(string device in response.Devices??[]) {int at=device.IndexOf(' ');if(at>0)usb.Items.Add(new UsbItem(device,device[(at+1)..]));}
@@ -59,7 +59,7 @@ public sealed partial class MainForm {
     }
     private async Task ShowPairingAsync() {
         var response=await client.SendAsync(new("pairing",Profile()));Check(response);
-        using var view=new PairingForm(response.Pairing??throw new IOException("No se pudo generar el emparejamiento."));view.ShowDialog(this);
+        using var view=new PairingForm(response.Pairing??throw new IOException("No se pudo generar el emparejamiento."));view.ShowDialog(this);preferences.MarkPairingShown();
     }
     private async Task InstallAsync() {
         string exe=Environment.ProcessPath??throw new IOException("No se encontro el ejecutable del gestor.");
@@ -83,7 +83,7 @@ public sealed partial class MainForm {
                 if(busy || IsDisposed)return;
                 Check(response);last=response.Status??new();
                 if(last.State is "Running" or "Starting" && last.Profile is {} active) {
-                    method.SelectedItem=active.Method;pc.Text=active.Pc;
+                    method.SelectedItem=active.Method=="Tailscale"?"LAN":active.Method;pc.Text=active.Pc;
                     if(active.Method!="USB")phone.Text=active.Phone;
                     else if((usb.SelectedItem as UsbItem)?.Serial!=active.Phone) {
                         var selected=new UsbItem("Telefono seleccionado: "+active.Phone,active.Phone);
@@ -104,7 +104,7 @@ public sealed partial class MainForm {
         install.Enabled=!busy && !running;pair.Enabled=!busy && last.State!="Unavailable";
         method.Enabled=!busy && !running;
         foreach(var (key,button) in transportButtons){button.Enabled=method.Enabled;if(button is AetherButton segment)segment.IsSelectedSegment=method.Text==key;button.BackColor=method.Text==key?Aether.Primary:Color.FromArgb(229,238,255);button.ForeColor=method.Text==key?Color.White:Aether.Text;}
-        pcRow.Visible=method.Text!="USB";phoneRow.Visible=method.Text!="USB";usbRow.Visible=method.Text=="USB";
+        pcRow.Visible=false;phoneRow.Visible=method.Text!="USB";usbRow.Visible=method.Text=="USB";
         install.Visible=serviceState!=4;
         serviceHealth.ShowState("Servicio base",serviceState==4?"Activo (SYSTEM)":serviceState==1?"Detenido":serviceKnown?"No instalado":"Sin verificar",serviceState==4?HealthTone.Good:HealthTone.Idle);
         readerHealth.ShowState("Lector Windows (PC/SC)",last.ReaderPublished switch {true=>"Publicado en WinSCard",false=>"Ausente de WinSCard",null=>"Sin verificar"},last.ReaderPublished switch {true=>HealthTone.Good,false=>HealthTone.Waiting,null=>HealthTone.Idle});
@@ -117,6 +117,8 @@ public sealed partial class MainForm {
             null=>"DNI conectado · publicación del lector sin verificar"
         }:last.State switch {
             "Running"=>last.Phase switch {
+                "network_peer_found"=>"Teléfono localizado · autenticando canal TLS",
+                "transport_retry" or "host_ready"=>"Buscando teléfono vinculado en la red…",
                 "usb_waiting_phone"=>"USB: esperando el teléfono conectado",
                 "usb_switching_accessory"=>"USB: preparando modo accesorio Android",
                 "usb_redirect_initial"=>"USB: tomando control del teléfono",
@@ -129,7 +131,6 @@ public sealed partial class MainForm {
                 "usb_waiting_accessory"=>"USB: esperando que el teléfono reaparezca",
                 "usb_accessory_open" or "usb_waiting_android"=>"USB: abre DNIe Evolución y autoriza el puente",
                 "usb_retry"=>"USB: reconectando · comprueba el permiso y la app Android",
-                "transport_retry"=>"Esperando al teléfono · revisa la conexión",
                 _=>"Puente activo · esperando DNI"
             },
             "Starting"=>"Preparando puente…","Stopping"=>"Cerrando conexión…","Failed"=>"El puente se detuvo por un error","Unavailable"=>"Instala el servicio para comenzar",_=>"Puente detenido"

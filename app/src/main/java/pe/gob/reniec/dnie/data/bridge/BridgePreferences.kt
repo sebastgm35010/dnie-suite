@@ -5,7 +5,7 @@ import pe.gob.reniec.dnie.bridge.BridgeRuntimeSettings
 /** Only public connection preferences; pairing credentials and CAN are never stored here. */
 class BridgePreferences(context: Context) {
     private val prefs = context.getSharedPreferences("bridge-settings", Context.MODE_PRIVATE)
-    fun method(): BridgeConnectionMethod = runCatching { BridgeConnectionMethod.valueOf(prefs.getString("method", "TAILSCALE")!!) }.getOrDefault(BridgeConnectionMethod.TAILSCALE)
+    fun method(): BridgeConnectionMethod = runCatching { BridgeConnectionMethod.valueOf(prefs.getString("method", "LOCAL_NETWORK")!!) }.getOrDefault(BridgeConnectionMethod.LOCAL_NETWORK).let { if(it==BridgeConnectionMethod.TAILSCALE) BridgeConnectionMethod.LOCAL_NETWORK else it }
     fun settings(): BridgeRuntimeSettings = runCatching {
         BridgeRuntimeSettings(prefs.getInt("connect", 15_000), prefs.getInt("read", 120_000), prefs.getInt("nfc", 10_000))
     }.getOrDefault(BridgeRuntimeSettings())

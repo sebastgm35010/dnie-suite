@@ -125,6 +125,7 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
                 withContext(Dispatchers.IO) {
                     imported = read()
                     val transport = checkNotNull(imported).transport
+                    require(!transport.startsWith("tailscale_")) { "Vincula esta PC con el QR de Red segura" }
                     val method = when {
                         transport.startsWith("tailscale_") -> pe.gob.reniec.dnie.bridge.BridgeConnectionMethod.TAILSCALE
                         transport == "usb_accessory" -> pe.gob.reniec.dnie.bridge.BridgeConnectionMethod.USB_NETWORK

@@ -18,9 +18,11 @@ class DesktopSuiteSession(private val port: Int=SigningProvision.PHONE_PORT) : A
     private var identity: SuitePcIdentity?=null
     private var client: ContinuousSigningClient?=null
     private var export: Path?=null
+    val connectedPhone: String get()=transport?.connectedPhone.orEmpty()
+    val connectedPc: String get()=transport?.connectedPc.orEmpty()
     suspend fun connect(pc: String, phone: String, workspace: Path, identityFile: Path, onPairing: (PairingInfo)->Unit) {
         check(!closed && identity==null)
-        require(SigningProvision.privateAddress(pc) && SigningProvision.privateAddress(phone))
+        require(SigningProvision.privateAddress(pc) && (phone.isEmpty() || SigningProvision.privateAddress(phone) || pe.gob.reniec.dnie.desktop.remote.NetworkTargets.tailnetHost(phone)))
         require(java.net.NetworkInterface.getByInetAddress(java.net.InetAddress.getByName(pc))!=null)
         val first=!Files.exists(identityFile)
         val own=SuitePcIdentity.open(identityFile,pc); identity=own

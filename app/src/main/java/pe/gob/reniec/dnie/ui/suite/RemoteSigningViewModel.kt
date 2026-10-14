@@ -48,7 +48,9 @@ class RemoteSigningViewModel(application: Application) : AndroidViewModel(applic
         val generation = ++epoch
         val cardSlot = SuiteCardSlot(); slot = cardSlot
         val request = pair.provision(); provision = request
-        val link = PhoneSigningTransport(request, continuous = true); transport = link
+        val link = PhoneSigningTransport(request, continuous = true, presenceFactory = { p ->
+            pe.gob.reniec.dnie.data.network.AndroidNetworkPresence(getApplication()).offer(pe.gob.reniec.dnie.network.DiscoveryService.SUITE,p.fingerprint,p.token)
+        }); transport = link
         mutable.update { it.copy(busy = true, connected = false, sessionVisible = true, failureCode = "", message = "Esperando PC y autenticando Suite continua…") }
         DiagnosticLog.event("suite", "connection_requested")
         task = viewModelScope.launch {
@@ -151,7 +153,9 @@ class RemoteSigningViewModel(application: Application) : AndroidViewModel(applic
         if (System.currentTimeMillis() >= pair.expiresAt) { status("Solicitud vencida. Genera otra en la PC."); return }
         credentials?.fill('\u0000'); credentials = pin.toCharArray()
         val generation = ++epoch
-        val link = PhoneSigningTransport(pair)
+        val link = PhoneSigningTransport(pair, presenceFactory = { p ->
+            pe.gob.reniec.dnie.data.network.AndroidNetworkPresence(getApplication()).offer(pe.gob.reniec.dnie.network.DiscoveryService.SUITE,p.fingerprint,p.token)
+        })
         transport = link
         mutable.update { it.copy(busy = true, sessionVisible = true, failureCode = "", message = "Esperando y autenticando la suite PC por TLS…") }
         task = viewModelScope.launch {

@@ -6,6 +6,21 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using DniBridge;
 
+if(args.Length==2 && (args[0]=="--discovery-probe" || args[0]=="--discovery-probe-tailnet" || args[0]=="--discovery-probe-lan")) {
+    var testToken=Enumerable.Range(0,32).Select(i=>(byte)i).ToArray();
+    var testPin=Enumerable.Range(0,32).Select(i=>(byte)(255-i)).ToArray();
+    using var timeout=new CancellationTokenSource(TimeSpan.FromSeconds(10));
+    var found=args[0]=="--discovery-probe-tailnet"
+        ?await NetworkDiscovery.ProbeAsync(1,testPin,testToken,await TailnetPeers.AddressesAsync(timeout.Token),timeout.Token,timeoutMs:3000)
+        :args[0]=="--discovery-probe-lan"
+        ?await NetworkDiscovery.ProbeAsync(1,testPin,testToken,NetworkDiscovery.Broadcasts().Where(a=>!TailnetTransport.IsAddress(a)),timeout.Token,timeoutMs:3000)
+        :await NetworkDiscovery.FindAsync(1,testPin,testToken,"",timeout.Token);
+    var result=new {passed=found.Length>0,candidates=found.Length,tailnetEndpoint=found.Length>0 && TailnetTransport.IsAddress(found[0]),lanEndpoint=found.Length>0 && !TailnetTransport.IsAddress(found[0]),syntheticCredentials=true,cardOperations=0};
+    await File.WriteAllTextAsync(args[1],System.Text.Json.JsonSerializer.Serialize(result));
+    Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(result));
+    Environment.ExitCode=result.passed?0:1;return;
+}
+
 if (args.Length == 2 && args[0] == "--interop-fixture")
 {
     await InteropFixture.RunAsync(args[1]);
@@ -27,12 +42,13 @@ byte[] token = RandomNumberGenerator.GetBytes(32);
 byte[] pin = SHA256.HashData(certificate.RawData);
 int passed = 0;
 passed += BridgePairingQrTests.Run();
-foreach (var ip in new[] { "192.168.1.5", "10.0.0.2", "172.16.0.3" }) {
+passed += NetworkDiscoveryTests.Run();
+foreach (var ip in new[] { "192.168.1.5", "10.0.0.2", "172.16.0.3", "100.104.106.125" }) {
     var address = IPAddress.Parse(ip);
     Assert(LocalNetworkPolicy.IsBindingAllowed(address, [address]), "Assigned LAN/USB accepted.");
     Assert(!LocalNetworkPolicy.IsBindingAllowed(address, []), "Unassigned interface rejected.");
 }
-foreach (var ip in new[] { "0.0.0.0", "8.8.8.8", "100.104.106.125", "169.254.1.1", "::", "::1" })
+foreach (var ip in new[] { "0.0.0.0", "8.8.8.8", "100.63.0.1", "100.128.0.1", "169.254.1.1", "::", "::1" })
     Assert(!LocalNetworkPolicy.IsBindingAllowed(IPAddress.Parse(ip), [IPAddress.Parse(ip)]), "Public, wildcard or unsupported binding rejected.");
 BridgeSession.VerifyDriverIsolation([new IPEndPoint(IPAddress.Loopback, 35963)], 35963);
 Assert(true, "Loopback-only driver accepted.");

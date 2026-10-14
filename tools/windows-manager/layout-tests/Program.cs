@@ -11,12 +11,12 @@ internal static class Program {
         void Render()=>typeof(MainForm).GetMethod("Render",BindingFlags.Instance|BindingFlags.NonPublic)!.Invoke(form,null);
         form.Show();Application.DoEvents();
         var method=Field<ComboBox>("method");
-        foreach(var transport in new[]{"Tailscale","LAN","USB"}) {
+        foreach(var transport in new[]{"LAN","USB"}) {
             method.SelectedItem=transport;Application.DoEvents();
-            Check(Field<Panel>("pcRow").Visible==(transport!="USB"),"IP row matches transport");
+            Check(!Field<Panel>("pcRow").Visible,"IP row matches transport");
             Check(Field<Panel>("phoneRow").Visible==(transport!="USB"),"Phone row matches transport");
             Check(Field<Panel>("usbRow").Visible==(transport=="USB"),"USB row matches transport");
-            Check(Field<Button>("pair").Visible==(transport!="Tailscale"),"QR visibility matches transport");
+            Check(Field<Button>("pair").Visible,"QR visibility matches transport");
         }
         Set("serviceState",(uint)4);
         foreach(bool? published in new bool?[]{null,false,true}) {
@@ -28,7 +28,7 @@ internal static class Program {
         }
         Check(!Field<Button>("install").Visible,"No repair prompt when service healthy");
         var segments=Field<Dictionary<string,Button>>("transportButtons");
-        foreach(var transport in new[]{"Tailscale","LAN","USB"}) {
+        foreach(var transport in new[]{"LAN","USB"}) {
             method.SelectedItem=transport;Render();
             foreach(var (key,button) in segments) {
                 Check(!button.Enabled,"Transport cannot change during a session");
@@ -44,11 +44,11 @@ internal static class Program {
             Check(bitmap.GetPixel(0,0).ToArgb()==control.Parent!.BackColor.ToArgb(),"Health card clears its outer corner");
         }
         Check(Field<ComboBox>("pc").Parent!.GetType().Name=="AetherInputBox","PC input uses rounded wrapper");
-        Check(Field<TextBox>("phone").BorderStyle==BorderStyle.None,"Phone input has no sunken border");
+        Check(Field<ComboBox>("phone").DropDownStyle==ComboBoxStyle.DropDown,"Phone input has no sunken border");
 
         if(args.Length==1) {
             Directory.CreateDirectory(args[0]);Set("last",new BridgeStatus("Stopped","idle",ReaderPublished:true));Render();
-            foreach(var transport in new[]{"Tailscale","LAN","USB"}) {
+            foreach(var transport in new[]{"LAN","USB"}) {
                 method.SelectedItem=transport;Application.DoEvents();using var bitmap=new Bitmap(form.Width,form.Height);
                 form.DrawToBitmap(bitmap,new Rectangle(Point.Empty,form.Size));bitmap.Save(Path.Combine(args[0],"manager-"+transport+".png"));
             }

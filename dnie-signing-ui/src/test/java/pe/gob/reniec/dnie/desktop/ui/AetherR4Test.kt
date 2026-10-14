@@ -22,6 +22,11 @@ object SuiteTestSettings {
     fun create()=Preferences.userRoot().node("pe/gob/reniec/dnie/suite-tests/"+UUID.randomUUID()).also { synchronized(nodes) { nodes+=it } }
 }
 class AetherR4Test {
+    @Test fun retiredQrPreferenceMigratesToVectorSeal() {
+        val old=SuiteDesign(options=PdfSigningOptions(appearance=SignatureAppearance(badge=StampBadgeType.QR_VERIFICATION)))
+        assertEquals(StampBadgeType.SEAL_VECTOR,SuiteDesignPreferences.decode(SuiteDesignPreferences.encode(old)).options.appearance.badge)
+    }
+
     private fun children(c: Container): List<Component> = c.components.flatMap { listOf(it)+(if(it is Container) children(it) else emptyList()) }
     private fun await(condition: ()->Boolean) {
         val limit=System.nanoTime()+15_000_000_000L;var ready=false

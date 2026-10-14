@@ -21,7 +21,10 @@ import javax.net.ssl.X509TrustManager
 class PhoneSigningTransport(private val provision: SigningProvision,
                             private val port: Int = SigningProvision.PHONE_PORT,
                             private val continuous: Boolean = false,
-                            private val preAuthAttemptTimeoutMs: Long = 5_000L) : AutoCloseable {
+                            private val preAuthAttemptTimeoutMs: Long = 5_000L,
+                            private val presenceFactory: (SigningProvision)->AutoCloseable = { p ->
+                                pe.gob.reniec.dnie.network.PhoneDiscovery.offer(pe.gob.reniec.dnie.network.DiscoveryService.SUITE,p.fingerprint,p.token)
+                            }) : AutoCloseable {
     init {
         require(port in 1024..65535)
         require(preAuthAttemptTimeoutMs in 100L..300_000L)
@@ -31,6 +34,7 @@ class PhoneSigningTransport(private val provision: SigningProvision,
     private val lifecycle = Any()
     @Volatile private var listener: ServerSocket? = null
     @Volatile private var socket: Socket? = null
+    @Volatile private var presence: AutoCloseable? = null
     @Volatile private var preAuthWatchdog: ScheduledExecutorService? = null
     fun accept(onPeerAddress: (String) -> Unit = {}, onEvent: (String) -> Unit = {}): SigningDuplex {
         check(used.compareAndSet(false, true)) { "Request already used" }
@@ -71,6 +75,13 @@ class PhoneSigningTransport(private val provision: SigningProvision,
         }, expiryDelayMs, TimeUnit.MILLISECONDS)
         try {
             server.bind(java.net.InetSocketAddress(port), 1)
+            synchronized(lifecycle) {
+                check(!closed.get()) { "Closed" }
+                if(port==SigningProvision.PHONE_PORT) {
+                    try {presence=presenceFactory(provision)}
+                    catch(_: Exception){onEvent("discovery_unavailable")} // Explicit address + pinned TLS still work.
+                }
+            }
             onEvent("listener_ready")
             var lastFailure: Exception? = null
             while (true) {
@@ -134,6 +145,7 @@ class PhoneSigningTransport(private val provision: SigningProvision,
                         listener = null
                     }
                     onEvent("peer_authorized")
+                    synchronized(lifecycle) {presence?.close();presence=null}
                     onPeerAddress(peer) // Publish the address only after pinned TLS and token authorization.
                     // Idle input is bounded in this one-job prototype; never replay after timeout.
                     candidate.soTimeout = if (continuous) 0 else 300_000
@@ -166,6 +178,7 @@ class PhoneSigningTransport(private val provision: SigningProvision,
     override fun close() {
         synchronized(lifecycle) {
             if (closed.compareAndSet(false, true)) {
+                runCatching {presence?.close()};presence=null
                 runCatching { preAuthWatchdog?.shutdownNow() }
                 runCatching { listener?.close() }
                 runCatching { socket?.close() }

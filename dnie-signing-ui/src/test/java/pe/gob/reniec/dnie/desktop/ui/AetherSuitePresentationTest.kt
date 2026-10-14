@@ -22,7 +22,7 @@ class AetherSuitePresentationTest {
         PDDocument().use { doc -> repeat(3) {doc.addPage(PDPage())};doc.save(file.toFile()) }
         lateinit var window: SuiteWindow;lateinit var canvas: PreviewCanvas
         SwingUtilities.invokeAndWait { AetherSwingTheme.install();window=SuiteWindow(listOf(file),settings=SuiteTestSettings.create());window.isVisible=true
-            children(window).filterIsInstance<JTextField>().firstOrNull { it.name=="suite-phone" }?.text="192.168.1.10"
+            children(window).filterIsInstance<JComboBox<*>>().first { it.name=="suite-phone" }.editor.item="192.168.1.10"
             canvas=children(window).filterIsInstance<PreviewCanvas>().single() }
         fun await(condition: ()->Boolean) {
             val limit=System.nanoTime()+15_000_000_000L;var ready=false

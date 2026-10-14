@@ -14,7 +14,7 @@ fun runCli(args: Array<String>, output: PrintStream = System.out, errors: PrintS
         output.println("Suite DNIe - firma privada de escritorio")
         output.println("demo --workspace <carpeta> --input <archivo> [--input <otro>]")
         output.println("remote --pc <IP privada PC> --phone <IP teléfono> --workspace <carpeta> --input <archivo> [--input <otro>]")
-        output.println("suite --pc <IP PC> --phone <IP telefono> --workspace <carpeta> --identity <archivo DPAPI> (terminal interactiva)")
+        output.println("suite --workspace <carpeta> --identity <archivo DPAPI> [--pc <IP>] [--phone <IP/nombre Tailscale>] (red automática; terminal interactiva)")
         output.println("PDF: invisible por defecto; --pdf-mode visible agrega sello; detached produce .p7s.")
         output.println("Sello: --pdf-page N --pdf-box left,top,width,height (fracciones) --pdf-style card|minimal")
         output.println("Sello de tiempo: --pdf-tsa reniec (PDF integrado, requiere internet; sin sello por defecto).")

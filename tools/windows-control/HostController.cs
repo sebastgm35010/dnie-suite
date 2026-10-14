@@ -111,7 +111,8 @@ public sealed class BridgeHostRuntime {
         byte[] token=Convert.FromBase64String(saved.Token);
         try {
             string pin=Convert.ToHexString(SHA256.HashData(certificate.RawData));
-            string qr=BridgePairingQr.Encode(profile.Method=="USB"?"127.0.0.1":profile.Pc,39443,pin,token,certificate.NotAfter.ToUniversalTime(),DateTimeOffset.UtcNow,
+            string currentPc=profile.Method=="USB"?"127.0.0.1":LocalNetworkPolicy.ChooseLocalPc(profile.Pc,profile.Phone).ToString();
+            string qr=BridgePairingQr.Encode(currentPc,39443,pin,token,certificate.NotAfter.ToUniversalTime(),DateTimeOffset.UtcNow,
                 profile.Method=="USB"?"usb_accessory":"tls_reverse",true);
             return new(qr,string.Join(":",Enumerable.Range(0,32).Select(i=>pin.Substring(i*2,2))),certificate.NotAfter.ToUniversalTime().ToString("O"));
         }finally{CryptographicOperations.ZeroMemory(token);}
@@ -126,7 +127,7 @@ public sealed class BridgeHostRuntime {
                 var devices=WindowsPcscDevice.Enumerate();if(devices.Length!=1)throw new IOException("El lector dejo de estar disponible.");return new WindowsPcscDevice(devices[0]);
             },log,stop);return;
         }
-        var address=profile.Method=="USB"?IPAddress.Loopback:IPAddress.Parse(profile.Pc);
+        var address=profile.Method=="USB"?IPAddress.Loopback:LocalNetworkPolicy.ChooseLocalPc(profile.Pc,profile.Phone);
         LocalNetworkPolicy.VerifyBinding(address);
         if(profile.Method=="USB" && !File.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),"UsbDk Runtime Library","UsbDkHelper.dll")))
             throw new IOException("Instala el componente UsbDk x64 para USB directo. Puede requerir reiniciar Windows.");

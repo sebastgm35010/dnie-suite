@@ -27,12 +27,14 @@ public static class PersistentPcscHost
                 } else {
                     using var phone=config.Transport == "tls_reverse" ? new TcpClient() : await listener.AcceptTcpClientAsync(stop);
                     if (config.Transport == "tls_reverse") {
-                        var address=IPAddress.Parse(config.PhoneHost ?? throw new InvalidDataException("Missing phone IP."));
-                        if (!LocalNetworkPolicy.IsPrivateAddress(address)) throw new InvalidDataException("Phone outside LAN.");
-                        phone.Client.Bind(new IPEndPoint(IPAddress.Parse(config.Host),0));
+                        byte[] pin=System.Security.Cryptography.SHA256.HashData(certificate.RawData);
+                        var candidates=await NetworkDiscovery.FindAsync(1,pin,token,config.PhoneHost??"",stop);
+                        if(candidates.Length==0)candidates=await NetworkDiscovery.ResolveHintAsync(config.PhoneHost??"",stop);
+                        if(candidates.Length==0)throw new IOException("Esperando teléfono vinculado en la red.");
                         using var connect=CancellationTokenSource.CreateLinkedTokenSource(stop);
                         connect.CancelAfter(TimeSpan.FromSeconds(5));
-                        await phone.ConnectAsync(address,39444,connect.Token);
+                        await phone.ConnectAsync(candidates,39444,connect.Token);
+                        log?.Invoke("network_peer_found");
                     }
                     if (config.Transport == "tailscale_tcp") TailnetTransport.VerifyPeer(phone,config.PeerHost!);
                     if(config.Transport == "tls_reverse") await TransportReadiness.WaitAsync(phone.GetStream(),stop);

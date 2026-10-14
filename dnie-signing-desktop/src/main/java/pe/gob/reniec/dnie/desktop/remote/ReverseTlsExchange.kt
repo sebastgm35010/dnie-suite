@@ -16,8 +16,13 @@ import pe.gob.reniec.dnie.signing.link.*
 class ReverseTlsExchange(private val phone: String, private val provision: SigningProvision,
                          private val identity: JobTlsIdentity,
                          private val port: Int = SigningProvision.PHONE_PORT,
-                         private val continuous: Boolean = false) : SigningExchange {
-    init { require(SigningProvision.privateAddress(phone) && port in 1024..65535) }
+                         private val continuous: Boolean = false,
+                         private val autoDiscover: Boolean = port==SigningProvision.PHONE_PORT) : SigningExchange {
+    init { require((phone.isEmpty() || SigningProvision.privateAddress(phone) || NetworkTargets.tailnetHost(phone)) && port in 1024..65535) }
+    @Volatile var connectedPhone: String=""
+        private set
+    @Volatile var connectedPc: String=""
+        private set
     private val closed = AtomicBoolean()
     private val lifecycle = Any()
     @Volatile private var socket: Socket? = null
@@ -29,13 +34,21 @@ class ReverseTlsExchange(private val phone: String, private val provision: Signi
     }
     suspend fun openChannel(): SigningDuplex {
         val pc = InetAddress.getByName(provision.pcAddress)
-        val address = InetAddress.getByName(phone)
         while (System.currentTimeMillis() < provision.expiresAt) {
             coroutineContext.ensureActive(); check(!closed.get())
+            val context=coroutineContext
+            val hints=NetworkTargets.resolveHint(phone)
+            val discovered=if(autoDiscover) pe.gob.reniec.dnie.network.DiscoveryClient.find(
+                pe.gob.reniec.dnie.network.DiscoveryService.SUITE,provision.fingerprint,provision.token,
+                (pe.gob.reniec.dnie.network.DiscoveryClient.broadcasts()+hints+NetworkTargets.tailnetPeers()).distinct().take(64)) {
+                    context.ensureActive();check(!closed.get())
+                } else emptyList()
+            val address=(discovered+hints).firstOrNull()
+            if(address==null) {kotlinx.coroutines.delay(500);continue}
             val raw = Socket()
             synchronized(lifecycle) { if (closed.get()) { raw.close(); error("Closed") }; socket = raw }
             try {
-                raw.bind(InetSocketAddress(pc, 0))
+                if(!autoDiscover)raw.bind(InetSocketAddress(pc, 0))
                 raw.connect(InetSocketAddress(address, port), 1000)
             } catch (failure: java.io.IOException) {
                 raw.close()
@@ -44,7 +57,7 @@ class ReverseTlsExchange(private val phone: String, private val provision: Signi
                 continue // Only connect retries BEFORE TLS, authorization or any card request.
             }
             try {
-                val tls = identity.context.socketFactory.createSocket(raw, phone, port, true) as SSLSocket
+                val tls = identity.context.socketFactory.createSocket(raw, address.hostAddress, port, true) as SSLSocket
                 synchronized(lifecycle) { if (closed.get()) { tls.close(); error("Closed") }; socket = tls }
                 tls.useClientMode = false
                 tls.enabledProtocols = tls.supportedProtocols.filter { it == "TLSv1.2" || it == "TLSv1.3" }.toTypedArray()
@@ -58,6 +71,8 @@ class ReverseTlsExchange(private val phone: String, private val provision: Signi
                     check(System.currentTimeMillis() < provision.expiresAt && MessageDigest.isEqual(token, provision.token))
                 } finally { token.fill(0) }
                 tls.outputStream.write(1); tls.outputStream.flush()
+                connectedPhone=address.hostAddress
+                connectedPc=raw.localAddress.hostAddress
                 tls.soTimeout = if (continuous) 0 else 300_000
                 return object : SigningDuplex {
                     override val input = tls.inputStream

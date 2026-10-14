@@ -5,6 +5,23 @@ using System.Diagnostics;
 [assembly:System.Runtime.Versioning.SupportedOSPlatform("windows")]
 
 int passed=0;
+if(args.Contains("--status-only")) {
+    var response=await new AgentClient().SendAsync(new("status"));
+    Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(new {response.Ok,response.Status?.State,response.Status?.Phase,response.Status?.CardPresent,response.Status?.ReaderPublished}));
+    return;
+}
+if(args.Contains("--installed-network-smoke")) {
+    var client=new AgentClient();var before=await client.SendAsync(new("status"));
+    if(before.Status?.State!="Stopped")throw new Exception("Stop the current bridge before smoke testing.");
+    try {
+        var started=await client.SendAsync(new("start",new ConnectionProfile("LAN")));
+        Check(started.Ok && started.Status?.State=="Running","Automatic network starts without addresses");
+        await Task.Delay(1500);
+        Check((await client.SendAsync(new("status"))).Status?.State=="Running","Discovery keeps an idle host alive");
+    } finally {await client.SendAsync(new("stop"));}
+    Check((await client.SendAsync(new("status"))).Status?.State=="Stopped","Network smoke stops cleanly");
+    Console.WriteLine($"PASS {passed} installed automatic network checks; no card operations.");return;
+}
 if(args.Contains("--synthetic-usb-hang")) {
     Console.WriteLine("host_ready");Console.WriteLine("usb_redirect_initial");
     Console.WriteLine("pcsc_apdu_requested payload=synthetic-private");
@@ -61,6 +78,8 @@ if(args.Contains("--installed-agent-check")) {
     return;
 }
 ControlRules.Validate(profile);Check(true,"Tailnet config accepted");
+foreach(var automatic in new[]{new ConnectionProfile("LAN"),new ConnectionProfile("LAN","","sebas-poco.tail2752e9.ts.net"),new ConnectionProfile("LAN","","100.68.70.85")}) {ControlRules.Validate(automatic);Check(true,"Automatic secure network config accepted");}
+
 foreach(var invalid in new[]{new ConnectionProfile("Shell","cmd","run"),new ConnectionProfile("LAN","0.0.0.0","8.8.8.8"),new ConnectionProfile("USB","","bad / serial"),new ConnectionProfile("Tailscale","192.168.1.5","100.68.70.85")}) {
     try {ControlRules.Validate(invalid);throw new Exception("Unsupported profile accepted");}catch(ArgumentException){Check(true,"Invalid profile refused");}
 }

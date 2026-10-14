@@ -2,7 +2,7 @@ namespace DniBridge.Manager;
 public sealed partial class MainForm : Form {
     private readonly ComboBox method=new(){DropDownStyle=ComboBoxStyle.DropDownList};
     private readonly ComboBox pc=new(){DropDownStyle=ComboBoxStyle.DropDown};
-    private readonly TextBox phone=new();
+    private readonly ComboBox phone=new(){DropDownStyle=ComboBoxStyle.DropDown};
     private readonly ComboBox usb=new(){DropDownStyle=ComboBoxStyle.DropDownList};
     private readonly Label serviceStatus=new(),hostStatus=new(),error=new(),help=new();
     private readonly Button install=new AetherButton(){Text="Instalar / reparar servicio"},start=new AetherButton(){Text="Iniciar puente"},stop=new AetherButton(){Text="Detener puente"},pair=new AetherButton(){Text="Mostrar QR"},refresh=new AetherButton(){Text="Actualizar dispositivos"};
@@ -27,12 +27,12 @@ public sealed partial class MainForm : Form {
         Whole(health,1);
         var configuration=new AetherCard{AutoSize=true};
         var config=new TableLayoutPanel{BackColor=Aether.Surface,Dock=DockStyle.Top,AutoSize=true,ColumnCount=1,RowCount=7};config.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
-        var segments=new TableLayoutPanel{BackColor=Aether.Surface,Dock=DockStyle.Top,ColumnCount=3,Height=48,Margin=new Padding(0,0,0,15)};
-        foreach(var (key,label) in new[]{("Tailscale","Tailscale"),("LAN","Wi-Fi LAN"),("USB","USB directo")}) {
-            segments.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,33.33f));var segment=new AetherButton{Text=label,Dock=DockStyle.Fill,Margin=new Padding(0,0,8,0)};
+        var segments=new TableLayoutPanel{BackColor=Aether.Surface,Dock=DockStyle.Top,ColumnCount=2,Height=48,Margin=new Padding(0,0,0,15)};
+        foreach(var (key,label) in new[]{("LAN","Red (Wi-Fi / Tailscale)"),("USB","Cable USB")}) {
+            segments.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50f));var segment=new AetherButton{Text=label,Dock=DockStyle.Fill,Margin=new Padding(0,0,8,0)};
             Aether.Style(segment);segment.Click+=(_,_)=>method.SelectedItem=key;transportButtons.Add(key,segment);segments.Controls.Add(segment);
         }
-        method.Items.AddRange(new object[]{"Tailscale","LAN","USB"});method.SelectedIndex=0;config.Controls.Add(segments);
+        method.Items.AddRange(new object[]{"LAN","USB"});method.SelectedIndex=0;config.Controls.Add(segments);
         void Input(Panel row,Label label,System.Windows.Forms.Control field,string text) {
             row.BackColor=Aether.Surface;row.Dock=DockStyle.Top;row.Margin=new Padding(0,0,0,10);
             var table=new TableLayoutPanel{BackColor=Aether.Surface,Dock=DockStyle.Top,AutoSize=true,ColumnCount=2};table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,205));table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));

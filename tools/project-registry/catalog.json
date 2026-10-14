@@ -51,7 +51,8 @@
     "docs/design/ESPECIFICACION_PULIDO_AETHER_R4.md": "external_aether_r4_recommendations",
     "docs/operations/AETHER_R4_RESULTADOS.json": "aether_r4_machine_readable_results",
     "docs/design/QR_COTEJO_R5.md": "current_stamp_qr_format_and_comparison",
-    "docs/operations/QR_R5_RESULTADOS.json": "stamp_qr_r5_verifiable_results"
+    "docs/operations/QR_R5_RESULTADOS.json": "stamp_qr_r5_verifiable_results",
+    "docs/architecture/RED_COORDINADA_R6.md": "current_network_coordination_and_r6_runtime_evidence"
   },
   "features": [
     {
@@ -639,7 +640,7 @@
       "id": "stamp_aether",
       "name": "Apariencia vectorial Aether y selección de páginas PDF",
       "status": "implemented_runtime_validated",
-      "note": "Aether R4: escena pura con círculos/escudo relleno; adaptadores Android/Desktop, texto y geometría compartidos. Una firma/widget y réplicas Stamp; DocMDP P=2 intacto. Android80 instalada, 18 core/17 PDF desktop/26 PDF Android y 2 instrumentadas pasan. QR público anterior conservado; enriquecimiento difiere. Firma física nueva pendiente. QR R5 implementado; ver stamp_qr para alcance y validaciones.",
+      "note": "Aether R4: escena pura con círculos/escudo relleno; adaptadores Android/Desktop, texto y geometría compartidos. Una firma/widget y réplicas Stamp; DocMDP P=2 intacto. Android80 instalada, 18 core/17 PDF desktop/26 PDF Android y 2 instrumentadas pasan. QR público anterior conservado; enriquecimiento difiere. Firma física nueva pendiente. QR R5 implementado; ver stamp_qr para alcance y validaciones. R6 usa sello/ninguno; migra preferencia histórica QR a sello y corrige preview de anotaciones.",
       "evidence": "docs/design/RESULTADO_AETHER_R4.md",
       "files": {
         "model": [
@@ -715,9 +716,9 @@
     {
       "id": "stamp_qr",
       "name": "Sello QR público y cotejo Android",
-      "status": "implemented_synthetic_and_runtime_validated",
-      "note": "2026-10-14 · QR R5: DNIEQR1 con SHA-256 completo del certificado DER y original, serie/identidad, muestra explícita y cotejo Android por cámara/texto. SAF IO acotado; huella/serie/identidad separadas de consulta manual TSL/OCSP/CRL. No valida CMS/papel por QR. APK81 instalada, Suite/CLI actualizadas, 207 pruebas pasan/1 omitida y 6 instrumentadas pasan. Nueva firma/cámara física pendiente.",
-      "evidence": "docs/design/QR_COTEJO_R5.md",
+      "status": "retired_ui_by_user_r6",
+      "note": "R6 retira generador QR de opciones nuevas y cotejador; conserva codec/enum y render históricos para compatibilidad. QR de emparejamiento sigue disponible.",
+      "evidence": "docs/architecture/RED_COORDINADA_R6.md",
       "files": {
         "model": [
           "dnie-signing-core/src/main/java/pe/gob/reniec/dnie/pdf/StampQrCodec.kt",
@@ -729,16 +730,11 @@
         "adapter": [
           "dnie-pdf/src/main/java/pe/gob/reniec/dnie/pdf/PadesSignerEngine.kt",
           "dnie-pdf-desktop/src/main/java/pe/gob/reniec/dnie/pdf/desktop/JvmPdfSigner.kt",
-          "app/src/main/java/pe/gob/reniec/dnie/data/qr/AndroidQrScanner.kt",
-          "app/src/main/java/pe/gob/reniec/dnie/data/qr/StampQrRepository.kt"
+          "app/src/main/java/pe/gob/reniec/dnie/data/qr/AndroidQrScanner.kt"
         ],
-        "frontend": [
-          "app/src/main/java/pe/gob/reniec/dnie/ui/verification/StampQrScreen.kt",
-          "app/src/main/java/pe/gob/reniec/dnie/ui/verification/StampQrViewModel.kt"
-        ],
+        "frontend": [],
         "test": [
           "dnie-signing-core/src/test/java/pe/gob/reniec/dnie/pdf/StampQrCodecTest.kt",
-          "app/src/test/java/pe/gob/reniec/dnie/ui/verification/StampQrViewModelTest.kt",
           "app/src/androidTest/java/pe/gob/reniec/dnie/ui/StampQrPresentationTest.kt",
           "dnie-pdf-desktop/src/test/java/pe/gob/reniec/dnie/pdf/desktop/AetherStampTest.kt"
         ]
@@ -746,6 +742,40 @@
       "depends_on": [
         "stamp_aether",
         "validation"
+      ]
+    },
+    {
+      "id": "network_coordination",
+      "name": "Red coordinada Bridge y Suite sin IP fija",
+      "status": "implemented_synthetic_and_device_discovery_validated",
+      "note": "2026-10-14 · Red R6 / APK82 (3.1.0) instalada: Bridge Red (Wi-Fi/Tailscale) + USB; descubrimiento autenticado y TLS fijado por huella/token, IP opcional en Suite/gestor y CLI. Vista previa Android muestra anotaciones existentes. QR de sello/cotejador retirados de UI; QR de emparejamiento conservado. 283 pruebas JVM pasan, 3 optativas/privilegios omitidas; 261 Bridge + 48 Control + 41 Manager + 3 servicio instalado pasan; 8 instrumentadas Android pasan. Descubrimiento Windows→Android verificado por LAN y Tailscale por separado, credenciales sintéticas, sin DNI. Gestor/servicio/Suite actualizados, identidad conservada y driver sin reinstalar. Firma NFC y cambio físico de red pendientes.",
+      "evidence": "docs/architecture/RED_COORDINADA_R6.md",
+      "files": {
+        "engine": [
+          "dnie-network-core/src/main/java/pe/gob/reniec/dnie/network/"
+        ],
+        "adapter": [
+          "app/src/main/java/pe/gob/reniec/dnie/data/network/AndroidNetworkPresence.kt",
+          "tools/windows-bridge/NetworkDiscovery.cs",
+          "tools/windows-bridge/PersistentPcscHost.cs",
+          "dnie-signing-desktop/src/main/java/pe/gob/reniec/dnie/desktop/remote/ReverseTlsExchange.kt",
+          "dnie-signing-link/src/main/java/pe/gob/reniec/dnie/signing/link/PhoneSigningTransport.kt"
+        ],
+        "frontend": [
+          "tools/windows-manager/MainForm.cs",
+          "dnie-signing-ui/src/main/java/pe/gob/reniec/dnie/desktop/ui/SuiteWindow.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/bridge/BridgeScreen.kt"
+        ],
+        "test": [
+          "dnie-network-core/src/test/java/pe/gob/reniec/dnie/network/DiscoveryTest.kt",
+          "tools/windows-bridge/tests/NetworkDiscoveryTests.cs",
+          "app/src/androidTest/java/pe/gob/reniec/dnie/ui/NetworkDiscoveryInstrumentedTest.kt",
+          "dnie-signing-link/src/test/java/pe/gob/reniec/dnie/signing/link/DiscoveryOptionalTest.kt"
+        ]
+      },
+      "depends_on": [
+        "bridge",
+        "suite"
       ]
     }
   ],
@@ -935,30 +965,37 @@
     {
       "id": "aether_qr_enrichment",
       "feature": "stamp_qr",
-      "state": "implemented_synthetic_validated",
-      "description": "2026-10-14 · QR R5: DNIEQR1 con SHA-256 completo del certificado DER y original, serie/identidad, muestra explícita y cotejo Android por cámara/texto. SAF IO acotado; huella/serie/identidad separadas de consulta manual TSL/OCSP/CRL. No valida CMS/papel por QR. APK81 instalada, Suite/CLI actualizadas, 207 pruebas pasan/1 omitida y 6 instrumentadas pasan. Nueva firma/cámara física pendiente.",
-      "evidence": "docs/design/QR_COTEJO_R5.md"
+      "state": "cancelled_by_user_r6",
+      "description": "QR del sello y cotejador retirados de interfaz por R6; conservar compatibilidad de archivos históricos. No reabrir este trabajo sin instrucción.",
+      "evidence": "docs/architecture/RED_COORDINADA_R6.md"
     },
     {
       "id": "stamp_qr_physical",
       "feature": "stamp_qr",
-      "state": "needs_physical_test",
-      "description": "Firma NFC nueva con sello QR y lectura de cámara apuntando a pantalla/papel. Pruebas sintéticas y scanner independiente superadas; no asumir prueba física.",
-      "evidence": "docs/design/QR_COTEJO_R5.md"
+      "state": "cancelled_by_user_r6",
+      "description": "QR del sello y cotejador retirados de interfaz por R6; conservar compatibilidad de archivos históricos. No reabrir este trabajo sin instrucción.",
+      "evidence": "docs/architecture/RED_COORDINADA_R6.md"
     },
     {
       "id": "stamp_qr_pdf_cms_validation",
       "feature": "stamp_qr",
-      "state": "deferred",
-      "description": "Validación PDF/CMS dentro del cotejador, elección de firma/revisión y extracción autenticada de certificado/original. Hoy requiere original/CER y validador externo.",
-      "evidence": "docs/design/QR_COTEJO_R5.md"
+      "state": "cancelled_by_user_r6",
+      "description": "QR del sello y cotejador retirados de interfaz por R6; conservar compatibilidad de archivos históricos. No reabrir este trabajo sin instrucción.",
+      "evidence": "docs/architecture/RED_COORDINADA_R6.md"
     },
     {
       "id": "android_pdf_widget_preview",
       "feature": "pdf_android",
-      "state": "open",
-      "description": "PdfRenderer del teléfono omitió widget de firma en PDF sintético. PDFBox Android y render externo sí lo muestran/decodifican. Adaptador de preview de PDFs previos requiere análisis aparte.",
-      "evidence": "docs/design/QR_COTEJO_R5.md"
+      "state": "implemented_device_validated",
+      "description": "APK82: AndroidStampPreview renderiza anotaciones con PDFBox fuera de UI. Instrumentada sobre PDF sintético firmado verifica CMS y decodifica widget histórico; entrada/original sin cambios.",
+      "evidence": "docs/architecture/RED_COORDINADA_R6.md"
+    },
+    {
+      "id": "network_r6_physical_signing_and_mobility",
+      "feature": "network_coordination",
+      "state": "needs_physical_test",
+      "description": "Firma con DNI por Red LAN/Tailscale, regresión USB y cambio físico de IP entre sesiones; HMAC físico sintético y TLS loopback ya probados. No migrar TCP ni reenviar firmas.",
+      "evidence": "docs/architecture/RED_COORDINADA_R6.md"
     }
   ],
   "facts": [
@@ -1123,6 +1160,12 @@
       "category": "installed_synthetic_and_instrumented_validated",
       "value": "2026-10-14 · QR R5: DNIEQR1 con SHA-256 completo del certificado DER y original, serie/identidad, muestra explícita y cotejo Android por cámara/texto. SAF IO acotado; huella/serie/identidad separadas de consulta manual TSL/OCSP/CRL. No valida CMS/papel por QR. APK81 instalada, Suite/CLI actualizadas, 207 pruebas pasan/1 omitida y 6 instrumentadas pasan. Nueva firma/cámara física pendiente.",
       "evidence": "docs/design/QR_COTEJO_R5.md"
+    },
+    {
+      "id": "network_r6_delivered",
+      "category": "installed_synthetic_and_device_discovery_validated",
+      "value": "2026-10-14 · Red R6 / APK82 (3.1.0) instalada: Bridge Red (Wi-Fi/Tailscale) + USB; descubrimiento autenticado y TLS fijado por huella/token, IP opcional en Suite/gestor y CLI. Vista previa Android muestra anotaciones existentes. QR de sello/cotejador retirados de UI; QR de emparejamiento conservado. 283 pruebas JVM pasan, 3 optativas/privilegios omitidas; 261 Bridge + 48 Control + 41 Manager + 3 servicio instalado pasan; 8 instrumentadas Android pasan. Descubrimiento Windows→Android verificado por LAN y Tailscale por separado, credenciales sintéticas, sin DNI. Gestor/servicio/Suite actualizados, identidad conservada y driver sin reinstalar. Firma NFC y cambio físico de red pendientes.",
+      "evidence": "docs/architecture/RED_COORDINADA_R6.md"
     }
   ]
 }

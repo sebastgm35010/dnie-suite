@@ -40,3 +40,4 @@ include(":dnie-validation-core")
 
 include(":dnie-desktop-orchestration")
 include(":dnie-vault-recovery")
+include(":dnie-network-core")

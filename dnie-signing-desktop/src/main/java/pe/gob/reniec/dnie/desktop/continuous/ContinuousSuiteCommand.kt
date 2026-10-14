@@ -14,17 +14,16 @@ import pe.gob.reniec.dnie.signing.link.*
 /** Interactive adapter only; PIN uses Console.readPassword, never argv, echo or persisted queue. */
 object ContinuousSuiteCommand {
     fun execute(args: Array<String>, output: PrintStream): Int {
-        require(args.size >= 9 && (args.size-9)%2==0 && args[0] == "suite" && args[1] == "--pc" && args[3] == "--phone" &&
-            args[5] == "--workspace" && args[7] == "--identity")
-        val pdf = pe.gob.reniec.dnie.desktop.cli.DesktopPdfOptions()
-        for(i in 9 until args.size step 2) pdf.accept(args[i],args[i+1])
+        val options=ContinuousSuiteOptions.parse(args)
+        val pdf = options.pdf
         val pdfMode=pdf.mode; val pdfOptions=pdf.build()
-        val pc = args[2]; val phone = args[4]
-        require(SigningProvision.privateAddress(pc) && SigningProvision.privateAddress(phone))
+        val phone = options.phoneHint
+        val pc = pe.gob.reniec.dnie.desktop.remote.SuiteNetworkAddress.choose(options.pcHint,phone)
+        require(SigningProvision.privateAddress(pc))
         require(java.net.NetworkInterface.getByInetAddress(java.net.InetAddress.getByName(pc)) != null)
-        val workspace = Path.of(args[6]).toAbsolutePath()
+        val workspace = options.workspace
         val console: Console = System.console() ?: error("Use an interactive terminal; PIN is never read from redirected input")
-        val identityPath = Path.of(args[8]).toAbsolutePath()
+        val identityPath = options.identity
         val firstEnrollment = !Files.exists(identityPath)
         SuitePcIdentity.open(identityPath, pc).use { identity ->
             Files.createDirectories(workspace)

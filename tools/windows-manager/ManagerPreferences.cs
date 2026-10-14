@@ -17,8 +17,16 @@ public sealed class ManagerPreferences {
         }catch(Exception){ }
         return new();
     }
+    public bool PairingShown=>File.Exists(Path.Combine(Directory,"pairing-shown"));
+    public void MarkPairingShown(){System.IO.Directory.CreateDirectory(Directory);File.WriteAllText(Path.Combine(Directory,"pairing-shown"),"1");}
+    public string[] History(){try {return System.Text.Json.JsonSerializer.Deserialize<string[]>(File.ReadAllText(Path.Combine(Directory,"phone-history.json")))?.Where(ValidHint).Distinct().Take(4).ToArray()??[];}catch{return [];}}
+    private static bool ValidHint(string value)=>value.Length<=253 && (TailnetTransport.IsHost(value) || System.Net.IPAddress.TryParse(value,out var ip) && NetworkDiscovery.Allowed(ip));
     public void Save(ConnectionProfile profile) {
         System.IO.Directory.CreateDirectory(Directory);string path=Path.Combine(Directory,"settings.json");
+        if(profile.Method=="LAN" && ValidHint(profile.Phone)) {
+            var history=new[]{profile.Phone}.Concat(History()).Distinct().Take(4).ToArray();
+            File.WriteAllText(Path.Combine(Directory,"phone-history.json"),JsonSerializer.Serialize(history));
+        }
         File.WriteAllText(path+".new",JsonSerializer.Serialize(profile,ControlWire.Json));File.Move(path+".new",path,true);
     }
 }

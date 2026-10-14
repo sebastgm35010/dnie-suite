@@ -17,6 +17,6 @@ object SuiteNetworkAddress {
         return select(preferred, assigned, routed)
     }
     fun select(preferred: String, assigned: List<String>, routed: String?): String =
-        preferred.takeIf { it in assigned } ?: routed?.takeIf { it in assigned }
+        routed?.takeIf { it in assigned } ?: preferred.takeIf { it in assigned }
         ?: assigned.firstOrNull().orEmpty()
 }

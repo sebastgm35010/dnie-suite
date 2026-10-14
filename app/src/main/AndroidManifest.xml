@@ -6,6 +6,7 @@
 
     <!-- Permiso para feedback háptico en respuestas APDU y eventos de firma -->
     <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
 
     <!-- Declaración de hardware NFC obligatorio para filtrado en Google Play Store -->
     <uses-feature

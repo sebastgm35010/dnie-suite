@@ -43,6 +43,10 @@ class BridgePairing(
         if (transport.startsWith("tailscale_")) require(TailnetAddress.validHost(host))
     }
     fun fingerprint(): String = pin.joinToString(":") { "%02X".format(it) }
+    fun discoveryOffer(): AutoCloseable {
+        require(transport=="tls_reverse")
+        return pe.gob.reniec.dnie.network.PhoneDiscovery.offer(pe.gob.reniec.dnie.network.DiscoveryService.BRIDGE,pin,secret)
+    }
     /** Change destination metadata without replacing trusted credentials or transport policy. */
     fun withHost(host: String) = BridgePairing(host, port, pin, secret, expiresAtEpochMillis, transport, persistent)
     override fun close() { pin.fill(0); secret.fill(0) }

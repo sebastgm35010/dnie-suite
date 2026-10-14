@@ -23,7 +23,12 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
     private var resourcesClosed=false
     private var previewDni="00000000"
     private val signedOutputs=mutableMapOf<Path,Path>()
-    private val phone=JTextField(prefs.get("phone",""),12).apply { name="suite-phone" }
+    private var JComboBox<String>.text: String
+        get()=editor.item?.toString().orEmpty()
+        set(value){editor.item=value}
+    private val phone=AetherComboBox((listOf("")+prefs.get("phone.history",prefs.get("phone","")).split('\n')).distinct().take(5).toTypedArray()).apply {
+        name="suite-phone";isEditable=true;text=prefs.get("phone","");toolTipText="Vacío: buscar Android automáticamente. También admite una IP o nombre Tailscale."
+    }
     private val pc=JTextField(pe.gob.reniec.dnie.desktop.remote.SuiteNetworkAddress.choose(prefs.get("pc",""),phone.text),12).apply { name="suite-pc" }
     private val workspace=JTextField(prefs.get("workspace",defaultPath("SuiteContinuousJobs")),38).apply { name="suite-workspace" }
     private val identity=JTextField(prefs.get("identity",defaultPath("SuiteContinuousState/pc.dpapi")),38).apply { name="suite-identity" }
@@ -40,7 +45,7 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
     private val mode=AetherComboBox(arrayOf("Sello visible","PDF invisible","Firma separada (.p7s)"))
     private val tsa=AetherToggleChip("Sello de tiempo RENIEC")
     private val style=AetherComboBox(arrayOf(StampStyle.INSTITUTIONAL,StampStyle.CARD,StampStyle.MINIMAL))
-    private val badge=AetherComboBox(StampBadgeType.entries.toTypedArray())
+    private val badge=AetherComboBox(arrayOf(StampBadgeType.SEAL_VECTOR,StampBadgeType.NONE))
     private val target=AetherComboBox(StampPageTarget.entries.toTypedArray())
     private val colors=ColorSwatchSelector()
     private val title=JTextField("FIRMADO DIGITALMENTE")
@@ -82,7 +87,7 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
         brand.add(JLabel("Firma digital PAdES y lotes privados").apply { foreground=AetherSwingTheme.muted;font=font.deriveFont(11f) })
         header.add(brand,BorderLayout.WEST)
         header.add(JPanel(FlowLayout(FlowLayout.RIGHT,7,0)).apply { isOpaque=false
-            add(pill);add(JLabel("IP Android").apply { border=EmptyBorder(0,0,0,5) });phone.preferredSize=Dimension(118,36);add(phone);add(connect);add(qr);add(disconnect);add(network)
+            add(pill);add(JLabel("Teléfono").apply { border=EmptyBorder(0,0,0,5) });phone.preferredSize=Dimension(155,36);add(phone);add(connect);add(qr);add(disconnect);add(network)
         },BorderLayout.EAST);add(header,BorderLayout.NORTH)
         buildAdvancedDialog()
         val add=AetherButton("+ Añadir archivos");val remove=AetherButton("Quitar",ButtonVariant.GHOST)
@@ -137,7 +142,7 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
         card("Modalidad de firma") { option(it,"Formato",mode);it.add(tsa)
             it.add(JLabel("<html>Requiere internet. Se publica solo<br>si el sello de tiempo se verifica.</html>").apply { font=font.deriveFont(11f);foreground=AetherSwingTheme.muted }) }
         card("Apariencia del sello") { option(it,"Estilo",style);option(it,"Insignia",badge);it.add(JLabel("Color del sello"));it.add(colors)
-            it.add(JLabel("<html>QR con huellas públicas para cotejo.<br>Escanearlo no valida la firma.</html>").apply { font=font.deriveFont(11f);foreground=AetherSwingTheme.muted }) }
+ }
         card("Datos visibles") { panel ->
             panel.add(JPanel(java.awt.GridLayout(0,2,4,2)).apply { isOpaque=false;fields.values.forEach(::add) });panel.add(Box.createVerticalStrut(10))
             option(panel,"Título del sello",title);option(panel,"Motivo",reason);option(panel,"Lugar",location);panel.add(tsaBadge)
@@ -235,20 +240,27 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
         try {
             val output=Path.of(workspace.text).toAbsolutePath();val own=Path.of(identity.text).toAbsolutePath()
             val remote=phone.text.trim()
-            if(!pe.gob.reniec.dnie.signing.link.SigningProvision.privateAddress(remote)) {
-                status.text="Indica la dirección IP local o Tailscale de Android para preparar la conexión y el QR.";return
+            if(remote.isNotEmpty() && !pe.gob.reniec.dnie.signing.link.SigningProvision.privateAddress(remote) && !pe.gob.reniec.dnie.desktop.remote.NetworkTargets.tailnetHost(remote)) {
+                status.text="Deja el teléfono vacío para buscarlo o indica una IP privada/nombre Tailscale válido.";return
             }
             val previous=pc.text.trim()
             val local=pe.gob.reniec.dnie.desktop.remote.SuiteNetworkAddress.choose(previous,remote)
             pc.text=local
-            if(local!=previous) JOptionPane.showMessageDialog(this,"Se usará la dirección actual $local. La PC conserva su identidad; en Android actualizado no necesitas importar otro TXT/QR.")
+            status.text="Ruta automática de PC: $local"
             connecting=true;pairing=null;pairingQr.close();setBusy(true);qr.isEnabled=false;status.text="Esperando Android. Abre Suite continua en el teléfono…"
             controller.connect(local,remote,output,own,{ info ->
                 pairing=info;fingerprint.text="Huella PC: ${info.fingerprint}";qr.isEnabled=true
                 status.text=if(info.firstEnrollment) "Vincula esta PC mediante TXT/QR en Android." else "PC recordada: pulsa Conectar PC guardada en Android. La IP puede cambiar."
                 if(showQr) pairingQr.open(info)
             },{ ok,message -> connecting=false;pairing=null;pairingQr.close();connected=ok;setBusy(false);status.text=message
-                if(ok) { prefs.put("pc",local);prefs.put("phone",remote);prefs.put("workspace",output.toString());prefs.put("identity",own.toString()) }
+                if(ok) {
+                    val found=controller.connectedPhone().ifEmpty {remote}
+                    phone.text=found
+                    val history=(listOf(found)+prefs.get("phone.history","").split('\n')).filter {it.isNotBlank()}.distinct().take(4)
+                    prefs.put("phone.history",history.joinToString("\n"))
+                    phone.removeAllItems();phone.addItem("");history.forEach(phone::addItem);phone.text=found
+                    pc.text=controller.connectedPc().ifEmpty {local}
+                    prefs.put("pc",pc.text);prefs.put("phone",found);prefs.put("workspace",output.toString());prefs.put("identity",own.toString()) }
             })
         } catch(_: Exception) { connecting=false;setBusy(false);status.text="Configuración de conexión inválida." }
     }
