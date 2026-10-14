@@ -2,6 +2,7 @@ BEGIN TRANSACTION;
 CREATE TABLE checkpoints(name TEXT PRIMARY KEY, commit_hash TEXT NOT NULL, subject TEXT NOT NULL);
 INSERT INTO "checkpoints" VALUES('checkpoint/3.1.0-v4','5d833d0d774ce490a620a96e39283082c197a479','Installed Android and Windows 3.1.0 with reviewed v4 backend; verified JVM, Windows and Android UI checks');
 INSERT INTO "checkpoints" VALUES('checkpoint/address-mobility-apk77','ea96224741f8fc6caf745e6f58cb25f8d8910a44','fix(connections): preserve PC trust across address changes');
+INSERT INTO "checkpoints" VALUES('checkpoint/aether-r4-complete','22475881b7d0ecc116736e3dc98217e06f4e7e15','Bridge and Suite R4 delivered and validated; Android80 installed; QR enrichment deferred');
 INSERT INTO "checkpoints" VALUES('checkpoint/aether-r4-tested','1c7d67e54b6622678b7a04b3e4baa738c056ee52','Bridge and Suite R4 verified before deployment; QR enrichment deferred');
 INSERT INTO "checkpoints" VALUES('checkpoint/aether-redesign-complete-r2','392d0a5113d525dc8f822a56940e3dd6326deb70','Aether redesign delivered: shared PDF stamps, Suite and Manager; Android79 compiled, physical runtime pending');
 INSERT INTO "checkpoints" VALUES('checkpoint/aether-redesign-ready','03605391148f4f61b740aa74fef0de3793b1ea2c','Complete Aether redesign built and synthetically verified before deployment');
@@ -6228,7 +6229,7 @@ INSERT INTO "metadata" VALUES('catalog_review_date','2026-10-14');
 INSERT INTO "metadata" VALUES('index_method','tracked files; lexical symbols/imports, not runtime call graph');
 INSERT INTO "metadata" VALUES('project','DnieSignerPeruEvolution');
 INSERT INTO "metadata" VALUES('schema_version','1');
-INSERT INTO "metadata" VALUES('source_commit','ced2b30be8408cbf2084e962a02cfc7b5b149f2c');
+INSERT INTO "metadata" VALUES('source_commit','90ae2666543d94b91ba4590698843d174eced476');
 CREATE TABLE module_dependencies(source TEXT REFERENCES modules(id), target TEXT REFERENCES modules(id),
  scope TEXT NOT NULL, line INTEGER NOT NULL, PRIMARY KEY(source,target,scope,line));
 INSERT INTO "module_dependencies" VALUES('app','dnie-core','implementation',112);
