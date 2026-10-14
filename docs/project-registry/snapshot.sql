@@ -2,6 +2,7 @@ BEGIN TRANSACTION;
 CREATE TABLE checkpoints(name TEXT PRIMARY KEY, commit_hash TEXT NOT NULL, subject TEXT NOT NULL);
 INSERT INTO "checkpoints" VALUES('checkpoint/3.1.0-v4','5d833d0d774ce490a620a96e39283082c197a479','Installed Android and Windows 3.1.0 with reviewed v4 backend; verified JVM, Windows and Android UI checks');
 INSERT INTO "checkpoints" VALUES('checkpoint/address-mobility-apk77','ea96224741f8fc6caf745e6f58cb25f8d8910a44','fix(connections): preserve PC trust across address changes');
+INSERT INTO "checkpoints" VALUES('checkpoint/aether-redesign-complete-r2','392d0a5113d525dc8f822a56940e3dd6326deb70','Aether redesign delivered: shared PDF stamps, Suite and Manager; Android79 compiled, physical runtime pending');
 INSERT INTO "checkpoints" VALUES('checkpoint/aether-redesign-ready','03605391148f4f61b740aa74fef0de3793b1ea2c','Complete Aether redesign built and synthetically verified before deployment');
 INSERT INTO "checkpoints" VALUES('checkpoint/aether-redesign-ready-r2','3caa11bf51a2f2f8c8f4f5cdcbccb4914de2af90','Aether complete candidate with ISO single-widget conformance and synthetic validation');
 INSERT INTO "checkpoints" VALUES('checkpoint/android-pades-profile-h6','1638a666609660eb2841e3bea247090e64004c9e','fix(android): encode PDF CMS as DER without signingTime for PAdES profile');
@@ -6136,7 +6137,7 @@ INSERT INTO "metadata" VALUES('catalog_review_date','2026-10-14');
 INSERT INTO "metadata" VALUES('index_method','tracked files; lexical symbols/imports, not runtime call graph');
 INSERT INTO "metadata" VALUES('project','DnieSignerPeruEvolution');
 INSERT INTO "metadata" VALUES('schema_version','1');
-INSERT INTO "metadata" VALUES('source_commit','81af17aace8256a7d4416fb97026dd42a3afb4fa');
+INSERT INTO "metadata" VALUES('source_commit','e9c13dc075645080262debbf2f3554067bbf5878');
 CREATE TABLE module_dependencies(source TEXT REFERENCES modules(id), target TEXT REFERENCES modules(id),
  scope TEXT NOT NULL, line INTEGER NOT NULL, PRIMARY KEY(source,target,scope,line));
 INSERT INTO "module_dependencies" VALUES('app','dnie-core','implementation',112);
