@@ -16,6 +16,8 @@ import pe.gob.reniec.dnie.signing.link.SuiteCardUnavailableException
 class SuiteController(private val product: DesktopProductCoordinator = DesktopIntegration.coordinator()) : AutoCloseable {
     private val jobs=Executors.newSingleThreadExecutor { Thread(it,"suite-ui-jobs") }
     private val previews=Executors.newSingleThreadExecutor { Thread(it,"suite-ui-preview") }
+    private val stamps=Executors.newSingleThreadExecutor { Thread(it,"suite-ui-stamp") }
+    private val stampGeneration=AtomicLong()
     private val generation=AtomicLong()
     private val connections=AtomicLong()
     @Volatile private var permit: AutoCloseable?=null
@@ -50,6 +52,25 @@ class SuiteController(private val product: DesktopProductCoordinator = DesktopIn
             ui { done(valid) }
         }
     }
+    fun fileSizes(inputs: List<Path>,done: (Map<Path,Long?>)->Unit) {
+        previews.submit {
+            val sizes=inputs.associateWith { runCatching { java.nio.file.Files.size(it) }.getOrNull() }
+            ui { done(sizes) }
+        }
+    }
+    fun stamp(width: Float,height: Float,name: String,options: pe.gob.reniec.dnie.pdf.PdfSigningOptions,timestamp: Long,
+        done: (java.awt.image.BufferedImage?,String?)->Unit) {
+        val version=stampGeneration.incrementAndGet()
+        stamps.submit {
+            if(version!=stampGeneration.get() || closed) return@submit
+            val rendered=runCatching { pe.gob.reniec.dnie.pdf.desktop.DesktopStampRenderer.renderPreviewImage(
+                (width*2).toInt().coerceIn(1,1600),(height*2).toInt().coerceIn(1,1600),name,"00000000",options,width,height,timestamp) }
+            SwingUtilities.invokeLater {
+                if(closed || version!=stampGeneration.get()) rendered.getOrNull()?.flush()
+                else done(rendered.getOrNull(),rendered.exceptionOrNull()?.message)
+            }
+        }
+    }
     fun sign(request: DesktopSigningRequest,pin: CharArray,done: (DesktopSigningResult?,String,Boolean)->Unit) {
         jobs.submit {
             try {
@@ -72,5 +93,5 @@ class SuiteController(private val product: DesktopProductCoordinator = DesktopIn
     }
     fun invalidatePreview() { generation.incrementAndGet() }
     fun disconnect() { connections.incrementAndGet();session?.close(); session=null;permit?.close();permit=null }
-    override fun close() { closed=true;generation.incrementAndGet();disconnect();jobs.shutdownNow();previews.shutdownNow() }
+    override fun close() { closed=true;generation.incrementAndGet();stampGeneration.incrementAndGet();disconnect();jobs.shutdownNow();previews.shutdownNow();stamps.shutdownNow() }
 }

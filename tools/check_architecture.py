@@ -10,7 +10,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 JVM_MODULES = (
     "dnie-core", "dnie-protocol", "dnie-icao", "dnie-vault-core",
-    "dnie-diagnostics-core", "dnie-bridge-core",
+    "dnie-diagnostics-core", "dnie-bridge-core", "dnie-signing-core",
 )
 
 
@@ -21,6 +21,10 @@ def violations(root=ROOT):
             for line, text in enumerate(source.read_text(encoding="utf-8-sig").splitlines(), 1):
                 if re.match(r"\s*import\s+(android\.|androidx\.|pe\.gob\.reniec\.dnie\.(ui|data)\.)", text):
                     errors.append(f"{source.relative_to(root)}:{line}: JVM imports platform/app layer")
+    for source in (root / "dnie-signing-core/src/main").rglob("*.kt"):
+        for line, text in enumerate(source.read_text(encoding="utf-8-sig").splitlines(), 1):
+            if re.match(r"\s*import\s+(java\.awt\.|javax\.swing\.|org\.apache\.pdfbox\.|com\.tom_roush\.)", text):
+                errors.append(f"{source.relative_to(root)}:{line}: shared signing model/layout imports graphics platform")
     app = root / "app/src/main/java/pe/gob/reniec/dnie"
     for layer, forbidden in (
         ("domain", r"android\.|androidx\.|com\.tom_roush\.|pe\.gob\.reniec\.dnie\.(ui|data)\."),

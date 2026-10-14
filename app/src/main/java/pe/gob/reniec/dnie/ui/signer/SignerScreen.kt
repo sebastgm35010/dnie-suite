@@ -93,7 +93,7 @@ fun SignerScreen(viewModel: SignerViewModel, batch: Boolean = false, onReadIdent
                     val signed = workspace.artifacts.any { it.document.id == doc.id && it.status == DocumentSignStatus.SIGNED }
                     val enabled = editing && !signed
                     if (batch && doc.pages.isNotEmpty()) SwitchRow("Firmar este PDF como archivo separado (.p7s)", doc.detached, enabled, viewModel::setDetached)
-                    if (doc.isPdf) {
+                    if (doc.isPdf && !doc.detached) {
                         val config = doc.options
                         SwitchRow("Sello de tiempo RENIEC · PAdES-T", config.reniecTimestamp, enabled) { value ->
                             viewModel.updateOptions { it.copy(reniecTimestamp = value) }
@@ -104,11 +104,29 @@ fun SignerScreen(viewModel: SignerViewModel, batch: Boolean = false, onReadIdent
                         SwitchRow("Mostrar sello en el PDF", config.visible, enabled) { viewModel.updateOptions { c -> c.copy(visible = it) } }
                         if (config.visible) {
                             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                StampStyle.entries.forEach { style ->
+                                listOf(StampStyle.INSTITUTIONAL,StampStyle.CARD,StampStyle.MINIMAL,StampStyle.INK,StampStyle.HANDWRITTEN_ONLY).forEach { style ->
                                     FilterChip(selected = look.style == style, enabled = enabled, onClick = { viewModel.updateOptions { c -> c.copy(appearance = c.appearance.copy(style = style, showHandwritten = if (style == StampStyle.INK) true else c.appearance.showHandwritten)) } }, label = { Text(style.label) })
                                 }
                             }
                             fun appearance(change: (SignatureAppearance) -> SignatureAppearance) { viewModel.updateOptions { it.copy(appearance = change(it.appearance)) } }
+                            if(look.style != StampStyle.HANDWRITTEN_ONLY) {
+                                Text("Color del sello",style=MaterialTheme.typography.labelLarge)
+                                FlowRow(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                                    StampColorTheme.entries.forEach { color ->
+                                        FilterChip(selected=look.colorTheme==color,enabled=enabled,onClick={appearance { it.copy(colorTheme=color) }},
+                                            leadingIcon={ androidx.compose.foundation.Canvas(Modifier.size(12.dp)) { drawCircle(androidx.compose.ui.graphics.Color(0xFF000000 or color.accentRgb.toLong())) } },label={Text(color.label)})
+                                    }
+                                }
+                                Text("Insignia",style=MaterialTheme.typography.labelLarge)
+                                FlowRow(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                                    StampBadgeType.entries.forEach { badge -> FilterChip(selected=look.badge==badge,enabled=enabled,onClick={appearance { it.copy(badge=badge) }},label={Text(badge.label)}) }
+                                }
+                                if(look.badge==StampBadgeType.QR_VERIFICATION) Text("El QR contiene un resumen público. La firma se verifica con el PDF original.",style=MaterialTheme.typography.bodySmall)
+                                OutlinedTextField(look.customHeader,{ value->appearance { it.copy(customHeader=value.take(160)) } },enabled=enabled,label={Text("Título del sello")},modifier=Modifier.fillMaxWidth())
+                                if(config.reniecTimestamp) SwitchRow("Mostrar distintivo TSA",look.showTsaBadge,enabled) { value->appearance { it.copy(showTsaBadge=value) } }
+                            }
+                            StampPageTargetSelector(config.pageTarget,enabled) { value->viewModel.updateOptions { it.copy(pageTarget=value,
+                                pageNumber=when(value) { StampPageTarget.FIRST_PAGE->1;StampPageTarget.LAST_PAGE->doc.pages.size;else->it.pageNumber }) } }
                             if (look.style == StampStyle.HANDWRITTEN_ONLY) Text("Solo se verá la imagen manuscrita: sin texto, fondo añadido ni borde. La firma digital sigue incorporada en el PDF.", style = MaterialTheme.typography.bodySmall)
                             else {
                             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -120,7 +138,7 @@ fun SignerScreen(viewModel: SignerViewModel, batch: Boolean = false, onReadIdent
                             }
                             if (look.showReason) OutlinedTextField(config.reason, { text -> viewModel.updateOptions { it.copy(reason = text.take(160)) } }, enabled = enabled, label = { Text("Motivo") }, modifier = Modifier.fillMaxWidth())
                             if (look.showLocation) OutlinedTextField(config.location, { text -> viewModel.updateOptions { it.copy(location = text.take(120)) } }, enabled = enabled, label = { Text("Lugar") }, modifier = Modifier.fillMaxWidth())
-                            SwitchRow("Incluir firma manuscrita del DNI", look.showHandwritten, enabled && (workspace.mark != null || look.showHandwritten)) { value -> appearance { it.copy(showHandwritten = value) } }
+                            SwitchRow("Incluir firma manuscrita del DNI", look.showHandwritten, enabled && look.style != StampStyle.INK && (workspace.mark != null || look.showHandwritten)) { value -> appearance { it.copy(showHandwritten = value) } }
                             }
                             if (workspace.mark == null) {
                                 Text(workspace.markError ?: "Lee Identidad para obtener la imagen manuscrita (DG7), si está disponible.")
@@ -129,6 +147,9 @@ fun SignerScreen(viewModel: SignerViewModel, batch: Boolean = false, onReadIdent
                                 Text("Imagen ICAO: " + workspace.mark!!.sourceName + ". La imagen acompaña la firma digital realizada por el chip.", style = MaterialTheme.typography.bodySmall)
                                 SwitchRow("Confirmo que la imagen pertenece al titular que firmará", workspace.markConfirmed, enabled) { viewModel.confirmMark(it) }
                             }
+                            val stampPage=doc.pages[(config.pageNumber-1).coerceIn(0,doc.pages.lastIndex)]
+                            StampPreviewCard(stampPage.width*config.placement.width,stampPage.height*config.placement.height,
+                                workspace.previewName,workspace.previewDni,config.copy(appearance=look.copy(handwrittenPng=if(look.requiresHandwritten) workspace.mark?.png else null)))
                             Button(enabled = enabled && (!look.requiresHandwritten || workspace.mark != null), onClick = { showPlacement = true }, modifier = Modifier.fillMaxWidth()) { Text("Colocar sello · pantalla completa") }
                             Text("Página " + config.pageNumber + " · Arrastrar, pellizcar y ajustar los bordes", style = MaterialTheme.typography.bodySmall)
                             if (showPlacement && enabled) PdfPlacementEditor(doc, workspace.previewName, workspace.previewDni,

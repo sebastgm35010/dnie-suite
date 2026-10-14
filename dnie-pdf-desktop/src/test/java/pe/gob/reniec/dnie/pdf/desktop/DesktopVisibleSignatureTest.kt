@@ -52,7 +52,8 @@ class DesktopVisibleSignatureTest {
                 val image=PDFRenderer(doc).renderImageWithDPI(0,72f)
                 var minX=image.width; var maxX=0; var minY=image.height; var maxY=0; var ink=0
                 for(y in 0 until image.height) for(x in 0 until image.width) {
-                    if((image.getRGB(x,y) and 0xFFFFFF)<0xBBBBBB) { ink++; minX=minOf(minX,x); maxX=maxOf(maxX,x); minY=minOf(minY,y); maxY=maxOf(maxY,y) }
+                    val rgb=image.getRGB(x,y)
+                    if(minOf((rgb shr 16) and 255,(rgb shr 8) and 255,rgb and 255)<235) { ink++; minX=minOf(minX,x); maxX=maxOf(maxX,x); minY=minOf(minY,y); maxY=maxOf(maxY,y) }
                 }
                 assertTrue("Missing appearance $rotation",ink>200)
                 assertEquals(image.width*0.1f,minX.toFloat(),3f); assertEquals(image.height*0.2f,minY.toFloat(),3f)

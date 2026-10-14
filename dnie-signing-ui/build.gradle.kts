@@ -24,6 +24,7 @@ providers.gradleProperty("bridgeIntegrationDir").orNull?.let { adapter ->
 }
 
 tasks.test {
+    providers.gradleProperty("uiEvidence").orNull?.let { systemProperty("dnie.ui.evidence",it) }
     val temporary=layout.buildDirectory.dir("test-tmp")
     doFirst { temporary.get().asFile.mkdirs() }
     systemProperty("java.io.tmpdir",temporary.get().asFile.absolutePath)

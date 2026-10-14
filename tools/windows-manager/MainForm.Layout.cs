@@ -5,31 +5,56 @@ public sealed partial class MainForm : Form {
     private readonly TextBox phone=new();
     private readonly ComboBox usb=new(){DropDownStyle=ComboBoxStyle.DropDownList};
     private readonly Label serviceStatus=new(),hostStatus=new(),error=new(),help=new();
-    private readonly Button install=new(){Text="Instalar / reparar servicio"},start=new(){Text="Iniciar puente"},stop=new(){Text="Detener puente"},pair=new(){Text="Mostrar QR"},refresh=new(){Text="Actualizar dispositivos"};
-    private readonly Button selectorStart=new(){Text="Activar selector RENIEC"},selectorStop=new(){Text="Retirar selector"};
+    private readonly Button install=new AetherButton(){Text="Instalar / reparar servicio"},start=new AetherButton(){Text="Iniciar puente"},stop=new AetherButton(){Text="Detener puente"},pair=new AetherButton(){Text="Mostrar QR"},refresh=new AetherButton(){Text="Actualizar dispositivos"};
+    private readonly Button selectorToggle=new AetherButton(){Text="Activar selector"};
     private readonly Label selectorStatus=new();
+    private readonly HealthCard serviceHealth=new(),readerHealth=new(),cardHealth=new();
+    private readonly Panel pcRow=new(){AutoSize=true},phoneRow=new(){AutoSize=true},usbRow=new(){AutoSize=true};
+    private readonly Label pcLabel=new(),phoneLabel=new();
+    private readonly Dictionary<string,Button> transportButtons=new();
     private void BuildLayout() {
-        Text="DNIe Bridge 3.1 · Gestor Windows";StartPosition=FormStartPosition.CenterScreen;MinimumSize=new Size(720,740);Size=new Size(790,810);
-        Font=new Font("Segoe UI",11);BackColor=Color.White;AutoScaleMode=AutoScaleMode.Dpi;
-        var layout=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=2,RowCount=13,Padding=new Padding(24)};
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,190));layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
-        for(int row=0;row<13;row++)layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        void Whole(System.Windows.Forms.Control control,int row){control.Dock=DockStyle.Fill;control.Margin=new Padding(0,8,0,8);layout.Controls.Add(control,0,row);layout.SetColumnSpan(control,2);}
-        void Input(string label,System.Windows.Forms.Control control,int row){layout.Controls.Add(new Label{Text=label,AutoSize=true,Padding=new Padding(0,8,0,0)},0,row);control.Dock=DockStyle.Fill;control.Margin=new Padding(0,4,0,8);layout.Controls.Add(control,1,row);}
-        Whole(new Label{Text="Tu DNI, conectado a Windows",Font=new Font("Segoe UI",19,FontStyle.Bold),AutoSize=true},0);
-        Whole(serviceStatus,1);serviceStatus.AutoSize=true;
-        var installRow=new FlowLayoutPanel{AutoSize=true};installRow.Controls.Add(install);Whole(installRow,2);install.AutoSize=true;
-        method.Items.AddRange(new object[]{"Tailscale","LAN","USB"});method.SelectedIndex=0;Input("Conexión",method,3);
-        Input("PC / interfaz LAN",pc,4);Input("Teléfono / IP Wi-Fi",phone,5);Input("Dispositivo USB",usb,6);
-        Whole(help,7);help.AutoSize=true;help.MaximumSize=new Size(700,0);help.ForeColor=Color.DimGray;
-        var actions=new FlowLayoutPanel{AutoSize=true};foreach(var button in new[]{start,stop,pair,refresh}){button.AutoSize=true;actions.Controls.Add(button);}Whole(actions,8);
-        Whole(hostStatus,9);hostStatus.Font=new Font("Segoe UI",13,FontStyle.Bold);hostStatus.AutoSize=true;
-        Whole(error,10);error.ForeColor=Color.DarkRed;error.AutoSize=true;error.MaximumSize=new Size(700,0);
-        var selector=new FlowLayoutPanel{AutoSize=true};selectorStart.AutoSize=true;selectorStop.AutoSize=true;selector.Controls.Add(selectorStart);selector.Controls.Add(selectorStop);selectorStatus.AutoSize=true;selector.Controls.Add(selectorStatus);Whole(selector,11);
-        var footer=new FlowLayoutPanel{AutoSize=true};footer.Controls.Add(new Label{Text="Sin cierre por inactividad. Cerrar el gestor conserva el puente en el servicio.",AutoSize=true});
+        Text="DNIe Bridge 3.1 · Gestor Windows";StartPosition=FormStartPosition.CenterScreen;MinimumSize=new Size(840,790);Size=new Size(960,880);
+        Font=new Font("Segoe UI",10);BackColor=Aether.Background;ForeColor=Aether.Text;AutoScaleMode=AutoScaleMode.Dpi;
+        var scroll=new Panel{Dock=DockStyle.Fill,AutoScroll=true,Padding=new Padding(22)};
+        var layout=new TableLayoutPanel{Dock=DockStyle.Top,AutoSize=true,ColumnCount=1,RowCount=7};
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
+        void Whole(System.Windows.Forms.Control control,int row){control.Dock=DockStyle.Fill;control.Margin=new Padding(0,0,0,16);layout.Controls.Add(control,0,row);}
+        var header=new FlowLayoutPanel{AutoSize=true,FlowDirection=FlowDirection.TopDown,WrapContents=false};
+        header.Controls.Add(new Label{Text="◈ DNIe Bridge",Font=new Font("Segoe UI",23,FontStyle.Bold),AutoSize=true});
+        header.Controls.Add(new Label{Text="Tu DNI, conectado a las aplicaciones de Windows",ForeColor=Aether.Muted,AutoSize=true});Whole(header,0);
+        var health=new TableLayoutPanel{ColumnCount=3,RowCount=1,Height=114};
+        foreach(var card in new[]{serviceHealth,readerHealth,cardHealth}){health.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,33.33f));card.Dock=DockStyle.Fill;card.Margin=new Padding(0,0,10,0);health.Controls.Add(card);}
+        Whole(health,1);
+        var configuration=new AetherCard{AutoSize=true};
+        var config=new TableLayoutPanel{Dock=DockStyle.Top,AutoSize=true,ColumnCount=1,RowCount=7};config.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
+        var segments=new TableLayoutPanel{Dock=DockStyle.Top,ColumnCount=3,Height=48,Margin=new Padding(0,0,0,15)};
+        foreach(var (key,label) in new[]{("Tailscale","Tailscale"),("LAN","Wi-Fi LAN"),("USB","USB directo")}) {
+            segments.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,33.33f));var segment=new AetherButton{Text=label,Dock=DockStyle.Fill,Margin=new Padding(0,0,8,0)};
+            Aether.Style(segment);segment.Click+=(_,_)=>method.SelectedItem=key;transportButtons.Add(key,segment);segments.Controls.Add(segment);
+        }
+        method.Items.AddRange(new object[]{"Tailscale","LAN","USB"});method.SelectedIndex=0;config.Controls.Add(segments);
+        void Input(Panel row,Label label,System.Windows.Forms.Control field,string text) {
+            row.Dock=DockStyle.Top;row.Margin=new Padding(0,0,0,10);
+            var table=new TableLayoutPanel{Dock=DockStyle.Top,AutoSize=true,ColumnCount=2};table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,205));table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
+            label.Text=text;label.AutoSize=true;label.Padding=new Padding(0,8,0,0);table.Controls.Add(label,0,0);
+            field.Dock=DockStyle.Fill;field.Margin=new Padding(0,4,0,5);table.Controls.Add(field,1,0);row.Controls.Add(table);config.Controls.Add(row);
+        }
+        Input(pcRow,pcLabel,pc,"Host/IP Tailscale PC");Input(phoneRow,phoneLabel,phone,"Host/IP Tailscale teléfono");Input(usbRow,new Label(),usb,"Dispositivo USB");
+        help.AutoSize=true;help.MaximumSize=new Size(820,0);help.ForeColor=Aether.Muted;help.Margin=new Padding(0,4,0,14);config.Controls.Add(help);
+        var actions=new FlowLayoutPanel{AutoSize=true,Dock=DockStyle.Top};foreach(var button in new[]{start,stop,pair,refresh}){Aether.Style(button,button==start);actions.Controls.Add(button);}config.Controls.Add(actions);
+        hostStatus.AutoSize=true;hostStatus.ForeColor=Aether.Muted;hostStatus.MaximumSize=new Size(820,0);hostStatus.Margin=new Padding(0,10,0,0);config.Controls.Add(hostStatus);
+        configuration.Controls.Add(config);Whole(configuration,2);
+        error.ForeColor=Aether.Error;error.AutoSize=true;error.MaximumSize=new Size(820,0);Whole(error,3);
+        var selectorCard=new AetherCard{AutoSize=true};var selectorLayout=new FlowLayoutPanel{AutoSize=true,Dock=DockStyle.Top,FlowDirection=FlowDirection.TopDown,WrapContents=false};
+        selectorLayout.Controls.Add(new Label{Text="Integración RENIEC / Ciudadano Digital",AutoSize=true,Font=new Font("Segoe UI",12,FontStyle.Bold)});
+        selectorLayout.Controls.Add(new Label{Text="Dirige el flujo compatible al lector DNIe Bridge.",AutoSize=true,ForeColor=Aether.Muted});
+        var selectorActions=new FlowLayoutPanel{AutoSize=true};selectorStatus.AutoSize=true;selectorStatus.Padding=new Padding(0,10,12,0);Aether.Style(selectorToggle);selectorActions.Controls.Add(selectorStatus);selectorActions.Controls.Add(selectorToggle);selectorLayout.Controls.Add(selectorActions);
+        selectorCard.Controls.Add(selectorLayout);Whole(selectorCard,4);
+        var footer=new FlowLayoutPanel{AutoSize=true};Aether.Style(install);footer.Controls.Add(install);
+        footer.Controls.Add(new Label{Text="Sin cierre por inactividad. Cerrar esta ventana conserva el puente activo.",AutoSize=true,ForeColor=Aether.Muted,Padding=new Padding(0,10,0,0)});
 #if DEBUG
-        var debug=new Button{Text="Modo debug",AutoSize=true};debug.Click+=(_,_)=>new DebugForm(client).Show(this);footer.Controls.Add(debug);
+        var debug=new AetherButton{Text="Modo debug",AutoSize=true};Aether.Style(debug);debug.Click+=(_,_)=>new DebugForm(client).Show(this);footer.Controls.Add(debug);
 #endif
-        Whole(footer,12);Controls.Add(layout);
+        Whole(footer,5);scroll.Controls.Add(layout);Controls.Add(scroll);
     }
 }

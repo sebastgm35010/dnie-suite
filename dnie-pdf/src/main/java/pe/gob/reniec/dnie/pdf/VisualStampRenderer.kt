@@ -5,7 +5,6 @@ import com.tom_roush.pdfbox.pdmodel.PDPage
 import com.tom_roush.pdfbox.pdmodel.PDPageContentStream
 import com.tom_roush.pdfbox.pdmodel.PDResources
 import com.tom_roush.pdfbox.pdmodel.common.PDRectangle
-import com.tom_roush.pdfbox.pdmodel.font.PDType1Font
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAppearanceDictionary
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAppearanceStream
@@ -14,10 +13,7 @@ import com.tom_roush.pdfbox.pdmodel.interactive.form.PDSignatureField
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
-import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
-import java.util.TimeZone
 import com.tom_roush.pdfbox.util.Matrix
 
 /**
@@ -35,9 +31,6 @@ object VisualStampRenderer {
     const val DEFAULT_STAMP_HEIGHT = 65f
     const val DEFAULT_MARGIN = 20f
 
-    private val DATE_FORMAT = SimpleDateFormat("dd/MM/yyyy HH:mm:ss XXX", Locale.getDefault()).apply {
-        timeZone = TimeZone.getTimeZone("America/Lima")
-    }
 
     /**
      * Calcula las coordenadas del rectángulo delimitador de la firma en el espacio PDF de la página.
@@ -155,28 +148,15 @@ object VisualStampRenderer {
             widget.appearance = apDict
 
             PDPageContentStream(templateDoc, apStream).use { cs ->
-                if (appearance != null) {
-                    val rotation = ((targetPage.rotation % 360) + 360) % 360
-                    val visualWidth = if (rotation == 90 || rotation == 270) rect.height else rect.width
-                    val visualHeight = if (rotation == 90 || rotation == 270) rect.width else rect.height
-                    when (rotation) {
-                        90 -> cs.transform(Matrix(0f, 1f, -1f, 0f, rect.width, 0f))
-                        180 -> cs.transform(Matrix(-1f, 0f, 0f, -1f, rect.width, rect.height))
-                        270 -> cs.transform(Matrix(0f, -1f, 1f, 0f, 0f, rect.height))
-                    }
-                    ModernStampRenderer.draw(templateDoc, cs, visualWidth, visualHeight, signerName, signerDni, reason, location, date, appearance)
-                } else {
-                renderStampContent(
-                    contentStream = cs,
-                    width = rect.width,
-                    height = rect.height,
-                    signerName = signerName,
-                    signerDni = signerDni,
-                    reason = reason,
-                    location = location,
-                    date = date
-                )
+                val rotation = ((targetPage.rotation % 360) + 360) % 360
+                val visualWidth = if (rotation == 90 || rotation == 270) rect.height else rect.width
+                val visualHeight = if (rotation == 90 || rotation == 270) rect.width else rect.height
+                when (rotation) {
+                    90 -> cs.transform(Matrix(0f, 1f, -1f, 0f, rect.width, 0f))
+                    180 -> cs.transform(Matrix(-1f, 0f, 0f, -1f, rect.width, rect.height))
+                    270 -> cs.transform(Matrix(0f, -1f, 1f, 0f, 0f, rect.height))
                 }
+                ModernStampRenderer.draw(templateDoc, cs, visualWidth, visualHeight, signerName, signerDni, reason, location, date, appearance ?: SignatureAppearance())
             }
 
             val baos = ByteArrayOutputStream()
@@ -214,147 +194,10 @@ object VisualStampRenderer {
         return PDDocument().use { doc ->
             val page = PDPage(PDRectangle(width, height)); doc.addPage(page)
             PDPageContentStream(doc, page).use { cs ->
-                ModernStampRenderer.draw(doc, cs, width, height, name, dni, options.reason, options.location, date, options.appearance)
+                ModernStampRenderer.draw(doc, cs, width, height, name, dni, options.reason, options.location, date, options.appearance, options.reniecTimestamp)
             }
             ByteArrayOutputStream().also { doc.save(it) }.toByteArray()
         }
-    }
-
-    /**
-     * Dibuja los elementos vectoriales del sello: fondo, bordes, escudo DNIe y bloques tipográficos.
-     */
-    fun renderStampContent(
-        contentStream: PDPageContentStream,
-        width: Float,
-        height: Float,
-        signerName: String,
-        signerDni: String,
-        reason: String,
-        location: String,
-        date: Date
-    ) {
-        // 1. Fondo suave #F8F9FA
-        contentStream.setNonStrokingColor(0.973f, 0.976f, 0.980f)
-        contentStream.addRect(0f, 0f, width, height)
-        contentStream.fill()
-
-        // 2. Borde exterior #2C3E50 (Azul marino oscuro)
-        contentStream.setStrokingColor(0.173f, 0.243f, 0.314f)
-        contentStream.setLineWidth(0.75f)
-        contentStream.addRect(0f, 0f, width, height)
-        contentStream.stroke()
-
-        // 3. Línea vertical divisoria entre el emblema y los datos
-        val dividerX = 52f
-        if (width > dividerX + 20f) {
-            contentStream.setStrokingColor(0.824f, 0.843f, 0.863f)
-            contentStream.setLineWidth(0.5f)
-            contentStream.moveTo(dividerX, 4f)
-            contentStream.lineTo(dividerX, height - 4f)
-            contentStream.stroke()
-        }
-
-        // 4. Emblema institucional de DNIe / RENIEC (Vectorial)
-        val sealCenterX = 26f
-        val sealCenterY = height / 2f
-        val radius = 17f
-
-        // Círculo exterior en rojo patrio (#DA291C)
-        contentStream.setStrokingColor(0.855f, 0.161f, 0.110f)
-        contentStream.setLineWidth(1.0f)
-        drawCircle(contentStream, sealCenterX, sealCenterY, radius)
-        contentStream.stroke()
-
-        // Texto institucional interior "DNIe"
-        contentStream.setNonStrokingColor(0.855f, 0.161f, 0.110f)
-        contentStream.beginText()
-        contentStream.setFont(PDType1Font.HELVETICA_BOLD, 7f)
-        contentStream.newLineAtOffset(sealCenterX - 8f, sealCenterY + 4f)
-        contentStream.showText("DNIe")
-        contentStream.endText()
-
-        // Subtexto "RENIEC"
-        contentStream.setNonStrokingColor(0.173f, 0.243f, 0.314f)
-        contentStream.beginText()
-        contentStream.setFont(PDType1Font.HELVETICA_BOLD, 4.5f)
-        contentStream.newLineAtOffset(sealCenterX - 9f, sealCenterY - 4f)
-        contentStream.showText("RENIEC")
-        contentStream.endText()
-
-        // Subtexto "FIRMA"
-        contentStream.beginText()
-        contentStream.setFont(PDType1Font.HELVETICA, 4.0f)
-        contentStream.newLineAtOffset(sealCenterX - 7f, sealCenterY - 10f)
-        contentStream.showText("FIRMA")
-        contentStream.endText()
-
-        // 5. Bloque de texto con los metadatos de la firma
-        val textStartX = dividerX + 6f
-        val availableTextWidth = width - textStartX - 4f
-
-        val safeSignerName = truncateText(sanitizeText(signerName), availableTextWidth, 6.5f)
-        val safeDni = sanitizeText(signerDni)
-        val safeReason = truncateText(sanitizeText(reason), availableTextWidth, 5.5f)
-        val safeLocation = truncateText(sanitizeText(location), availableTextWidth, 5.5f)
-        val safeDate = sanitizeText(DATE_FORMAT.format(date))
-
-        // Línea 1: Encabezado estándar
-        contentStream.setNonStrokingColor(0.102f, 0.322f, 0.463f) // Azul institucional #1A5276
-        contentStream.beginText()
-        contentStream.setFont(PDType1Font.HELVETICA_BOLD, 6.5f)
-        contentStream.newLineAtOffset(textStartX, height - 12f)
-        contentStream.showText("FIRMADO DIGITALMENTE POR:")
-        contentStream.endText()
-
-        // Línea 2: Nombre del ciudadano
-        contentStream.setNonStrokingColor(0.173f, 0.243f, 0.314f) // #2C3E50
-        contentStream.beginText()
-        contentStream.setFont(PDType1Font.HELVETICA_BOLD, 6.5f)
-        contentStream.newLineAtOffset(textStartX, height - 21f)
-        contentStream.showText(safeSignerName)
-        contentStream.endText()
-
-        // Línea 3: DNI
-        contentStream.setNonStrokingColor(0.204f, 0.286f, 0.369f) // #34495E
-        contentStream.beginText()
-        contentStream.setFont(PDType1Font.HELVETICA, 5.5f)
-        contentStream.newLineAtOffset(textStartX, height - 30f)
-        contentStream.showText("DNI: $safeDni")
-        contentStream.endText()
-
-        // Línea 4: Motivo
-        contentStream.beginText()
-        contentStream.setFont(PDType1Font.HELVETICA, 5.5f)
-        contentStream.newLineAtOffset(textStartX, height - 39f)
-        contentStream.showText("Motivo: $safeReason")
-        contentStream.endText()
-
-        // Línea 5: Lugar
-        contentStream.beginText()
-        contentStream.setFont(PDType1Font.HELVETICA, 5.5f)
-        contentStream.newLineAtOffset(textStartX, height - 48f)
-        contentStream.showText("Lugar: $safeLocation")
-        contentStream.endText()
-
-        // Línea 6: Fecha
-        contentStream.setNonStrokingColor(0.498f, 0.549f, 0.553f) // #7F8C8D
-        contentStream.beginText()
-        contentStream.setFont(PDType1Font.HELVETICA, 5.0f)
-        contentStream.newLineAtOffset(textStartX, height - 56f)
-        contentStream.showText("Fecha: $safeDate")
-        contentStream.endText()
-    }
-
-    /**
-     * Dibuja un círculo suave mediante aproximación de curvas Bézier en el stream PDF.
-     */
-    private fun drawCircle(cs: PDPageContentStream, cx: Float, cy: Float, r: Float) {
-        val k = 0.55228475f * r
-        cs.moveTo(cx - r, cy)
-        cs.curveTo(cx - r, cy + k, cx - k, cy + r, cx, cy + r)
-        cs.curveTo(cx + k, cy + r, cx + r, cy + k, cx + r, cy)
-        cs.curveTo(cx + r, cy - k, cx + k, cy - r, cx, cy - r)
-        cs.curveTo(cx - k, cy - r, cx - r, cy - k, cx - r, cy)
     }
 
     /**
@@ -372,16 +215,4 @@ object VisualStampRenderer {
         return sb.toString().trim()
     }
 
-    /**
-     * Trunca el texto si excede el ancho disponible para evitar desbordamiento del sello.
-     */
-    private fun truncateText(text: String, maxWidth: Float, fontSize: Float): String {
-        val approxCharWidth = fontSize * 0.55f
-        val maxChars = (maxWidth / approxCharWidth).toInt()
-        return if (text.length > maxChars && maxChars > 3) {
-            text.take(maxChars - 3) + "..."
-        } else {
-            text
-        }
-    }
 }

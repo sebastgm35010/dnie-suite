@@ -1,27 +1,34 @@
 package pe.gob.reniec.dnie.pdf.desktop
 
-import java.awt.Color
 import java.awt.geom.AffineTransform
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.TimeZone
+import java.awt.image.BufferedImage
+import org.apache.pdfbox.cos.COSName
 import org.apache.pdfbox.pdmodel.*
 import org.apache.pdfbox.pdmodel.common.PDRectangle
 import org.apache.pdfbox.pdmodel.font.PDType0Font
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject
 import org.apache.pdfbox.pdmodel.interactive.annotation.*
 import org.apache.pdfbox.pdmodel.interactive.digitalsignature.PDSignature
 import org.apache.pdfbox.pdmodel.interactive.form.PDSignatureField
+import org.apache.pdfbox.rendering.PDFRenderer
+import org.apache.pdfbox.rendering.ImageType
 import pe.gob.reniec.dnie.pdf.*
 
-/** Appearance only; consumes public identity, never PIN, transport or private signing operations. */
-internal object DesktopStampRenderer {
-    fun apply(document: PDDocument, signature: PDSignature, options: PdfSigningOptions,
-              name: String, dni: String, timestamp: Long) {
-        require(options.pageNumber in 1..document.numberOfPages) { "Pagina de sello fuera del PDF" }
-        require(options.appearance.style in listOf(StampStyle.CARD, StampStyle.MINIMAL) && !options.appearance.requiresHandwritten) {
-            "Este incremento admite tarjeta o minimalista, sin manuscrita"
+/** Appearance adapter only. All composition is in the shared pure layout engine. */
+object DesktopStampRenderer {
+    fun apply(document: PDDocument,signature: PDSignature,options: PdfSigningOptions,name: String,dni: String,timestamp: Long) {
+        val pages=options.pageTarget.pages(document.numberOfPages,options.pageNumber)
+        val field=document.documentCatalog.acroForm.fieldTree.filterIsInstance<PDSignatureField>()
+            .single { it.signature?.cosObject === signature.cosObject }
+        val old=field.widgets.map { it.cosObject }
+        document.pages.forEach { page ->
+            if(page.annotations.removeAll { widget -> old.any { it === widget.cosObject } }) page.cosObject.isNeedToBeUpdated=true
         }
-        val page = document.getPage(options.pageNumber - 1)
+        // Unmerge the default widget before adding children; no self-parented /Kids.
+        listOf(COSName.TYPE,COSName.SUBTYPE,COSName.RECT,COSName.AP,COSName.P,COSName.F).forEach(field.cosObject::removeItem)
+        val fonts=loadFonts(document)
+        val widgets=pages.map { number ->
+            val page=document.getPage(number-1)
         val crop = page.cropBox
         val rotation = ((page.rotation % 360) + 360) % 360
         require(rotation in listOf(0,90,180,270))
@@ -34,10 +41,8 @@ internal object DesktopStampRenderer {
             270 -> PDRectangle(crop.lowerLeftX+(1-p.top-p.height)*crop.width,crop.lowerLeftY+(1-p.left-p.width)*crop.height,p.height*crop.width,p.width*crop.height)
             else -> PDRectangle(crop.lowerLeftX+p.left*crop.width,crop.lowerLeftY+(1-p.top-p.height)*crop.height,w,h)
         }
-        val field = document.documentCatalog.acroForm.fieldTree.filterIsInstance<PDSignatureField>()
-            .single { it.signature?.cosObject === signature.cosObject }
-        val widget = field.widgets.single()
-        widget.rectangle = rect; widget.page = page; widget.isPrinted = true
+
+        val widget=PDAnnotationWidget().apply { setParent(field);rectangle=rect;this.page=page;isPrinted=true }
         val stream = PDAppearanceStream(document).apply {
             resources = PDResources(); bBox = PDRectangle(w,h)
             setMatrix(when(rotation) {
@@ -47,46 +52,82 @@ internal object DesktopStampRenderer {
                 else -> AffineTransform()
             })
         }
-        val appearance = options.appearance
-        fun date(pattern: String) = SimpleDateFormat(pattern).apply { timeZone=TimeZone.getTimeZone("America/Lima") }.format(Date(timestamp))
-        val rows = buildList {
-            add("FIRMADO DIGITALMENTE"); add(name)
-            if (appearance.showDni && dni.isNotBlank()) add("DNI: $dni")
-            val moment = listOfNotNull(if(appearance.showDate) date("dd/MM/yyyy") else null,
-                if(appearance.showTime) date("HH:mm:ss 'UTC-05'") else null).joinToString(" ")
-            if(moment.isNotBlank()) add(moment)
-            if(appearance.showReason && options.reason.isNotBlank()) add("Motivo: ${options.reason}")
-            if(appearance.showLocation && options.location.isNotBlank()) add("Lugar: ${options.location}")
-        }
-        val font = requireNotNull(DesktopStampRenderer::class.java.getResourceAsStream(
-            "/org/apache/pdfbox/resources/ttf/LiberationSans-Regular.ttf")).use { PDType0Font.load(document,it,false) }
-        val margin=6f
-        fun wrap(size: Float): List<String> = rows.flatMap { row ->
-            require(row.length <= 4096 && row.none { it.isISOControl() }) { "Texto del sello no admitido" }
-            val lines=mutableListOf<String>(); var line=""
-            for (cp in row.codePoints().toArray()) {
-                val c=String(Character.toChars(cp)); val next=line+c
-                if(font.getStringWidth(next)*size/1000 > w-2*margin) {
-                    require(line.isNotEmpty()) { "Sello demasiado estrecho" }; lines.add(line); line=c
-                } else line=next
-            }
-            if(line.isNotEmpty()) lines.add(line)
-            lines
-        }
-        var size=10f; var lines=wrap(size)
-        while(lines.size*size*1.25f > h-2*margin && size > 6f) { size-=0.5f; lines=wrap(size) }
-        require(lines.size*size*1.25f <= h-2*margin) { "El texto no cabe; amplie el sello o quite campos" }
-        PDPageContentStream(document,stream).use { content ->
-            content.setNonStrokingColor(Color.WHITE); content.addRect(0f,0f,w,h); content.fill()
-            content.setStrokingColor(Color.BLACK)
-            if(appearance.style==StampStyle.CARD) { content.setLineWidth(0.8f); content.addRect(0.5f,0.5f,w-1,h-1); content.stroke() }
-            content.setNonStrokingColor(Color.BLACK); content.beginText(); content.setFont(font,size)
-            content.setLeading(size*1.25f); content.newLineAtOffset(margin,h-margin-size)
-            lines.forEachIndexed { i,line -> if(i>0) content.newLine(); content.showText(line) }; content.endText()
-        }
-        widget.appearance = PDAppearanceDictionary().apply { setNormalAppearance(stream) }
+
+        PDPageContentStream(document,stream).use { content -> draw(document,content,w,h,name,dni,options,timestamp,fonts) }
+        widget.appearance=PDAppearanceDictionary().apply { setNormalAppearance(stream) }
+        page.annotations.add(widget);page.cosObject.isNeedToBeUpdated=true
         widget.cosObject.isNeedToBeUpdated=true
-        page.cosObject.isNeedToBeUpdated=true
-        field.cosObject.isNeedToBeUpdated=true
+        widget
+        }
+        field.setWidgets(widgets);field.cosObject.isNeedToBeUpdated=true
+        document.documentCatalog.acroForm.cosObject.isNeedToBeUpdated=true
     }
+
+    fun renderPreviewImage(widthPx: Int,heightPx: Int,name: String,dni: String,options: PdfSigningOptions,
+        widthPoints: Float=widthPx/2f,heightPoints: Float=heightPx/2f,timestamp: Long=System.currentTimeMillis()): BufferedImage {
+        require(widthPx in 1..4096 && heightPx in 1..4096 && widthPx.toLong()*heightPx<=8_000_000)
+        return PDDocument().use { document ->
+            val page=PDPage(PDRectangle(widthPoints,heightPoints));document.addPage(page)
+            PDPageContentStream(document,page).use { draw(document,it,widthPoints,heightPoints,name,dni,options,timestamp) }
+            val source=PDFRenderer(document).renderImage(0,minOf(widthPx/widthPoints,heightPx/heightPoints),ImageType.ARGB)
+            source
+        }
+    }
+
+    fun draw(document: PDDocument, content: PDPageContentStream, width: Float, height: Float,
+        name: String, dni: String, options: PdfSigningOptions, timestamp: Long) =
+        draw(document,content,width,height,name,dni,options,timestamp,loadFonts(document))
+
+    private data class Fonts(val regular: PDType0Font,val bold: PDType0Font)
+    private fun loadFonts(document: PDDocument)=Fonts(font(document,false),font(document,true))
+    private fun draw(document: PDDocument, content: PDPageContentStream, width: Float, height: Float,
+        name: String, dni: String, options: PdfSigningOptions, timestamp: Long,fonts: Fonts) {
+        val regular=fonts.regular
+        val bold=fonts.bold
+        fun safe(text: String, strong: Boolean): String {
+            val font=if(strong) bold else regular
+            return text.codePoints().toArray().joinToString("") { cp ->
+                val char=String(Character.toChars(cp))
+                try { font.getStringWidth(char); char } catch(_: IllegalArgumentException) { "?" }
+            }
+        }
+        val scene=StampLayoutEngine.layout(width,height,name,dni,options,timestamp) { text,strong,size ->
+            (if(strong) bold else regular).getStringWidth(safe(text,strong))*size/1000f
+        }
+        fun fill(rgb: Int) { content.setNonStrokingColor(((rgb shr 16) and 255)/255f,((rgb shr 8) and 255)/255f,(rgb and 255)/255f) }
+        fun stroke(rgb: Int) { content.setStrokingColor(((rgb shr 16) and 255)/255f,((rgb shr 8) and 255)/255f,(rgb and 255)/255f) }
+        fun box(b: StampElement.Box) {
+            val x=b.x;val y=height-b.y-b.height;val w=b.width;val h=b.height
+            val r=minOf(b.radius,w/2,h/2);val k=.55228475f*r
+            if(r<=0) content.addRect(x,y,w,h)
+            else {
+                content.moveTo(x+r,y);content.lineTo(x+w-r,y);content.curveTo(x+w-r+k,y,x+w,y+r-k,x+w,y+r)
+                content.lineTo(x+w,y+h-r);content.curveTo(x+w,y+h-r+k,x+w-r+k,y+h,x+w-r,y+h)
+                content.lineTo(x+r,y+h);content.curveTo(x+r-k,y+h,x,y+h-r+k,x,y+h-r)
+                content.lineTo(x,y+r);content.curveTo(x,y+r-k,x+r-k,y,x+r,y);content.closePath()
+            }
+        }
+        for(element in scene.elements) when(element) {
+            is StampElement.Box -> {
+                element.fill?.let { fill(it);box(element);content.fill() }
+                element.stroke?.let { stroke(it);content.setLineWidth(element.thickness);box(element);content.stroke() }
+            }
+            is StampElement.Line -> { stroke(element.color);content.setLineWidth(element.thickness)
+                content.moveTo(element.x,height-element.y);content.lineTo(element.endX,height-element.endY);content.stroke() }
+            is StampElement.Path -> { stroke(element.color);content.setLineWidth(element.thickness)
+                element.points.forEachIndexed { index,p -> if(index==0) content.moveTo(p.first,height-p.second) else content.lineTo(p.first,height-p.second) }
+                if(element.closed) content.closePath();content.stroke() }
+            is StampElement.Text -> { fill(element.color);content.beginText();content.setFont(if(element.bold) bold else regular,element.size)
+                content.newLineAtOffset(element.x,height-element.baseline);content.showText(safe(element.text,element.bold));content.endText() }
+            is StampElement.Handwriting -> {
+                val image=PDImageXObject.createFromByteArray(document,requireNotNull(options.appearance.handwrittenPng),"Rúbrica")
+                val scale=minOf(element.width/image.width,element.height/image.height)
+                val w=image.width*scale;val h=image.height*scale
+                content.drawImage(image,element.x+(element.width-w)/2,height-element.y-(element.height+h)/2,w,h)
+            }
+        }
+    }
+
+    private fun font(document: PDDocument,bold: Boolean)=requireNotNull(DesktopStampRenderer::class.java.getResourceAsStream(
+        "/fonts/LiberationSans-${if(bold) "Bold" else "Regular"}.ttf")).use { PDType0Font.load(document,it,false) }
 }

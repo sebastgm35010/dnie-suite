@@ -6,17 +6,21 @@ import javax.swing.*
 import pe.gob.reniec.dnie.desktop.orchestration.*
 
 /** Optional bridge frontend. All native IPC and mode decisions stay outside Swing. */
-internal class BridgePanel(private val product: DesktopProductCoordinator) : JPanel(FlowLayout(FlowLayout.LEFT)), AutoCloseable {
+internal class BridgePanel(private val product: DesktopProductCoordinator) : JPanel(java.awt.BorderLayout(8,8)), AutoCloseable {
     private val tasks=Executors.newSingleThreadExecutor { Thread(it,"suite-bridge-control") }
     private val state=JLabel("Consultando Bridge…")
-    private val refresh=JButton("Actualizar estado")
-    private val manager=JButton("Abrir gestor Bridge")
-    private val stop=JButton("Detener puente")
+    private val refresh=AetherButton("Actualizar estado")
+    private val manager=AetherButton("Abrir gestor Bridge")
+    private val stop=AetherButton("Detener puente",ButtonVariant.OUTLINE)
     private var suiteActive=false
     private var running=false
     @Volatile private var closed=false
     init {
-        add(JLabel("Puente para otras aplicaciones:"));add(state);add(refresh);add(manager);add(stop)
+        isOpaque=false
+        add(JPanel().apply { isOpaque=false;layout=BoxLayout(this,BoxLayout.Y_AXIS)
+            add(JLabel("Compatibilidad con otras aplicaciones").apply { font=font.deriveFont(java.awt.Font.BOLD) });add(state)
+        },java.awt.BorderLayout.NORTH)
+        add(JPanel(FlowLayout(FlowLayout.LEFT,6,0)).apply { isOpaque=false;add(refresh);add(manager);add(stop) },java.awt.BorderLayout.CENTER)
         refresh.addActionListener { run { render(product.status()) } }
         manager.addActionListener { run { product.openBridgeManager();"Gestor abierto. Configura o inicia el puente allí." } }
         stop.addActionListener {

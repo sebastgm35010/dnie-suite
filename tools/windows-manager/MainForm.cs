@@ -10,8 +10,11 @@ public sealed partial class MainForm {
     private readonly ReniecSelectorAdapter selector=new();
     private readonly System.Windows.Forms.Timer timer=new(){Interval=1500};
     private bool busy,polling,loaded;
+    private uint? serviceState;
+    private bool serviceKnown;
     private BridgeStatus last=new();
-    public MainForm() {
+    public MainForm(): this(true) {}
+    internal MainForm(bool monitor) {
         BuildLayout();var saved=preferences.Load();method.SelectedItem=saved.Method;pc.Text=saved.Pc;phone.Text=saved.Phone;
         ReloadInterfaces();loaded=true;ShowMethod();
         method.SelectedIndexChanged+=(_,_)=>ShowMethod();
@@ -24,10 +27,9 @@ public sealed partial class MainForm {
         stop.Click+=async(_,_)=>await ActionAsync(async()=>{var response=await client.SendAsync(new("stop"));Check(response);last=response.Status??new();Render();});
         pair.Click+=async(_,_)=>await ActionAsync(ShowPairingAsync);
         refresh.Click+=async(_,_)=>await ActionAsync(async()=>{ReloadInterfaces();if(method.Text=="USB")await ReloadUsbAsync();});
-        selectorStart.Click+=(_,_)=>{try{selector.Start(preferences.Directory);error.Text="";}catch(Exception failure){error.Text=failure.Message;}};
-        selectorStop.Click+=(_,_)=>selector.Stop();
+        selectorToggle.Click+=(_,_)=>{try{if(selector.Running)selector.Stop();else selector.Start(preferences.Directory);error.Text="";Render();}catch(Exception failure){error.Text=failure.Message;}};
         timer.Tick+=async(_,_)=>await PollAsync();
-        Shown+=async(_,_)=>{timer.Start();await PollAsync();};
+        if(monitor)Shown+=async(_,_)=>{timer.Start();await PollAsync();};
         FormClosed+=(_,_)=>{timer.Stop();timer.Dispose();selector.Dispose();};
     }
     private void ReloadInterfaces() {
@@ -38,7 +40,10 @@ public sealed partial class MainForm {
     }
     private void ShowMethod() {
         if(!loaded)return;
-        bool isUsb=method.Text=="USB";pc.Enabled=!isUsb && !busy;phone.Enabled=!isUsb && !busy;usb.Enabled=isUsb && !busy;pair.Visible=method.Text!="Tailscale";
+        bool isUsb=method.Text=="USB";pcRow.Visible=!isUsb;phoneRow.Visible=!isUsb;usbRow.Visible=isUsb;pair.Visible=method.Text!="Tailscale";
+        pcLabel.Text=method.Text=="LAN"?"Interfaz LAN PC":"Host/IP Tailscale PC";
+        phoneLabel.Text=method.Text=="LAN"?"IP Wi-Fi teléfono":"Host/IP Tailscale teléfono";
+        refresh.Text=isUsb?"Actualizar USB":"Actualizar interfaces";
         help.Text=method.Text switch {
             "LAN"=>"Selecciona la IP LAN de esta PC e introduce la IP Wi-Fi que muestra Android. La PC inicia la conexión; TLS conserva su identidad.",
             "USB"=>"Selecciona el teléfono conectado con un cable de datos. Android Open Accessory no requiere ADB ni compartir Internet. Si UsbDk acaba de instalarse, puede requerir reiniciar Windows.",
@@ -72,8 +77,8 @@ public sealed partial class MainForm {
     private async Task PollAsync() {
         if(polling || busy)return;polling=true;
         try {
-            var service=ServiceControl.Query();serviceStatus.Text=service==null?"Servicio: no instalado":service.Value.State==4?"Servicio: disponible · permisos SYSTEM conservados":"Servicio: detenido";
-            if(service?.State==1){ServiceControl.Start();service=ServiceControl.Query();}
+            var service=ServiceControl.Query();serviceKnown=true;serviceState=service?.State;serviceStatus.Text=service==null?"Servicio: no instalado":service.Value.State==4?"Servicio: disponible · permisos SYSTEM conservados":"Servicio: detenido";
+            if(service?.State==1){ServiceControl.Start();service=ServiceControl.Query();serviceState=service?.State;}
             if(service?.State==4){var response=await client.SendAsync(new("status"));
                 if(busy || IsDisposed)return;
                 Check(response);last=response.Status??new();
@@ -87,8 +92,8 @@ public sealed partial class MainForm {
                 }
             }
             else last=new("Unavailable","idle");
-            Render();selectorStatus.Text="Selector: "+selector.Status;selectorStart.Enabled=!selector.Running;selectorStop.Enabled=selector.Running;
-        }catch(Exception failure){if(!busy && !IsDisposed){serviceStatus.Text="Servicio: no disponible";last=new("Unavailable","idle");error.Text=failure.Message;Render();}}
+            Render();
+        }catch(Exception failure){if(!busy && !IsDisposed){serviceKnown=false;serviceState=null;serviceStatus.Text="Servicio: no disponible";last=new("Unavailable","idle");error.Text=failure.Message;Render();}}
         finally{polling=false;}
     }
     private void Render() {
@@ -96,7 +101,15 @@ public sealed partial class MainForm {
         bool running=last.State is "Running" or "Starting" or "Stopping";
         start.Enabled=!busy && !running && last.State!="Unavailable";stop.Enabled=!busy && running;
         install.Enabled=!busy && !running;pair.Enabled=!busy && last.State!="Unavailable";
-        method.Enabled=!busy && !running;pc.Enabled=!busy && !running && method.Text!="USB";phone.Enabled=pc.Enabled;usb.Enabled=!busy && !running && method.Text=="USB";refresh.Enabled=!busy && !running;
+        method.Enabled=!busy && !running;
+        foreach(var (key,button) in transportButtons){button.Enabled=method.Enabled;button.BackColor=method.Text==key?Aether.Primary:Color.FromArgb(229,238,255);button.ForeColor=method.Text==key?Color.White:Aether.Text;}
+        pcRow.Visible=method.Text!="USB";phoneRow.Visible=method.Text!="USB";usbRow.Visible=method.Text=="USB";
+        install.Visible=serviceState!=4;
+        serviceHealth.ShowState("Servicio base",serviceState==4?"Activo (SYSTEM)":serviceState==1?"Detenido":serviceKnown?"No instalado":"Sin verificar",serviceState==4?HealthTone.Good:HealthTone.Idle);
+        readerHealth.ShowState("Lector Windows (PC/SC)",last.ReaderPublished switch {true=>"Publicado en WinSCard",false=>"Ausente de WinSCard",null=>"Sin verificar"},last.ReaderPublished switch {true=>HealthTone.Good,false=>HealthTone.Waiting,null=>HealthTone.Idle});
+        cardHealth.ShowState("Tarjeta DNIe",last.CardPresent?"DNI presente":running?"Esperando DNI":"Puente detenido",last.CardPresent?HealthTone.Good:running?HealthTone.Ready:HealthTone.Idle);
+        selectorStatus.Text=selector.Running?"Activo":"Inactivo";selectorStatus.ForeColor=selector.Running?Aether.Success:Aether.Muted;
+        selectorToggle.Text=selector.Running?"Detener selector":"Activar selector";selectorToggle.Enabled=!busy;pc.Enabled=!busy && !running && method.Text!="USB";phone.Enabled=pc.Enabled;usb.Enabled=!busy && !running && method.Text=="USB";refresh.Enabled=!busy && !running;
         hostStatus.Text=busy?"Procesando…":last.CardPresent?last.ReaderPublished switch {
             true=>"DNI conectado · lector publicado en Windows",
             false=>"DNI conectado · lector no publicado en Windows",

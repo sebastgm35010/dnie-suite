@@ -9,28 +9,26 @@ import org.junit.Test
 class StampTextLayoutTest {
     @Test fun longTextWrapsWithoutDroppingWordsOrAddingEllipsis() {
         val text = "Firmado por un titular con varios nombres y apellidos extensos"
-        val lines = StampTextLayout.wrap(text, PDType1Font.COURIER, 9f, 100f)
+        val lines = StampLayoutEngine.wrap(text,100f,false,9f) { value,_,size -> PDType1Font.HELVETICA.getStringWidth(value)*size/1000f }
         assertTrue(lines.size > 1)
         assertEquals(text, lines.joinToString(" "))
-        assertTrue(lines.all { PDType1Font.COURIER.getStringWidth(it) / 1000 * 9f <= 100.001f })
+        assertTrue(lines.all { PDType1Font.HELVETICA.getStringWidth(it) / 1000 * 9f <= 100.001f })
     }
     @Test fun unbrokenWordsWrapWithoutLosingCharacters() {
         val word = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-        val lines = StampTextLayout.wrap(word, PDType1Font.COURIER, 9f, 35f)
-        assertTrue(lines.size > 1); assertEquals(word, lines.joinToString(""))
-        assertTrue(lines.all { PDType1Font.COURIER.getStringWidth(it) / 1000 * 9f <= 35.001f })
+        val lines = StampLayoutEngine.wrap(word,35f,false,9f) { value,_,size -> PDType1Font.HELVETICA.getStringWidth(value)*size/1000f }
+        assertTrue(lines.size > 1); assertEquals(word, lines.joinToString("").replace("-",""))
+        assertTrue(lines.all { PDType1Font.HELVETICA.getStringWidth(it) / 1000 * 9f <= 35.001f })
     }
-    @Test fun allLinesFitVerticallyInNarrowAndShortStamps() {
-        val blocks = listOf(StampTextBlock("NOMBRE COMPLETO DEL TITULAR", bold = true),
-            StampTextBlock("Motivo: doy conformidad con todas las condiciones del documento y sus anexos", small = true))
-        for ((width, height) in listOf(50f to 30f, 180f to 80f, 300f to 40f)) {
-            val lines = StampTextLayout.fit(blocks, width, height)
-            assertTrue(lines.sumOf { (it.size * 1.35f).toDouble() } <= height + .001f)
-            assertTrue(lines.all { it.font.getStringWidth(it.text) / 1000 * it.size <= width + .001f })
-            assertEquals(blocks.joinToString("") { it.text }.replace(" ", ""), lines.joinToString("") { it.text }.replace(" ", ""))
+    @Test fun tooSmallStampsFailInsteadOfSilentlyShrinkingToUnreadableText() {
+        assertThrows(IllegalArgumentException::class.java) {
+            StampLayoutEngine.layout(50f,30f,"NOMBRE COMPLETO DEL TITULAR","12345678",PdfSigningOptions(
+                reason="Doy conformidad con todas las condiciones del documento y sus anexos"),0) { text,bold,size ->
+                (if(bold) PDType1Font.HELVETICA_BOLD else PDType1Font.HELVETICA).getStringWidth(text)*size/1000f
+            }
         }
     }
-    @Test fun vectorPreviewUsesCourierAndPreservesLongFieldValues() {
+    @Test fun vectorPreviewUsesHelveticaAndPreservesLongFieldValues() {
         val name = "TITULAR CON NOMBRES Y APELLIDOS COMPLETOS"
         val reason = "Doy conformidad con las condiciones y con todos los anexos del contrato"
         val bytes = VisualStampRenderer.previewPdf(130f, 150f, name, "12345678", PdfSigningOptions(reason = reason))
@@ -38,7 +36,7 @@ class StampTextLayoutTest {
             val text = PDFTextStripper().getText(doc).replace(Regex("\\s"), "")
             assertTrue(text.contains(name.replace(" ", "")))
             assertTrue(text.contains(reason.replace(" ", "")))
-            assertTrue(doc.getPage(0).resources.fontNames.all { doc.getPage(0).resources.getFont(it).name.startsWith("Courier") })
+            assertTrue(doc.getPage(0).resources.fontNames.all { doc.getPage(0).resources.getFont(it).name.startsWith("Helvetica") })
         }
     }
     @Test fun pinchPreservesTheFingerCentroidAndMovesWithTheGesture() {

@@ -4,66 +4,91 @@ import java.awt.*
 import java.awt.event.*
 import java.awt.image.BufferedImage
 import javax.swing.JPanel
-import pe.gob.reniec.dnie.pdf.NormalizedStampPlacement
+import pe.gob.reniec.dnie.pdf.*
+import pe.gob.reniec.dnie.pdf.StampPlacementGeometry.Handle
 
-/** UI geometry only. Page image is supplied by a backend preview adapter. */
+/** Pointer events only; PDF adapter supplies page and stamp images. */
 class PreviewCanvas : JPanel() {
     var image: BufferedImage?=null
-        set(value) { field=value; repaint() }
-    var placement=NormalizedStampPlacement(0.36f,0.82f,0.60f,0.14f)
-        set(value) { field=value; repaint() }
+        set(value) { field=value;repaint() }
+    var stampImage: BufferedImage?=null
+        set(value) { field?.takeIf { it!==value }?.flush();field=value;repaint() }
+    var stampError: String?=null
+        set(value) { field=value;repaint() }
+    var placement=NormalizedStampPlacement(.36f,.80f,.60f,.16f)
+        set(value) { val sizeChanged=field.width!=value.width || field.height!=value.height;field=value;repaint();if(sizeChanged) resized() }
     var visibleStamp=true
-        set(value) { field=value; repaint() }
+        set(value) { field=value;repaint() }
     var interactive=true
     var changed: (NormalizedStampPlacement)->Unit={}
+    var resized: ()->Unit={}
     private var start: Point?=null
     private var origin=placement
-    private var resizing=false
+    private var handle=Handle.MOVE
+    private var snap: StampPlacementGeometry.Snap?=null
     init {
-        background=Color(229,233,239); preferredSize=Dimension(650,720)
-        val mouse=object : MouseAdapter() {
+        background=AetherSwingTheme.container;preferredSize=Dimension(650,720)
+        val mouse=object: MouseAdapter() {
             override fun mousePressed(e: MouseEvent) {
                 if(!interactive || !visibleStamp) return
-                val rect=pageBounds() ?: return
-                if(!rect.contains(e.point)) return
-                val x=(e.x-rect.x).toFloat()/rect.width; val y=(e.y-rect.y).toFloat()/rect.height
-                resizing=kotlin.math.abs(x-placement.left-placement.width)*rect.width<16 &&
-                    kotlin.math.abs(y-placement.top-placement.height)*rect.height<16
-                if(!resizing && (x !in placement.left..placement.left+placement.width || y !in placement.top..placement.top+placement.height)) {
-                    placement=placement.moved(x-placement.width/2,y-placement.height/2); changed(placement)
-                }
-                start=e.point; origin=placement
+                val page=pageBounds()?:return;if(!page.contains(e.point)) return
+                handle=hit(e.point)
+                val x=(e.x-page.x).toFloat()/page.width;val y=(e.y-page.y).toFloat()/page.height
+                if(handle==Handle.MOVE && !stampBounds(page).contains(e.point)) placement=placement.moved(x-placement.width/2,y-placement.height/2)
+                start=e.point;origin=placement;changed(placement)
             }
             override fun mouseDragged(e: MouseEvent) {
-                val point=start ?: return; val rect=pageBounds() ?: return
-                val dx=(e.x-point.x).toFloat()/rect.width; val dy=(e.y-point.y).toFloat()/rect.height
-                placement=if(resizing) origin.resizedAnchored(origin.width+dx,origin.height+dy)
-                    else origin.moved(origin.left+dx,origin.top+dy)
-                changed(placement)
+                if(!interactive) return
+                val point=start?:return;val page=pageBounds()?:return
+                val next=StampPlacementGeometry.resize(origin,(e.x-point.x).toFloat()/page.width,(e.y-point.y).toFloat()/page.height,handle)
+                snap=if(handle==Handle.MOVE) StampPlacementGeometry.snap(next) else null
+                placement=snap?.placement?:next;changed(placement)
             }
-            override fun mouseReleased(e: MouseEvent) { start=null }
+            override fun mouseReleased(e: MouseEvent) { start=null;snap=null;repaint() }
+            override fun mouseMoved(e: MouseEvent) {
+                cursor=Cursor.getPredefinedCursor(if(!interactive || !visibleStamp) Cursor.DEFAULT_CURSOR else when(hit(e.point)) {
+                    Handle.N,Handle.S->Cursor.N_RESIZE_CURSOR;Handle.E,Handle.W->Cursor.E_RESIZE_CURSOR
+                    Handle.NE,Handle.SW->Cursor.NE_RESIZE_CURSOR;Handle.NW,Handle.SE->Cursor.SE_RESIZE_CURSOR;else->Cursor.MOVE_CURSOR })
+            }
         }
-        addMouseListener(mouse); addMouseMotionListener(mouse)
+        addMouseListener(mouse);addMouseMotionListener(mouse)
     }
-    private fun pageBounds(): Rectangle? {
-        val img=image ?: return null
-        val scale=minOf((width-40).toDouble()/img.width,(height-40).toDouble()/img.height).coerceAtLeast(0.01)
-        val w=(img.width*scale).toInt(); val h=(img.height*scale).toInt()
+    internal fun pageBounds(): Rectangle? {
+        val img=image?:return null
+        val scale=minOf((width-40).toDouble()/img.width,(height-40).toDouble()/img.height).coerceAtLeast(.01)
+        val w=(img.width*scale).toInt();val h=(img.height*scale).toInt()
         return Rectangle((width-w)/2,(height-h)/2,w,h)
+    }
+    private fun stampBounds(page: Rectangle)=Rectangle(page.x+(placement.left*page.width).toInt(),page.y+(placement.top*page.height).toInt(),
+        (placement.width*page.width).toInt(),(placement.height*page.height).toInt())
+    private fun hit(point: Point): Handle {
+        val r=pageBounds()?.let(::stampBounds)?:return Handle.MOVE
+        val left=kotlin.math.abs(point.x-r.x)<10;val right=kotlin.math.abs(point.x-r.x-r.width)<10
+        val top=kotlin.math.abs(point.y-r.y)<10;val bottom=kotlin.math.abs(point.y-r.y-r.height)<10
+        return when { left&&top->Handle.NW;right&&top->Handle.NE;left&&bottom->Handle.SW;right&&bottom->Handle.SE
+            point.y in r.y..r.y+r.height && left->Handle.W;point.y in r.y..r.y+r.height && right->Handle.E
+            point.x in r.x..r.x+r.width && top->Handle.N;point.x in r.x..r.x+r.width && bottom->Handle.S;else->Handle.MOVE }
     }
     override fun paintComponent(graphics: Graphics) {
         super.paintComponent(graphics)
         val g=graphics.create() as Graphics2D
         try {
             g.setRenderingHint(RenderingHints.KEY_INTERPOLATION,RenderingHints.VALUE_INTERPOLATION_BILINEAR)
-            val rect=pageBounds()
-            if(rect==null) { g.color=Color.DARK_GRAY; g.drawString("Selecciona un PDF para ver su página",35,55); return }
-            g.drawImage(image,rect.x,rect.y,rect.width,rect.height,null)
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON)
+            val page=pageBounds()
+            if(page==null) { g.color=AetherSwingTheme.muted;g.drawString("Selecciona un PDF para colocar tu firma",28,48);return }
+            g.color=Color(11,28,48,28);g.fillRoundRect(page.x-2,page.y+4,page.width+4,page.height+4,6,6)
+            g.drawImage(image,page.x,page.y,page.width,page.height,null);g.color=Color(0xCBDBF5);g.drawRect(page.x,page.y,page.width,page.height)
             if(visibleStamp) {
-                val x=rect.x+(placement.left*rect.width).toInt(); val y=rect.y+(placement.top*rect.height).toInt()
-                val w=(placement.width*rect.width).toInt(); val h=(placement.height*rect.height).toInt()
-                g.color=Color(24,94,190,45); g.fillRect(x,y,w,h); g.color=Color(24,94,190); g.stroke=BasicStroke(2f);g.drawRect(x,y,w,h)
-                g.drawString("Área del sello",x+7,y+17);g.fillRect(x+w-6,y+h-6,12,12)
+                val r=stampBounds(page)
+                stampImage?.let { g.drawImage(it,r.x,r.y,r.width,r.height,null) }
+                g.color=AetherSwingTheme.primary;g.stroke=BasicStroke(1.5f,BasicStroke.CAP_BUTT,BasicStroke.JOIN_ROUND,10f,floatArrayOf(5f,4f),0f)
+                g.drawRect(r.x,r.y,r.width,r.height)
+                if(stampImage==null) { g.font=font.deriveFont(11f);g.drawString(if(stampError==null) "Preparando sello…" else "Amplía el sello o quita campos",r.x+6,r.y+16) }
+                g.stroke=BasicStroke(1.5f)
+                for(x in listOf(r.x,r.x+r.width)) for(y in listOf(r.y,r.y+r.height)) { g.color=Color.WHITE;g.fillOval(x-5,y-5,10,10);g.color=AetherSwingTheme.primary;g.drawOval(x-5,y-5,10,10) }
+                snap?.vertical?.let { val x=page.x+(it*page.width).toInt();g.drawLine(x,page.y,x,page.y+page.height) }
+                snap?.horizontal?.let { val y=page.y+(it*page.height).toInt();g.drawLine(page.x,y,page.x+page.width,y) }
             }
         } finally { g.dispose() }
     }

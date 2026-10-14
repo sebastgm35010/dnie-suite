@@ -6,6 +6,7 @@ dependencies {
     implementation(project(":dnie-validation-core"))
     implementation("org.apache.pdfbox:pdfbox:3.0.8")
     testImplementation("junit:junit:4.13.2")
+    testImplementation("com.google.zxing:core:3.5.3")
 }
 tasks.test {
     providers.gradleProperty("visibleEvidence").orNull?.let { systemProperty("dnie.pdf.visibleEvidence",it) }

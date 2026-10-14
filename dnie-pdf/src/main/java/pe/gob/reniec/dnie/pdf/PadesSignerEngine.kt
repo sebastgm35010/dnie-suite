@@ -112,7 +112,8 @@ class PadesSignerEngine(private val timestampService: pe.gob.reniec.dnie.timesta
 
                 PDDocument.load(tempSourceFile, com.tom_roush.pdfbox.io.MemoryUsageSetting.setupMixed(32L * 1024 * 1024)).use { document ->
                 require(document.numberOfPages > 0) { "El PDF no tiene páginas" }
-                require(pageNumber in 1..document.numberOfPages) { "La página seleccionada ya no existe" }
+                val selectedPage = modernOptions?.pageTarget?.pages(document.numberOfPages,pageNumber)?.first() ?: pageNumber
+                require(selectedPage in 1..document.numberOfPages) { "La página seleccionada ya no existe" }
                 require(!document.isEncrypted) { "El PDF está protegido; desbloquéelo antes de firmar" }
                 val certification = document.documentCatalog.cosObject.getCOSDictionary(COSName.PERMS)?.getCOSDictionary(COSName.DOCMDP)
                 val references = certification?.getCOSArray(COSName.REFERENCE)
@@ -143,7 +144,7 @@ class PadesSignerEngine(private val timestampService: pe.gob.reniec.dnie.timesta
 
                 // 3. Estampado visual o firma invisible
                 val actualPageNumber = if (preset != SignaturePreset.INVISIBLE) {
-                    val clampedPage = pageNumber.coerceIn(1, maxOf(1, document.numberOfPages))
+                    val clampedPage = selectedPage.coerceIn(1, maxOf(1, document.numberOfPages))
                     val targetPage = document.getPage(clampedPage - 1)
                     val rect = if (modernOptions != null) VisualStampRenderer.normalizedBoundingBox(targetPage, modernOptions.placement)
                     else VisualStampRenderer.calculateBoundingBox(
@@ -155,6 +156,7 @@ class PadesSignerEngine(private val timestampService: pe.gob.reniec.dnie.timesta
                         stampHeight = customHeight
                     )
 
+                    if (modernOptions == null) {
                     val visualTemplate = VisualStampRenderer.createVisualSignatureTemplate(
                         targetDoc = document,
                         pageNumber = clampedPage,
@@ -167,6 +169,7 @@ class PadesSignerEngine(private val timestampService: pe.gob.reniec.dnie.timesta
                         appearance = modernOptions?.appearance
                     )
                     signatureOptions.setVisualSignature(visualTemplate)
+                    }
                     signatureOptions.page = clampedPage - 1
                     clampedPage
                 } else {
@@ -205,6 +208,8 @@ class PadesSignerEngine(private val timestampService: pe.gob.reniec.dnie.timesta
 
                 // 5. Agregar firma al documento y ejecutar guardado incremental
                 document.addSignature(pdSignature, signatureInterface, signatureOptions)
+                if(modernOptions != null && modernOptions.visible) AndroidStampAppearance.apply(document,pdSignature,modernOptions,
+                    citizenData.fullName,citizenData.dniNumber,signingTimestamp)
 
                 FileOutputStream(tempSignedFile).use { fos ->
                     document.saveIncremental(fos)

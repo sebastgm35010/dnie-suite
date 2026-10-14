@@ -89,6 +89,32 @@ class ConfiguredPdfSigningTest {
         }
         assertEquals(1,calls)
     }
+    @Test fun allPagesSharesOneSignatureAndEveryWidgetSurvivesIncrementalSave() = runTest {
+        val source=PDDocument().use { doc ->
+            for(rotation in listOf(0,90,180,270)) doc.addPage(PDPage(PDRectangle(600f,800f)).apply {
+                cropBox=PDRectangle(10f,20f,400f,600f);this.rotation=rotation
+            })
+            ByteArrayOutputStream().also { doc.save(it) }.toByteArray()
+        }
+        val out=ByteArrayOutputStream();var calls=0
+        PadesSignerEngine().signConfiguredPdf(source.inputStream(),out,cert.encoded,
+            { calls++;Result.success(sign(it)) },PdfSigningOptions(pageTarget=StampPageTarget.ALL_PAGES,
+                placement=NormalizedStampPlacement(.1f,.2f,.7f,.4f))).getOrThrow()
+        val bytes=out.toByteArray();assertEquals(1,calls);assertArrayEquals(source,bytes.copyOf(source.size))
+        PDDocument.load(bytes).use { doc ->
+            val field=doc.documentCatalog.acroForm.fields.single() as PDSignatureField
+            assertEquals(4,field.widgets.size);assertEquals(1,doc.signatureDictionaries.size)
+            field.widgets.forEachIndexed { index,widget ->
+                assertTrue(widget.cosObject.getDictionaryObject("Parent")===field.cosObject)
+                assertTrue(doc.getPage(index).annotations.any { it.cosObject===widget.cosObject })
+                assertNotNull(widget.appearance.normalAppearance.appearanceStream)
+            }
+            val sig=doc.signatureDictionaries.single()
+            val cms=CMSSignedData(CMSProcessableByteArray(sig.getSignedContent(bytes)),sig.getContents(bytes))
+            assertTrue(cms.signerInfos.signers.single().verify(JcaSimpleSignerInfoVerifierBuilder().build(cert)))
+            assertEquals("ETSI.CAdES.detached",sig.subFilter)
+        }
+    }
     @Test fun normalizedPlacementHandlesEveryRotationAndCropOrigin() {
         val page = PDPage(PDRectangle(600f, 800f)).apply { cropBox = PDRectangle(10f, 20f, 400f, 600f) }
         val placement = NormalizedStampPlacement(.1f, .2f, .3f, .1f)

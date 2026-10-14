@@ -1,9 +1,6 @@
 package pe.gob.reniec.dnie.ui.signer
 
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.pdf.PdfRenderer
-import android.os.ParcelFileDescriptor
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -30,30 +27,13 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
 import pe.gob.reniec.dnie.domain.signing.SigningDocument
 import pe.gob.reniec.dnie.pdf.*
-import java.io.File
 import kotlin.math.roundToInt
 
-private fun renderPdf(file: File, page: Int, maxWidth: Int): Bitmap =
-    ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY).use { descriptor ->
-        PdfRenderer(descriptor).use { renderer ->
-            renderer.openPage(page).use { sheet ->
-                val width = maxWidth.coerceAtMost((1800f * sheet.width / sheet.height).roundToInt()).coerceAtLeast(1)
-                val height = (width.toFloat() * sheet.height / sheet.width).roundToInt().coerceAtLeast(1)
-                Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also {
-                    it.eraseColor(android.graphics.Color.WHITE)
-                    sheet.render(it, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                }
-            }
-        }
-    }
-
 /** Full-screen draft editor: cancellation leaves the approved document options untouched. */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class,ExperimentalLayoutApi::class)
 @Composable
 fun PdfPlacementEditor(document: SigningDocument, name: String, dni: String, options: PdfSigningOptions,
                        onDismiss: () -> Unit, onApply: (PdfSigningOptions) -> Unit) {
@@ -64,32 +44,22 @@ fun PdfPlacementEditor(document: SigningDocument, name: String, dni: String, opt
     var pageBitmap by remember(document.id, draft.pageNumber) { mutableStateOf<Bitmap?>(null) }
     var error by remember(document.id, draft.pageNumber) { mutableStateOf<String?>(null) }
     LaunchedEffect(document.id, draft.pageNumber) {
-        try { pageBitmap = withContext(Dispatchers.IO) { renderPdf(document.file, draft.pageNumber - 1, 1400) } }
+        try { pageBitmap = pe.gob.reniec.dnie.data.signing.AndroidStampPreview.page(document.file,draft.pageNumber-1) }
         catch (e: kotlinx.coroutines.CancellationException) { throw e }
         catch (e: Exception) { error = e.message ?: "No se pudo mostrar la página" }
     }
+    val previewTime=remember { System.currentTimeMillis() }
     var stamp by remember { mutableStateOf<Bitmap?>(null) }
     var stampError by remember { mutableStateOf<String?>(null) }
     var preparingStamp by remember { mutableStateOf(true) }
-    LaunchedEffect(page, draft.placement.width, draft.placement.height, draft.appearance, draft.reason, draft.location, name, dni) {
+    LaunchedEffect(page, draft.placement.width, draft.placement.height, draft.appearance, draft.reason, draft.location, draft.reniecTimestamp, name, dni) {
         preparingStamp = true
         // Coalesce touch events while keeping the last appearance visible during a resize.
         delay(120)
         stampError = null
         try {
-            stamp = withContext(Dispatchers.IO) {
-                if (current.appearance.style == StampStyle.HANDWRITTEN_ONLY) {
-                    val png = requireNotNull(current.appearance.handwrittenPng) { "Lee la imagen manuscrita antes de colocarla" }
-                    requireNotNull(BitmapFactory.decodeByteArray(png, 0, png.size)) { "Imagen manuscrita inválida" }
-                } else {
-                    val file = File.createTempFile("stamp_preview_", ".pdf", context.cacheDir)
-                    try {
-                        file.writeBytes(VisualStampRenderer.previewPdf(page.width * current.placement.width,
-                            page.height * current.placement.height, name, dni, current))
-                        renderPdf(file, 0, 800)
-                    } finally { file.delete() }
-                }
-            }
+            stamp = pe.gob.reniec.dnie.data.signing.AndroidStampPreview.stamp(context,page.width*current.placement.width,
+                page.height*current.placement.height,name,dni,current,java.util.Date(previewTime))
         } catch (e: kotlinx.coroutines.CancellationException) { throw e }
         catch (e: Exception) { stamp = null; stampError = e.message ?: "No se pudo preparar el sello" }
         preparingStamp = false
@@ -102,12 +72,19 @@ fun PdfPlacementEditor(document: SigningDocument, name: String, dni: String, opt
                 TextButton(enabled = pageBitmap != null && !preparingStamp && stampError == null && stamp != null,
                     onClick = { onApply(draft) }) { Text("Aplicar") }
             }) { insets ->
-            Column(Modifier.fillMaxSize().padding(insets).navigationBarsPadding()) {
+            Column(Modifier.fillMaxSize().padding(insets).navigationBarsPadding().background(MaterialTheme.colorScheme.surfaceContainer)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                     TextButton(enabled = draft.pageNumber > 1, onClick = { draft = draft.copy(pageNumber = draft.pageNumber - 1) }) { Text("Anterior") }
                     Text("Página " + draft.pageNumber + " de " + document.pages.size)
                     TextButton(enabled = draft.pageNumber < document.pages.size, onClick = { draft = draft.copy(pageNumber = draft.pageNumber + 1) }) { Text("Siguiente") }
                 }
+                androidx.compose.foundation.layout.FlowRow(Modifier.padding(horizontal=12.dp),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                    listOf(SignaturePreset.TOP_LEFT to "↖",SignaturePreset.TOP_RIGHT to "↗",SignaturePreset.BOTTOM_LEFT to "↙",SignaturePreset.BOTTOM_RIGHT to "↘").forEach { (preset,label) ->
+                        OutlinedButton(onClick={draft=current.copy(placement=StampPlacementGeometry.preset(current.placement,preset))}) { Text(label) }
+                    }
+                }
+                StampPageTargetSelector(draft.pageTarget,true) { choice -> draft=current.copy(pageTarget=choice,
+                    pageNumber=when(choice) { StampPageTarget.FIRST_PAGE->1;StampPageTarget.LAST_PAGE->document.pages.size;else->current.pageNumber }) }
                 if (document.pages.size > 3) OutlinedTextField(pageText, { text ->
                     pageText = text.filter { it.isDigit() }.take(5)
                     pageText.toIntOrNull()?.takeIf { it in 1..document.pages.size }?.let { draft = draft.copy(pageNumber = it) }
@@ -133,7 +110,7 @@ fun PdfPlacementEditor(document: SigningDocument, name: String, dni: String, opt
                         if (pageBitmap == null) Text(error ?: "Preparando página…", color = Color.DarkGray, modifier = Modifier.padding(16.dp))
                         val p = draft.placement
                         Box(Modifier.offset { IntOffset((p.left * size.width).roundToInt(), (p.top * size.height).roundToInt()) }
-                            .fillMaxWidth(p.width).fillMaxHeight(p.height).border(1.dp, Color.Black)
+                            .fillMaxWidth(p.width).fillMaxHeight(p.height).border(1.dp, MaterialTheme.colorScheme.primary)
                             .semantics { contentDescription = "Sello: arrastrar para mover, pellizcar para cambiar tamaño" }
                             .pointerInput(document.id) {
                                 detectTransformGestures { centroid, pan, zoom, _ ->
@@ -184,6 +161,6 @@ private fun ResizeHandle(label: String, modifier: Modifier, onDrag: (Offset) -> 
     Box(modifier.size(36.dp).semantics { contentDescription = label }.pointerInput(Unit) {
         detectDragGestures { event, drag -> event.consume(); change(drag) }
     }, contentAlignment = Alignment.Center) {
-        Box(Modifier.size(13.dp).background(Color.White, CircleShape).border(2.dp, Color.Black, CircleShape))
+        Box(Modifier.size(13.dp).background(Color.White, CircleShape).border(2.dp, MaterialTheme.colorScheme.primary, CircleShape))
     }
 }

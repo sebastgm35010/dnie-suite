@@ -1,18 +1,48 @@
 package pe.gob.reniec.dnie.pdf
 
 enum class StampStyle(val label: String) {
-    CARD("Tarjeta"), MINIMAL("Minimalista"), INK("Manuscrita + datos"), HANDWRITTEN_ONLY("Solo manuscrita")
+    CARD("Tarjeta clásica"), MINIMAL("Minimalista"), INK("Rúbrica + datos"), HANDWRITTEN_ONLY("Solo rúbrica"),
+    INSTITUTIONAL("Institucional")
+}
+
+enum class StampColorTheme(val label: String, val accentRgb: Int, val backgroundRgb: Int,
+    val borderRgb: Int, val titleRgb: Int, val bodyRgb: Int) {
+    AETHER_BLUE("Azul Aether",0x004AC6,0xF8F9FF,0xB8CCF0,0x0B1C30,0x434655),
+    CRIMSON_SEAL("Rojo institucional",0xB91C1C,0xFFFBFB,0xE5C4C4,0x1E293B,0x475569),
+    EMERALD_TRUST("Esmeralda",0x006A63,0xF4FBF9,0xB2DFDB,0x00201D,0x37474F),
+    SLATE_MONO("Monocromo impresión",0x1E293B,0xFFFFFF,0x64748B,0x0F172A,0x334155)
+}
+
+enum class StampBadgeType(val label: String) {
+    SEAL_VECTOR("Escudo DNIe"), QR_VERIFICATION("QR de verificación"), NONE("Sin insignia")
+}
+
+enum class StampPageTarget(val label: String) {
+    SPECIFIC_PAGE("Página seleccionada"), FIRST_PAGE("Primera página"), LAST_PAGE("Última página"), ALL_PAGES("Todas las páginas");
+    fun pages(count: Int, selected: Int): List<Int> {
+        require(count > 0) { "El PDF no tiene páginas" }
+        return when(this) {
+            FIRST_PAGE -> listOf(1)
+            LAST_PAGE -> listOf(count)
+            ALL_PAGES -> (1..count).toList()
+            SPECIFIC_PAGE -> { require(selected in 1..count) { "La página seleccionada ya no existe" }; listOf(selected) }
+        }
+    }
 }
 
 data class SignatureAppearance(
-    val style: StampStyle = StampStyle.CARD,
+    val style: StampStyle = StampStyle.INSTITUTIONAL,
     val showDni: Boolean = true,
     val showDate: Boolean = true,
     val showTime: Boolean = true,
     val showReason: Boolean = true,
     val showLocation: Boolean = true,
     val showHandwritten: Boolean = false,
-    val handwrittenPng: ByteArray? = null
+    val handwrittenPng: ByteArray? = null,
+    val colorTheme: StampColorTheme = StampColorTheme.AETHER_BLUE,
+    val badge: StampBadgeType = StampBadgeType.SEAL_VECTOR,
+    val customHeader: String = "FIRMADO DIGITALMENTE",
+    val showTsaBadge: Boolean = true
 ) {
     val requiresHandwritten: Boolean get() = showHandwritten || style == StampStyle.HANDWRITTEN_ONLY
 }
@@ -54,5 +84,6 @@ data class PdfSigningOptions(
     val appearance: SignatureAppearance = SignatureAppearance(),
     val reason: String = "Doy conformidad",
     val location: String = "",
-    val reniecTimestamp: Boolean = false
+    val reniecTimestamp: Boolean = false,
+    val pageTarget: StampPageTarget = StampPageTarget.SPECIFIC_PAGE
 )

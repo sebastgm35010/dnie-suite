@@ -25,3 +25,10 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
 }
+
+tasks.withType<org.gradle.api.tasks.testing.Test>().configureEach {
+    val temp=layout.buildDirectory.dir("test-tmp")
+    doFirst { temp.get().asFile.mkdirs() }
+    systemProperty("java.io.tmpdir",temp.get().asFile.absolutePath)
+    providers.gradleProperty("visibleEvidence").orNull?.let { systemProperty("dnie.android.pdf.evidence",file(it).resolve("android").absolutePath) }
+}

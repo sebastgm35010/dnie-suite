@@ -63,7 +63,7 @@ class JvmPdfSigner(private val temporaryRoot: Path,
                     var size = 0
                     SignatureOptions().use { signingOptions ->
                         signingOptions.preferredSignatureSize = SIGNATURE_RESERVE
-                        if(options.visible) signingOptions.page=options.pageNumber-1
+                        if(options.visible) signingOptions.page=options.pageTarget.pages(document.numberOfPages,options.pageNumber).first()-1
                         document.addSignature(signature, null, signingOptions)
                         if(options.visible) DesktopStampRenderer.apply(document,signature,options,citizen.fullName,citizen.dniNumber,timestamp)
                         Files.newOutputStream(signed).use { stream ->
@@ -87,7 +87,7 @@ class JvmPdfSigner(private val temporaryRoot: Path,
                     // No partial PDF reaches caller if parsing/card/signature verification failed.
                     Files.newInputStream(signed).use { it.copyTo(output) }; output.flush()
                     Result.success(PdfSignResult(signerName = citizen.fullName, signerDni = citizen.dniNumber,
-                        timestamp = timestamp, signatureSize = size, pageNumber = if(options.visible) options.pageNumber else 0))
+                        timestamp = timestamp, signatureSize = size, pageNumber = if(options.visible) options.pageTarget.pages(document.numberOfPages,options.pageNumber).first() else 0))
                 }
             }
         } catch (cancelled: CancellationException) { throw cancelled }
