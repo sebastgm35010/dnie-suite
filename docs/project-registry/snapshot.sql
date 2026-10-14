@@ -21,6 +21,7 @@ INSERT INTO "checkpoints" VALUES('checkpoint/diagnostics-direct-apk72','b1d4d9fe
 INSERT INTO "checkpoints" VALUES('checkpoint/driver-completion-r2','81997a259fc7c4cf6b41030fa324d95e622317d9','Driver 2.0.0.4 installed; C++ and native PCSC/TLS synthetic regressions passed');
 INSERT INTO "checkpoints" VALUES('checkpoint/driver-power-r1','d1882fb80f0b4c80a2c6eb95273e2dca412745b4','fix(driver): retire pending I/O on suspend and report PCSC publication');
 INSERT INTO "checkpoints" VALUES('checkpoint/firma-windows-1.8.14','91a3d4a05013e54fb086c9f1e0e39744cfbbcd3c','Validated Android18 RENIEC reading and Android21 Firma Peru PDF signing before core cleanup');
+INSERT INTO "checkpoints" VALUES('checkpoint/network-r6-apk82','87d6e18caa32fc876252002ea3605c5a7d3aea00','R6: 283 JVM tests, 8 Android tests, authenticated LAN/Tailnet discovery; physical DNI regression pending');
 INSERT INTO "checkpoints" VALUES('checkpoint/passkeys-independent-r2-apk70','5ae338ba5b507aaf6e3dc009602431a74ca0263d','feat(passkeys): add opt-in independent biometric store and restore navigation');
 INSERT INTO "checkpoints" VALUES('checkpoint/pre-3.1-v4','e7b22871f2e2ba4c6fac5ab45c173ca4527496b3','Checkpoint before reviewed v4 integration and version 3.1');
 INSERT INTO "checkpoints" VALUES('checkpoint/pre-address-mobility-apk76','7d6c69212471d9445240cebdc8b593743f474a73','docs(registry): record installed driver power R1 checkpoint');
@@ -6375,7 +6376,7 @@ INSERT INTO "metadata" VALUES('catalog_review_date','2026-10-14');
 INSERT INTO "metadata" VALUES('index_method','tracked files; lexical symbols/imports, not runtime call graph');
 INSERT INTO "metadata" VALUES('project','DnieSignerPeruEvolution');
 INSERT INTO "metadata" VALUES('schema_version','1');
-INSERT INTO "metadata" VALUES('source_commit','58d322157d71ae7a41f3f3a92cddea71c5d26740');
+INSERT INTO "metadata" VALUES('source_commit','df672196044c0e33d8b4002e558dcb825f8dc902');
 CREATE TABLE module_dependencies(source TEXT REFERENCES modules(id), target TEXT REFERENCES modules(id),
  scope TEXT NOT NULL, line INTEGER NOT NULL, PRIMARY KEY(source,target,scope,line));
 INSERT INTO "module_dependencies" VALUES('app','dnie-core','implementation',112);
