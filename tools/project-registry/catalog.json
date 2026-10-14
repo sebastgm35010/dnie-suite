@@ -37,7 +37,8 @@
     "README.md": "repository_entrypoint",
     "docs/operations/GITHUB_Y_COMPILACION_MONOREPO.md": "current_repository_workflow",
     "docs/operations/PUBLICACION_GITHUB_20261013.md": "repository_publication_evidence",
-    "docs/architecture/CONTROLADOR_COMPLETADOS_Y_PROTOCOLO_R2.md": "current_driver_completion_and_protocol_architecture"
+    "docs/architecture/CONTROLADOR_COMPLETADOS_Y_PROTOCOLO_R2.md": "current_driver_completion_and_protocol_architecture",
+    "docs/suite/QR_NATIVO_SUITE_R1.md": "current_suite_qr_presentation"
   },
   "features": [
     {
@@ -567,6 +568,31 @@
       "depends_on": [
         "bridge"
       ]
+    },
+    {
+      "id": "suite_pairing_qr",
+      "name": "QR nativo de emparejamiento Suite",
+      "status": "installed_ui_synthetic_validated",
+      "note": "2026-10-13 · Suite QR R1: Abrir QR inicia preparación y muestra QR nativo en memoria, permite reabrirlo y lo retira al conectar/cancelar. Corregida espera de EOF heredado por gestor Bridge que bloqueaba conexiones. 45 tests UI/escritorio/orquestación pasan, incluida pulsación real del botón sin teléfono/DNI y proceso Windows con stdout heredado. Acceso directo actualizado; lectura QR desde Android físico pendiente.",
+      "evidence": "docs/suite/QR_NATIVO_SUITE_R1.md",
+      "files": {
+        "frontend": [
+          "dnie-signing-ui/src/main/java/pe/gob/reniec/dnie/desktop/ui/PairingQrDialog.kt",
+          "dnie-signing-ui/src/main/java/pe/gob/reniec/dnie/desktop/ui/PairingQrImage.kt",
+          "dnie-signing-ui/src/main/java/pe/gob/reniec/dnie/desktop/ui/SuiteWindow.kt"
+        ],
+        "adapter": [
+          "dnie-desktop-orchestration/src/main/java/pe/gob/reniec/dnie/desktop/orchestration/WindowsBridgeGateway.kt"
+        ],
+        "test": [
+          "dnie-signing-ui/src/test/java/pe/gob/reniec/dnie/desktop/ui/PairingQrImageTest.kt",
+          "dnie-signing-ui/src/test/java/pe/gob/reniec/dnie/desktop/ui/SuiteQrButtonTest.kt",
+          "dnie-desktop-orchestration/src/test/java/pe/gob/reniec/dnie/desktop/orchestration/BridgeReplyTest.kt"
+        ]
+      },
+      "depends_on": [
+        "suite"
+      ]
     }
   ],
   "pending": [
@@ -737,6 +763,13 @@
       "state": "needs_physical_test",
       "description": "Nueva sesión Suite y puente LAN/Tailnet/USB con DNI real, lote PDF/CMS y exportación íntegra tras integrar v4. No repetir privadas ante fallo; pruebas sintéticas y de presentación no acreditan esta regresión física.",
       "evidence": "docs/architecture/SEGURIDAD_BACKEND_3_1_V4.md"
+    },
+    {
+      "id": "suite_cli_qr_legacy",
+      "feature": "suite",
+      "state": "open",
+      "description": "GUI usa QR nativo R1. El helper de QR de consola aún depende de PowerShell, QRCoder instalado por Bridge y PNG CreateNew; modernizarlo por separado si se requiere QR en CLI. Lectura QR real desde Android tras R1 pendiente.",
+      "evidence": "docs/suite/QR_NATIVO_SUITE_R1.md"
     }
   ],
   "facts": [
@@ -749,8 +782,8 @@
     {
       "id": "desktop_current",
       "category": "artifact",
-      "value": "D:/DNIeToolchain/Builds/version3.1/signing-ui/install/dnie-signing-ui/DNIe Suite.lnk",
-      "evidence": "docs/architecture/SEGURIDAD_BACKEND_3_1_V4.md"
+      "value": "D:/DNIeToolchain/Builds/suite-qr-r1/signing-ui/install/dnie-signing-ui/DNIe Suite.lnk",
+      "evidence": "docs/suite/QR_NATIVO_SUITE_R1.md"
     },
     {
       "id": "h15_tests",
@@ -859,6 +892,12 @@
       "category": "installed_synthetic_validated",
       "value": "2026-10-13 · Controlador R2 2.0.0.4/oem239 y backend Windows instalados sin reinicio. Errores locales de transmisión ya no retiran la tarjeta; protocolo tras apagado y cancelación antes de entrega corregidos. Pulsos 2 s/operaciones 25 s frente a plazo del driver 30 s. 7860 comprobaciones C++, 137 backend, 31 PCSC nativas y 13 TLSrelay pasan. PnP0 y ReaderPublished=true al finalizar, sin tarjeta. Firma DNI y suspensión físicas pendientes; Android78 no cambia.",
       "evidence": "docs/architecture/CONTROLADOR_COMPLETADOS_Y_PROTOCOLO_R2.md"
+    },
+    {
+      "id": "suite_native_qr_r1",
+      "category": "installed_ui_synthetic_validated",
+      "value": "2026-10-13 · Suite QR R1: Abrir QR inicia preparación y muestra QR nativo en memoria, permite reabrirlo y lo retira al conectar/cancelar. Corregida espera de EOF heredado por gestor Bridge que bloqueaba conexiones. 45 tests UI/escritorio/orquestación pasan, incluida pulsación real del botón sin teléfono/DNI y proceso Windows con stdout heredado. Acceso directo actualizado; lectura QR desde Android físico pendiente.",
+      "evidence": "docs/suite/QR_NATIVO_SUITE_R1.md"
     }
   ]
 }

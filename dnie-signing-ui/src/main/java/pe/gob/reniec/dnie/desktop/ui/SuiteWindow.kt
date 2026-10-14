@@ -6,7 +6,6 @@ import java.nio.file.*
 import java.util.prefs.Preferences
 import javax.swing.*
 import javax.swing.border.EmptyBorder
-import pe.gob.reniec.dnie.desktop.continuous.SuitePairingPresenter
 import pe.gob.reniec.dnie.desktop.model.*
 import pe.gob.reniec.dnie.pdf.*
 
@@ -16,10 +15,10 @@ class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite 3
     private val controller=SuiteController(product)
     private val bridgePanel=if(DesktopIntegration.helper()!=null) BridgePanel(product) else null
     private val prefs=Preferences.userRoot().node("pe/gob/reniec/dnie/suite-ui")
-    private val phone=JTextField(prefs.get("phone",""),12)
-    private val pc=JTextField(pe.gob.reniec.dnie.desktop.remote.SuiteNetworkAddress.choose(prefs.get("pc",""),phone.text),12)
-    private val workspace=JTextField(prefs.get("workspace",defaultPath("SuiteContinuousJobs")),38)
-    private val identity=JTextField(prefs.get("identity",defaultPath("SuiteContinuousState/pc.dpapi")),38)
+    private val phone=JTextField(prefs.get("phone",""),12).apply { name="suite-phone" }
+    private val pc=JTextField(pe.gob.reniec.dnie.desktop.remote.SuiteNetworkAddress.choose(prefs.get("pc",""),phone.text),12).apply { name="suite-pc" }
+    private val workspace=JTextField(prefs.get("workspace",defaultPath("SuiteContinuousJobs")),38).apply { name="suite-workspace" }
+    private val identity=JTextField(prefs.get("identity",defaultPath("SuiteContinuousState/pc.dpapi")),38).apply { name="suite-identity" }
     private val connect=JButton("Conectar Android")
     private val disconnect=JButton("Desconectar")
     private val qr=JButton("Abrir QR")
@@ -39,7 +38,8 @@ class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite 3
         "Hora" to JCheckBox("Hora",true),"Motivo" to JCheckBox("Motivo",true),"Lugar" to JCheckBox("Lugar",true))
     private val sign=JButton("Firmar lote")
     private val open=JButton("Abrir resultados")
-    private var pairingFile: Path?=null
+    private var pairing: pe.gob.reniec.dnie.desktop.application.DesktopSuiteSession.PairingInfo?=null
+    private val pairingQr=PairingQrDialog(this)
     private var resultDirectory: Path?=null
     private var connected=false
     private var busy=false
@@ -88,8 +88,8 @@ class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite 3
             override fun intervalRemoved(e: javax.swing.event.ListDataEvent) = update()
             override fun contentsChanged(e: javax.swing.event.ListDataEvent) = update()
         })
-        connect.addActionListener { connect() };disconnect.addActionListener { if(busy && connected && JOptionPane.showConfirmDialog(this,"Interrumpir un lote puede dejar resultados parciales. ¿Desconectar?","Desconectar",JOptionPane.OK_CANCEL_OPTION)!=JOptionPane.OK_OPTION) return@addActionListener; controller.disconnect();connected=false;setBusy(false);status.text="Desconectado. No se repite ninguna operación." }
-        qr.addActionListener { pairingFile?.let { path -> Thread { if(!SuitePairingPresenter.openQr(path)) SwingUtilities.invokeLater { JOptionPane.showMessageDialog(this,"Importa el TXT de emparejamiento en Android:\n$path") } }.start() } }
+        connect.addActionListener { connect() };disconnect.addActionListener { if(busy && connected && JOptionPane.showConfirmDialog(this,"Interrumpir un lote puede dejar resultados parciales. ¿Desconectar?","Desconectar",JOptionPane.OK_CANCEL_OPTION)!=JOptionPane.OK_OPTION) return@addActionListener; controller.disconnect();pairing=null;pairingQr.close();connected=false;setBusy(false);status.text="Desconectado. No se repite ninguna operación." }
+        qr.addActionListener { pairing?.let(pairingQr::open) ?: connect(showQr=true) }
         add.addActionListener {
             val chooser=JFileChooser().apply { isMultiSelectionEnabled=true }
             if(chooser.showOpenDialog(this)==JFileChooser.APPROVE_OPTION) {
@@ -105,26 +105,30 @@ class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite 3
         open.addActionListener { resultDirectory?.let { Desktop.getDesktop().open(it.toFile()) } }
         addWindowListener(object: WindowAdapter() { override fun windowClosing(e: WindowEvent) {
             if(!busy || JOptionPane.showConfirmDialog(this@SuiteWindow,"Hay una operación activa. Cerrar interrumpe la conexión; no se repetirá.","Cerrar Suite",JOptionPane.OK_CANCEL_OPTION)==JOptionPane.OK_OPTION) {
-                controller.close();bridgePanel?.close();dispose()
+                pairingQr.close();controller.close();bridgePanel?.close();dispose()
             }
         } })
         initialFiles.filter(Files::isRegularFile).forEach(files::addElement)
         if(files.size()>0) list.selectedIndex=0
         setBusy(false)
     }
-    private fun connect() {
+    private fun connect(showQr: Boolean=false) {
         try {
             val output=Path.of(workspace.text).toAbsolutePath();val own=Path.of(identity.text).toAbsolutePath()
             val remote=phone.text.trim()
+            if(!pe.gob.reniec.dnie.signing.link.SigningProvision.privateAddress(remote)) {
+                status.text="Indica la dirección IP local o Tailscale de Android para preparar la conexión y el QR.";return
+            }
             val previous=pc.text.trim()
             val local=pe.gob.reniec.dnie.desktop.remote.SuiteNetworkAddress.choose(previous,remote)
             pc.text=local
             if(local!=previous) JOptionPane.showMessageDialog(this,"Se usará la dirección actual $local. La PC conserva su identidad; en Android actualizado no necesitas importar otro TXT/QR.")
-            setBusy(true);status.text="Esperando Android. Abre Suite continua en el teléfono…"
+            pairing=null;pairingQr.close();setBusy(true);qr.isEnabled=false;status.text="Esperando Android. Abre Suite continua en el teléfono…"
             controller.connect(local,remote,output,own,{ info ->
-                pairingFile=info.file;fingerprint.text="Huella PC: ${info.fingerprint}";qr.isEnabled=true
+                pairing=info;fingerprint.text="Huella PC: ${info.fingerprint}";qr.isEnabled=true
                 status.text=if(info.firstEnrollment) "Vincula esta PC mediante TXT/QR en Android." else "PC recordada: pulsa Conectar PC guardada en Android. La IP puede cambiar."
-            },{ ok,message -> connected=ok;setBusy(false);status.text=message;qr.isEnabled=false
+                if(showQr) pairingQr.open(info)
+            },{ ok,message -> pairing=null;pairingQr.close();connected=ok;setBusy(false);status.text=message
                 if(ok) { prefs.put("pc",local);prefs.put("phone",remote);prefs.put("workspace",output.toString());prefs.put("identity",own.toString()) }
             })
         } catch(_: Exception) { setBusy(false);status.text="Configuración de conexión inválida." }
@@ -164,7 +168,7 @@ class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite 3
         busy=value;mutableControls.forEach { it.isEnabled=!value };canvas.interactive=!value
         connect.isEnabled=!connected && !value;disconnect.isEnabled=connected || value;sign.isEnabled=connected && !value && !files.isEmpty
         tsa.isEnabled=!value && mode.selectedIndex!=2
-        if(!value) qr.isEnabled=false
+        qr.isEnabled=!connected && (pairing!=null || !value)
         open.isEnabled=resultDirectory!=null
     }
     private fun defaultPath(suffix: String): String = if(Files.isDirectory(Path.of("D:/DNIeToolchain"))) "D:/DNIeToolchain/$suffix"
