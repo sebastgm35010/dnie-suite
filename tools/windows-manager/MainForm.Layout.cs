@@ -9,7 +9,7 @@ public sealed partial class MainForm : Form {
     private readonly Button selectorStart=new(){Text="Activar selector RENIEC"},selectorStop=new(){Text="Retirar selector"};
     private readonly Label selectorStatus=new();
     private void BuildLayout() {
-        Text="DNIe Bridge · Gestor Windows";StartPosition=FormStartPosition.CenterScreen;MinimumSize=new Size(720,740);Size=new Size(790,810);
+        Text="DNIe Bridge 3.1 · Gestor Windows";StartPosition=FormStartPosition.CenterScreen;MinimumSize=new Size(720,740);Size=new Size(790,810);
         Font=new Font("Segoe UI",11);BackColor=Color.White;AutoScaleMode=AutoScaleMode.Dpi;
         var layout=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=2,RowCount=13,Padding=new Padding(24)};
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,190));layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));

@@ -23,6 +23,49 @@ public sealed record PcIdentity(string Password, string Token, string Id)
         new DirectoryInfo(directory).SetAccessControl(acl);
         return Task.CompletedTask;
     }
+    public static void VerifyLegacyProvenance(string directory, string metadataPath, string pfxPath, string ownerSid)
+    {
+        if (!File.Exists(metadataPath) || !File.Exists(pfxPath))
+            throw new IOException("Identidad anterior incompleta; no se migro ni reemplazo automaticamente.");
+        string? parent = Path.GetDirectoryName(directory);
+        foreach (string? path in new[] { parent, directory, metadataPath, pfxPath }) {
+            if (!string.IsNullOrEmpty(path) && (File.Exists(path) || Directory.Exists(path)) &&
+                (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0)
+                throw new IOException("No se permite migrar una identidad anterior a traves de enlaces.");
+        }
+        var trusted = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "S-1-5-18", "S-1-5-32-544", ownerSid };
+        // Elementary write/delete/ACL/ownership bits for directory provenance; exclude FullControl/Modify composites
+        // whose masks also include Read/Execute/Synchronize bits so non-inherited directory traversal is not misclassified as write.
+        const FileSystemRights directoryMutationMask =
+            FileSystemRights.Write |
+            FileSystemRights.Delete |
+            FileSystemRights.DeleteSubdirectoriesAndFiles |
+            FileSystemRights.ChangePermissions |
+            FileSystemRights.TakeOwnership;
+        // Secret files (identity.json with PFX password + token, and bridge.pfx with private key) must additionally
+        // reject any read/execute exposure to untrusted principals.
+        const FileSystemRights secretFileExposureMask =
+            directoryMutationMask |
+            FileSystemRights.ReadData |
+            FileSystemRights.Read |
+            FileSystemRights.ReadExtendedAttributes |
+            FileSystemRights.ExecuteFile;
+        void CheckSecurity(FileSystemSecurity security, string label, FileSystemRights forbiddenMask)
+        {
+            string? fileOwner = security.GetOwner(typeof(SecurityIdentifier))?.Value;
+            if (fileOwner == null || !trusted.Contains(fileOwner))
+                throw new UnauthorizedAccessException($"Propietario no confiable en identidad anterior ({label}): {fileOwner}");
+            foreach (FileSystemAccessRule rule in security.GetAccessRules(true, true, typeof(SecurityIdentifier))) {
+                if (rule.AccessControlType == AccessControlType.Allow &&
+                    (rule.FileSystemRights & forbiddenMask) != 0 &&
+                    !trusted.Contains(rule.IdentityReference.Value))
+                    throw new UnauthorizedAccessException($"Permisos no confiables o secreto expuesto en identidad anterior ({label}): {rule.IdentityReference.Value}");
+            }
+        }
+        CheckSecurity(new DirectoryInfo(directory).GetAccessControl(AccessControlSections.Owner | AccessControlSections.Access), "directorio", directoryMutationMask);
+        CheckSecurity(new FileInfo(metadataPath).GetAccessControl(AccessControlSections.Owner | AccessControlSections.Access), "identity.json", secretFileExposureMask);
+        CheckSecurity(new FileInfo(pfxPath).GetAccessControl(AccessControlSections.Owner | AccessControlSections.Access), "bridge.pfx", secretFileExposureMask);
+    }
     public static async Task<PcIdentity> LoadOrCreateAsync(string directory)
     {
         directory=Path.GetFullPath(directory);

@@ -9,11 +9,18 @@ import java.io.Closeable
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.net.InetAddress
+import java.net.SocketTimeoutException
 import java.security.MessageDigest
 import java.security.cert.CertificateException
 import java.security.cert.X509Certificate
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLSocket
+import javax.net.ssl.SSLSocketFactory
 import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
 
@@ -62,51 +69,147 @@ class PinnedBridgeClient(private val pairing: BridgePairing,
     private var closed = false
     private var used = false
     private var socket: Socket? = null
+    private var preAuthWatchdog: ScheduledExecutorService? = null
+
+    private fun openAuthenticatedSocket(direct: Boolean, factory: SSLSocketFactory?, event: (String) -> Unit): Socket {
+        val retryableReverse = transportSocket != null && pairing.transport == "tls_reverse"
+        val watchdog = Executors.newSingleThreadScheduledExecutor { runnable ->
+            Thread(runnable, "dnie-bridge-preauth-watchdog").apply { isDaemon = true }
+        }
+        synchronized(lifecycle) {
+            if (closed) {
+                watchdog.shutdownNow()
+                throw IllegalStateException("Bridge client cannot be reused")
+            }
+            preAuthWatchdog = watchdog
+        }
+        val sessionAuthenticated = AtomicBoolean(false)
+        val initialRemaining = pairing.expiresAtEpochMillis - System.currentTimeMillis()
+        val expiryTask = if (initialRemaining in 1L..3_600_000L) {
+            watchdog.schedule({
+                if (!sessionAuthenticated.get()) {
+                    synchronized(lifecycle) {
+                        runCatching { socket?.close() }
+                    }
+                }
+            }, initialRemaining, TimeUnit.MILLISECONDS)
+        } else null
+        var lastFailure: Exception? = null
+        try {
+            while (true) {
+                if (System.currentTimeMillis() >= pairing.expiresAtEpochMillis) {
+                    throw (lastFailure ?: IllegalStateException("Pairing expired"))
+                }
+                var raw: Socket? = null
+                var connection: Socket? = null
+                var attemptTask: ScheduledFuture<*>? = null
+                val attemptSettled = AtomicBoolean(false)
+                try {
+                    // Wait for an incoming socket (or create an outbound one) BEFORE starting the per-attempt authentication timer.
+                    raw = transportSocket?.invoke()
+                    val remainingAfterAccept = pairing.expiresAtEpochMillis - System.currentTimeMillis()
+                    if (remainingAfterAccept <= 0L) {
+                        runCatching { raw?.close() }
+                        throw (lastFailure ?: IllegalStateException("Pairing expired"))
+                    }
+                    val candidate = if (raw != null) checkNotNull(factory).createSocket(raw, raw.inetAddress.hostAddress, raw.port, true)
+                        else if (direct) Socket() else checkNotNull(factory).createSocket()
+                    connection = candidate
+                    synchronized(lifecycle) {
+                        if (closed || System.currentTimeMillis() >= pairing.expiresAtEpochMillis) {
+                            runCatching { candidate.close() }
+                            runCatching { raw?.close() }
+                            throw IllegalStateException("Bridge client cannot be reused")
+                        }
+                        socket = candidate
+                    }
+                    val attemptBudgetMs = if (retryableReverse) remainingAfterAccept.coerceIn(1L, 5_000L) else remainingAfterAccept.coerceIn(1L, 30_000L)
+                    val currentRaw = raw
+                    attemptTask = watchdog.schedule({
+                        if (attemptSettled.compareAndSet(false, true)) {
+                            runCatching { candidate.close() }
+                            runCatching { currentRaw?.close() }
+                        }
+                    }, attemptBudgetMs, TimeUnit.MILLISECONDS)
+                    val attemptTimeout = attemptBudgetMs.toInt()
+                    candidate.soTimeout = attemptTimeout // Bound the unauthenticated synchronization/handshake.
+                    candidate.tcpNoDelay = true
+                    if (raw == null) {
+                        val address = if (direct) {
+                            InetAddress.getAllByName(pairing.host).firstOrNull(TailnetAddress::isTailnet)
+                                ?: error("Tailscale address unavailable")
+                        } else InetAddress.getByName(pairing.host)
+                        candidate.connect(InetSocketAddress(address, pairing.port), minOf(settings.connectTimeoutMs, attemptTimeout))
+                    }
+                    if (candidate is SSLSocket) {
+                        candidate.enabledProtocols = candidate.supportedProtocols.filter { it in setOf("TLSv1.2", "TLSv1.3") }.toTypedArray()
+                        candidate.startHandshake()
+                    }
+                    event(if (direct) "tailscale_tcp_ready" else "tls_ready")
+                    check(System.currentTimeMillis() < pairing.expiresAtEpochMillis) { "Pairing expired" }
+                    val input = candidate.inputStream
+                    val output = candidate.outputStream
+                    val sessionToken = if (pairing.transport == "tailscale_sync") {
+                        TailnetSynchronization.request(input, output).also { event("tailscale_synchronized") }
+                    } else pairing.secret.copyOf()
+                    try {
+                        output.write("DNIBRDG1".toByteArray(Charsets.US_ASCII))
+                        output.write(sessionToken)
+                        output.flush()
+                    } finally { sessionToken.fill(0) }
+                    check(input.read() == 1) { "Bridge authentication rejected" }
+                    check(System.currentTimeMillis() < pairing.expiresAtEpochMillis) { "Pairing expired" }
+                    check(attemptSettled.compareAndSet(false, true)) { "Bridge authentication timed out" }
+                    sessionAuthenticated.set(true)
+                    attemptTask.cancel(false)
+                    expiryTask?.cancel(false)
+                    synchronized(lifecycle) {
+                        runCatching { preAuthWatchdog?.shutdownNow() }
+                        preAuthWatchdog = null
+                    }
+                    event("peer_authorized")
+                    return candidate
+                } catch (attemptFailure: Exception) {
+                    attemptSettled.set(true)
+                    attemptTask?.cancel(false)
+                    runCatching { connection?.close() }
+                    runCatching { raw?.close() }
+                    synchronized(lifecycle) {
+                        if (socket === connection || socket === raw) socket = null
+                        if (closed || !retryableReverse) throw attemptFailure
+                    }
+                    if (System.currentTimeMillis() >= pairing.expiresAtEpochMillis) {
+                        throw (lastFailure ?: attemptFailure)
+                    }
+                    lastFailure = attemptFailure
+                }
+            }
+        } catch (failure: Exception) {
+            expiryTask?.cancel(false)
+            synchronized(lifecycle) {
+                runCatching { preAuthWatchdog?.shutdownNow() }
+                preAuthWatchdog = null
+            }
+            throw failure
+        }
+    }
 
     fun run(event: (String) -> Unit = {}, restricted: Boolean = true, authorizedCard: () -> BridgeCard) {
         val direct = pairing.transport.startsWith("tailscale_")
         val factory = if (direct) null else SSLContext.getInstance("TLS").apply {
             init(null, arrayOf<TrustManager>(PinnedTrust(pairing.pin)), null)
         }.socketFactory
-        val raw = transportSocket?.invoke()
-        val connection = if (raw != null) checkNotNull(factory).createSocket(raw, raw.inetAddress.hostAddress, raw.port, true)
-            else if (direct) Socket() else checkNotNull(factory).createSocket()
         synchronized(lifecycle) {
             if (closed || used) {
-                connection.close()
                 throw IllegalStateException("Bridge client cannot be reused")
             }
             used = true
-            socket = connection
         }
         try {
             check(System.currentTimeMillis() < pairing.expiresAtEpochMillis) { "Pairing expired" }
-            connection.soTimeout = 30_000 // Bound the unauthenticated synchronization/handshake.
-            connection.tcpNoDelay = true
-            if (raw == null) {
-                val address = if (direct) {
-                    InetAddress.getAllByName(pairing.host).firstOrNull(TailnetAddress::isTailnet)
-                        ?: error("Tailscale address unavailable")
-                } else InetAddress.getByName(pairing.host)
-                connection.connect(InetSocketAddress(address, pairing.port), settings.connectTimeoutMs)
-            }
-            if (connection is SSLSocket) {
-                connection.enabledProtocols = connection.supportedProtocols.filter { it in setOf("TLSv1.2", "TLSv1.3") }.toTypedArray()
-                connection.startHandshake()
-            }
-            event(if (direct) "tailscale_tcp_ready" else "tls_ready")
+            val connection = openAuthenticatedSocket(direct, factory, event)
             val input = connection.inputStream
             val output = connection.outputStream
-            val sessionToken = if (pairing.transport == "tailscale_sync") {
-                TailnetSynchronization.request(input, output).also { event("tailscale_synchronized") }
-            } else pairing.secret.copyOf()
-            try {
-                output.write("DNIBRDG1".toByteArray(Charsets.US_ASCII))
-                output.write(sessionToken)
-                output.flush()
-            } finally { sessionToken.fill(0) }
-            check(input.read() == 1) { "Bridge authentication rejected" }
-            event("peer_authorized")
             connection.soTimeout = 0 // Authenticated idle sessions have no lifetime cap.
             val card = authorizedCard()
             val processor: BridgeProcessor = if (restricted) ReadOnlyBridge(card) else TransparentBridge(card)
@@ -136,7 +239,13 @@ class PinnedBridgeClient(private val pairing: BridgePairing,
     }
     override fun close() {
         synchronized(lifecycle) {
-            if (!closed) { closed = true; socket?.close(); socket = null }
+            if (!closed) {
+                closed = true
+                runCatching { preAuthWatchdog?.shutdownNow() }
+                preAuthWatchdog = null
+                socket?.close()
+                socket = null
+            }
         }
     }
 }

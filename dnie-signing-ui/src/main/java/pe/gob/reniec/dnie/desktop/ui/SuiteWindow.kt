@@ -11,7 +11,7 @@ import pe.gob.reniec.dnie.desktop.model.*
 import pe.gob.reniec.dnie.pdf.*
 
 /** Isolated user-mode frontend. No bridge service, driver or reader registration. */
-class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite · firma privada") {
+class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite 3.1 · firma privada") {
     private val product=DesktopIntegration.coordinator()
     private val controller=SuiteController(product)
     private val bridgePanel=if(DesktopIntegration.helper()!=null) BridgePanel(product) else null

@@ -3,6 +3,7 @@ package pe.gob.reniec.dnie.desktop.storage
 import java.nio.file.Files
 import java.nio.file.LinkOption
 import java.nio.file.Path
+import java.security.MessageDigest
 import java.util.UUID
 import kotlinx.coroutines.ensureActive
 import pe.gob.reniec.dnie.desktop.model.DesktopSigningRequest
@@ -39,6 +40,7 @@ class DesktopWorkspace private constructor(val id: String, val directory: Path) 
             val target = folder.resolve(name)
             try {
                 var bytes = 0L
+                val digest = MessageDigest.getInstance("SHA-256")
                 Files.newInputStream(source, LinkOption.NOFOLLOW_LINKS).use { input ->
                     Files.newOutputStream(target).use { output ->
                         val buffer = ByteArray(64 * 1024)
@@ -49,14 +51,16 @@ class DesktopWorkspace private constructor(val id: String, val directory: Path) 
                             bytes += count
                             total += count
                             require(bytes <= MAX_FILE_BYTES && total <= MAX_BATCH_BYTES) { "Se superó el límite del archivo o lote" }
+                            digest.update(buffer, 0, count)
                             output.write(buffer, 0, count)
                         }
                     }
                 }
-                SigningDocument(id = id, name = name, file = target.toFile(), size = Files.size(target),
+                SigningDocument(id = id, name = name, file = target.toFile(), size = bytes,
                     pdfInput = name.endsWith(".pdf", ignoreCase = true),
                     detached = pdfMode == pe.gob.reniec.dnie.desktop.model.DesktopPdfMode.DETACHED,
-                    options = pdfOptions.copy(visible = pdfMode == pe.gob.reniec.dnie.desktop.model.DesktopPdfMode.VISIBLE))
+                    options = pdfOptions.copy(visible = pdfMode == pe.gob.reniec.dnie.desktop.model.DesktopPdfMode.VISIBLE),
+                    sha256 = digest.digest())
             } catch (e: Exception) {
                 Files.deleteIfExists(target)
                 throw e

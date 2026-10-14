@@ -15,9 +15,27 @@ object SignedBatchExporter {
                 val prefix = "%03d_".format(index + 1)
                 val signed = requireNotNull(artifact.output)
                 if (!artifact.document.isPdf) {
-                    entry("originales/$prefix${artifact.document.name}") { artifact.document.file.inputStream().use { it.copyTo(zip) } }
+                    entry("originales/$prefix${artifact.document.name}") {
+                        CancellableSigningInput(
+                            artifact.document.file.inputStream(),
+                            expectedSize = artifact.document.size,
+                            expectedSha256 = artifact.document.sha256
+                        ).use { input ->
+                            input.copyTo(zip)
+                            input.verifyComplete()
+                        }
+                    }
                 }
-                entry("firmados/$prefix${signed.name}") { signed.inputStream().use { it.copyTo(zip) } }
+                entry("firmados/$prefix${signed.name}") {
+                    CancellableSigningInput(
+                        signed.inputStream(),
+                        expectedSize = artifact.outputSize,
+                        expectedSha256 = artifact.outputSha256
+                    ).use { input ->
+                        input.copyTo(zip)
+                        input.verifyComplete()
+                    }
+                }
                 artifact.certificate?.let { cert ->
                     val id = MessageDigest.getInstance("SHA-256").digest(cert).joinToString("") { "%02x".format(it) }
                     if (certificates.add(id)) entry("certificados/$id.cer") { zip.write(cert) }

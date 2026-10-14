@@ -1,5 +1,5 @@
 {
-  "review_date": "2026-10-09",
+  "review_date": "2026-10-13",
   "document_roles": {
     "AGENTS.md": "operational_instructions",
     "docs/CONTEXTO_ACTUAL.md": "current_state",
@@ -32,7 +32,8 @@
     "docs/architecture/REDISENO_ANDROID_3_0_R3.md": "current_android_ui_architecture",
     "docs/architecture/CONEXIONES_INDEPENDIENTES_R4.md": "previous_connection_architecture",
     "docs/architecture/CONTROLADOR_ENERGIA_Y_PUBLICACION_R1.md": "current_driver_power_architecture",
-    "docs/architecture/CONEXIONES_DIRECCION_E_IDENTIDAD_R5.md": "current_connection_architecture"
+    "docs/architecture/CONEXIONES_DIRECCION_E_IDENTIDAD_R5.md": "current_connection_architecture",
+    "docs/architecture/SEGURIDAD_BACKEND_3_1_V4.md": "current_backend_hardening_3_1"
   },
   "features": [
     {
@@ -96,7 +97,7 @@
       "id": "batch_android",
       "name": "Firma por lotes Android",
       "status": "validated_real",
-      "note": "Lote bajo sesión/autorización compartida; no repetir automáticamente operaciones privadas. Pantalla SignerScreen(batch=true), ViewModel separado por key batchSigner; UI compartida con PDF.",
+      "note": "Lote bajo sesión/autorización compartida; no repetir automáticamente operaciones privadas. Pantalla SignerScreen(batch=true), ViewModel separado por key batchSigner; UI compartida con PDF. 3.1: autenticación e integridad v4 integradas, pruebas sintéticas/de interfaz superadas; nueva sesión/firma física pendiente.",
       "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md",
       "files": {
         "engine": [
@@ -119,7 +120,7 @@
       "id": "suite",
       "name": "Suite privada Windows ↔ Android",
       "status": "validated_real",
-      "note": "Lotes reales PDF y CMS; emparejamiento permanente, sesión PC/móvil independiente de presencia NFC. R5: IP variable con huella/token estables; DPAPI y TLS comprobados en sintético, cambio de IP con DNI real pendiente.",
+      "note": "Lotes reales PDF y CMS; emparejamiento permanente, sesión PC/móvil independiente de presencia NFC. R5: IP variable con huella/token estables; DPAPI y TLS comprobados en sintético, cambio de IP con DNI real pendiente. 3.1: autenticación e integridad v4 integradas, pruebas sintéticas/de interfaz superadas; nueva sesión/firma física pendiente.",
       "evidence": "docs/suite/CONTEXTO_SUITE_FIRMA.md",
       "files": {
         "application": [
@@ -277,7 +278,7 @@
       "id": "bridge",
       "name": "Puente NFC ↔ PCSC",
       "status": "validated_real",
-      "note": "Compatibilidad abierta ReFirma/Firma Perú y Ciudadano Digital probada; traducción PACE y modo privado separados. R5: receptor Wi-Fi admite IP privada distinta sin cambiar confianza TLS; TLS directo permite cambiar destino. Prueba física de movilidad pendiente.",
+      "note": "Compatibilidad abierta ReFirma/Firma Perú y Ciudadano Digital probada; traducción PACE y modo privado separados. R5: receptor Wi-Fi admite IP privada distinta sin cambiar confianza TLS; TLS directo permite cambiar destino. Prueba física de movilidad pendiente. 3.1: autenticación e integridad v4 integradas, pruebas sintéticas/de interfaz superadas; nueva sesión/firma física pendiente.",
       "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md",
       "files": {
         "engine": [
@@ -488,6 +489,33 @@
         "suite",
         "bridge"
       ]
+    },
+    {
+      "id": "backend_hardening",
+      "name": "Seguridad backend 3.1 / v4",
+      "status": "implemented_runtime_validated",
+      "note": "2026-10-13 · Versión 3.1.0 / APK78 instalada: integración v4 de autenticación resistente, plazos por candidato, integridad SHA-256 de originales/resultados, migración de identidad Windows protegida y DPAPI acotado. Servicio/gestor Windows y Suite actualizados; identidad conservada según metadatos. 177 JVM, 134 comprobaciones Windows y 3 pruebas Android pasan; debug/release compilados y producción comprobada. Firma y USB/NFC físicos nuevos pendientes.",
+      "evidence": "docs/architecture/SEGURIDAD_BACKEND_3_1_V4.md",
+      "files": {
+        "engine": [
+          "dnie-signing-core/src/main/"
+        ],
+        "protocol": [
+          "dnie-signing-link/src/main/java/pe/gob/reniec/dnie/signing/link/PhoneSigningTransport.kt"
+        ],
+        "adapter": [
+          "dnie-bridge-android/src/main/java/pe/gob/reniec/dnie/bridge/android/PinnedBridgeClient.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/data/bridge/BridgeTransportAdapter.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/data/signing/DocumentImportService.kt",
+          "dnie-signing-desktop/src/main/java/pe/gob/reniec/dnie/desktop/storage/DesktopWorkspace.kt",
+          "dnie-signing-desktop/src/main/java/pe/gob/reniec/dnie/desktop/continuous/WindowsPrivateStore.kt",
+          "tools/windows-bridge/PcIdentity.cs",
+          "tools/windows-manager/ServiceInstaller.cs"
+        ]
+      },
+      "depends_on": [
+        "cms"
+      ]
     }
   ],
   "pending": [
@@ -651,20 +679,27 @@
       "state": "open",
       "description": "Correcciones R1 instaladas driver2.0.0.3 y observabilidad ReaderPublished, pruebas C++/PCSC/TLSrelay pasan. Falta reproducción física suspensión/reanudación, sesión y firma DNI nueva, demostrar causa de incidencias con trazas/dump; no replay de operaciones.",
       "evidence": "docs/architecture/CONTROLADOR_ENERGIA_Y_PUBLICACION_R1.md"
+    },
+    {
+      "id": "backend_3_1_physical_regression",
+      "feature": "backend_hardening",
+      "state": "needs_physical_test",
+      "description": "Nueva sesión Suite y puente LAN/Tailnet/USB con DNI real, lote PDF/CMS y exportación íntegra tras integrar v4. No repetir privadas ante fallo; pruebas sintéticas y de presentación no acreditan esta regresión física.",
+      "evidence": "docs/architecture/SEGURIDAD_BACKEND_3_1_V4.md"
     }
   ],
   "facts": [
     {
       "id": "android_current",
       "category": "installed_ui_validated",
-      "value": "2026-10-09 · Conexiones R5: APK77 / 3.0.0-alpha05-mobility instalada sin borrar datos. Suite y Bridge Wi-Fi ya no fijan identidad a la IP; TLS y token siguen obligatorios. Windows conserva la identidad DPAPI al cambiar IP. TLS directo permite editar destino; Suite tiene pantalla completa independiente y limpia conexión al finalizar lote único. 159 JVM pasan / 3 omitidas, release compilado y 3 pruebas instrumentadas de Suite/Bridge pasan en el móvil. Cambio físico de IP con DNI pendiente.",
-      "evidence": "docs/architecture/CONEXIONES_DIRECCION_E_IDENTIDAD_R5.md"
+      "value": "2026-10-13 · Versión 3.1.0 / APK78 instalada: integración v4 de autenticación resistente, plazos por candidato, integridad SHA-256 de originales/resultados, migración de identidad Windows protegida y DPAPI acotado. Servicio/gestor Windows y Suite actualizados; identidad conservada según metadatos. 177 JVM, 134 comprobaciones Windows y 3 pruebas Android pasan; debug/release compilados y producción comprobada. Firma y USB/NFC físicos nuevos pendientes.",
+      "evidence": "docs/architecture/SEGURIDAD_BACKEND_3_1_V4.md"
     },
     {
       "id": "desktop_current",
       "category": "artifact",
-      "value": "D:/DNIeToolchain/Builds/mobility77/signing-ui/install/dnie-signing-ui/DNIe Suite.lnk",
-      "evidence": "docs/architecture/CONEXIONES_DIRECCION_E_IDENTIDAD_R5.md"
+      "value": "D:/DNIeToolchain/Builds/version3.1/signing-ui/install/dnie-signing-ui/DNIe Suite.lnk",
+      "evidence": "docs/architecture/SEGURIDAD_BACKEND_3_1_V4.md"
     },
     {
       "id": "h15_tests",
@@ -755,6 +790,12 @@
       "category": "invariant",
       "value": "Dirección de red como ruta, identidad TLS SHA256/token como confianza. Receptor inverso limitado a IPv4 privada/tailnet, sin fallback LAN en claro. Archivo DPAPI no cambia por nueva IP.",
       "evidence": "docs/architecture/CONEXIONES_DIRECCION_E_IDENTIDAD_R5.md"
+    },
+    {
+      "id": "backend_3_1_installed",
+      "category": "installed_synthetic_and_ui_validated",
+      "value": "2026-10-13 · Versión 3.1.0 / APK78 instalada: integración v4 de autenticación resistente, plazos por candidato, integridad SHA-256 de originales/resultados, migración de identidad Windows protegida y DPAPI acotado. Servicio/gestor Windows y Suite actualizados; identidad conservada según metadatos. 177 JVM, 134 comprobaciones Windows y 3 pruebas Android pasan; debug/release compilados y producción comprobada. Firma y USB/NFC físicos nuevos pendientes.",
+      "evidence": "docs/architecture/SEGURIDAD_BACKEND_3_1_V4.md"
     }
   ]
 }

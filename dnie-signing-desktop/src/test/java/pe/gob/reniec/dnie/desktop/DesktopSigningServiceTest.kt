@@ -2,9 +2,12 @@ package pe.gob.reniec.dnie.desktop
 
 import java.nio.file.Files
 import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.security.cert.CertificateFactory
 import java.util.zip.ZipInputStream
 import kotlinx.coroutines.test.runTest
+import org.apache.pdfbox.pdmodel.PDDocument
+import org.apache.pdfbox.pdmodel.PDPage
 import org.bouncycastle.cms.CMSProcessableByteArray
 import org.bouncycastle.cms.CMSSignedData
 import org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoVerifierBuilder
@@ -16,7 +19,11 @@ import pe.gob.reniec.dnie.crypto.CryptoProviderInitializer
 import pe.gob.reniec.dnie.desktop.application.DesktopSigningService
 import pe.gob.reniec.dnie.desktop.demo.SimulatedSigningCard
 import pe.gob.reniec.dnie.desktop.model.*
+import pe.gob.reniec.dnie.desktop.storage.DesktopWorkspace
+import pe.gob.reniec.dnie.domain.signing.BatchSigner
 import pe.gob.reniec.dnie.domain.signing.DocumentSignStatus
+import pe.gob.reniec.dnie.domain.signing.SignedBatchExporter
+import pe.gob.reniec.dnie.pdf.desktop.JvmPdfSigner
 
 class DesktopSigningServiceTest {
     @get:Rule val directory = TemporaryFolder()
@@ -92,5 +99,46 @@ class DesktopSigningServiceTest {
         val cms = CMSSignedData(CMSProcessableByteArray(byteArrayOf(1, 2, 4)), Files.readAllBytes(result.documents.single().signature!!))
         val valid = runCatching { cms.signerInfos.signers.single().verify(JcaSimpleSignerInfoVerifierBuilder().setProvider(CryptoProviderInitializer.provider).build(card.certificate)) }.getOrDefault(false)
         assertFalse(valid)
+    }
+
+    @Test fun tamperingWorkspaceCopyOrSignedPdfWithSameSizeBeforeSignOrExportIsRejected() = runTest {
+        val pdfBytes = PDDocument().use { pdf ->
+            pdf.addPage(PDPage())
+            ByteArrayOutputStream().also { pdf.save(it) }.toByteArray()
+        }
+        val workspace = DesktopWorkspace.create(directory.newFolder().toPath())
+        val imported = workspace.import(
+            listOf(
+                input("uno.txt", "original1".toByteArray()),
+                input("dos.txt", "original2".toByteArray()),
+                input("tres.pdf", pdfBytes)
+            ),
+            DesktopPdfMode.INVISIBLE
+        )
+        // 1. Same-size replacement before signing must be rejected without invoking card signature.
+        Files.write(imported[0].file.toPath(), "alterado1".toByteArray())
+        assertEquals(imported[0].size, imported[0].file.length())
+        val card = SimulatedSigningCard()
+        val signed = BatchSigner(JvmPdfSigner(workspace.directory.resolve("pdf-work"))).sign(
+            imported, card, SimulatedSigningCard.DEMO_PIN, workspace.directory.resolve("signed").toFile()
+        )
+        assertEquals(listOf(DocumentSignStatus.FAILED, DocumentSignStatus.SIGNED, DocumentSignStatus.SIGNED), signed.artifacts.map { it.status })
+        assertEquals(2, card.signatures)
+        // 2. Same-size replacement of approved original before export must be rejected.
+        val validSecondBytes = Files.readAllBytes(imported[1].file.toPath())
+        Files.write(imported[1].file.toPath(), "alterado2".toByteArray())
+        assertEquals(imported[1].size, imported[1].file.length())
+        assertTrue(runCatching {
+            Files.newOutputStream(workspace.directory.resolve("test-orig.zip")).use { SignedBatchExporter.write(signed.artifacts, it) }
+        }.isFailure)
+        Files.write(imported[1].file.toPath(), validSecondBytes)
+        // 3. Same-size replacement of signed PDF output before export must also be rejected.
+        val signedPdfPath = signed.artifacts[2].output!!.toPath()
+        val tamperedPdf = Files.readAllBytes(signedPdfPath).also { it[0] = (it[0].toInt() xor 1).toByte() }
+        Files.write(signedPdfPath, tamperedPdf)
+        assertEquals(signed.artifacts[2].outputSize, Files.size(signedPdfPath))
+        assertTrue(runCatching {
+            Files.newOutputStream(workspace.directory.resolve("test-pdf.zip")).use { SignedBatchExporter.write(signed.artifacts, it) }
+        }.isFailure)
     }
 }

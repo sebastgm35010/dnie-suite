@@ -50,29 +50,34 @@ class BatchSigner(private val pdfEngine: PadesSignerEngineInterface) {
                     val partial = File.createTempFile("signing-", ".part", folder)
                     staging = partial
                     val currentContext = coroutineContext
-                    val signer: suspend (ByteArray) -> Result<ByteArray> = { hash ->
-                        currentContext.ensureActive()
-                        try {
-                            val raw = session.sign(hash).getOrThrow()
-                            Result.success(CardSignatureVerifier.verify(certificate, hash, raw))
-                        } catch (e: Exception) { cardError = e; Result.failure(e) }
-                    }
                     val time: Long
                     val size: Int
-                    if (document.isPdf) {
-                        val config = document.options.copy(appearance = document.options.appearance.copy(
-                            handwrittenPng = if (document.options.appearance.requiresHandwritten) mark?.png else null))
-                        val signed = CancellableSigningInput(document.file.inputStream(), currentContext).use { input -> partial.outputStream().use { out ->
-                            DiagnosticLog.measureSuspend("signer", "pdf_sign_and_timestamp", "engine") {
-                                pdfEngine.signConfiguredPdf(input, out, cert, signer, config).getOrThrow()
+                    CancellableSigningInput(document.file.inputStream(), currentContext, document.size, document.sha256).use { input ->
+                        val signer: suspend (ByteArray) -> Result<ByteArray> = { hash ->
+                            currentContext.ensureActive()
+                            try {
+                                input.verifyComplete()
+                                val raw = session.sign(hash).getOrThrow()
+                                Result.success(CardSignatureVerifier.verify(certificate, hash, raw))
+                            } catch (e: Exception) { cardError = e; Result.failure(e) }
+                        }
+                        if (document.isPdf) {
+                            val config = document.options.copy(appearance = document.options.appearance.copy(
+                                handwrittenPng = if (document.options.appearance.requiresHandwritten) mark?.png else null))
+                            val signed = partial.outputStream().use { out ->
+                                DiagnosticLog.measureSuspend("signer", "pdf_sign_and_timestamp", "engine") {
+                                    pdfEngine.signConfiguredPdf(input, out, cert, signer, config).getOrThrow()
+                                }
                             }
-                        } }
-                        time = signed.timestamp; size = signed.signatureSize
-                    } else {
-                        time = System.currentTimeMillis()
-                        size = CancellableSigningInput(document.file.inputStream(), currentContext).use { input -> partial.outputStream().use { out ->
-                            DetachedFileSigner.sign(input, out, cert) { digest -> runBlocking { signer(digest).getOrThrow() } }
-                        } }
+                            input.verifyComplete()
+                            time = signed.timestamp; size = signed.signatureSize
+                        } else {
+                            time = System.currentTimeMillis()
+                            size = partial.outputStream().use { out ->
+                                DetachedFileSigner.sign(input, out, cert) { digest -> runBlocking { signer(digest).getOrThrow() } }
+                            }
+                            input.verifyComplete()
+                        }
                     }
                     coroutineContext.ensureActive()
                     check(partial.renameTo(output)) { "No se pudo publicar el documento firmado" }

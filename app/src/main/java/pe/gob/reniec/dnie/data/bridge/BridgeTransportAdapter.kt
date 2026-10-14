@@ -36,12 +36,23 @@ class BridgeTransportAdapter(private val context: Context) : Closeable {
     }
     fun socketFactory(pairing: BridgePairing): (() -> Socket)? = when (pairing.transport) {
         "tls_reverse" -> { {
-            val connected = checkNotNull(listener) { "Autoriza el receptor Wi-Fi primero" }.accept()
+            val server = checkNotNull(listener) { "Autoriza el receptor Wi-Fi primero" }
+            val waitBudget = (pairing.expiresAtEpochMillis - System.currentTimeMillis()).coerceIn(1L, 300_000L).toInt()
+            server.soTimeout = waitBudget
+            val connected = server.accept()
             socket = connected
-            pe.gob.reniec.dnie.signing.link.ReverseTlsPeer.requirePrivate(connected.inetAddress)
-            // DHCP does not change identity. PinnedBridgeClient authenticates the PC by TLS pin.
-            connected.outputStream.write("DNIREADY1".toByteArray(Charsets.US_ASCII)); connected.outputStream.flush()
-            connected
+            try {
+                val attemptBudget = (pairing.expiresAtEpochMillis - System.currentTimeMillis()).coerceIn(1L, 5_000L).toInt()
+                pe.gob.reniec.dnie.signing.link.ReverseTlsPeer.requirePrivate(connected.inetAddress)
+                connected.soTimeout = attemptBudget
+                // DHCP does not change identity. PinnedBridgeClient authenticates the PC by TLS pin.
+                connected.outputStream.write("DNIREADY1".toByteArray(Charsets.US_ASCII)); connected.outputStream.flush()
+                connected
+            } catch (failure: Exception) {
+                runCatching { connected.close() }
+                if (socket === connected) socket = null
+                throw failure
+            }
         } }
         "usb_accessory" -> { { openAccessorySocket() } }
         else -> null

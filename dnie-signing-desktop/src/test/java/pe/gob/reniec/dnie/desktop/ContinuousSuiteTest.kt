@@ -128,6 +128,41 @@ class ContinuousSuiteTest {
             assertTrue(runCatching { WindowsPrivateStore().unprotect(damaged) }.isFailure)
         } finally { Files.deleteIfExists(path); Files.deleteIfExists(root) }
     }
+    @Test fun boundedDpapiHelperTerminatesSeparatelyWhenStdinBlocksOrWhenStdoutBlocks() {
+        assumeTrue(System.getProperty("os.name").startsWith("Windows"))
+        // 1. Stdin saturation block: child never reads stdin while parent writes 512 KB (> OS pipe buffer).
+        val startStdin = System.nanoTime()
+        val largeStdin = ByteArray(524_288) { 0x41 }
+        val stdinFailure = runCatching {
+            WindowsPrivateStore.runBoundedProcess(
+                listOf("powershell.exe", "-NoProfile", "-NonInteractive", "-Command", "Start-Sleep -Seconds 30"),
+                largeStdin,
+                timeoutMillis = 400
+            )
+        }
+        val elapsedStdinMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startStdin)
+        assertTrue(stdinFailure.isFailure)
+        assertTrue("Expected bounded stdin timeout, took ${elapsedStdinMs}ms", elapsedStdinMs < 8_000)
+        assertTrue(largeStdin.all { it == 0.toByte() })
+
+        // 2. Stdout hang after draining stdin: child consumes stdin, emits partial stdout without EOF, and hangs.
+        val startStdout = System.nanoTime()
+        val smallStdin = "ok\r\n".toByteArray(Charsets.US_ASCII)
+        val stdoutFailure = runCatching {
+            WindowsPrivateStore.runBoundedProcess(
+                listOf(
+                    "powershell.exe", "-NoProfile", "-NonInteractive", "-Command",
+                    "[Console]::In.ReadLine() | Out-Null; [Console]::Out.Write('partial'); [Console]::Out.Flush(); Start-Sleep -Seconds 30"
+                ),
+                smallStdin,
+                timeoutMillis = 400
+            )
+        }
+        val elapsedStdoutMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startStdout)
+        assertTrue(stdoutFailure.isFailure)
+        assertTrue("Expected bounded stdout timeout, took ${elapsedStdoutMs}ms", elapsedStdoutMs < 8_000)
+        assertTrue(smallStdin.all { it == 0.toByte() })
+    }
     @Test fun absentCardTimeoutKeepsSameTlsForNextExplicitJob() = runBlocking<Unit> {
         val ip = address(); val port = ServerSocket(0).use { it.localPort }
         val identity = JobTlsIdentity(); val pair = SuitePairing(UUID.randomUUID(), ip, identity.fingerprint, ByteArray(32))
@@ -155,5 +190,4 @@ class ContinuousSuiteTest {
             worker.get(10, TimeUnit.SECONDS)
         } finally { pc.close(); phone.close(); slot.close(); provision.close(); pair.close(); executor.shutdownNow() }
     }
-
 }

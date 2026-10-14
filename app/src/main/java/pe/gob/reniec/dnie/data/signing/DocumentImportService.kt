@@ -11,6 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.security.MessageDigest
 import java.util.UUID
 import kotlin.coroutines.coroutineContext
 
@@ -37,27 +38,30 @@ object DocumentImportService {
         val directory = File(context.cacheDir, "signing_inputs/$id").apply { mkdirs() }
         val target = File(directory, safeName)
         try {
+            var total = 0L
+            val digest = MessageDigest.getInstance("SHA-256")
             requireNotNull(context.contentResolver.openInputStream(uri)) { "No se pudo abrir $safeName" }.use { input ->
                 target.outputStream().use { output ->
                     val buffer = ByteArray(64 * 1024)
-                    var total = 0L
                     while (true) {
                         coroutineContext.ensureActive()
                         val count = input.read(buffer)
                         if (count < 0) break
                         total += count
                         require(total <= MAX_FILE_BYTES) { "El archivo supera 256 MiB" }
+                        digest.update(buffer, 0, count)
                         output.write(buffer, 0, count)
                     }
                 }
             }
+            val sha256 = digest.digest()
             val prefix = target.inputStream().use { input ->
                 val bytes = ByteArray(1024)
                 bytes.copyOf(input.read(bytes).coerceAtLeast(0)).toString(Charsets.ISO_8859_1)
             }
             val pdf = prefix.contains("%PDF-") || safeName.endsWith(".pdf", true) || context.contentResolver.getType(uri) == "application/pdf"
             val pages = if (pdf) PdfDocumentMetadata.pages(target) else emptyList()
-            return SigningDocument(id, safeName, target, target.length(), pages)
+            return SigningDocument(id, safeName, target, total, pages, sha256 = sha256)
         } catch (e: Throwable) {
             target.delete(); directory.delete()
             throw e

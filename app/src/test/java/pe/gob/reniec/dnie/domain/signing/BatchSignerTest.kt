@@ -37,7 +37,7 @@ class BatchSignerTest {
             JcaX509v3CertificateBuilder(name, BigInteger.ONE, Date(0), Date(4102444800000L), name, keys.public)
                 .build(JcaContentSignerBuilder("SHA256withRSA").setProvider(CryptoProviderInitializer.provider).build(keys.private)))
     }
-    private inner class Card(val failAt: Int = 0, val pin: PinVerificationResult = PinVerificationResult.Success, val corrupt: Boolean = false,
+    private open inner class Card(val failAt: Int = 0, val pin: PinVerificationResult = PinVerificationResult.Success, val corrupt: Boolean = false,
                              val rejectPinAt: Int = 0) : DnieTransceiverInterface {
         var verify = 0; var cert = 0; var sign = 0; var selects = 0; var closed = false
         var authorized = false
@@ -187,5 +187,41 @@ class BatchSignerTest {
         assertArrayEquals(docs[1].file.readBytes(), entries["originales/002_mismo.txt"])
         assertTrue(entries.containsKey("firmados/001_mismo.txt.p7s"))
         assertEquals(1, entries.keys.count { it.startsWith("certificados/") }); assertTrue(entries.containsKey("LEEME.txt"))
+    }
+    @Test fun substitutingSameSizeOriginalOrSignedPdfBeforeSignOrExportIsRejectedAndEmptyHashIsForbidden() = runTest {
+        val pdfBytes = com.tom_roush.pdfbox.pdmodel.PDDocument().use { pdf ->
+            pdf.addPage(com.tom_roush.pdfbox.pdmodel.PDPage())
+            ByteArrayOutputStream().also { pdf.save(it) }.toByteArray()
+        }
+        val first = doc("primero.txt", "contenido aprobado 1".toByteArray())
+        val second = doc("segundo.txt", "segundo aprobado 123".toByteArray())
+        val thirdPdf = doc("tercero.pdf", pdfBytes, pdf = true, options = PdfSigningOptions(visible = false))
+        assertTrue(runCatching { first.copy(sha256 = ByteArray(0)) }.isFailure)
+        val card = object : Card() {
+            override suspend fun selectPkiApplet(): Result<Unit> {
+                // Same-size replacement before signing must be rejected before card signature.
+                first.file.writeBytes("contenido alterado 2".toByteArray())
+                assertEquals(first.size, first.file.length())
+                return super.selectPkiApplet()
+            }
+        }
+        val result = signer.sign(listOf(first, second, thirdPdf), card, "1234", directory.newFolder())
+        assertEquals(listOf(DocumentSignStatus.FAILED, DocumentSignStatus.SIGNED, DocumentSignStatus.SIGNED), result.artifacts.map { it.status })
+        assertNull(result.artifacts[0].output)
+        assertNotNull(result.artifacts[1].output)
+        assertNotNull(result.artifacts[2].output)
+        assertEquals(2, card.sign)
+        // Same-size replacement of original detached file before export must be rejected.
+        val originalSecondBytes = second.file.readBytes()
+        second.file.writeBytes("segundo alterado 456".toByteArray())
+        assertEquals(second.size, second.file.length())
+        assertTrue(runCatching { SignedBatchExporter.write(result.artifacts, ByteArrayOutputStream()) }.isFailure)
+        second.file.writeBytes(originalSecondBytes)
+        // Same-size replacement of signed PDF output before export must also be rejected.
+        val signedPdfFile = result.artifacts[2].output!!
+        val tamperedPdfBytes = signedPdfFile.readBytes().also { it[0] = (it[0].toInt() xor 1).toByte() }
+        signedPdfFile.writeBytes(tamperedPdfBytes)
+        assertEquals(result.artifacts[2].outputSize, signedPdfFile.length())
+        assertTrue(runCatching { SignedBatchExporter.write(result.artifacts, ByteArrayOutputStream()) }.isFailure)
     }
 }

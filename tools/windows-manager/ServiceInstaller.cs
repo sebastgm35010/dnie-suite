@@ -51,12 +51,15 @@ public static class ServiceInstaller {
         string identity=Path.Combine(state,"identity");
         if(!Directory.Exists(identity)) {
             string old=Path.Combine("D:/DNIeToolchain/PcIdentities",ownerSid);
-            if(File.Exists(Path.Combine(old,"identity.json"))) {
-                var metadata=JsonSerializer.Deserialize<DniBridge.PcIdentity>(await File.ReadAllTextAsync(Path.Combine(old,"identity.json"))) ?? throw new IOException("Identidad anterior invalida.");
-                using var cert=new System.Security.Cryptography.X509Certificates.X509Certificate2(await File.ReadAllBytesAsync(Path.Combine(old,"bridge.pfx")),metadata.Password,System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.EphemeralKeySet);
+            string oldMetadata=Path.Combine(old,"identity.json");
+            string oldPfx=Path.Combine(old,"bridge.pfx");
+            if(File.Exists(oldMetadata) || File.Exists(oldPfx)) {
+                DniBridge.PcIdentity.VerifyLegacyProvenance(old,oldMetadata,oldPfx,ownerSid);
+                var metadata=JsonSerializer.Deserialize<DniBridge.PcIdentity>(await File.ReadAllTextAsync(oldMetadata)) ?? throw new IOException("Identidad anterior invalida.");
+                using var cert=new System.Security.Cryptography.X509Certificates.X509Certificate2(await File.ReadAllBytesAsync(oldPfx),metadata.Password,System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.EphemeralKeySet);
                 if(!cert.HasPrivateKey)throw new IOException("Identidad anterior sin clave.");
                 CreateProtected(identity,ownerSid,false);
-                File.Copy(Path.Combine(old,"identity.json"),Path.Combine(identity,"identity.json"));File.Copy(Path.Combine(old,"bridge.pfx"),Path.Combine(identity,"bridge.pfx"));
+                File.Copy(oldMetadata,Path.Combine(identity,"identity.json"));File.Copy(oldPfx,Path.Combine(identity,"bridge.pfx"));
             }
         }
         ServiceControl.Install(Path.Combine(target,"DNIeBridge.Agent.exe"),ownerSid);
