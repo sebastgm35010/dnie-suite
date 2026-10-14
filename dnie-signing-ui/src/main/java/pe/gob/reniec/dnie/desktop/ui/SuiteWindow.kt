@@ -93,8 +93,12 @@ class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite 3
         add.addActionListener {
             val chooser=JFileChooser().apply { isMultiSelectionEnabled=true }
             if(chooser.showOpenDialog(this)==JFileChooser.APPROVE_OPTION) {
-                chooser.selectedFiles.forEach { f -> if(files.size()<50 && !files.contains(f.toPath())) files.addElement(f.toPath()) }
-                if(list.selectedIndex<0 && files.size()>0) list.selectedIndex=0
+                setBusy(true);status.text="Preparando archivos…"
+                controller.prepareFiles(chooser.selectedFiles.toList(),chooser.fileSystemView) { paths,rejected ->
+                    paths.forEach { path -> if(files.size()<50 && !files.contains(path)) files.addElement(path) }
+                    if(list.selectedIndex<0 && files.size()>0) list.selectedIndex=0
+                    setBusy(false);status.text=if(rejected==0) "Archivos preparados." else "$rejected archivo(s) no disponibles. Selecciona el archivo original desde su carpeta."
+                }
             }
         }
         remove.addActionListener { list.selectedIndices.sortedDescending().forEach(files::remove) }
@@ -143,9 +147,18 @@ class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite 3
     }
     private fun sign() {
         if(files.isEmpty || !connected) return
-        val password=JPasswordField(12)
-        if(JOptionPane.showConfirmDialog(this,password,"PIN de firma · ${files.size()} archivo(s)",JOptionPane.OK_CANCEL_OPTION,JOptionPane.PLAIN_MESSAGE)!=JOptionPane.OK_OPTION) { password.text="";return }
-        val pin=password.password;password.text=""
+        val inputs=(0 until files.size()).map(files::get)
+        setBusy(true);status.text="Comprobando archivos antes de pedir el PIN…"
+        controller.checkInputs(inputs) { valid ->
+            setBusy(false)
+            if(!valid) { status.text="Hay archivos no disponibles o mayores de 256 MiB. Vuelve a seleccionarlos; la conexión se conserva." }
+            else signValidated(inputs)
+        }
+    }
+    private fun signValidated(inputs: List<Path>) {
+        val password=SigningPinPanel(inputs.size);password.focusPin()
+        if(JOptionPane.showConfirmDialog(this,password,"Autorizar firma",JOptionPane.OK_CANCEL_OPTION,JOptionPane.PLAIN_MESSAGE)!=JOptionPane.OK_OPTION) { password.clear();return }
+        val pin=password.takePin()
         if(pin.size !in 4..8 || pin.any { it !in '0'..'9' }) { pin.fill('\u0000');status.text="PIN inválido; no enviado al DNI.";return }
         try {
             val pdfMode=when(mode.selectedIndex) { 0->DesktopPdfMode.VISIBLE;1->DesktopPdfMode.INVISIBLE;else->DesktopPdfMode.DETACHED }
@@ -154,11 +167,11 @@ class SuiteWindow(initialFiles: List<Path> = emptyList()) : JFrame("DNIe Suite 3
                     style=if(style.selectedIndex==0) StampStyle.CARD else StampStyle.MINIMAL,
                     showDni=fields.getValue("DNI").isSelected,showDate=fields.getValue("Fecha").isSelected,showTime=fields.getValue("Hora").isSelected,
                     showReason=fields.getValue("Motivo").isSelected,showLocation=fields.getValue("Lugar").isSelected))
-            val request=DesktopSigningRequest((0 until files.size()).map(files::get),Path.of(workspace.text),pdfMode,options)
+            val request=DesktopSigningRequest(inputs,Path.of(workspace.text),pdfMode,options)
             setBusy(true);status.text="Lote en curso. Mantén el DNI cerca del teléfono…"
-            controller.sign(request,pin) { result,message ->
+            controller.sign(request,pin) { result,message,sessionUsable ->
                 if(result!=null) resultDirectory=result.directory
-                if(result==null && !message.startsWith("DNI no disponible")) connected=false
+                connected=sessionUsable
                 setBusy(false);status.text=message;open.isEnabled=resultDirectory!=null
             }
         } catch(_: Exception) { pin.fill('\u0000');setBusy(false);status.text="No se pudo preparar el lote." }

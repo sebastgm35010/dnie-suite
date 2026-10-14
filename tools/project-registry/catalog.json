@@ -38,7 +38,8 @@
     "docs/operations/GITHUB_Y_COMPILACION_MONOREPO.md": "current_repository_workflow",
     "docs/operations/PUBLICACION_GITHUB_20261013.md": "repository_publication_evidence",
     "docs/architecture/CONTROLADOR_COMPLETADOS_Y_PROTOCOLO_R2.md": "current_driver_completion_and_protocol_architecture",
-    "docs/suite/QR_NATIVO_SUITE_R1.md": "current_suite_qr_presentation"
+    "docs/suite/QR_NATIVO_SUITE_R1.md": "current_suite_qr_presentation",
+    "docs/suite/SELECCION_RECIENTES_Y_PIN_R2.md": "current_suite_file_selection_and_pin_flow"
   },
   "features": [
     {
@@ -593,6 +594,34 @@
       "depends_on": [
         "suite"
       ]
+    },
+    {
+      "id": "suite_file_selection",
+      "name": "Selección de documentos y preflight GUI",
+      "status": "installed_ui_and_pdf_validated",
+      "note": "2026-10-13 · Suite entradas R2: alias virtual de Recientes era una ruta inexistente y causaba tanto la falta de vista previa como rechazo local al firmar. Selector resuelve shell shortcuts a archivos reales, preflight anterior a PIN, conexión conservada ante rechazo previo a BEGIN y diálogo PIN explícito. 50 tests pasan; PDF real seleccionado y GUI muestran página 1/11 a 918×1188. Acceso directo actualizado; firma DNI física pendiente.",
+      "evidence": "docs/suite/SELECCION_RECIENTES_Y_PIN_R2.md",
+      "files": {
+        "adapter": [
+          "dnie-signing-ui/src/main/java/pe/gob/reniec/dnie/desktop/ui/DesktopFileSelection.kt"
+        ],
+        "frontend": [
+          "dnie-signing-ui/src/main/java/pe/gob/reniec/dnie/desktop/ui/SigningPinPanel.kt",
+          "dnie-signing-ui/src/main/java/pe/gob/reniec/dnie/desktop/ui/SuiteController.kt",
+          "dnie-signing-ui/src/main/java/pe/gob/reniec/dnie/desktop/ui/SuiteWindow.kt"
+        ],
+        "application": [
+          "dnie-signing-desktop/src/main/java/pe/gob/reniec/dnie/desktop/application/DesktopSuiteSession.kt"
+        ],
+        "test": [
+          "dnie-signing-ui/src/test/java/pe/gob/reniec/dnie/desktop/ui/DesktopFileSelectionTest.kt",
+          "dnie-signing-ui/src/test/java/pe/gob/reniec/dnie/desktop/ui/SigningPinPanelTest.kt",
+          "dnie-signing-desktop/src/test/java/pe/gob/reniec/dnie/desktop/DesktopSuiteSessionTest.kt"
+        ]
+      },
+      "depends_on": [
+        "suite"
+      ]
     }
   ],
   "pending": [
@@ -782,8 +811,8 @@
     {
       "id": "desktop_current",
       "category": "artifact",
-      "value": "D:/DNIeToolchain/Builds/suite-qr-r1/signing-ui/install/dnie-signing-ui/DNIe Suite.lnk",
-      "evidence": "docs/suite/QR_NATIVO_SUITE_R1.md"
+      "value": "D:/DNIeToolchain/Builds/suite-input-r2/signing-ui/install/dnie-signing-ui/DNIe Suite.lnk",
+      "evidence": "docs/suite/SELECCION_RECIENTES_Y_PIN_R2.md"
     },
     {
       "id": "h15_tests",
@@ -898,6 +927,12 @@
       "category": "installed_ui_synthetic_validated",
       "value": "2026-10-13 · Suite QR R1: Abrir QR inicia preparación y muestra QR nativo en memoria, permite reabrirlo y lo retira al conectar/cancelar. Corregida espera de EOF heredado por gestor Bridge que bloqueaba conexiones. 45 tests UI/escritorio/orquestación pasan, incluida pulsación real del botón sin teléfono/DNI y proceso Windows con stdout heredado. Acceso directo actualizado; lectura QR desde Android físico pendiente.",
       "evidence": "docs/suite/QR_NATIVO_SUITE_R1.md"
+    },
+    {
+      "id": "suite_input_selection_r2",
+      "category": "installed_ui_and_pdf_validated",
+      "value": "2026-10-13 · Suite entradas R2: alias virtual de Recientes era una ruta inexistente y causaba tanto la falta de vista previa como rechazo local al firmar. Selector resuelve shell shortcuts a archivos reales, preflight anterior a PIN, conexión conservada ante rechazo previo a BEGIN y diálogo PIN explícito. 50 tests pasan; PDF real seleccionado y GUI muestran página 1/11 a 918×1188. Acceso directo actualizado; firma DNI física pendiente.",
+      "evidence": "docs/suite/SELECCION_RECIENTES_Y_PIN_R2.md"
     }
   ]
 }

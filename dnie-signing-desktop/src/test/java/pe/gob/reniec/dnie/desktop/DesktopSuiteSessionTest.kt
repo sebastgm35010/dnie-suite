@@ -34,6 +34,14 @@ class DesktopSuiteSessionTest {
                 phone=PhoneSigningTransport(provision!!,port,continuous=true)
                 pool.submit { runBlocking { ContinuousSigningConnection(phone!!.accept(),slot::acquire,slot::invalidate,finishJob=slot::finishJob).run() } }
             }
+            val missingPin="0000".toCharArray()
+            try {
+                session.sign(DesktopSigningRequest(listOf(root.resolve("missing.pdf")),root.resolve("jobs")),missingPin)
+                fail("Missing input must fail before BEGIN")
+            } catch(_: pe.gob.reniec.dnie.desktop.application.DesktopInputUnavailableException) {
+                assertTrue(missingPin.all { it=='\u0000' })
+                assertEquals(0,card.selections);assertEquals(0,card.signatures)
+            }
             repeat(2) { index ->
                 val input=root.resolve("technical-$index.txt");Files.writeString(input,"Synthetic job $index")
                 val pin="0000".toCharArray()

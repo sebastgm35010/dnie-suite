@@ -1,5 +1,7 @@
 # Contexto vigente de la suite propia de firma
 
+2026-10-13 · Suite entradas R2: alias virtual de Recientes era una ruta inexistente y causaba tanto la falta de vista previa como rechazo local al firmar. Selector resuelve shell shortcuts a archivos reales, preflight anterior a PIN, conexión conservada ante rechazo previo a BEGIN y diálogo PIN explícito. 50 tests pasan; PDF real seleccionado y GUI muestran página 1/11 a 918×1188. Acceso directo actualizado; firma DNI física pendiente. [Detalle](SELECCION_RECIENTES_Y_PIN_R2.md).
+
 2026-10-13 · Suite QR R1: Abrir QR inicia preparación y muestra QR nativo en memoria, permite reabrirlo y lo retira al conectar/cancelar. Corregida espera de EOF heredado por gestor Bridge que bloqueaba conexiones. 45 tests UI/escritorio/orquestación pasan, incluida pulsación real del botón sin teléfono/DNI y proceso Windows con stdout heredado. Acceso directo actualizado; lectura QR desde Android físico pendiente. [Detalle](QR_NATIVO_SUITE_R1.md).
 
 2026-10-13 · Versión 3.1.0 / APK78 instalada: integración v4 de autenticación resistente, plazos por candidato, integridad SHA-256 de originales/resultados, migración de identidad Windows protegida y DPAPI acotado. Servicio/gestor Windows y Suite actualizados; identidad conservada según metadatos. 177 JVM, 134 comprobaciones Windows y 3 pruebas Android pasan; debug/release compilados y producción comprobada. Firma y USB/NFC físicos nuevos pendientes. [Detalle](../architecture/SEGURIDAD_BACKEND_3_1_V4.md).

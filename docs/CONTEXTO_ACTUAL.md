@@ -1,5 +1,7 @@
 # Estado vigente · corrección USB tras reinicio
 
+2026-10-13 · Suite entradas R2: alias virtual de Recientes era una ruta inexistente y causaba tanto la falta de vista previa como rechazo local al firmar. Selector resuelve shell shortcuts a archivos reales, preflight anterior a PIN, conexión conservada ante rechazo previo a BEGIN y diálogo PIN explícito. 50 tests pasan; PDF real seleccionado y GUI muestran página 1/11 a 918×1188. Acceso directo actualizado; firma DNI física pendiente. [Detalle](suite/SELECCION_RECIENTES_Y_PIN_R2.md).
+
 2026-10-13 · Suite QR R1: Abrir QR inicia preparación y muestra QR nativo en memoria, permite reabrirlo y lo retira al conectar/cancelar. Corregida espera de EOF heredado por gestor Bridge que bloqueaba conexiones. 45 tests UI/escritorio/orquestación pasan, incluida pulsación real del botón sin teléfono/DNI y proceso Windows con stdout heredado. Acceso directo actualizado; lectura QR desde Android físico pendiente. [Detalle](suite/QR_NATIVO_SUITE_R1.md).
 
 2026-10-13 · Controlador R2 2.0.0.4/oem239 y backend Windows instalados sin reinicio. Errores locales de transmisión ya no retiran la tarjeta; protocolo tras apagado y cancelación antes de entrega corregidos. Pulsos 2 s/operaciones 25 s frente a plazo del driver 30 s. 7860 comprobaciones C++, 137 backend, 31 PCSC nativas y 13 TLSrelay pasan. PnP0 y ReaderPublished=true al finalizar, sin tarjeta. Firma DNI y suspensión físicas pendientes; Android78 no cambia. [Detalle](architecture/CONTROLADOR_COMPLETADOS_Y_PROTOCOLO_R2.md).

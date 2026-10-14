@@ -7,6 +7,9 @@ import pe.gob.reniec.dnie.desktop.model.*
 import pe.gob.reniec.dnie.desktop.remote.ReverseTlsExchange
 import pe.gob.reniec.dnie.signing.link.*
 
+/** Local preflight failed before BEGIN or any PIN/card operation was sent. */
+class DesktopInputUnavailableException(cause: Exception) : IllegalArgumentException("Selected files are unavailable",cause)
+
 /** User-mode application boundary. GUI owns scheduling; this owns one private connection, never PC/SC. */
 class DesktopSuiteSession(private val port: Int=SigningProvision.PHONE_PORT) : AutoCloseable {
     data class PairingInfo(val file: Path, val fingerprint: String, val firstEnrollment: Boolean)
@@ -40,7 +43,8 @@ class DesktopSuiteSession(private val port: Int=SigningProvision.PHONE_PORT) : A
     suspend fun sign(request: DesktopSigningRequest, pin: CharArray): DesktopSigningResult {
         try {
             check(!closed)
-            DesktopWorkspaceValidation.validate(request)
+            try { DesktopWorkspaceValidation.validate(request) }
+            catch(e: Exception) { throw DesktopInputUnavailableException(e) }
             require(pin.size in 4..8 && pin.all { it in '0'..'9' })
             val active=checkNotNull(client)
             val job=UUID.randomUUID()

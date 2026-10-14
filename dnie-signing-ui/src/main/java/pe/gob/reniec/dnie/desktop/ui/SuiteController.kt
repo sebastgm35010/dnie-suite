@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicLong
 import javax.swing.SwingUtilities
 import kotlinx.coroutines.runBlocking
 import pe.gob.reniec.dnie.desktop.application.DesktopSuiteSession
+import pe.gob.reniec.dnie.desktop.application.DesktopInputUnavailableException
 import pe.gob.reniec.dnie.desktop.model.*
 import pe.gob.reniec.dnie.pdf.desktop.DesktopPdfPreview
 import pe.gob.reniec.dnie.signing.link.SuiteCardUnavailableException
@@ -37,14 +38,28 @@ class SuiteController(private val product: DesktopProductCoordinator = DesktopIn
                 ui { if(version==connections.get()) done(false,if(e is ProductModeConflict) e.message ?: "Modo ocupado." else "No se pudo conectar (${e.javaClass.simpleName}). Revisa Android, IP y emparejamiento.") } }
         }
     }
-    fun sign(request: DesktopSigningRequest,pin: CharArray,done: (DesktopSigningResult?,String)->Unit) {
+    fun prepareFiles(selected: List<java.io.File>, view: javax.swing.filechooser.FileSystemView, done: (List<Path>,Int)->Unit) {
+        previews.submit {
+            val resolved=selected.map { runCatching { DesktopFileSelection.resolve(it,view) }.getOrNull() }
+            ui { done(resolved.filterNotNull().distinct(),resolved.count { it==null }) }
+        }
+    }
+    fun checkInputs(inputs: List<Path>, done: (Boolean)->Unit) {
+        jobs.submit {
+            val valid=runCatching { pe.gob.reniec.dnie.desktop.storage.DesktopWorkspace.validate(DesktopSigningRequest(inputs,Path.of("."))) }.isSuccess
+            ui { done(valid) }
+        }
+    }
+    fun sign(request: DesktopSigningRequest,pin: CharArray,done: (DesktopSigningResult?,String,Boolean)->Unit) {
         jobs.submit {
             try {
                 val result=runBlocking { checkNotNull(session).sign(request,pin) }
-                ui { done(result, "Completos: ${result.documents.count { it.signature!=null }} / ${result.documents.size}. No se repiten firmas automáticamente.") }
+                ui { done(result, "Completos: ${result.documents.count { it.signature!=null }} / ${result.documents.size}. No se repiten firmas automáticamente.",true) }
             } catch(e: SuiteCardUnavailableException) {
-                ui { done(null,"DNI no disponible; no empezó la firma. Acércalo y envía una solicitud nueva.") }
-            } catch(e: Exception) { session?.close();permit?.close();permit=null; ui { done(null,"Operación interrumpida (${e.javaClass.simpleName}). Revisa resultados antes de reconectar.") } }
+                ui { done(null,"DNI no disponible; no empezó la firma. Acércalo y envía una solicitud nueva.",true) }
+            } catch(e: DesktopInputUnavailableException) {
+                ui { done(null,"El archivo ya no está disponible. Vuelve a seleccionarlo; la conexión se conserva.",true) }
+            } catch(e: Exception) { session?.close();permit?.close();permit=null; ui { done(null,"Operación interrumpida (${e.javaClass.simpleName}). Revisa resultados antes de reconectar.",false) } }
             finally { pin.fill('\u0000') }
         }
     }

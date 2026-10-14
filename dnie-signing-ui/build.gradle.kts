@@ -9,6 +9,7 @@ dependencies {
     implementation(project(":dnie-signing-core")); implementation(project(":dnie-signing-link"))
     testImplementation("junit:junit:4.13.2")
     testImplementation("com.google.zxing:core:3.5.3")
+    testImplementation("org.apache.pdfbox:pdfbox:3.0.8")
 }
 distributions { main { contents {
     from("tools/create-shortcut.ps1") { into("tools") }
