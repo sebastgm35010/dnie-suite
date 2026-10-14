@@ -39,7 +39,8 @@
     "docs/operations/PUBLICACION_GITHUB_20261013.md": "repository_publication_evidence",
     "docs/architecture/CONTROLADOR_COMPLETADOS_Y_PROTOCOLO_R2.md": "current_driver_completion_and_protocol_architecture",
     "docs/suite/QR_NATIVO_SUITE_R1.md": "current_suite_qr_presentation",
-    "docs/suite/SELECCION_RECIENTES_Y_PIN_R2.md": "current_suite_file_selection_and_pin_flow"
+    "docs/suite/SELECCION_RECIENTES_Y_PIN_R2.md": "current_suite_file_selection_and_pin_flow",
+    "docs/design/ESPECIFICACION_AETHER_Y_SELLOS_PDF.md": "approved_redesign_specification"
   },
   "features": [
     {
@@ -783,7 +784,7 @@
       "id": "reader_resume_recovery",
       "feature": "bridge",
       "state": "open",
-      "description": "R2 instalado driver2.0.0.4/oem239 y backend acotado; 7860 C++, 137 backend, 31 PCSC y 13 TLSrelay pasan. Lector ya estaba no publicado con PnP0 antes de actualizar y se publica después. Falta reproducir suspensión/reanudación y nueva firma DNI real; no se demuestra causa original ni se permite replay.",
+      "description": "R2 instalado driver2.0.0.4/oem239 y backend acotado; 7860 C++, 137 backend, 31 PCSC y 13 TLSrelay pasan. Lector ya estaba no publicado con PnP0 antes de actualizar y se publica después. Falta reproducir suspensión/reanudación y nueva firma DNI real; no se demuestra causa original ni se permite replay. 2026-10-13: aplazado por usuario. Propuesta externa de conservar esperas aún sin validar; cola principal PowerManaged impide inferir entrega durante D0Exit. Requiere trazas reales WDF/SCardSvr y comparación, sin replay; no tocar driver en rediseño.",
       "evidence": "docs/architecture/CONTROLADOR_COMPLETADOS_Y_PROTOCOLO_R2.md"
     },
     {
