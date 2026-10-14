@@ -1,5 +1,7 @@
 # Estado vigente · corrección USB tras reinicio
 
+2026-10-14 · Aether Android79 / 3.1.0 instalada por ADB con reemplazo sin borrar datos. Dos pruebas instrumentadas pasan (4,01 s): cinco estilos/rúbrica transparente y selector de páginas/preview Compose. Arranque normal comprobado, sin fatal en el PID observado; auxiliar retirado. Firma con DNI/TSA y regresión física Suite/puente pendientes. [Detalle](design/VALIDACION_ANDROID_AETHER_R3.md).
+
 2026-10-14 · Aether R2 / 3.1.0: Suite y Manager Windows rediseñados e instalados; sellos vectoriales/preview/colores/páginas compartidos con Android. Una firma, un widget y réplicas gráficas cubiertas por CMS; DocMDP P=2 se rechaza antes de firmar réplicas. 191 pruebas pasan, una omitida preexistente y 24 comprobaciones Manager pasan. APK79 debug/release compilada; Android78 sigue instalada, dos pruebas instrumentadas nuevas sin ejecutar por falta de ADB. Identidad y runtime del servicio conservados, driver intacto. [Entrega y rutas](design/RESULTADO_AETHER_R2.md).
 
 2026-10-13 · Suspensión del lector aplazada por decisión del usuario. Informe externo no demuestra causalidad: purga cancela esperas, pero cola principal PowerManaged retiene solicitudes hasta D0. Pendiente reproducción trazada y comparación de conservación de esperas; driver2.0.0.4 intacto durante rediseño Aether. [Detalle](architecture/CONTROLADOR_COMPLETADOS_Y_PROTOCOLO_R2.md).

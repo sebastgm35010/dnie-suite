@@ -36,3 +36,7 @@ La escritura incremental actual marca los ancestros de páginas para persistir r
 ## Cierre R2
 
 2026-10-14: compilación final release-candidate-r2.log satisfactoria, 191 pruebas pasan/1 omitida preexistente, 24 comprobaciones nativas pasan. Manager instalado con identidad y 13 binarios/recursos operativos idénticos; servicio Running, host STOPPED. Suite y acceso del escritorio actualizados. Android79 exportada con la misma identidad debug; no instalada por falta de ADB. Dos pruebas instrumentadas compiladas, sin ejecutar. Guardián de arquitectura y producción Android pasan; 136 hashes protegidos y callbacks criptográficos coinciden. Los estados anteriores de predespliegue de este archivo son historia. [Resultado definitivo](RESULTADO_AETHER_R2.md), [registro JSON](../operations/AETHER_R2_RESULTADOS.json).
+
+## Continuación Android R3
+
+2026-10-14 · Aether Android79 / 3.1.0 instalada por ADB con reemplazo sin borrar datos. Dos pruebas instrumentadas pasan (4,01 s): cinco estilos/rúbrica transparente y selector de páginas/preview Compose. Arranque normal comprobado, sin fatal en el PID observado; auxiliar retirado. Firma con DNI/TSA y regresión física Suite/puente pendientes. [Informe](VALIDACION_ANDROID_AETHER_R3.md).

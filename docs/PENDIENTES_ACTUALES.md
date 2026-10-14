@@ -1,5 +1,7 @@
 # Pendientes actuales · Windows rc4 USB / Android rc4-usb
 
+2026-10-14 · Aether Android79 / 3.1.0 instalada por ADB con reemplazo sin borrar datos. Dos pruebas instrumentadas pasan (4,01 s): cinco estilos/rúbrica transparente y selector de páginas/preview Compose. Arranque normal comprobado, sin fatal en el PID observado; auxiliar retirado. Firma con DNI/TSA y regresión física Suite/puente pendientes. [Detalle](design/VALIDACION_ANDROID_AETHER_R3.md).
+
 2026-10-14 · Aether implementado y Windows actualizado. Pendiente instalar APK79, ejecutar dos pruebas instrumentadas y verificar PDF/lote con DNI físico. No hay ADB conectado ni emulador instalado. Android78 es la última instalación comprobada. Suspensión del driver sigue aplazada. [Resultados, artefactos y criterios](design/RESULTADO_AETHER_R2.md).
 
 2026-10-13 · Suspensión del lector aplazada por decisión del usuario. Informe externo no demuestra causalidad: purga cancela esperas, pero cola principal PowerManaged retiene solicitudes hasta D0. Pendiente reproducción trazada y comparación de conservación de esperas; driver2.0.0.4 intacto durante rediseño Aether. [Detalle](architecture/CONTROLADOR_COMPLETADOS_Y_PROTOCOLO_R2.md).

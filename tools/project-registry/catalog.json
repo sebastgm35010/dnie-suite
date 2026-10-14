@@ -44,7 +44,8 @@
     "docs/design/RESULTADO_AETHER_R2.md": "current_aether_redesign_results",
     "docs/design/CONTEXTO_REDISENO_AETHER.md": "current_aether_execution_context",
     "docs/operations/AETHER_R2_RESULTADOS.json": "aether_machine_readable_results",
-    "docs/design/INVARIANTES_AETHER_BASE.json": "aether_protected_sources_baseline"
+    "docs/design/INVARIANTES_AETHER_BASE.json": "aether_protected_sources_baseline",
+    "docs/design/VALIDACION_ANDROID_AETHER_R3.md": "current_android_aether_installation_and_instrumented_validation"
   },
   "features": [
     {
@@ -85,7 +86,7 @@
       "id": "pdf_android",
       "name": "Firma PDF Android",
       "status": "validated_real",
-      "note": "Visible/invisible, PAdES B y TSA opcional T; issuerSerial compartido corregido. Usuario confirma firma nueva Android 3.1 como PAdES Baseline T; sin PDF recibido para repetir inspección local. Aether R2: nueva apariencia/preview/páginas comprobadas con datos sintéticos; ver stamp_aether/desktop_aether. No confundir con firma física nueva ni APK79 instalada.",
+      "note": "Visible/invisible, PAdES B y TSA opcional T; issuerSerial compartido corregido. Usuario confirma firma nueva Android 3.1 como PAdES Baseline T; sin PDF recibido para repetir inspección local. Aether R2: nueva apariencia/preview/páginas comprobadas con datos sintéticos; ver stamp_aether/desktop_aether. No acredita firma física nueva. Continuación R3: Android79 instalada, 2 pruebas instrumentadas pasan; Firma física nueva sigue pendiente.",
       "evidence": "docs/architecture/SEGURIDAD_BACKEND_3_1_V4.md",
       "files": {
         "engine": [
@@ -108,7 +109,7 @@
       "id": "batch_android",
       "name": "Firma por lotes Android",
       "status": "validated_real",
-      "note": "Lote bajo sesión/autorización compartida; no repetir automáticamente operaciones privadas. Pantalla SignerScreen(batch=true), ViewModel separado por key batchSigner; UI compartida con PDF. 3.1: autenticación e integridad v4 integradas, pruebas sintéticas/de interfaz superadas; nueva sesión/firma física pendiente. Aether R2: nueva apariencia/preview/páginas comprobadas con datos sintéticos; ver stamp_aether/desktop_aether. No confundir con firma física nueva ni APK79 instalada.",
+      "note": "Lote bajo sesión/autorización compartida; no repetir automáticamente operaciones privadas. Pantalla SignerScreen(batch=true), ViewModel separado por key batchSigner; UI compartida con PDF. 3.1: autenticación e integridad v4 integradas, pruebas sintéticas/de interfaz superadas; nueva sesión/firma física pendiente. Aether R2: nueva apariencia/preview/páginas comprobadas con datos sintéticos; ver stamp_aether/desktop_aether. No acredita firma física nueva. Continuación R3: Android79 instalada, 2 pruebas instrumentadas pasan; Firma física nueva sigue pendiente.",
       "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md",
       "files": {
         "engine": [
@@ -131,7 +132,7 @@
       "id": "suite",
       "name": "Suite privada Windows ↔ Android",
       "status": "validated_real",
-      "note": "Lotes reales PDF y CMS; emparejamiento permanente, sesión PC/móvil independiente de presencia NFC. R5: IP variable con huella/token estables; DPAPI y TLS comprobados en sintético, cambio de IP con DNI real pendiente. 3.1: autenticación e integridad v4 integradas, pruebas sintéticas/de interfaz superadas; nueva sesión/firma física pendiente. Aether R2: nueva apariencia/preview/páginas comprobadas con datos sintéticos; ver stamp_aether/desktop_aether. No confundir con firma física nueva ni APK79 instalada.",
+      "note": "Lotes reales PDF y CMS; emparejamiento permanente, sesión PC/móvil independiente de presencia NFC. R5: IP variable con huella/token estables; DPAPI y TLS comprobados en sintético, cambio de IP con DNI real pendiente. 3.1: autenticación e integridad v4 integradas, pruebas sintéticas/de interfaz superadas; nueva sesión/firma física pendiente. Aether R2: nueva apariencia/preview/páginas comprobadas con datos sintéticos; ver stamp_aether/desktop_aether. No acredita firma física nueva. Continuación R3: Android79 instalada, 2 pruebas instrumentadas pasan; Firma física nueva sigue pendiente.",
       "evidence": "docs/suite/CONTEXTO_SUITE_FIRMA.md",
       "files": {
         "application": [
@@ -443,7 +444,7 @@
       "id": "android_redesign",
       "name": "Interfaz Android 3.0 basada en Aether",
       "status": "implemented_runtime_validated",
-      "note": "2026-10-09 · Conexiones R5: APK77 / 3.0.0-alpha05-mobility instalada sin borrar datos. Suite y Bridge Wi-Fi ya no fijan identidad a la IP; TLS y token siguen obligatorios. Windows conserva la identidad DPAPI al cambiar IP. TLS directo permite editar destino; Suite tiene pantalla completa independiente y limpia conexión al finalizar lote único. 159 JVM pasan / 3 omitidas, release compilado y 3 pruebas instrumentadas de Suite/Bridge pasan en el móvil. Cambio físico de IP con DNI pendiente. Aether R2: nueva apariencia/preview/páginas comprobadas con datos sintéticos; ver stamp_aether/desktop_aether. No confundir con firma física nueva ni APK79 instalada.",
+      "note": "2026-10-09 · Conexiones R5: APK77 / 3.0.0-alpha05-mobility instalada sin borrar datos. Suite y Bridge Wi-Fi ya no fijan identidad a la IP; TLS y token siguen obligatorios. Windows conserva la identidad DPAPI al cambiar IP. TLS directo permite editar destino; Suite tiene pantalla completa independiente y limpia conexión al finalizar lote único. 159 JVM pasan / 3 omitidas, release compilado y 3 pruebas instrumentadas de Suite/Bridge pasan en el móvil. Cambio físico de IP con DNI pendiente. Aether R2: nueva apariencia/preview/páginas comprobadas con datos sintéticos; ver stamp_aether/desktop_aether. No acredita firma física nueva. Continuación R3: Android79 instalada, 2 pruebas instrumentadas pasan; Firma física nueva sigue pendiente.",
       "evidence": "docs/architecture/CONEXIONES_DIRECCION_E_IDENTIDAD_R5.md",
       "files": {
         "frontend": [
@@ -631,8 +632,8 @@
     {
       "id": "stamp_aether",
       "name": "Apariencia vectorial Aether y selección de páginas PDF",
-      "status": "implemented_synthetic_validated",
-      "note": "Cinco estilos, cuatro colores, insignias, campos, word-wrap y geometría puros; adaptadores Android/Desktop. Un widget por firma, réplicas Stamp cubiertas por CMS; DocMDP P=2 rechaza réplicas antes del firmante. 17 core/17 PDF desktop/26 PDF Android pasan. Android79 no instalada; prueba física pendiente.",
+      "status": "implemented_runtime_validated",
+      "note": "Cinco estilos, cuatro colores, insignias, campos, word-wrap y geometría puros; adaptadores Android/Desktop. Un widget por firma, réplicas Stamp cubiertas por CMS; DocMDP P=2 rechaza réplicas antes del firmante. 17 core/17 PDF desktop/26 PDF Android pasan. Android79 instalada; firma física pendiente. Continuación R3: Android79 instalada, 2 pruebas instrumentadas pasan; Firma física nueva sigue pendiente.",
       "evidence": "docs/design/RESULTADO_AETHER_R2.md",
       "files": {
         "model": [
@@ -670,7 +671,7 @@
       "id": "desktop_aether",
       "name": "Presentación Aether Suite y Manager Windows",
       "status": "installed_ui_synthetic_validated",
-      "note": "Suite tarjetas/DnD/preview real/presets/snap/inspector/modal red; Manager tres estados independientes y transporte dinámico. 13 UI/24 nativas pasan. Accesos actualizados, identidad y binarios de servicio conservados. No acredita firma física nueva ni recuperación del driver.",
+      "note": "Suite tarjetas/DnD/preview real/presets/snap/inspector/modal red; Manager tres estados independientes y transporte dinámico. 13 UI/24 nativas pasan. Accesos actualizados, identidad y binarios de servicio conservados. No acredita firma física nueva ni recuperación del driver. Continuación R3: Android79 instalada, 2 pruebas instrumentadas pasan; Firma física nueva sigue pendiente.",
       "evidence": "docs/design/RESULTADO_AETHER_R2.md",
       "files": {
         "frontend": [
@@ -879,16 +880,16 @@
       "id": "aether_android_runtime_review",
       "feature": "stamp_aether",
       "state": "open",
-      "description": "Instalar APK79 sin borrar datos, ejecutar AetherStampPresentationTest (2 casos), comprobar estilos/QR/solo rúbrica/páginas y PDF/lote con DNI real y TSA. No ADB ni emulador disponible; solo compilación/unitarios/visual PDF sintético completados. Windows UI instalada, nueva firma Suite/puente física pendiente.",
-      "evidence": "docs/design/RESULTADO_AETHER_R2.md"
+      "description": "Android79 instalada; AetherStampPresentationTest 2/2 pasa y arranque normal comprobado. Quedan controles completos en uso, PDF/lote con DNI real y TSA y regresión física Suite/puente. No cerrar por pruebas de UI sintéticas.",
+      "evidence": "docs/design/VALIDACION_ANDROID_AETHER_R3.md"
     }
   ],
   "facts": [
     {
       "id": "android_current",
-      "category": "installed_ui_validated",
-      "value": "2026-10-13 · Versión 3.1.0 / APK78 instalada: integración v4 de autenticación resistente, plazos por candidato, integridad SHA-256 de originales/resultados, migración de identidad Windows protegida y DPAPI acotado. Servicio/gestor Windows y Suite actualizados; identidad conservada según metadatos. 177 JVM, 134 comprobaciones Windows y 3 pruebas Android pasan; debug/release compilados y producción comprobada. Firma PDF Android nueva confirmada por el usuario como PAdES Baseline T; regresión física Suite/puente/USB pendiente.",
-      "evidence": "docs/architecture/SEGURIDAD_BACKEND_3_1_V4.md"
+      "category": "installed_instrumented_ui_validated",
+      "value": "2026-10-14 · Aether Android79 / 3.1.0 instalada por ADB con reemplazo sin borrar datos. Dos pruebas instrumentadas pasan (4,01 s): cinco estilos/rúbrica transparente y selector de páginas/preview Compose. Arranque normal comprobado, sin fatal en el PID observado; auxiliar retirado. Firma con DNI/TSA y regresión física Suite/puente pendientes.",
+      "evidence": "docs/design/VALIDACION_ANDROID_AETHER_R3.md"
     },
     {
       "id": "desktop_current",
@@ -1024,9 +1025,15 @@
     },
     {
       "id": "android_candidate_aether79",
-      "category": "compiled_not_installed",
-      "value": "APK79 / 3.1.0 debug/release compilada; D:/DNIeToolchain/AndroidPackages/dnie-evolution-3.1.0-v79-aether-debug.apk. Firma debug coincide con APK78. 2 pruebas instrumentadas compiladas, no ejecutadas. Android78 sigue siendo última instalación verificada.",
-      "evidence": "docs/design/RESULTADO_AETHER_R2.md"
+      "category": "installed_instrumented_ui_validated",
+      "value": "2026-10-14 · Aether Android79 / 3.1.0 instalada por ADB con reemplazo sin borrar datos. Dos pruebas instrumentadas pasan (4,01 s): cinco estilos/rúbrica transparente y selector de páginas/preview Compose. Arranque normal comprobado, sin fatal en el PID observado; auxiliar retirado. Firma con DNI/TSA y regresión física Suite/puente pendientes. APK D:/DNIeToolchain/AndroidPackages/dnie-evolution-3.1.0-v79-aether-debug.apk.",
+      "evidence": "docs/design/VALIDACION_ANDROID_AETHER_R3.md"
+    },
+    {
+      "id": "android_aether_runtime_r3",
+      "category": "installed_instrumented_ui_validated",
+      "value": "2026-10-14 · Aether Android79 / 3.1.0 instalada por ADB con reemplazo sin borrar datos. Dos pruebas instrumentadas pasan (4,01 s): cinco estilos/rúbrica transparente y selector de páginas/preview Compose. Arranque normal comprobado, sin fatal en el PID observado; auxiliar retirado. Firma con DNI/TSA y regresión física Suite/puente pendientes.",
+      "evidence": "docs/design/VALIDACION_ANDROID_AETHER_R3.md"
     }
   ]
 }

@@ -1,5 +1,7 @@
 # Estado guardado y retomar tras reiniciar
 
+2026-10-14 · Aether Android79 / 3.1.0 instalada por ADB con reemplazo sin borrar datos. Dos pruebas instrumentadas pasan (4,01 s): cinco estilos/rúbrica transparente y selector de páginas/preview Compose. Arranque normal comprobado, sin fatal en el PID observado; auxiliar retirado. Firma con DNI/TSA y regresión física Suite/puente pendientes. [Detalle](../design/VALIDACION_ANDROID_AETHER_R3.md).
+
 2026-10-14 · Rutas vigentes: Suite `D:/DNIeToolchain/Builds/aether-redesign/signing-ui/install/dnie-signing-ui`; Manager `D:/DNIeBridgeApp/versions/29f121205ffe412a8e165bf404d49667/DNIeBridge.exe`. Accesos actualizados, servicio conservado. APK79 compilada sin instalar; Android78 es la última comprobada. No usar las rutas históricas siguientes como estado actual. [Entrega Aether](../design/RESULTADO_AETHER_R2.md).
 
 2026-10-13 · Controlador R2 2.0.0.4/oem239 y backend Windows instalados sin reinicio. Errores locales de transmisión ya no retiran la tarjeta; protocolo tras apagado y cancelación antes de entrega corregidos. Pulsos 2 s/operaciones 25 s frente a plazo del driver 30 s. 7860 comprobaciones C++, 137 backend, 31 PCSC nativas y 13 TLSrelay pasan. PnP0 y ReaderPublished=true al finalizar, sin tarjeta. Firma DNI y suspensión físicas pendientes; Android78 no cambia. [Detalle](../architecture/CONTROLADOR_COMPLETADOS_Y_PROTOCOLO_R2.md).

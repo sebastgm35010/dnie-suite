@@ -1,5 +1,7 @@
 # Contexto vigente de la suite propia de firma
 
+2026-10-14 · Aether Android79 / 3.1.0 instalada por ADB con reemplazo sin borrar datos. Dos pruebas instrumentadas pasan (4,01 s): cinco estilos/rúbrica transparente y selector de páginas/preview Compose. Arranque normal comprobado, sin fatal en el PID observado; auxiliar retirado. Firma con DNI/TSA y regresión física Suite/puente pendientes. [Detalle](../design/VALIDACION_ANDROID_AETHER_R3.md).
+
 2026-10-14 · Aether R2 / 3.1.0: Suite y Manager Windows rediseñados e instalados; sellos vectoriales/preview/colores/páginas compartidos con Android. Una firma, un widget y réplicas gráficas cubiertas por CMS; DocMDP P=2 se rechaza antes de firmar réplicas. 191 pruebas pasan, una omitida preexistente y 24 comprobaciones Manager pasan. APK79 debug/release compilada; Android78 sigue instalada, dos pruebas instrumentadas nuevas sin ejecutar por falta de ADB. Identidad y runtime del servicio conservados, driver intacto. [Detalle](../design/RESULTADO_AETHER_R2.md).
 
 2026-10-13 · Suite entradas R2: alias virtual de Recientes era una ruta inexistente y causaba tanto la falta de vista previa como rechazo local al firmar. Selector resuelve shell shortcuts a archivos reales, preflight anterior a PIN, conexión conservada ante rechazo previo a BEGIN y diálogo PIN explícito. 50 tests pasan; PDF real seleccionado y GUI muestran página 1/11 a 918×1188. Acceso directo actualizado; firma DNI física pendiente. [Detalle](SELECCION_RECIENTES_Y_PIN_R2.md).
