@@ -45,7 +45,11 @@
     "docs/design/CONTEXTO_REDISENO_AETHER.md": "current_aether_execution_context",
     "docs/operations/AETHER_R2_RESULTADOS.json": "aether_machine_readable_results",
     "docs/design/INVARIANTES_AETHER_BASE.json": "aether_protected_sources_baseline",
-    "docs/design/VALIDACION_ANDROID_AETHER_R3.md": "current_android_aether_installation_and_instrumented_validation"
+    "docs/design/VALIDACION_ANDROID_AETHER_R3.md": "current_android_aether_installation_and_instrumented_validation",
+    "docs/design/RESULTADO_AETHER_R4.md": "current_aether_r4_results",
+    "docs/design/ALCANCE_AETHER_R4.md": "approved_aether_r4_scope_qr_deferred",
+    "docs/design/ESPECIFICACION_PULIDO_AETHER_R4.md": "external_aether_r4_recommendations",
+    "docs/operations/AETHER_R4_RESULTADOS.json": "aether_r4_machine_readable_results"
   },
   "features": [
     {
@@ -633,8 +637,8 @@
       "id": "stamp_aether",
       "name": "Apariencia vectorial Aether y selección de páginas PDF",
       "status": "implemented_runtime_validated",
-      "note": "Cinco estilos, cuatro colores, insignias, campos, word-wrap y geometría puros; adaptadores Android/Desktop. Un widget por firma, réplicas Stamp cubiertas por CMS; DocMDP P=2 rechaza réplicas antes del firmante. 17 core/17 PDF desktop/26 PDF Android pasan. Android79 instalada; firma física pendiente. Continuación R3: Android79 instalada, 2 pruebas instrumentadas pasan; Firma física nueva sigue pendiente.",
-      "evidence": "docs/design/RESULTADO_AETHER_R2.md",
+      "note": "Aether R4: escena pura con círculos/escudo relleno; adaptadores Android/Desktop, texto y geometría compartidos. Una firma/widget y réplicas Stamp; DocMDP P=2 intacto. Android80 instalada, 18 core/17 PDF desktop/26 PDF Android y 2 instrumentadas pasan. QR público anterior conservado; enriquecimiento difiere. Firma física nueva pendiente.",
+      "evidence": "docs/design/RESULTADO_AETHER_R4.md",
       "files": {
         "model": [
           "dnie-signing-core/src/main/java/pe/gob/reniec/dnie/pdf/SignatureAppearance.kt"
@@ -671,8 +675,8 @@
       "id": "desktop_aether",
       "name": "Presentación Aether Suite y Manager Windows",
       "status": "installed_ui_synthetic_validated",
-      "note": "Suite tarjetas/DnD/preview real/presets/snap/inspector/modal red; Manager tres estados independientes y transporte dinámico. 13 UI/24 nativas pasan. Accesos actualizados, identidad y binarios de servicio conservados. No acredita firma física nueva ni recuperación del driver. Continuación R3: Android79 instalada, 2 pruebas instrumentadas pasan; Firma física nueva sigue pendiente.",
-      "evidence": "docs/design/RESULTADO_AETHER_R2.md",
+      "note": "Aether R4 instalado: pintura y transporte activos, inputs, bandeja y consulta WinSCard; Suite hoja A4, controles, preferencias públicas, zoom, navegación independiente, autocompletado desde certificado exportado y apertura de outputs. 17 UI/60 nativas pasan. Identidad y runtime servicio conservados. No acredita firma física nueva. QR enriquecido diferido.",
+      "evidence": "docs/design/RESULTADO_AETHER_R4.md",
       "files": {
         "frontend": [
           "dnie-signing-ui/src/main/java/pe/gob/reniec/dnie/desktop/ui/AetherSwingTheme.kt",
@@ -682,14 +686,21 @@
           "tools/windows-manager/AetherControls.cs",
           "tools/windows-manager/MainForm.Layout.cs",
           "tools/windows-manager/MainForm.cs",
-          "tools/windows-manager/PairingForm.cs"
+          "tools/windows-manager/PairingForm.cs",
+          "dnie-signing-ui/src/main/java/pe/gob/reniec/dnie/desktop/ui/AetherInputs.kt",
+          "tools/windows-manager/MainForm.Tray.cs"
         ],
         "application": [
           "dnie-signing-ui/src/main/java/pe/gob/reniec/dnie/desktop/ui/SuiteController.kt"
         ],
         "test": [
           "dnie-signing-ui/src/test/java/pe/gob/reniec/dnie/desktop/ui/AetherSuitePresentationTest.kt",
-          "tools/windows-manager/layout-tests/"
+          "tools/windows-manager/layout-tests/",
+          "dnie-signing-ui/src/test/java/pe/gob/reniec/dnie/desktop/ui/AetherR4Test.kt"
+        ],
+        "adapter": [
+          "dnie-signing-ui/src/main/java/pe/gob/reniec/dnie/desktop/ui/SuiteDesignPreferences.kt",
+          "dnie-signing-ui/src/main/java/pe/gob/reniec/dnie/desktop/ui/CompletedBatchPresentation.kt"
         ]
       },
       "depends_on": [
@@ -880,22 +891,29 @@
       "id": "aether_android_runtime_review",
       "feature": "stamp_aether",
       "state": "open",
-      "description": "Android79 instalada; AetherStampPresentationTest 2/2 pasa y arranque normal comprobado. Quedan controles completos en uso, PDF/lote con DNI real y TSA y regresión física Suite/puente. No cerrar por pruebas de UI sintéticas.",
-      "evidence": "docs/design/VALIDACION_ANDROID_AETHER_R3.md"
+      "description": "Android80 instalada; AetherStampPresentationTest 2/2 pasa. Quedan uso de controles con DNI real, PDF/lote con TSA y regresión física Suite/puente. No cerrar por pruebas UI/sintéticas.",
+      "evidence": "docs/design/RESULTADO_AETHER_R4.md"
+    },
+    {
+      "id": "aether_qr_enrichment",
+      "feature": "stamp_aether",
+      "state": "deferred",
+      "description": "Usuario pide QR después de Bridge/Suite R4. Diseñar metadata pública con hashes completos, certificado DER/cadena y cotejo de PDF/revisión; escanear QR no valida firmas ni papel. No implementado; payload anterior y QR de emparejamiento conservados.",
+      "evidence": "docs/design/ALCANCE_AETHER_R4.md"
     }
   ],
   "facts": [
     {
       "id": "android_current",
       "category": "installed_instrumented_ui_validated",
-      "value": "2026-10-14 · Aether Android79 / 3.1.0 instalada por ADB con reemplazo sin borrar datos. Dos pruebas instrumentadas pasan (4,01 s): cinco estilos/rúbrica transparente y selector de páginas/preview Compose. Arranque normal comprobado, sin fatal en el PID observado; auxiliar retirado. Firma con DNI/TSA y regresión física Suite/puente pendientes.",
-      "evidence": "docs/design/VALIDACION_ANDROID_AETHER_R3.md"
+      "value": "2026-10-14 · Aether R4 / 3.1.0: Bridge corrige pintura y selección, inputs, bandeja y consulta WinSCard. Suite añade hoja de muestra, controles, preferencias visuales, zoom y apertura/autocompletado de resultados; emblema compartido actualizado. 196 pruebas pasan/1 omitida preexistente, 60 comprobaciones nativas y 2 instrumentadas Android pasan. Windows actualizado con identidad y 13 archivos runtime conservados; APK80 instalada. QR enriquecido diferido; firma física nueva y suspensión siguen pendientes.",
+      "evidence": "docs/design/RESULTADO_AETHER_R4.md"
     },
     {
       "id": "desktop_current",
       "category": "artifact",
-      "value": "D:/DNIeToolchain/Builds/aether-redesign/signing-ui/install/dnie-signing-ui; acceso DNIe Suite del escritorio actualizado. Manager instalado en D:/DNIeBridgeApp/versions/29f121205ffe412a8e165bf404d49667/DNIeBridge.exe; binarios de servicio idénticos e identidad conservada.",
-      "evidence": "docs/design/RESULTADO_AETHER_R2.md"
+      "value": "Suite D:/DNIeToolchain/Builds/aether-r4/signing-ui/install/dnie-signing-ui; acceso del escritorio actualizado. Manager D:\\DNIeBridgeApp\\versions\\ee788ca28de64c8e89adf8f47ce7fc09\\DNIeBridge.exe. Identidad privada y runtime del servicio conservados.",
+      "evidence": "docs/design/RESULTADO_AETHER_R4.md"
     },
     {
       "id": "h15_tests",
@@ -1034,6 +1052,12 @@
       "category": "installed_instrumented_ui_validated",
       "value": "2026-10-14 · Aether Android79 / 3.1.0 instalada por ADB con reemplazo sin borrar datos. Dos pruebas instrumentadas pasan (4,01 s): cinco estilos/rúbrica transparente y selector de páginas/preview Compose. Arranque normal comprobado, sin fatal en el PID observado; auxiliar retirado. Firma con DNI/TSA y regresión física Suite/puente pendientes.",
       "evidence": "docs/design/VALIDACION_ANDROID_AETHER_R3.md"
+    },
+    {
+      "id": "aether_r4_delivered",
+      "category": "installed_synthetic_and_instrumented_ui_validated",
+      "value": "2026-10-14 · Aether R4 / 3.1.0: Bridge corrige pintura y selección, inputs, bandeja y consulta WinSCard. Suite añade hoja de muestra, controles, preferencias visuales, zoom y apertura/autocompletado de resultados; emblema compartido actualizado. 196 pruebas pasan/1 omitida preexistente, 60 comprobaciones nativas y 2 instrumentadas Android pasan. Windows actualizado con identidad y 13 archivos runtime conservados; APK80 instalada. QR enriquecido diferido; firma física nueva y suspensión siguen pendientes.",
+      "evidence": "docs/design/RESULTADO_AETHER_R4.md"
     }
   ]
 }

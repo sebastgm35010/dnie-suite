@@ -1,5 +1,7 @@
 # Estado guardado y retomar tras reiniciar
 
+2026-10-14 · Aether R4 / 3.1.0: Bridge corrige pintura y selección, inputs, bandeja y consulta WinSCard. Suite añade hoja de muestra, controles, preferencias visuales, zoom y apertura/autocompletado de resultados; emblema compartido actualizado. 196 pruebas pasan/1 omitida preexistente, 60 comprobaciones nativas y 2 instrumentadas Android pasan. Windows actualizado con identidad y 13 archivos runtime conservados; APK80 instalada. QR enriquecido diferido; firma física nueva y suspensión siguen pendientes. [Detalle](../design/RESULTADO_AETHER_R4.md).
+
 2026-10-14 · Aether Android79 / 3.1.0 instalada por ADB con reemplazo sin borrar datos. Dos pruebas instrumentadas pasan (4,01 s): cinco estilos/rúbrica transparente y selector de páginas/preview Compose. Arranque normal comprobado, sin fatal en el PID observado; auxiliar retirado. Firma con DNI/TSA y regresión física Suite/puente pendientes. [Detalle](../design/VALIDACION_ANDROID_AETHER_R3.md).
 
 2026-10-14 · Rutas vigentes: Suite `D:/DNIeToolchain/Builds/aether-redesign/signing-ui/install/dnie-signing-ui`; Manager `D:/DNIeBridgeApp/versions/29f121205ffe412a8e165bf404d49667/DNIeBridge.exe`. Accesos actualizados, servicio conservado. APK79 compilada sin instalar; Android78 es la última comprobada. No usar las rutas históricas siguientes como estado actual. [Entrega Aether](../design/RESULTADO_AETHER_R2.md).
