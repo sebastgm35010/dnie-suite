@@ -1,5 +1,5 @@
 {
-  "review_date": "2026-10-13",
+  "review_date": "2026-10-14",
   "document_roles": {
     "AGENTS.md": "operational_instructions",
     "docs/CONTEXTO_ACTUAL.md": "current_state",
@@ -40,7 +40,11 @@
     "docs/architecture/CONTROLADOR_COMPLETADOS_Y_PROTOCOLO_R2.md": "current_driver_completion_and_protocol_architecture",
     "docs/suite/QR_NATIVO_SUITE_R1.md": "current_suite_qr_presentation",
     "docs/suite/SELECCION_RECIENTES_Y_PIN_R2.md": "current_suite_file_selection_and_pin_flow",
-    "docs/design/ESPECIFICACION_AETHER_Y_SELLOS_PDF.md": "approved_redesign_specification"
+    "docs/design/ESPECIFICACION_AETHER_Y_SELLOS_PDF.md": "approved_redesign_specification",
+    "docs/design/RESULTADO_AETHER_R2.md": "current_aether_redesign_results",
+    "docs/design/CONTEXTO_REDISENO_AETHER.md": "current_aether_execution_context",
+    "docs/operations/AETHER_R2_RESULTADOS.json": "aether_machine_readable_results",
+    "docs/design/INVARIANTES_AETHER_BASE.json": "aether_protected_sources_baseline"
   },
   "features": [
     {
@@ -81,7 +85,7 @@
       "id": "pdf_android",
       "name": "Firma PDF Android",
       "status": "validated_real",
-      "note": "Visible/invisible, PAdES B y TSA opcional T; issuerSerial compartido corregido. Usuario confirma firma nueva Android 3.1 como PAdES Baseline T; sin PDF recibido para repetir inspección local.",
+      "note": "Visible/invisible, PAdES B y TSA opcional T; issuerSerial compartido corregido. Usuario confirma firma nueva Android 3.1 como PAdES Baseline T; sin PDF recibido para repetir inspección local. Aether R2: nueva apariencia/preview/páginas comprobadas con datos sintéticos; ver stamp_aether/desktop_aether. No confundir con firma física nueva ni APK79 instalada.",
       "evidence": "docs/architecture/SEGURIDAD_BACKEND_3_1_V4.md",
       "files": {
         "engine": [
@@ -104,7 +108,7 @@
       "id": "batch_android",
       "name": "Firma por lotes Android",
       "status": "validated_real",
-      "note": "Lote bajo sesión/autorización compartida; no repetir automáticamente operaciones privadas. Pantalla SignerScreen(batch=true), ViewModel separado por key batchSigner; UI compartida con PDF. 3.1: autenticación e integridad v4 integradas, pruebas sintéticas/de interfaz superadas; nueva sesión/firma física pendiente.",
+      "note": "Lote bajo sesión/autorización compartida; no repetir automáticamente operaciones privadas. Pantalla SignerScreen(batch=true), ViewModel separado por key batchSigner; UI compartida con PDF. 3.1: autenticación e integridad v4 integradas, pruebas sintéticas/de interfaz superadas; nueva sesión/firma física pendiente. Aether R2: nueva apariencia/preview/páginas comprobadas con datos sintéticos; ver stamp_aether/desktop_aether. No confundir con firma física nueva ni APK79 instalada.",
       "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md",
       "files": {
         "engine": [
@@ -127,7 +131,7 @@
       "id": "suite",
       "name": "Suite privada Windows ↔ Android",
       "status": "validated_real",
-      "note": "Lotes reales PDF y CMS; emparejamiento permanente, sesión PC/móvil independiente de presencia NFC. R5: IP variable con huella/token estables; DPAPI y TLS comprobados en sintético, cambio de IP con DNI real pendiente. 3.1: autenticación e integridad v4 integradas, pruebas sintéticas/de interfaz superadas; nueva sesión/firma física pendiente.",
+      "note": "Lotes reales PDF y CMS; emparejamiento permanente, sesión PC/móvil independiente de presencia NFC. R5: IP variable con huella/token estables; DPAPI y TLS comprobados en sintético, cambio de IP con DNI real pendiente. 3.1: autenticación e integridad v4 integradas, pruebas sintéticas/de interfaz superadas; nueva sesión/firma física pendiente. Aether R2: nueva apariencia/preview/páginas comprobadas con datos sintéticos; ver stamp_aether/desktop_aether. No confundir con firma física nueva ni APK79 instalada.",
       "evidence": "docs/suite/CONTEXTO_SUITE_FIRMA.md",
       "files": {
         "application": [
@@ -439,7 +443,7 @@
       "id": "android_redesign",
       "name": "Interfaz Android 3.0 basada en Aether",
       "status": "implemented_runtime_validated",
-      "note": "2026-10-09 · Conexiones R5: APK77 / 3.0.0-alpha05-mobility instalada sin borrar datos. Suite y Bridge Wi-Fi ya no fijan identidad a la IP; TLS y token siguen obligatorios. Windows conserva la identidad DPAPI al cambiar IP. TLS directo permite editar destino; Suite tiene pantalla completa independiente y limpia conexión al finalizar lote único. 159 JVM pasan / 3 omitidas, release compilado y 3 pruebas instrumentadas de Suite/Bridge pasan en el móvil. Cambio físico de IP con DNI pendiente.",
+      "note": "2026-10-09 · Conexiones R5: APK77 / 3.0.0-alpha05-mobility instalada sin borrar datos. Suite y Bridge Wi-Fi ya no fijan identidad a la IP; TLS y token siguen obligatorios. Windows conserva la identidad DPAPI al cambiar IP. TLS directo permite editar destino; Suite tiene pantalla completa independiente y limpia conexión al finalizar lote único. 159 JVM pasan / 3 omitidas, release compilado y 3 pruebas instrumentadas de Suite/Bridge pasan en el móvil. Cambio físico de IP con DNI pendiente. Aether R2: nueva apariencia/preview/páginas comprobadas con datos sintéticos; ver stamp_aether/desktop_aether. No confundir con firma física nueva ni APK79 instalada.",
       "evidence": "docs/architecture/CONEXIONES_DIRECCION_E_IDENTIDAD_R5.md",
       "files": {
         "frontend": [
@@ -623,6 +627,76 @@
       "depends_on": [
         "suite"
       ]
+    },
+    {
+      "id": "stamp_aether",
+      "name": "Apariencia vectorial Aether y selección de páginas PDF",
+      "status": "implemented_synthetic_validated",
+      "note": "Cinco estilos, cuatro colores, insignias, campos, word-wrap y geometría puros; adaptadores Android/Desktop. Un widget por firma, réplicas Stamp cubiertas por CMS; DocMDP P=2 rechaza réplicas antes del firmante. 17 core/17 PDF desktop/26 PDF Android pasan. Android79 no instalada; prueba física pendiente.",
+      "evidence": "docs/design/RESULTADO_AETHER_R2.md",
+      "files": {
+        "model": [
+          "dnie-signing-core/src/main/java/pe/gob/reniec/dnie/pdf/SignatureAppearance.kt"
+        ],
+        "engine": [
+          "dnie-signing-core/src/main/java/pe/gob/reniec/dnie/pdf/StampLayoutEngine.kt",
+          "dnie-signing-core/src/main/java/pe/gob/reniec/dnie/pdf/StampPlacementGeometry.kt"
+        ],
+        "adapter": [
+          "dnie-pdf-desktop/src/main/java/pe/gob/reniec/dnie/pdf/desktop/DesktopStampRenderer.kt",
+          "dnie-pdf/src/main/java/pe/gob/reniec/dnie/pdf/AndroidStampAppearance.kt",
+          "dnie-pdf/src/main/java/pe/gob/reniec/dnie/pdf/ModernStampRenderer.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/data/signing/AndroidStampPreview.kt"
+        ],
+        "frontend": [
+          "app/src/main/java/pe/gob/reniec/dnie/ui/signer/StampPreviewCard.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/signer/PdfPlacementEditor.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/signer/SignerScreen.kt"
+        ],
+        "asset": [
+          "dnie-pdf-desktop/src/main/resources/fonts/",
+          "dnie-signing-core/src/main/resources/licenses/qr/"
+        ],
+        "test": [
+          "dnie-signing-core/src/test/java/pe/gob/reniec/dnie/pdf/StampLayoutEngineTest.kt",
+          "dnie-pdf-desktop/src/test/java/pe/gob/reniec/dnie/pdf/desktop/AetherStampTest.kt",
+          "dnie-pdf/src/test/java/pe/gob/reniec/dnie/pdf/AetherAndroidAppearanceTest.kt",
+          "app/src/androidTest/java/pe/gob/reniec/dnie/ui/AetherStampPresentationTest.kt"
+        ]
+      },
+      "depends_on": []
+    },
+    {
+      "id": "desktop_aether",
+      "name": "Presentación Aether Suite y Manager Windows",
+      "status": "installed_ui_synthetic_validated",
+      "note": "Suite tarjetas/DnD/preview real/presets/snap/inspector/modal red; Manager tres estados independientes y transporte dinámico. 13 UI/24 nativas pasan. Accesos actualizados, identidad y binarios de servicio conservados. No acredita firma física nueva ni recuperación del driver.",
+      "evidence": "docs/design/RESULTADO_AETHER_R2.md",
+      "files": {
+        "frontend": [
+          "dnie-signing-ui/src/main/java/pe/gob/reniec/dnie/desktop/ui/AetherSwingTheme.kt",
+          "dnie-signing-ui/src/main/java/pe/gob/reniec/dnie/desktop/ui/AetherComponents.kt",
+          "dnie-signing-ui/src/main/java/pe/gob/reniec/dnie/desktop/ui/SuiteWindow.kt",
+          "dnie-signing-ui/src/main/java/pe/gob/reniec/dnie/desktop/ui/PreviewCanvas.kt",
+          "tools/windows-manager/AetherControls.cs",
+          "tools/windows-manager/MainForm.Layout.cs",
+          "tools/windows-manager/MainForm.cs",
+          "tools/windows-manager/PairingForm.cs"
+        ],
+        "application": [
+          "dnie-signing-ui/src/main/java/pe/gob/reniec/dnie/desktop/ui/SuiteController.kt"
+        ],
+        "test": [
+          "dnie-signing-ui/src/test/java/pe/gob/reniec/dnie/desktop/ui/AetherSuitePresentationTest.kt",
+          "tools/windows-manager/layout-tests/"
+        ]
+      },
+      "depends_on": [
+        "stamp_aether",
+        "suite",
+        "windows_host",
+        "orchestration"
+      ]
     }
   ],
   "pending": [
@@ -657,9 +731,9 @@
     {
       "id": "redesign_v3",
       "feature": "orchestration",
-      "state": "deferred",
-      "description": "Rediseño e integración visual completa en 3.0; motores desacoplados.",
-      "evidence": "docs/PENDIENTES_ACTUALES.md"
+      "state": "closed",
+      "description": "Presentación Android Aether previa y entrega actual Suite/Manager/sellos completadas según especificación aprobada. Nuevas pruebas físicas, distribución y driver continúan en pendientes independientes.",
+      "evidence": "docs/design/RESULTADO_AETHER_R2.md"
     },
     {
       "id": "distribution",
@@ -800,6 +874,13 @@
       "state": "open",
       "description": "GUI usa QR nativo R1. El helper de QR de consola aún depende de PowerShell, QRCoder instalado por Bridge y PNG CreateNew; modernizarlo por separado si se requiere QR en CLI. Lectura QR real desde Android tras R1 pendiente.",
       "evidence": "docs/suite/QR_NATIVO_SUITE_R1.md"
+    },
+    {
+      "id": "aether_android_runtime_review",
+      "feature": "stamp_aether",
+      "state": "open",
+      "description": "Instalar APK79 sin borrar datos, ejecutar AetherStampPresentationTest (2 casos), comprobar estilos/QR/solo rúbrica/páginas y PDF/lote con DNI real y TSA. No ADB ni emulador disponible; solo compilación/unitarios/visual PDF sintético completados. Windows UI instalada, nueva firma Suite/puente física pendiente.",
+      "evidence": "docs/design/RESULTADO_AETHER_R2.md"
     }
   ],
   "facts": [
@@ -812,8 +893,8 @@
     {
       "id": "desktop_current",
       "category": "artifact",
-      "value": "D:/DNIeToolchain/Builds/suite-input-r2/signing-ui/install/dnie-signing-ui/DNIe Suite.lnk",
-      "evidence": "docs/suite/SELECCION_RECIENTES_Y_PIN_R2.md"
+      "value": "D:/DNIeToolchain/Builds/aether-redesign/signing-ui/install/dnie-signing-ui; acceso DNIe Suite del escritorio actualizado. Manager instalado en D:/DNIeBridgeApp/versions/29f121205ffe412a8e165bf404d49667/DNIeBridge.exe; binarios de servicio idénticos e identidad conservada.",
+      "evidence": "docs/design/RESULTADO_AETHER_R2.md"
     },
     {
       "id": "h15_tests",
@@ -934,6 +1015,18 @@
       "category": "installed_ui_and_pdf_validated",
       "value": "2026-10-13 · Suite entradas R2: alias virtual de Recientes era una ruta inexistente y causaba tanto la falta de vista previa como rechazo local al firmar. Selector resuelve shell shortcuts a archivos reales, preflight anterior a PIN, conexión conservada ante rechazo previo a BEGIN y diálogo PIN explícito. 50 tests pasan; PDF real seleccionado y GUI muestran página 1/11 a 918×1188. Acceso directo actualizado; firma DNI física pendiente.",
       "evidence": "docs/suite/SELECCION_RECIENTES_Y_PIN_R2.md"
+    },
+    {
+      "id": "aether_redesign_r2",
+      "category": "installed_desktop_android_candidate",
+      "value": "2026-10-14 · Aether R2 / 3.1.0: Suite y Manager Windows rediseñados e instalados; sellos vectoriales/preview/colores/páginas compartidos con Android. Una firma, un widget y réplicas gráficas cubiertas por CMS; DocMDP P=2 se rechaza antes de firmar réplicas. 191 pruebas pasan, una omitida preexistente y 24 comprobaciones Manager pasan. APK79 debug/release compilada; Android78 sigue instalada, dos pruebas instrumentadas nuevas sin ejecutar por falta de ADB. Identidad y runtime del servicio conservados, driver intacto.",
+      "evidence": "docs/design/RESULTADO_AETHER_R2.md"
+    },
+    {
+      "id": "android_candidate_aether79",
+      "category": "compiled_not_installed",
+      "value": "APK79 / 3.1.0 debug/release compilada; D:/DNIeToolchain/AndroidPackages/dnie-evolution-3.1.0-v79-aether-debug.apk. Firma debug coincide con APK78. 2 pruebas instrumentadas compiladas, no ejecutadas. Android78 sigue siendo última instalación verificada.",
+      "evidence": "docs/design/RESULTADO_AETHER_R2.md"
     }
   ]
 }

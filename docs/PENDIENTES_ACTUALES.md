@@ -1,5 +1,7 @@
 # Pendientes actuales · Windows rc4 USB / Android rc4-usb
 
+2026-10-14 · Aether implementado y Windows actualizado. Pendiente instalar APK79, ejecutar dos pruebas instrumentadas y verificar PDF/lote con DNI físico. No hay ADB conectado ni emulador instalado. Android78 es la última instalación comprobada. Suspensión del driver sigue aplazada. [Resultados, artefactos y criterios](design/RESULTADO_AETHER_R2.md).
+
 2026-10-13 · Suspensión del lector aplazada por decisión del usuario. Informe externo no demuestra causalidad: purga cancela esperas, pero cola principal PowerManaged retiene solicitudes hasta D0. Pendiente reproducción trazada y comparación de conservación de esperas; driver2.0.0.4 intacto durante rediseño Aether. [Detalle](architecture/CONTROLADOR_COMPLETADOS_Y_PROTOCOLO_R2.md).
 
 2026-10-13 · Controlador R2 2.0.0.4/oem239 y backend Windows instalados sin reinicio. Errores locales de transmisión ya no retiran la tarjeta; protocolo tras apagado y cancelación antes de entrega corregidos. Pulsos 2 s/operaciones 25 s frente a plazo del driver 30 s. 7860 comprobaciones C++, 137 backend, 31 PCSC nativas y 13 TLSrelay pasan. PnP0 y ReaderPublished=true al finalizar, sin tarjeta. Firma DNI y suspensión físicas pendientes; Android78 no cambia. [Detalle](architecture/CONTROLADOR_COMPLETADOS_Y_PROTOCOLO_R2.md).

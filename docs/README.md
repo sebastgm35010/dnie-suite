@@ -4,6 +4,8 @@ Los registros de entregas anteriores permanecen en su ubicación original para c
 
 ## Entrada al proyecto
 
+- [Entrega Aether 3.1](design/RESULTADO_AETHER_R2.md), [especificación](design/ESPECIFICACION_AETHER_Y_SELLOS_PDF.md) y [resultados verificables](operations/AETHER_R2_RESULTADOS.json).
+
 - [README del monorepo](../README.md) y [GitHub/compilación](operations/GITHUB_Y_COMPILACION_MONOREPO.md): Android, Suite, Bridge y driver en un único repositorio privado, con productos independientes.
 
 - [Retomar después del reinicio rc4](operations/RETOMAR_TRAS_REINICIO_RC4.md): estado instalado, persistencia, pruebas y siguiente secuencia.

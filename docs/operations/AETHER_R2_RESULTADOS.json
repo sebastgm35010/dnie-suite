@@ -1,0 +1,171 @@
+{
+  "review_date": "2026-10-14",
+  "timezone": "America/Bogota",
+  "version": "3.1.0",
+  "code_commit": "81af17a",
+  "baseline": "checkpoint/pre-aether-redesign-20261013",
+  "checkpoint": "checkpoint/aether-redesign-complete-r2",
+  "scope": [
+    "shared_vector_stamp_layout",
+    "desktop_pdf_renderer",
+    "android_pdf_renderer",
+    "suite_swing_redesign",
+    "android_signer_preview_and_controls",
+    "windows_manager_redesign"
+  ],
+  "tests": {
+    "modules": {
+      "dnie-signing-core": {
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "dnie-pdf-desktop": {
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "dnie-pdf": {
+        "tests": 26,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "dnie-signing-desktop": {
+        "tests": 29,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "dnie-signing-ui": {
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "dnie-desktop-orchestration": {
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "app": {
+        "tests": 81,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1
+      }
+    },
+    "totals": {
+      "tests": 192,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1
+    },
+    "skipped_cases": [
+      "pe.gob.reniec.dnie.data.migrations.RetiredCredentialDataTest.directoryLinkCannotDeleteVaultContents"
+    ],
+    "instrumented_android_tests": {
+      "compiled": 2,
+      "executed": 0,
+      "reason": "No ADB device; no emulator installed"
+    }
+  },
+  "native_ui_checks": {
+    "passed": true,
+    "checks": 24,
+    "service_calls": 0,
+    "card_operations": 0,
+    "debug_form_excluded": true,
+    "release_layout_test_command_rejected": true
+  },
+  "architecture_check": "passed",
+  "android_production": {
+    "passed": true,
+    "release_debug_classes": 0,
+    "diagnostics_entry_points": 0,
+    "debuggable": false,
+    "qr_mit_notice_packaged": true,
+    "debug_signer_matches_previous": true,
+    "version_code": 79,
+    "version_name": "3.1.0",
+    "debug_sha256": "56304dc5a52a552a81b64154f7232e6d5998ecbe533a28378e3c3f7cfa8c3f27",
+    "release_sha256": "3bfb9324cbadc8f050f00c84b391eb6d6178e25bc34ba3bf362c4ec2f3e15023"
+  },
+  "desktop_resources": {
+    "passed": true,
+    "fonts_packaged": [
+      "fonts/LiberationSans-Regular.ttf",
+      "fonts/LiberationSans-Bold.ttf",
+      "fonts/LICENSE"
+    ],
+    "suite_distribution": "D:/DNIeToolchain/Builds/aether-redesign/signing-ui/install/dnie-signing-ui"
+  },
+  "invariants": {
+    "baseline": "checkpoint/pre-aether-redesign-20261013",
+    "protected_files_changed": [],
+    "local_hashes_verified": 136,
+    "local_hash_mismatches": [],
+    "pdf_crypto_callbacks_unchanged": {
+      "dnie-pdf-desktop/src/main/java/pe/gob/reniec/dnie/pdf/desktop/JvmPdfSigner.kt": true,
+      "dnie-pdf/src/main/java/pe/gob/reniec/dnie/pdf/PadesSignerEngine.kt": true
+    }
+  },
+  "native_runtime": {
+    "baseline_directory": "D:\\DNIeBridgeApp\\versions\\0280814ff01945b5aad7246415c49226",
+    "preserved_files": [
+      "DNIeBridge.Agent.deps.json",
+      "DNIeBridge.Agent.dll",
+      "DNIeBridge.Agent.exe",
+      "DNIeBridge.Agent.runtimeconfig.json",
+      "LICENSE-QRCoder.txt",
+      "QRCoder.dll",
+      "selector/pcsc-bridge-selector.js",
+      "selector/selector_engine.py",
+      "selector/selector_service.py",
+      "WindowsBridge.deps.json",
+      "WindowsBridge.dll",
+      "WindowsBridge.runtimeconfig.json",
+      "WindowsControl.dll"
+    ],
+    "backend_binaries_identical": true
+  },
+  "manager_deployment": {
+    "ok": true,
+    "manager": "D:\\DNIeBridgeApp\\versions\\29f121205ffe412a8e165bf404d49667\\DNIeBridge.exe",
+    "privateIdentityPreserved": true,
+    "backendBinariesIdentical": true,
+    "service": "Running",
+    "publicStatus": "DNIE1\tAVAILABLE\tSTOPPED\t0",
+    "driverInstallationCommands": 0
+  },
+  "suite_deployment": {
+    "ok": true,
+    "shortcut": "C:\\Users\\LENOVO\\OneDrive - Universidad de San Martin de Porres\\Escritorio\\DNIe Suite.lnk",
+    "distribution": "D:\\DNIeToolchain\\Builds\\aether-redesign\\signing-ui\\install\\dnie-signing-ui"
+  },
+  "android_installation": {
+    "candidate": 79,
+    "installed_last_verified": 78,
+    "candidate_installed": false,
+    "reason": "No connected ADB device",
+    "apk": "D:/DNIeToolchain/AndroidPackages/dnie-evolution-3.1.0-v79-aether-debug.apk"
+  },
+  "pdf_structure": {
+    "signature_fields_per_operation": 1,
+    "signature_widgets_per_field": 1,
+    "additional_pages": "Stamp graphical replicas covered by the same CMS ByteRange",
+    "docmdp_p2_replicas": "rejected before card signer",
+    "old_candidate": "b48b745 superseded before deployment"
+  },
+  "evidence_root": "G:/Mi unidad/BOT TRADER/DNI_CODEX/revision-aether-20261014",
+  "evidence_type": "synthetic PDF signatures and offscreen component renderings; no new physical DNI or TSA test",
+  "pending": [
+    "Android79 installation and two instrumented tests",
+    "physical PDF/remote batch/bridge regression",
+    "driver suspend investigation deferred by user"
+  ],
+  "personal_logs_or_keys_in_git": false
+}
