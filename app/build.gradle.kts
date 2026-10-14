@@ -4,6 +4,15 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+// Existing developer installations retain their original signing identity.
+// A fresh clone can build debug without receiving that private keystore.
+val signingStoreOverride = providers.environmentVariable("DNIE_SIGNING_KEYSTORE").orNull
+val evolutionStore = rootProject.file(signingStoreOverride ?: "signing/evolution-development.jks")
+val hasEvolutionSigning = evolutionStore.isFile
+require(signingStoreOverride == null || hasEvolutionSigning) {
+    "DNIE_SIGNING_KEYSTORE does not point to an existing keystore"
+}
+
 android {
     namespace = "pe.gob.reniec.dnie"
     compileSdk = 34
@@ -23,11 +32,11 @@ android {
 
     // Separate development identity for this checkout; keep this keystore for future updates.
     signingConfigs {
-        create("evolution") {
-            storeFile = rootProject.file("signing/evolution-development.jks")
-            storePassword = "android"
-            keyAlias = "evolution"
-            keyPassword = "android"
+        if (hasEvolutionSigning) create("evolution") {
+            storeFile = evolutionStore
+            storePassword = providers.environmentVariable("DNIE_SIGNING_STORE_PASSWORD").orElse("android").get()
+            keyAlias = providers.environmentVariable("DNIE_SIGNING_KEY_ALIAS").orElse("evolution").get()
+            keyPassword = providers.environmentVariable("DNIE_SIGNING_KEY_PASSWORD").orElse("android").get()
         }
     }
 
@@ -39,12 +48,12 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("evolution")
+            if (hasEvolutionSigning) signingConfig = signingConfigs.getByName("evolution")
         }
         debug {
             applicationIdSuffix = ".debug"
             isDebuggable = true
-            signingConfig = signingConfigs.getByName("evolution")
+            if (hasEvolutionSigning) signingConfig = signingConfigs.getByName("evolution")
         }
     }
 

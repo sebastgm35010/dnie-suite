@@ -1,0 +1,43 @@
+{
+  "review_date": "2026-10-13",
+  "github": {
+    "repository": "sebastgm35010/dnie-suite",
+    "is_private_observed": true
+  },
+  "build": {
+    "component": "all",
+    "configuration": "Debug",
+    "exit_code": 0,
+    "gradle_tasks_executed": 128,
+    "driver_built_or_installed": false,
+    "products": [
+      {
+        "path": "D:\\DNIeToolchain\\GitHubPreparation\\monorepo-build\\modules\\app\\outputs\\apk\\debug\\app-debug.apk",
+        "bytes": 28946012,
+        "sha256": "99783323a96c6ad2758f705c53a9a6a510e65e15bc1fe1b38b45038a4a6aa73b"
+      },
+      {
+        "path": "D:\\DNIeToolchain\\GitHubPreparation\\monorepo-build\\bridge.zip",
+        "bytes": 350497,
+        "sha256": "6d15b77a1654c5928f6fd8a9676fcb02345c7a8df2c7dceba641a5c4fdbf8c36"
+      },
+      {
+        "path": "D:\\DNIeToolchain\\GitHubPreparation\\monorepo-build\\signing-desktop\\install\\dnie-signing-desktop\\lib\\dnie-signing-desktop-3.1.0.jar",
+        "bytes": 116018,
+        "sha256": "5125715eaae3c56c1b95f78bcbe8c09721d961c248237fded90e89cc290befef"
+      },
+      {
+        "path": "D:\\DNIeToolchain\\GitHubPreparation\\monorepo-build\\signing-ui\\install\\dnie-signing-ui\\lib\\dnie-signing-ui-3.1.0.jar",
+        "bytes": 44233,
+        "sha256": "e47bcc3c816d5d9e6a1a4c3b33fb599f5438f93705e8b12f78951e0c569bd7f1"
+      }
+    ]
+  },
+  "signing_configuration": {
+    "existing_debug_and_release_validation": "passed",
+    "isolated_without_private_key_debug_validation": "passed",
+    "isolated_without_private_key_release": "dry_run_configuration_passed_only"
+  },
+  "history_scan": "GITHUB_PREFLIGHT_HISTORIAL.json",
+  "runtime_installation_modified": false
+}

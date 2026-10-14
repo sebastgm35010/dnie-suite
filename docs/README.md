@@ -4,6 +4,8 @@ Los registros de entregas anteriores permanecen en su ubicación original para c
 
 ## Entrada al proyecto
 
+- [README del monorepo](../README.md) y [GitHub/compilación](operations/GITHUB_Y_COMPILACION_MONOREPO.md): Android, Suite, Bridge y driver en un único repositorio privado, con productos independientes.
+
 - [Retomar después del reinicio rc4](operations/RETOMAR_TRAS_REINICIO_RC4.md): estado instalado, persistencia, pruebas y siguiente secuencia.
 - [Arquitectura actual 2.0](architecture/ARQUITECTURA_ACTUAL_2_0.md): módulos Android, gestor/servicio Windows y límites de confianza.
 - [Pendientes vigentes](PENDIENTES_ACTUALES.md): prioridad, evidencia pendiente y criterios de cierre. Los listados 1.7.x siguientes son históricos.
@@ -26,7 +28,7 @@ Los registros de entregas anteriores permanecen en su ubicación original para c
 - [Identidad ICAO](../IMPLEMENTACION_ICAO.md).
 - [Firma PDF y lotes](../IMPLEMENTACION_FIRMA_MODERNA.md).
 - [Motor inicial de bóveda](../IMPLEMENTACION_BOVEDA_INICIAL.md), [herramientas](../IMPLEMENTACION_BOVEDA_HERRAMIENTAS.md), [vista previa y CAN](../AJUSTE_VISTA_PREVIA_Y_CAN.md).
-- [Proveedor passkeys](../IMPLEMENTACION_PASSKEYS.md), [autorización de una utilización](../PASSKEYS_AUTORIZACION_UNICA.md), [respaldo/migración/biometría](../CHECKPOINT_Y_PASSKEYS_1_7.md).
+- Passkeys retiradas por decisión del usuario: [retiro vigente](architecture/RETIRO_PASSKEYS_R3.md). Documentos históricos: [proveedor](../IMPLEMENTACION_PASSKEYS.md), [autorización](../PASSKEYS_AUTORIZACION_UNICA.md), [respaldo/migración](../CHECKPOINT_Y_PASSKEYS_1_7.md).
 - [Diagnóstico persistente](../DIAGNOSTICO_PERSISTENTE_APP.md), [QR y simulaciones](../DIAGNOSTICO_QR_Y_SIMULACION_DNI_1_7_1.md).
 
 ## Investigación siguiente

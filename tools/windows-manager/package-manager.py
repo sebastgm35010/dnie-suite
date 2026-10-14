@@ -10,13 +10,18 @@ root = pathlib.Path(__file__).resolve().parents[2]
 parser = argparse.ArgumentParser()
 parser.add_argument('--configuration', choices=['Debug', 'Release'], default='Release')
 parser.add_argument('--output', type=pathlib.Path, required=True)
+parser.add_argument('--artifacts', type=pathlib.Path, default=pathlib.Path('D:/DNIeToolchain/BuildArtifacts/native-desktop'))
+parser.add_argument('--packages', type=pathlib.Path, help='Optional NuGet cache; overrides the machine-specific config path')
 args = parser.parse_args()
-artifacts = pathlib.Path('D:/DNIeToolchain/BuildArtifacts/native-desktop')
+artifacts = args.artifacts.resolve()
 config = args.configuration
 for project in ['windows-agent/WindowsAgent.csproj', 'windows-manager/WindowsManager.csproj']:
-    subprocess.run(['dotnet', 'build', str(root/'tools'/project), '-c', config,
+    command = ['dotnet', 'build', str(root/'tools'/project), '-c', config,
                     '--configfile', str(root/'tools/windows-pairing/NuGet.Config'),
-                    '-p:ArtifactsPath='+str(artifacts), '--verbosity', 'quiet'], check=True, cwd=root)
+                    '-p:ArtifactsPath='+str(artifacts), '--verbosity', 'quiet']
+    if args.packages:
+        command.append('-p:RestorePackagesPath='+str(args.packages.resolve()))
+    subprocess.run(command, check=True, cwd=root)
 destination = args.output.resolve()
 if destination.exists():
     raise SystemExit('Use a new output directory; existing packages are preserved.')

@@ -1,0 +1,11 @@
+{
+  "history_text_blobs_checked": 1707,
+  "patterns_checked": [
+    "github_token",
+    "telegram_token",
+    "private_key",
+    "aws_key"
+  ],
+  "findings": [],
+  "scope": "Pattern scan, not a comprehensive secret audit. Values are never included in output."
+}

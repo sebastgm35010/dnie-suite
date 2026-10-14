@@ -34,6 +34,8 @@ La validación externa inicial y sus sondas están en `G:/Mi unidad/BOT TRADER/D
 
 No se realizó una nueva firma física con DNI ni una prueba USB/NFC durante este despliegue. Esos escenarios siguen pendientes, diferenciados de las firmas reales acreditadas anteriormente.
 
+Confirmación manual posterior del usuario: una firma nueva generada desde Android 3.1 se validó como **PAdES Baseline T**. El aviso `NO_SIGNING_CERTIFICATE_FOUND` correspondía a una firma anterior del documento, no a la nueva. Se registra el reporte del usuario; no se recibió el PDF para repetir su inspección local. Esta confirmación no acredita una nueva regresión física de Suite, puente ni USB.
+
 ## Artefactos y operación vigente
 
 ```text

@@ -33,7 +33,10 @@
     "docs/architecture/CONEXIONES_INDEPENDIENTES_R4.md": "previous_connection_architecture",
     "docs/architecture/CONTROLADOR_ENERGIA_Y_PUBLICACION_R1.md": "current_driver_power_architecture",
     "docs/architecture/CONEXIONES_DIRECCION_E_IDENTIDAD_R5.md": "current_connection_architecture",
-    "docs/architecture/SEGURIDAD_BACKEND_3_1_V4.md": "current_backend_hardening_3_1"
+    "docs/architecture/SEGURIDAD_BACKEND_3_1_V4.md": "current_backend_hardening_3_1",
+    "README.md": "repository_entrypoint",
+    "docs/operations/GITHUB_Y_COMPILACION_MONOREPO.md": "current_repository_workflow",
+    "docs/operations/PUBLICACION_GITHUB_20261013.md": "repository_publication_evidence"
   },
   "features": [
     {
@@ -74,8 +77,8 @@
       "id": "pdf_android",
       "name": "Firma PDF Android",
       "status": "validated_real",
-      "note": "Visible/invisible, PAdES B y TSA opcional T; usar APK64 para issuerSerial.",
-      "evidence": "docs/suite/REFIRMA_ISSUER_SERIAL_H15.md",
+      "note": "Visible/invisible, PAdES B y TSA opcional T; issuerSerial compartido corregido. Usuario confirma firma nueva Android 3.1 como PAdES Baseline T; sin PDF recibido para repetir inspección local.",
+      "evidence": "docs/architecture/SEGURIDAD_BACKEND_3_1_V4.md",
       "files": {
         "engine": [
           "dnie-pdf/src/main/"
@@ -494,7 +497,7 @@
       "id": "backend_hardening",
       "name": "Seguridad backend 3.1 / v4",
       "status": "implemented_runtime_validated",
-      "note": "2026-10-13 · Versión 3.1.0 / APK78 instalada: integración v4 de autenticación resistente, plazos por candidato, integridad SHA-256 de originales/resultados, migración de identidad Windows protegida y DPAPI acotado. Servicio/gestor Windows y Suite actualizados; identidad conservada según metadatos. 177 JVM, 134 comprobaciones Windows y 3 pruebas Android pasan; debug/release compilados y producción comprobada. Firma y USB/NFC físicos nuevos pendientes.",
+      "note": "2026-10-13 · Versión 3.1.0 / APK78 instalada: integración v4 de autenticación resistente, plazos por candidato, integridad SHA-256 de originales/resultados, migración de identidad Windows protegida y DPAPI acotado. Servicio/gestor Windows y Suite actualizados; identidad conservada según metadatos. 177 JVM, 134 comprobaciones Windows y 3 pruebas Android pasan; debug/release compilados y producción comprobada. Firma PDF Android nueva confirmada por el usuario como PAdES Baseline T; regresión física Suite/puente/USB pendiente.",
       "evidence": "docs/architecture/SEGURIDAD_BACKEND_3_1_V4.md",
       "files": {
         "engine": [
@@ -516,6 +519,28 @@
       "depends_on": [
         "cms"
       ]
+    },
+    {
+      "id": "repository_workflow",
+      "name": "Monorepo privado y compilación por componentes",
+      "status": "configured",
+      "note": "GitHub privado dnie-suite con autenticación por navegador; fuentes y documentación unificadas, productos modulares y claves privadas fuera de Git. El instalador Windows aún usa D:/DNIeBridgeApp.",
+      "evidence": "docs/operations/GITHUB_Y_COMPILACION_MONOREPO.md",
+      "files": {
+        "tooling": [
+          "tools/build_suite.py",
+          "tools/windows-manager/package-manager.py",
+          "app/build.gradle.kts",
+          "gradle.properties",
+          ".gitignore"
+        ],
+        "documentation": [
+          "README.md",
+          "docs/operations/GITHUB_Y_COMPILACION_MONOREPO.md",
+          "docs/operations/PUBLICACION_GITHUB_20261013.md"
+        ]
+      },
+      "depends_on": []
     }
   ],
   "pending": [
@@ -692,7 +717,7 @@
     {
       "id": "android_current",
       "category": "installed_ui_validated",
-      "value": "2026-10-13 · Versión 3.1.0 / APK78 instalada: integración v4 de autenticación resistente, plazos por candidato, integridad SHA-256 de originales/resultados, migración de identidad Windows protegida y DPAPI acotado. Servicio/gestor Windows y Suite actualizados; identidad conservada según metadatos. 177 JVM, 134 comprobaciones Windows y 3 pruebas Android pasan; debug/release compilados y producción comprobada. Firma y USB/NFC físicos nuevos pendientes.",
+      "value": "2026-10-13 · Versión 3.1.0 / APK78 instalada: integración v4 de autenticación resistente, plazos por candidato, integridad SHA-256 de originales/resultados, migración de identidad Windows protegida y DPAPI acotado. Servicio/gestor Windows y Suite actualizados; identidad conservada según metadatos. 177 JVM, 134 comprobaciones Windows y 3 pruebas Android pasan; debug/release compilados y producción comprobada. Firma PDF Android nueva confirmada por el usuario como PAdES Baseline T; regresión física Suite/puente/USB pendiente.",
       "evidence": "docs/architecture/SEGURIDAD_BACKEND_3_1_V4.md"
     },
     {
@@ -794,8 +819,14 @@
     {
       "id": "backend_3_1_installed",
       "category": "installed_synthetic_and_ui_validated",
-      "value": "2026-10-13 · Versión 3.1.0 / APK78 instalada: integración v4 de autenticación resistente, plazos por candidato, integridad SHA-256 de originales/resultados, migración de identidad Windows protegida y DPAPI acotado. Servicio/gestor Windows y Suite actualizados; identidad conservada según metadatos. 177 JVM, 134 comprobaciones Windows y 3 pruebas Android pasan; debug/release compilados y producción comprobada. Firma y USB/NFC físicos nuevos pendientes.",
+      "value": "2026-10-13 · Versión 3.1.0 / APK78 instalada: integración v4 de autenticación resistente, plazos por candidato, integridad SHA-256 de originales/resultados, migración de identidad Windows protegida y DPAPI acotado. Servicio/gestor Windows y Suite actualizados; identidad conservada según metadatos. 177 JVM, 134 comprobaciones Windows y 3 pruebas Android pasan; debug/release compilados y producción comprobada. Firma PDF Android nueva confirmada por el usuario como PAdES Baseline T; regresión física Suite/puente/USB pendiente.",
       "evidence": "docs/architecture/SEGURIDAD_BACKEND_3_1_V4.md"
+    },
+    {
+      "id": "github_private_repo",
+      "category": "repository_workflow",
+      "value": "https://github.com/sebastgm35010/dnie-suite · privado · main · OAuth navegador · historial y checkpoints conservados; sin claves, artefactos ni registros personales de ejecución.",
+      "evidence": "docs/operations/GITHUB_Y_COMPILACION_MONOREPO.md"
     }
   ]
 }

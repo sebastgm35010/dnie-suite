@@ -20,5 +20,14 @@ local.properties
 *.pfx
 *.p12
 *.keystore
+*.jks
 *.etl
 *.jsonl
+.env
+.env.*
+!.env.example
+**/bin/
+**/obj/
+/dist/
+/out/
+/docs/project-registry/registry-*.sqlite3

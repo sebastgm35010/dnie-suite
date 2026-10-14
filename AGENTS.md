@@ -1,5 +1,7 @@
 # Fork de evolución
 
+Repositorio privado unificado: `sebastgm35010/dnie-suite`, rama principal `main`. Leer `README.md` y `docs/operations/GITHUB_Y_COMPILACION_MONOREPO.md` para compilar un clon. Mantener motores, plataformas e interfaces separados dentro del monorepo; claves privadas, datos de ejecución y compilaciones quedan fuera de Git.
+
 Esta carpeta es el fork autorizado para nuevas funcionalidades y refactorización.
 La base 1.0.8 permanece clausurada en `G:\Mi unidad\BOT TRADER\DNI_CODEX\modest-bose`: no modificarla.
 No modificar la copia de Antigravity.
