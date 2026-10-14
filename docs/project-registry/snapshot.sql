@@ -2156,7 +2156,7 @@ INSERT INTO "files" VALUES('docs/architecture/CICLO_ARCHIVO_Y_PLAN_PRUEBAS_RECUP
 INSERT INTO "files" VALUES('docs/architecture/CONEXIONES_DIRECCION_E_IDENTIDAD_R5.md',NULL,'.md','documentation','97852a9652d854781d24fafdde44ef7ed39ada08f5c6ea9186783c86d24b76c4',5024);
 INSERT INTO "files" VALUES('docs/architecture/CONEXIONES_INDEPENDIENTES_R4.md',NULL,'.md','documentation','bbc6e7b13b9fec2f3d12b41a9acd40206bbd7956e24e38eeb9184b9a0126c3ca',4850);
 INSERT INTO "files" VALUES('docs/architecture/CONSOLIDACION_2_0_RC1.md',NULL,'.md','documentation','31c37d926705bb4d7a6091fe6b095699bd99dd246173cbd36d331b795de4997d',5194);
-INSERT INTO "files" VALUES('docs/architecture/CONTROLADOR_COMPLETADOS_Y_PROTOCOLO_R2.md',NULL,'.md','documentation','b7259713a2e63e8ce93992c400b0f78f6e3296703282942850d2e5c043969965',6409);
+INSERT INTO "files" VALUES('docs/architecture/CONTROLADOR_COMPLETADOS_Y_PROTOCOLO_R2.md',NULL,'.md','documentation','12595ab4af7803b1090814dfc83e60d2eb187eb287e4a53bee2986cf40eadeb7',6619);
 INSERT INTO "files" VALUES('docs/architecture/CONTROLADOR_ENERGIA_Y_PUBLICACION_R1.md',NULL,'.md','documentation','62397ddd15d9bbe310246c81e7a2fce1f39db1948ff744c5e2cf82c9a353676a',5352);
 INSERT INTO "files" VALUES('docs/architecture/CONTROL_SIN_MINIDRIVER_PROVISIONAL.md',NULL,'.md','documentation','9b699fe646d3632c6c2b6a60a888f6ac6b109337e950f865c5fe4d16051e3c1c',1848);
 INSERT INTO "files" VALUES('docs/architecture/CORRECCION_USB_AOA_RC4.md',NULL,'.md','documentation','91fc6d6f0d8db092b59964e8ab28873ee2a5783d9680ef827189c407eff2206f',4060);
@@ -2245,7 +2245,7 @@ INSERT INTO "files" VALUES('docs/architecture/TRANSPORTES_Y_DEBUG_2_0_RC2.md',NU
 INSERT INTO "files" VALUES('docs/architecture/VIABILIDAD_DISTRIBUCION_SIN_CONTROLADOR.md',NULL,'.md','documentation','276899b3e0c33839ed651d448d81d2ca418d1e9d34336ac8b7e232d38ae5565d',8285);
 INSERT INTO "files" VALUES('docs/archive/CONTEXTO_HASTA_WINDOWS_NATIVE_RC4.md',NULL,'.md','documentation','5026ce9902aa1bbcc39b7a8e3089c320c29ab7daa3bd15cf0153d8b82d42477d',9360);
 INSERT INTO "files" VALUES('docs/archive/CONTEXTO_HISTORICO_HASTA_1_8_14.md',NULL,'.md','documentation','1f9c2411ebeeec0e3bd9a811482859942ce00a2b61b2f9573b86837f87c9dbab',26839);
-INSERT INTO "files" VALUES('docs/operations/CONTROLADOR_R2_RESULTADOS.json',NULL,'.json','configuration','9ec9bd90d8facc8382af7550496b0738eec0eada20135a8e52dc6d8280755ad0',4457);
+INSERT INTO "files" VALUES('docs/operations/CONTROLADOR_R2_RESULTADOS.json',NULL,'.json','configuration','bdded0172974719811be5696cc7754d72b964050d763063b9cbc3e2380f38d4c',4869);
 INSERT INTO "files" VALUES('docs/operations/ENTREGA_3_1_RESULTADOS.json',NULL,'.json','configuration','72e7dc00dc1076233b06ca45c8ab301549cb9579a3d46528af5ad688f886fa99',7975);
 INSERT INTO "files" VALUES('docs/operations/GITHUB_PREFLIGHT_HISTORIAL.json',NULL,'.json','configuration','d5e6695711d8273f7d80acf29b3d2fc2eda733d626121bb7f4f160b079080777',271);
 INSERT INTO "files" VALUES('docs/operations/GITHUB_PREPARACION_RESULTADOS.json',NULL,'.json','configuration','51ac5656d6f16e7dad7690ab93bd9e050307b3a927bc895adfd021f64640afdb',1704);
@@ -5796,7 +5796,7 @@ INSERT INTO "metadata" VALUES('catalog_review_date','2026-10-13');
 INSERT INTO "metadata" VALUES('index_method','tracked files; lexical symbols/imports, not runtime call graph');
 INSERT INTO "metadata" VALUES('project','DnieSignerPeruEvolution');
 INSERT INTO "metadata" VALUES('schema_version','1');
-INSERT INTO "metadata" VALUES('source_commit','0674105569bdcb8ffef47bb4084be8e01065ba05');
+INSERT INTO "metadata" VALUES('source_commit','3d34c1990c5b97cfbbbedefb1bca24d23e4c69aa');
 CREATE TABLE module_dependencies(source TEXT REFERENCES modules(id), target TEXT REFERENCES modules(id),
  scope TEXT NOT NULL, line INTEGER NOT NULL, PRIMARY KEY(source,target,scope,line));
 INSERT INTO "module_dependencies" VALUES('app','dnie-core','implementation',112);

@@ -137,5 +137,16 @@
     }
   ],
   "physical_dni_tested_this_iteration": false,
-  "android_changed": false
+  "android_changed": false,
+  "pnp_after": {
+    "Name": "DNIe Android NFC Private Smart Card Reader",
+    "ConfigManagerErrorCode": 0,
+    "Status": "OK"
+  },
+  "rollback": {
+    "previous_driver_version": "2.0.0.3",
+    "previous_driver_package": "D:/DNIeToolchain/ReaderTestPackage-power-r1",
+    "catalog_signature_observed": "Valid",
+    "previous_service": "D:/DNIeBridgeApp/versions/aa63552c8833477abc031583c3ce3831"
+  }
 }
