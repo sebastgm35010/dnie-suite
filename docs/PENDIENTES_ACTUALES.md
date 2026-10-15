@@ -1,5 +1,7 @@
 # Pendientes actuales · Windows rc4 USB / Android rc4-usb
 
+2026-10-14 · Android 3.1.1 / APK85 instalada por ADB, sin desinstalar ni borrar datos. Usuario confirmó APK84 y reactivó ADB. Versionado central en gradle.properties y comando para incrementar patch/código por entrega; Configuración muestra versión. Firma app/auxiliar idéntica y compatible con84; ambos instalados. 89 unitarias pasan/1 omitida y4 instrumentadas R8 pasan (9,22s), sin DNI. Auxiliar queda instalado con identidad estable. NFC/TSA/háptica físicos siguen pendientes; Windows instalado conserva R8. [Detalle](operations/VERSIONADO_Y_FIRMA_3_1_1.md). Los avisos de ADB suspendido siguientes son históricos y están revocados por el usuario.
+
 2026-10-14 · R8 candidata APK84 compilada; APK82 última instalada. **ADB suspendido hasta aviso explícito del usuario: no conectar, instalar ni pedir pruebas ahora.** R7 queda incorporada en84. Pendientes cuatro pruebas instrumentadas nuevas, revisión física teclado/hoja NFC/barra fija/ICAO, firma PAdES-T externa, háptica y rendimiento. Windows Suite preparada; conexiones físicas y suspensión siguen pendientes. [Resultados R8](design/PANTALLAS_FLUJOS_NFC_R8.md).
 
 2026-10-14 · R7 compilada: APK83 pendiente de instalación. **No hay ADB hasta nuevo aviso explícito del usuario; no intentar conectar ni pedir pruebas ahora.** APK82 es la última instalada. Pendientes háptica/preferencias/UI Android, firma física PAdES-T transparente, PNG/DnD Windows y regresión R6 de conexiones. [Resultado y límites](design/PERSONALIZACION_SELLO_HAPTICA_R7.md).

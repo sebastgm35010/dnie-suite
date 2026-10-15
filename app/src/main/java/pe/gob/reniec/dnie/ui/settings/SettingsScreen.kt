@@ -37,6 +37,8 @@ fun SettingsScreen(preferences: AppearancePreferences, onBack: () -> Unit) {
                     Switch(checked=haptics,onCheckedChange=preferences::setHaptics,modifier=Modifier.testTag("haptics_enabled"))
                 }
             }
+            Text("DNIe Evolución ${pe.gob.reniec.dnie.BuildConfig.VERSION_NAME} (${pe.gob.reniec.dnie.BuildConfig.VERSION_CODE})",
+                modifier = Modifier.testTag("app_version"), style = MaterialTheme.typography.bodySmall)
             FeatureSection("Privacidad") {
                 Text("El tema no cambia las autorizaciones. Las claves privadas permanecen en el DNI; salir de una operación cancela su sesión.")
                 Text("Las opciones de transporte están en Conexión PC. El diagnóstico solo existe en compilaciones de desarrollo.", style = MaterialTheme.typography.bodySmall)

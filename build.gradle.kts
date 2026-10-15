@@ -7,5 +7,5 @@ plugins {
 }
 
 allprojects {
-    version = "3.1.0"
+    version = rootProject.providers.gradleProperty("dnie.versionName").get()
 }

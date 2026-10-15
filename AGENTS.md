@@ -31,3 +31,5 @@ No modificar la copia de Antigravity.
 
 
 - Retiro R3 autorizado por el usuario: no reintroducir passkeys ni sus módulos/dependencias. Mantener la migración de borrado de datos internos y aliases exactos, sin borrar bóveda/CAN/emparejamientos. Ver `docs/architecture/RETIRO_PASSKEYS_R3.md`; checkpoint previo `checkpoint/pre-remove-passkeys-apk70`.
+
+- Versionado desde 3.1.1: fuente única `gradle.properties` (`dnie.versionName`, `dnie.androidVersionCode`). Cada entrega nueva incrementa patch y código mediante `python tools/bump-version.py --next-patch`; no incrementar por cada compilación/reintento. Conservar keystore de actualización y verificar app debug + auxiliar androidTest con `tools/android/verify-debug-pair.ps1` antes de instalar. Nunca cambiar firma para sortear un bloqueo del instalador.

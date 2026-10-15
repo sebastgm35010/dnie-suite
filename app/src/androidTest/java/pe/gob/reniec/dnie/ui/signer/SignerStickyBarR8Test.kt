@@ -17,7 +17,8 @@ class SignerStickyBarR8Test {
     @Test fun placementAndCompactTabsKeepTheSigningActionAccessible() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         com.tom_roush.pdfbox.android.PDFBoxResourceLoader.init(context)
-        val source = File.createTempFile("r8-ui-", ".pdf", context.cacheDir)
+        val fixtureDirectory = File(context.cacheDir, "signing_inputs").apply { mkdirs() }
+        val source = File.createTempFile("r8-ui-", ".pdf", fixtureDirectory)
         PDDocument().use { it.addPage(PDPage()); it.save(source) }
         val uri = FileProvider.getUriForFile(context, context.packageName + ".fileprovider", source)
         val vm = SignerViewModel()

@@ -21,7 +21,7 @@ android {
         applicationId = "pe.gob.reniec.dnie.evolution"
         minSdk = 24
         targetSdk = 34
-        versionCode = 84
+        versionCode = project.providers.gradleProperty("dnie.androidVersionCode").get().toInt()
         versionName = rootProject.version.toString()
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -53,6 +53,7 @@ android {
         debug {
             applicationIdSuffix = ".debug"
             isDebuggable = true
+            // androidTest inherits this variant's signing configuration. Verify both APKs before installation.
             if (hasEvolutionSigning) signingConfig = signingConfigs.getByName("evolution")
         }
     }

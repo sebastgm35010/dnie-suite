@@ -57,7 +57,9 @@
     "docs/design/ESPECIFICACION_R7_RECIBIDA.md": "received_specification_not_runtime_evidence",
     "docs/design/PANTALLAS_FLUJOS_NFC_R8.md": "current_android_flows_and_windows_suite_ui_r8",
     "docs/design/ESPECIFICACION_R8_RECIBIDA.md": "received_specification_not_runtime_evidence",
-    "docs/operations/FLUJOS_R8_RESULTADOS.json": "flows_r8_machine_readable_results"
+    "docs/operations/FLUJOS_R8_RESULTADOS.json": "flows_r8_machine_readable_results",
+    "docs/operations/VERSIONADO_Y_FIRMA_3_1_1.md": "current_versioning_and_android_installation",
+    "docs/operations/VERSIONADO_3_1_1_RESULTADOS.json": "version_3_1_1_machine_readable_results"
   },
   "features": [
     {
@@ -821,8 +823,8 @@
     {
       "id": "android_flows_r8",
       "name": "Hoja continua DNIe y pantallas R8",
-      "status": "compiled_android_not_installed_windows_ui_validated",
-      "note": "2026-10-14 · Pantallas y NFC R8 / APK84 (3.1.0) compilada debug/release, sin instalar ni usar ADB; APK82 sigue siendo la última instalada. Hoja continua credenciales→NFC→progreso→resultado; CAN compacto y PIN transitorio. Firma con preview superior, tres pestañas y barra fija, resultados parciales explícitos. Cinco destinos comunes; Mi DNIe agrupa visualmente Certificados/Identidad, credencial ICAO y detalles plegables. Suite Windows con plantillas 2×2, indicador de actividad y apertura del PDF real. 251 JVM pasan/1 omitida y Manager44 pasan; auxiliar Android compilado, sin ejecutar. Suite preparada y acceso actualizado; Bridge/servicio/driver y motores criptográficos sin cambios. Pruebas Android/NFC pendientes.",
+      "status": "instrumented_ui_validated_physical_dni_pending",
+      "note": "2026-10-14 · Pantallas y NFC R8 / APK84 (3.1.0) compilada debug/release, sin instalar ni usar ADB; APK82 sigue siendo la última instalada. Hoja continua credenciales→NFC→progreso→resultado; CAN compacto y PIN transitorio. Firma con preview superior, tres pestañas y barra fija, resultados parciales explícitos. Cinco destinos comunes; Mi DNIe agrupa visualmente Certificados/Identidad, credencial ICAO y detalles plegables. Suite Windows con plantillas 2×2, indicador de actividad y apertura del PDF real. 251 JVM pasan/1 omitida y Manager44 pasan; auxiliar Android compilado, sin ejecutar. Suite preparada y acceso actualizado; Bridge/servicio/driver y motores criptográficos sin cambios. Pruebas Android/NFC pendientes. 3.1.1/85 instalada por ADB;4 instrumentadas R8 pasan, sin DNI físico.",
       "evidence": "docs/design/PANTALLAS_FLUJOS_NFC_R8.md",
       "files": {
         "frontend": [
@@ -853,6 +855,32 @@
         "certificates",
         "suite"
       ]
+    },
+    {
+      "id": "android_versioning",
+      "name": "Versionado y firma estable Android",
+      "status": "installed_validated",
+      "note": "2026-10-14 · Android 3.1.1 / APK85 instalada por ADB, sin desinstalar ni borrar datos. Usuario confirmó APK84 y reactivó ADB. Versionado central en gradle.properties y comando para incrementar patch/código por entrega; Configuración muestra versión. Firma app/auxiliar idéntica y compatible con84; ambos instalados. 89 unitarias pasan/1 omitida y4 instrumentadas R8 pasan (9,22s), sin DNI. Auxiliar queda instalado con identidad estable. NFC/TSA/háptica físicos siguen pendientes; Windows instalado conserva R8.",
+      "evidence": "docs/operations/VERSIONADO_Y_FIRMA_3_1_1.md",
+      "files": {
+        "configuration": [
+          "gradle.properties",
+          "build.gradle.kts",
+          "app/build.gradle.kts",
+          "AGENTS.md"
+        ],
+        "tool": [
+          "tools/bump-version.py",
+          "tools/android/verify-debug-pair.ps1"
+        ],
+        "frontend": [
+          "app/src/main/java/pe/gob/reniec/dnie/ui/settings/SettingsScreen.kt"
+        ],
+        "architecture": [
+          "docs/operations/VERSIONADO_Y_FIRMA_3_1_1.md"
+        ]
+      },
+      "depends_on": []
     }
   ],
   "pending": [
@@ -1077,7 +1105,7 @@
       "id": "r7_android_install_and_physical_feedback",
       "feature": "reading_feedback",
       "state": "waiting_user_adb_notice",
-      "description": "Usuario sin ADB hasta nuevo aviso. APK83 compila, APK82 última instalada. Instalar/testear UI, preferencias, inicio/avance/éxito/error y ajuste táctil con DNI real; no asumir percepción desde JVM.",
+      "description": "3.1.1/85 instalada y4 instrumentadas R8 pasan. Pendientes NFC/TSA/firma real, háptica percibida y rendimiento con documentos/biblioteca reales; ADB habilitado nuevamente por usuario.",
       "evidence": "docs/design/PERSONALIZACION_SELLO_HAPTICA_R7.md"
     },
     {
@@ -1091,7 +1119,7 @@
       "id": "r8_android_install_and_physical_flows",
       "feature": "android_flows_r8",
       "state": "needs_physical_test",
-      "description": "APK84 no instalada; no ADB hasta aviso. Ejecutar4 pruebas instrumentadas nuevas + regresión, hoja PIN/NFC/TSA, teclado/tema/scroll, PAdES-T real, DG7 y guardado MIME. No extrapolar fixtures a tarjeta física.",
+      "description": "3.1.1/85 instalada y4 instrumentadas R8 pasan. Pendientes NFC/TSA/firma real, háptica percibida y rendimiento con documentos/biblioteca reales; ADB habilitado nuevamente por usuario.",
       "evidence": "docs/design/PANTALLAS_FLUJOS_NFC_R8.md"
     }
   ],
@@ -1275,6 +1303,12 @@
       "category": "compiled_local_validated_android_not_installed",
       "value": "2026-10-14 · Pantallas y NFC R8 / APK84 (3.1.0) compilada debug/release, sin instalar ni usar ADB; APK82 sigue siendo la última instalada. Hoja continua credenciales→NFC→progreso→resultado; CAN compacto y PIN transitorio. Firma con preview superior, tres pestañas y barra fija, resultados parciales explícitos. Cinco destinos comunes; Mi DNIe agrupa visualmente Certificados/Identidad, credencial ICAO y detalles plegables. Suite Windows con plantillas 2×2, indicador de actividad y apertura del PDF real. 251 JVM pasan/1 omitida y Manager44 pasan; auxiliar Android compilado, sin ejecutar. Suite preparada y acceso actualizado; Bridge/servicio/driver y motores criptográficos sin cambios. Pruebas Android/NFC pendientes.",
       "evidence": "docs/design/PANTALLAS_FLUJOS_NFC_R8.md"
+    },
+    {
+      "id": "android_3_1_1_apk85_installed",
+      "category": "installed_same_signer_instrumented_validated",
+      "value": "2026-10-14 · Android 3.1.1 / APK85 instalada por ADB, sin desinstalar ni borrar datos. Usuario confirmó APK84 y reactivó ADB. Versionado central en gradle.properties y comando para incrementar patch/código por entrega; Configuración muestra versión. Firma app/auxiliar idéntica y compatible con84; ambos instalados. 89 unitarias pasan/1 omitida y4 instrumentadas R8 pasan (9,22s), sin DNI. Auxiliar queda instalado con identidad estable. NFC/TSA/háptica físicos siguen pendientes; Windows instalado conserva R8.",
+      "evidence": "docs/operations/VERSIONADO_Y_FIRMA_3_1_1.md"
     }
   ]
 }

@@ -1,0 +1,32 @@
+{
+  "date": "2026-10-14",
+  "versionName": "3.1.1",
+  "versionCode": 85,
+  "installedByAdb": true,
+  "previousInstalledCode": 84,
+  "previousInstallationConfirmedByUser": true,
+  "installMode": "adb install -r, no uninstall/data clear",
+  "sameSignerAppAndTests": true,
+  "sameSignerAsPreviousApk": true,
+  "signerSha256": "16cda33b24d0e5f3fea46b766f9e9f198a581721464938bc8068fda398036350",
+  "unitTests": {
+    "tests": 90,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1
+  },
+  "instrumented": {
+    "passed": 4,
+    "failed": 0,
+    "durationSeconds": 9.22,
+    "usesPhysicalDni": false
+  },
+  "testHelperInstalled": true,
+  "debugAndReleaseBuilt": true,
+  "debugApk": "D:\\DNIeToolchain\\AndroidPackages\\dnie-evolution-3.1.1-v85-debug.apk",
+  "apkSha256": "5ed8724b9d351dfd38b61b30efd07404508f4e10e1799a259de938a0b8e31f91",
+  "versionSource": "gradle.properties",
+  "nextDeliveryCommand": "python tools/bump-version.py --next-patch",
+  "preCheckpoint": "checkpoint/pre-version3.1.1",
+  "windowsRuntimeUpdated": false
+}
