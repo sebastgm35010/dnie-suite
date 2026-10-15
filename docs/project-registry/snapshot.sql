@@ -97,6 +97,7 @@ INSERT INTO "checkpoints" VALUES('checkpoint/trust-android-h9a','b40fc9ce25861a7
 INSERT INTO "checkpoints" VALUES('checkpoint/trust-tsl-chain-h9','7298016f6153a33913c14f766f4f2e1174a91d39','feat(android): authenticate Peru TSL and validate full certificate chain');
 INSERT INTO "checkpoints" VALUES('checkpoint/usb-aoa-rc4','6eb4b0d9c3ac2191c59ea8cf6676bf1ae802f406','fix(usb): register AOA discovery and stabilize bridge status');
 INSERT INTO "checkpoints" VALUES('checkpoint/usb-worker-isolation','2e8ec8cba45dcc4d6ab3e2e30e61f28411372c69','fix(windows): isolate USB native calls from control service');
+INSERT INTO "checkpoints" VALUES('checkpoint/version3.1.1-apk85','fce47d4703be3c4cfd6b755bb4b5878a05a0f5d1','chore(android): advance to 3.1.1 and verify stable app/test signing');
 INSERT INTO "checkpoints" VALUES('checkpoint/windows-native-2.0.0-rc4','d1677b797917f16da3e71355ce68c853cc80f374','Native Windows manager and SYSTEM broker; Android rc3 protocol preserved');
 INSERT INTO "checkpoints" VALUES('checkpoint/windows-tsa-reniec-h12','4cb944b048d8e0e798ad7922c05279a58a031534','Add optional verified RENIEC timestamps to Windows signing suite');
 CREATE TABLE document_sections(path TEXT REFERENCES documents(path), line INTEGER, heading TEXT,
@@ -6654,7 +6655,7 @@ INSERT INTO "metadata" VALUES('catalog_review_date','2026-10-14');
 INSERT INTO "metadata" VALUES('index_method','tracked files; lexical symbols/imports, not runtime call graph');
 INSERT INTO "metadata" VALUES('project','DnieSignerPeruEvolution');
 INSERT INTO "metadata" VALUES('schema_version','1');
-INSERT INTO "metadata" VALUES('source_commit','2f34f7412264c6b9f94b1aa4e1d4384f3c8d0354');
+INSERT INTO "metadata" VALUES('source_commit','fce47d4703be3c4cfd6b755bb4b5878a05a0f5d1');
 CREATE TABLE module_dependencies(source TEXT REFERENCES modules(id), target TEXT REFERENCES modules(id),
  scope TEXT NOT NULL, line INTEGER NOT NULL, PRIMARY KEY(source,target,scope,line));
 INSERT INTO "module_dependencies" VALUES('app','dnie-core','implementation',113);
