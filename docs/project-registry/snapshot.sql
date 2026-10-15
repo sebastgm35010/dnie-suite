@@ -16,6 +16,7 @@ INSERT INTO "checkpoints" VALUES('checkpoint/certificate-validation-h8','8b8442a
 INSERT INTO "checkpoints" VALUES('checkpoint/chain-revocation-detail-h9b','278d269d0bf8243b8c6443217d4d881e29619eaf','Expose per-CA revocation evidence and safe Android diagnostics');
 INSERT INTO "checkpoints" VALUES('checkpoint/ciudadano-digital-android22','aadb115ad55e268ef63333d507744d08f17600e9','docs: record Android22 successful official RENIEC bridge flow');
 INSERT INTO "checkpoints" VALUES('checkpoint/connection-separation-apk76','56cede56411eb85c67b0847e904238d62dc45ea2','feat(connections): authenticate PC before NFC and separate Suite session status');
+INSERT INTO "checkpoints" VALUES('checkpoint/design-r9-apk86','d1cc895d4c18fa3fa2361466e13822e3e400655f','feat(ui): deliver Aether R9 onboarding and motion (3.1.2)');
 INSERT INTO "checkpoints" VALUES('checkpoint/desktop-pades-profile-h7','38863f369c185dca27115c5c253a32dede8fd5be','fix(desktop): adopt Android-validated PAdES baseline PDF profile');
 INSERT INTO "checkpoints" VALUES('checkpoint/diagnostics-direct-apk72','b1d4d9fea76898d52e31ff926a3d82bf8fca141d','feat: add direct debug diagnostics and layered performance tracing');
 INSERT INTO "checkpoints" VALUES('checkpoint/driver-completion-r2','81997a259fc7c4cf6b41030fa324d95e622317d9','Driver 2.0.0.4 installed; C++ and native PCSC/TLS synthetic regressions passed');
@@ -6845,7 +6846,7 @@ INSERT INTO "metadata" VALUES('catalog_review_date','2026-10-15');
 INSERT INTO "metadata" VALUES('index_method','tracked files; lexical symbols/imports, not runtime call graph');
 INSERT INTO "metadata" VALUES('project','DnieSignerPeruEvolution');
 INSERT INTO "metadata" VALUES('schema_version','1');
-INSERT INTO "metadata" VALUES('source_commit','0935a297ed958b06895f98ab816656d039faef41');
+INSERT INTO "metadata" VALUES('source_commit','d1cc895d4c18fa3fa2361466e13822e3e400655f');
 CREATE TABLE module_dependencies(source TEXT REFERENCES modules(id), target TEXT REFERENCES modules(id),
  scope TEXT NOT NULL, line INTEGER NOT NULL, PRIMARY KEY(source,target,scope,line));
 INSERT INTO "module_dependencies" VALUES('app','dnie-core','implementation',113);
