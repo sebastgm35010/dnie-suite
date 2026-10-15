@@ -24,6 +24,8 @@ class DnieApplication : Application() {
             get() = instance ?: throw IllegalStateException("DnieApplication no ha sido inicializada")
     }
 
+    val motion by lazy { pe.gob.reniec.dnie.data.preferences.AndroidMotionPreference(this) }
+
     val appearance by lazy { pe.gob.reniec.dnie.data.preferences.AppearancePreferences(this) }
 
     val stampPreferences by lazy { pe.gob.reniec.dnie.data.preferences.AndroidStampPreferences(this) }

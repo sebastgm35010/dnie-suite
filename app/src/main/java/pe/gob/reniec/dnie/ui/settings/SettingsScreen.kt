@@ -17,10 +17,14 @@ import pe.gob.reniec.dnie.ui.design.*
 
 @Composable
 fun SettingsScreen(preferences: AppearancePreferences, onBack: () -> Unit) {
+    var showGuide by remember { mutableStateOf(false) }
+    if (showGuide) pe.gob.reniec.dnie.ui.onboarding.OnboardingGuideSheet(onDismiss = { showGuide = false },
+        onFinish = { preferences.dismissOnboarding(); showGuide = false })
     val haptics by preferences.hapticsEnabled.collectAsStateWithLifecycle()
     val selected by preferences.mode.collectAsStateWithLifecycle()
     FeatureScaffold("Configuración", "Preferencias", onBack = onBack) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            OutlinedButton(onClick = { showGuide = true }) { Text("Ver guía de primer inicio") }
             FeatureSection("Apariencia", "El mismo tema se aplica a todas las pantallas, incluida la bóveda y las conexiones PC.") {
                 ThemeMode.entries.forEach { mode ->
                     Row(Modifier.fillMaxWidth().testTag("theme_" + mode.name.lowercase())

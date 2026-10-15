@@ -72,7 +72,7 @@ fun CredentialsForm(subtitle: String? = null, requireCan: Boolean = true, requir
             if (!editingCan) SavedCanChip(can, saved = remembered) { editingCan = true }
             else {
                 OutlinedTextField(can, { if (it.length <= 6 && it.all { c -> c in '0'..'9' }) can = it },
-                    enabled = loaded, label = { Text("CAN (6 dígitos)") }, singleLine = true,
+                    enabled = loaded, textStyle = MaterialTheme.typography.bodyLarge, label = { Text("CAN (6 dígitos)") }, singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(remembered, { remembered = it })
@@ -82,7 +82,7 @@ fun CredentialsForm(subtitle: String? = null, requireCan: Boolean = true, requir
         }
         if (requirePin) {
             OutlinedTextField(pin, { if (it.length <= 8 && it.all { c -> c in '0'..'9' }) pin = it },
-                label = { Text("PIN de firma") }, singleLine = true,
+                textStyle = MaterialTheme.typography.bodyLarge, label = { Text("PIN de firma") }, singleLine = true,
                 visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                 trailingIcon = { IconButton(onClick = { visible = !visible }) {

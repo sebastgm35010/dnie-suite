@@ -6,7 +6,7 @@ public sealed partial class MainForm : Form {
     private readonly ComboBox usb=new(){DropDownStyle=ComboBoxStyle.DropDownList};
     private readonly Label serviceStatus=new(),hostStatus=new(),error=new(),help=new();
     private readonly Button install=new AetherButton(){Text="Instalar / reparar servicio"},start=new AetherButton(){Text="Iniciar puente"},stop=new AetherButton(){Text="Detener puente"},pair=new AetherButton(){Text="Mostrar QR"},refresh=new AetherButton(){Text="Actualizar dispositivos"};
-    private readonly Button themeToggle=new AetherButton(){Text="Oscuro",Name="bridge-theme"};
+    private readonly Button themeToggle=new AetherButton(){Text="Modo oscuro",Name="bridge-theme"};
     private readonly Button selectorToggle=new AetherButton(){Text="Activar selector"};
     private readonly Label selectorStatus=new();
     private readonly HealthCard serviceHealth=new(),readerHealth=new(),cardHealth=new();

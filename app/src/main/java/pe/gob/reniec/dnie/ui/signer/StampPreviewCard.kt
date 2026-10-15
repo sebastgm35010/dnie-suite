@@ -43,7 +43,7 @@ internal fun StampPreviewCard(width: Float,height: Float,name: String,dni: Strin
         catch(failure: Exception) { bitmap=null;error=failure.message?:"Amplía el sello o quita campos" }
         finally { preparing=false }
     }
-    ElevatedCard(Modifier.fillMaxWidth()) {
+    pe.gob.reniec.dnie.ui.design.AetherCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
             Text("Vista previa del sello",style=MaterialTheme.typography.labelLarge)
             val grid=androidx.compose.ui.graphics.Color(0xFFDCE9FF).copy(alpha=.55f)

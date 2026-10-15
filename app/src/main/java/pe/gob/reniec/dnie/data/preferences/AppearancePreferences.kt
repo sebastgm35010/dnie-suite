@@ -5,6 +5,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
 enum class ThemeMode(val label: String) { SYSTEM("Del sistema"), LIGHT("Claro"), DARK("Oscuro") }
 
@@ -13,6 +14,9 @@ class AppearancePreferences(context: Context) {
     private val app = context.applicationContext
     private val selected = MutableStateFlow<ThemeMode?>(null)
     val mode = selected.asStateFlow()
+    private val dismissed = MutableStateFlow(false)
+    val onboardingDismissed = dismissed.asStateFlow()
+    private val dismissal = Channel<Unit>(Channel.CONFLATED)
     private val tactile=MutableStateFlow(true)
     val hapticsEnabled=tactile.asStateFlow()
     private val tactileChanges=Channel<Boolean>(Channel.CONFLATED)
@@ -23,6 +27,9 @@ class AppearancePreferences(context: Context) {
             val prefs = app.getSharedPreferences("appearance", Context.MODE_PRIVATE)
             selected.value = runCatching { ThemeMode.valueOf(prefs.getString("theme", "SYSTEM")!!) }
                 .getOrDefault(ThemeMode.SYSTEM)
+            val wasDismissed = prefs.getBoolean("onboarding_dismissed", false)
+            dismissed.update { it || wasDismissed }
+            launch { for (ignored in dismissal) prefs.edit().putBoolean("onboarding_dismissed", true).apply() }
             tactile.value=prefs.getBoolean("haptics",true)
             pe.gob.reniec.dnie.data.feedback.ReadingFeedback.enabled=tactile.value
             launch {for(value in tactileChanges) {
@@ -35,6 +42,7 @@ class AppearancePreferences(context: Context) {
             }
         }
     }
+    fun dismissOnboarding() { dismissed.value = true; dismissal.trySend(Unit) }
     fun setHaptics(value: Boolean) { tactileChanges.trySend(value) }
     fun select(mode: ThemeMode) { changes.trySend(mode) }
 }

@@ -11,15 +11,16 @@ object AetherSwingTheme {
     var secondary=Color(0x006A63);var secondaryContainer=Color(0xD0F7F0)
     var background=Color(0xF8F9FF);var surface=Color.WHITE;var container=Color(0xEFF4FF)
     var border=Color(0xDCE9FF);var text=Color(0x0B1C30);var muted=Color(0x434655);var outline=Color(0x737686);var error=Color(0xBA1A1A)
+    var onPrimary=Color.WHITE
     var dark=false
         private set
     private fun palette()=listOf(primary,primaryContainer,onPrimaryContainer,secondary,secondaryContainer,background,surface,container,border,text,muted,outline,error)
     fun apply(window: java.awt.Window,enabled: Boolean) {
-        val old=palette();dark=enabled
-        primary=Color(if(enabled) 0x4C8EFF else 0x004AC6);primaryContainer=Color(if(enabled) 0x1E293B else 0xE5EEFF);onPrimaryContainer=Color(if(enabled) 0xE2E8F0 else 0x00174B)
-        secondary=Color(if(enabled) 0x67D9C8 else 0x006A63);secondaryContainer=Color(if(enabled) 0x163A38 else 0xD0F7F0)
-        background=Color(if(enabled) 0x0B1326 else 0xF8F9FF);surface=Color(if(enabled) 0x131B2E else 0xFFFFFF);container=Color(if(enabled) 0x1E293B else 0xEFF4FF)
-        border=Color(if(enabled) 0x2E3C56 else 0xDCE9FF);text=Color(if(enabled) 0xE2E8F0 else 0x0B1C30);muted=Color(if(enabled) 0xA9B5CB else 0x434655);outline=Color(if(enabled) 0x94A3B8 else 0x737686);error=Color(if(enabled) 0xFFB4AB else 0xBA1A1A)
+        val old=palette();dark=enabled;onPrimary=Color(if(enabled) 0x00174B else 0xFFFFFF)
+        primary=Color(if(enabled) 0x6B9EFF else 0x004AC6);primaryContainer=Color(if(enabled) 0x243554 else 0xE5EEFF);onPrimaryContainer=Color(if(enabled) 0xEAF1FF else 0x00174B)
+        secondary=Color(if(enabled) 0x67D9C8 else 0x006A63);secondaryContainer=Color(if(enabled) 0x123D39 else 0xD0F7F0)
+        background=Color(if(enabled) 0x0B1326 else 0xF8F9FF);surface=Color(if(enabled) 0x131B2E else 0xFFFFFF);container=Color(if(enabled) 0x1D2840 else 0xEFF4FF)
+        border=Color(if(enabled) 0x2E3C56 else 0xDCE9FF);text=Color(if(enabled) 0xEAF1FF else 0x0B1C30);muted=Color(if(enabled) 0xA9B5CB else 0x434655);outline=Color(if(enabled) 0x8D94A6 else 0x737686);error=Color(if(enabled) 0xFFB4AB else 0xBA1A1A)
         install();val replacements=old.zip(palette()).toMap()
         fun refresh(c: java.awt.Component) {
             replacements[c.background]?.let {c.background=it};replacements[c.foreground]?.let {c.foreground=it}

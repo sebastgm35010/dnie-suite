@@ -21,6 +21,13 @@ fun HomeRoute(viewModel: CertificatesViewModel, identityViewModel: IdentityViewM
     }
     val summary by summaries.collectAsStateWithLifecycle(initialValue = HomeSummary())
     val context = androidx.compose.ui.platform.LocalContext.current
-    val canSaved by produceState(false, context) { value = pe.gob.reniec.dnie.data.preferences.CanStorage.loadSavedCan(context).length == 6 }
-    HomeScreen(summary, onRead, onIdentity, onCertificates, onPdf, onBatch, onVault, onPc, onSettings, onDevelopment, savedCan = canSaved)
+    val preferences = (context.applicationContext as pe.gob.reniec.dnie.DnieApplication).appearance
+    val dismissed by preferences.onboardingDismissed.collectAsStateWithLifecycle()
+    var showGuide by remember { mutableStateOf(false) }
+    var guideSavedCan by remember { mutableStateOf(false) }
+    val canSaved by produceState(false, context, showGuide) { value = pe.gob.reniec.dnie.data.preferences.CanStorage.loadSavedCan(context).length == 6 }
+    if (showGuide) pe.gob.reniec.dnie.ui.onboarding.OnboardingGuideSheet(
+        onDismiss = { showGuide = false }, onFinish = { preferences.dismissOnboarding(); showGuide = false },
+        onCanSaved = { guideSavedCan = true })
+    HomeScreen(summary, onRead, onIdentity, onCertificates, onPdf, onBatch, onVault, onPc, onSettings, onDevelopment, savedCan = canSaved || guideSavedCan, onboardingDismissed = dismissed, onOpenGuide = { showGuide = true }, onDismissOnboarding = preferences::dismissOnboarding)
 }

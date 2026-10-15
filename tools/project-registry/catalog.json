@@ -1,5 +1,5 @@
 {
-  "review_date": "2026-10-14",
+  "review_date": "2026-10-15",
   "document_roles": {
     "AGENTS.md": "operational_instructions",
     "docs/CONTEXTO_ACTUAL.md": "current_state",
@@ -59,7 +59,11 @@
     "docs/design/ESPECIFICACION_R8_RECIBIDA.md": "received_specification_not_runtime_evidence",
     "docs/operations/FLUJOS_R8_RESULTADOS.json": "flows_r8_machine_readable_results",
     "docs/operations/VERSIONADO_Y_FIRMA_3_1_1.md": "current_versioning_and_android_installation",
-    "docs/operations/VERSIONADO_3_1_1_RESULTADOS.json": "version_3_1_1_machine_readable_results"
+    "docs/operations/VERSIONADO_3_1_1_RESULTADOS.json": "version_3_1_1_machine_readable_results",
+    "DESIGN.md": "current_design_system",
+    "docs/design/ESPECIFICACION_R9_RECIBIDA.md": "external_r9_requested_specification",
+    "docs/design/SISTEMA_DISENO_GUIA_R9.md": "current_r9_implementation_and_validation",
+    "docs/operations/DISENO_R9_RESULTADOS.json": "r9_verifiable_results"
   },
   "features": [
     {
@@ -458,7 +462,7 @@
       "id": "android_redesign",
       "name": "Interfaz Android 3.0 basada en Aether",
       "status": "implemented_runtime_validated",
-      "note": "2026-10-09 · Conexiones R5: APK77 / 3.0.0-alpha05-mobility instalada sin borrar datos. Suite y Bridge Wi-Fi ya no fijan identidad a la IP; TLS y token siguen obligatorios. Windows conserva la identidad DPAPI al cambiar IP. TLS directo permite editar destino; Suite tiene pantalla completa independiente y limpia conexión al finalizar lote único. 159 JVM pasan / 3 omitidas, release compilado y 3 pruebas instrumentadas de Suite/Bridge pasan en el móvil. Cambio físico de IP con DNI pendiente. Aether R2: nueva apariencia/preview/páginas comprobadas con datos sintéticos; ver stamp_aether/desktop_aether. No acredita firma física nueva. Continuación R3: Android79 instalada, 2 pruebas instrumentadas pasan; Firma física nueva sigue pendiente. R8: interfaz candidata APK84 compilada sin instalar ni ADB, Suite Windows con plantillas/progreso/apertura; motores preservados. Ver android_flows_r8.",
+      "note": "2026-10-09 · Conexiones R5: APK77 / 3.0.0-alpha05-mobility instalada sin borrar datos. Suite y Bridge Wi-Fi ya no fijan identidad a la IP; TLS y token siguen obligatorios. Windows conserva la identidad DPAPI al cambiar IP. TLS directo permite editar destino; Suite tiene pantalla completa independiente y limpia conexión al finalizar lote único. 159 JVM pasan / 3 omitidas, release compilado y 3 pruebas instrumentadas de Suite/Bridge pasan en el móvil. Cambio físico de IP con DNI pendiente. Aether R2: nueva apariencia/preview/páginas comprobadas con datos sintéticos; ver stamp_aether/desktop_aether. No acredita firma física nueva. Continuación R3: Android79 instalada, 2 pruebas instrumentadas pasan; Firma física nueva sigue pendiente. R8: interfaz candidata APK84 compilada sin instalar ni ADB, Suite Windows con plantillas/progreso/apertura; motores preservados. Ver android_flows_r8. R9:3.1.2/86 instalada; guía optativa, paleta compartida y movimiento reducido verificados. Ver design_r9.",
       "evidence": "docs/architecture/CONEXIONES_DIRECCION_E_IDENTIDAD_R5.md",
       "files": {
         "frontend": [
@@ -690,7 +694,7 @@
       "id": "desktop_aether",
       "name": "Presentación Aether Suite y Manager Windows",
       "status": "installed_ui_local_validated",
-      "note": "2026-10-14 · Personalización R7 / APK83 (3.1.0) compilada debug/release; no instalada: ADB suspendido hasta nuevo aviso del usuario. APK82 sigue siendo la última instalada. Sello con fondo transparente, insignias check/candado, fecha/densidad/colores, plantillas y esquinas al6%; diseño Android persistente, navegación y acciones Mi DNIe. Respuesta táctil por eventos NFC con ajuste de usuario. Windows añade PNG de rúbrica, DnD visual y tema claro/oscuro. 241 JVM pasan/1 omitida por permisos Windows y 44 comprobaciones Manager pasan. Interfaces Windows y accesos actualizados; servicio, driver, identidad y motores criptográficos conservados. Pruebas Android y firma física R7 pendientes.",
+      "note": "2026-10-14 · Personalización R7 / APK83 (3.1.0) compilada debug/release; no instalada: ADB suspendido hasta nuevo aviso del usuario. APK82 sigue siendo la última instalada. Sello con fondo transparente, insignias check/candado, fecha/densidad/colores, plantillas y esquinas al6%; diseño Android persistente, navegación y acciones Mi DNIe. Respuesta táctil por eventos NFC con ajuste de usuario. Windows añade PNG de rúbrica, DnD visual y tema claro/oscuro. 241 JVM pasan/1 omitida por permisos Windows y 44 comprobaciones Manager pasan. Interfaces Windows y accesos actualizados; servicio, driver, identidad y motores criptográficos conservados. Pruebas Android y firma física R7 pendientes. R9:3.1.2/86 instalada; guía optativa, paleta compartida y movimiento reducido verificados. Ver design_r9.",
       "evidence": "docs/design/PERSONALIZACION_SELLO_HAPTICA_R7.md",
       "files": {
         "frontend": [
@@ -860,7 +864,7 @@
       "id": "android_versioning",
       "name": "Versionado y firma estable Android",
       "status": "installed_validated",
-      "note": "2026-10-14 · Android 3.1.1 / APK85 instalada por ADB, sin desinstalar ni borrar datos. Usuario confirmó APK84 y reactivó ADB. Versionado central en gradle.properties y comando para incrementar patch/código por entrega; Configuración muestra versión. Firma app/auxiliar idéntica y compatible con84; ambos instalados. 89 unitarias pasan/1 omitida y4 instrumentadas R8 pasan (9,22s), sin DNI. Auxiliar queda instalado con identidad estable. NFC/TSA/háptica físicos siguen pendientes; Windows instalado conserva R8.",
+      "note": "2026-10-14 · Android 3.1.1 / APK85 instalada por ADB, sin desinstalar ni borrar datos. Usuario confirmó APK84 y reactivó ADB. Versionado central en gradle.properties y comando para incrementar patch/código por entrega; Configuración muestra versión. Firma app/auxiliar idéntica y compatible con84; ambos instalados. 89 unitarias pasan/1 omitida y4 instrumentadas R8 pasan (9,22s), sin DNI. Auxiliar queda instalado con identidad estable. NFC/TSA/háptica físicos siguen pendientes; Windows instalado conserva R8. R9:3.1.2/86 instalada; guía optativa, paleta compartida y movimiento reducido verificados. Ver design_r9.",
       "evidence": "docs/operations/VERSIONADO_Y_FIRMA_3_1_1.md",
       "files": {
         "configuration": [
@@ -881,6 +885,37 @@
         ]
       },
       "depends_on": []
+    },
+    {
+      "id": "design_r9",
+      "name": "Sistema Aether y guía optativa R9",
+      "status": "installed_instrumented_ui_validated",
+      "note": "2026-10-15 · R9 / Android3.1.2 (APK86) instalada por ADB sin borrar datos y con firma compatible; auxiliar actualizado con la misma firma. DESIGN.md, paleta compartida claro/oscuro, categorías sans y números tabulares; radar NFC/resortes con movimiento reducido y guía optativa CAN/NFC/móvil-PC. Suite/gestor Windows compilados y accesos actualizados. 252 pruebas JVM pasan/1 omitida preexistente,48 comprobaciones Manager y8 instrumentadas Android pasan. Motores, servicio y driver sin cambios. NFC/TSA/háptica físicos y regresión USB/suspensión pendientes.",
+      "evidence": "docs/design/SISTEMA_DISENO_GUIA_R9.md",
+      "files": {
+        "frontend": [
+          "DESIGN.md",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/design/",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/onboarding/",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/components/NfcOperationVisual.kt",
+          "dnie-signing-ui/src/main/java/pe/gob/reniec/dnie/desktop/ui/SuiteQuickGuideDialog.kt",
+          "tools/windows-manager/AetherControls.cs"
+        ],
+        "adapter": [
+          "app/src/main/java/pe/gob/reniec/dnie/data/preferences/AndroidMotionPreference.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/data/preferences/AppearancePreferences.kt"
+        ],
+        "test": [
+          "app/src/androidTest/java/pe/gob/reniec/dnie/ui/DesignR9Test.kt",
+          "dnie-signing-ui/src/test/java/pe/gob/reniec/dnie/desktop/ui/DesignR9Test.kt",
+          "tools/windows-manager/layout-tests/Program.cs"
+        ]
+      },
+      "depends_on": [
+        "android_redesign",
+        "desktop_aether",
+        "android_versioning"
+      ]
     }
   ],
   "pending": [
@@ -1121,6 +1156,13 @@
       "state": "needs_physical_test",
       "description": "3.1.1/85 instalada y4 instrumentadas R8 pasan. Pendientes NFC/TSA/firma real, háptica percibida y rendimiento con documentos/biblioteca reales; ADB habilitado nuevamente por usuario.",
       "evidence": "docs/design/PANTALLAS_FLUJOS_NFC_R8.md"
+    },
+    {
+      "id": "r9_physical_and_accessibility",
+      "feature": "design_r9",
+      "state": "needs_physical_test",
+      "description": "NFC/TSA/firma real y háptica percibida, regresión USB/suspensión y tamaños de pantalla/fuente adicionales; interfaz sintética ya comprobada, sin modificar ajustes de animación del teléfono.",
+      "evidence": "docs/design/SISTEMA_DISENO_GUIA_R9.md"
     }
   ],
   "facts": [
@@ -1309,6 +1351,12 @@
       "category": "installed_same_signer_instrumented_validated",
       "value": "2026-10-14 · Android 3.1.1 / APK85 instalada por ADB, sin desinstalar ni borrar datos. Usuario confirmó APK84 y reactivó ADB. Versionado central en gradle.properties y comando para incrementar patch/código por entrega; Configuración muestra versión. Firma app/auxiliar idéntica y compatible con84; ambos instalados. 89 unitarias pasan/1 omitida y4 instrumentadas R8 pasan (9,22s), sin DNI. Auxiliar queda instalado con identidad estable. NFC/TSA/háptica físicos siguen pendientes; Windows instalado conserva R8.",
       "evidence": "docs/operations/VERSIONADO_Y_FIRMA_3_1_1.md"
+    },
+    {
+      "id": "design_r9_delivered",
+      "category": "installed_synthetic_and_instrumented_ui_validated",
+      "value": "2026-10-15 · R9 / Android3.1.2 (APK86) instalada por ADB sin borrar datos y con firma compatible; auxiliar actualizado con la misma firma. DESIGN.md, paleta compartida claro/oscuro, categorías sans y números tabulares; radar NFC/resortes con movimiento reducido y guía optativa CAN/NFC/móvil-PC. Suite/gestor Windows compilados y accesos actualizados. 252 pruebas JVM pasan/1 omitida preexistente,48 comprobaciones Manager y8 instrumentadas Android pasan. Motores, servicio y driver sin cambios. NFC/TSA/háptica físicos y regresión USB/suspensión pendientes.",
+      "evidence": "docs/design/SISTEMA_DISENO_GUIA_R9.md"
     }
   ]
 }

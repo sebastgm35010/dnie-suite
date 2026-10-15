@@ -1,5 +1,6 @@
 package pe.gob.reniec.dnie.ui.certificates
 
+import pe.gob.reniec.dnie.ui.design.AetherCard as Card
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll

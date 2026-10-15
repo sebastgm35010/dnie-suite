@@ -1,5 +1,6 @@
 package pe.gob.reniec.dnie.ui.home
 
+import pe.gob.reniec.dnie.ui.design.AetherCard as Card
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons

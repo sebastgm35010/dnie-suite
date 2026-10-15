@@ -1,5 +1,6 @@
 package pe.gob.reniec.dnie.ui.home
 
+import pe.gob.reniec.dnie.ui.design.AetherCard as Card
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,7 +19,7 @@ data class HomeSummary(val certificates: Int = 0, val identityAvailable: Boolean
 fun HomeScreen(summary: HomeSummary, onRead: () -> Unit, onIdentity: () -> Unit,
     onCertificates: () -> Unit, onPdf: () -> Unit, onBatch: () -> Unit,
     onVault: () -> Unit, onPc: () -> Unit, onSettings: () -> Unit = {}, onDevelopment: (() -> Unit)? = null,
-    savedCan: Boolean = false) {
+    savedCan: Boolean = false, onboardingDismissed: Boolean = true, onOpenGuide: () -> Unit = {}, onDismissOnboarding: () -> Unit = {}) {
     val loaded = summary.certificates > 0 || summary.identityAvailable
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item {
@@ -28,7 +29,7 @@ fun HomeScreen(summary: HomeSummary, onRead: () -> Unit, onIdentity: () -> Unit,
             }
         }
         item {
-            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
+            Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
                 Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Icon(Icons.Default.Badge, null, tint = MaterialTheme.colorScheme.primary)
                     Text(if (summary.reading) "Lectura en curso" else if (loaded) "Datos cargados en sesión" else "Tu DNIe en tu teléfono", style = MaterialTheme.typography.titleLarge)
@@ -41,6 +42,7 @@ fun HomeScreen(summary: HomeSummary, onRead: () -> Unit, onIdentity: () -> Unit,
                 }
             }
         }
+        if (!onboardingDismissed && !savedCan && !loaded) item { pe.gob.reniec.dnie.ui.onboarding.FirstRunWelcomeCard(onOpenGuide, onDismissOnboarding) }
         item { Text("Qué quieres hacer", style = MaterialTheme.typography.titleLarge) }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {

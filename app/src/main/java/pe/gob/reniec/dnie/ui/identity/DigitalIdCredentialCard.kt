@@ -1,5 +1,6 @@
 package pe.gob.reniec.dnie.ui.identity
 
+import pe.gob.reniec.dnie.ui.design.AetherCard as Card
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -16,7 +17,7 @@ internal fun DigitalIdCredentialCard(document: IcaoDocument, onUseMark: () -> Un
     val person = content(IcaoFile.DG1) as? IcaoContent.Identity
     val photo = (content(IcaoFile.DG2) as? IcaoContent.Images)?.images?.firstOrNull()
     val mark = (content(IcaoFile.DG7) as? IcaoContent.Images)?.images?.firstOrNull()
-    ElevatedCard(Modifier.fillMaxWidth()) {
+    Card(Modifier.fillMaxWidth(), shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)) {
         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Credencial digital · lectura del DNIe", style = MaterialTheme.typography.labelLarge)
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {

@@ -3,25 +3,30 @@ namespace DniBridge.Manager;
 
 internal static class Aether {
     public static bool Dark {get;private set;}
-    public static Color Primary=>Color.FromArgb(Dark?0x4C:0,Dark?0x8E:74,Dark?0xFF:198);
+    public static Color Primary=>C(0x004AC6,0x6B9EFF);
+    public static Color PrimaryText=>C(0xFFFFFF,0x00174B);
+    public static Color Outline=>C(0x737686,0x8D94A6);
     private static Color C(int light,int dark)=>Color.FromArgb(unchecked((int)0xFF000000)|(Dark?dark:light));
     public static Color Background=>C(0xF8F9FF,0x0B1326);
     public static Color Surface=>C(0xFFFFFF,0x131B2E);
-    public static Color Container=>C(0xEFF4FF,0x1E293B);
+    public static Color Container=>C(0xEFF4FF,0x1D2840);
     public static Color Border=>C(0xDCE9FF,0x2E3C56);
-    public static Color Text=>C(0x0B1C30,0xE2E8F0);
+    public static Color Text=>C(0x0B1C30,0xEAF1FF);
     public static Color Muted=>C(0x434655,0xA9B5CB);
     public static Color Success=>C(0x006A63,0x67D9C8);
     public static Color Error=>C(0xBA1A1A,0xFFB4AB);
     public static Color Amber=>C(0xD97706,0xFBBF24);
-    public static Color SecondaryFill=>C(0xE5EEFF,0x1E293B);
-    public static Color SecondaryText=>C(0x00174B,0xE2E8F0);
+    public static Color SecondaryFill=>C(0xE5EEFF,0x243554);
+    public static Color SecondaryText=>C(0x00174B,0xEAF1FF);
+    public static void UpdateThemeButton(Button button){button.Text=Dark?"Modo claro":"Modo oscuro";button.AccessibleName=button.Text;
+        if(button is AetherButton a){a.ThemeAction=true;button.Padding=new Padding(34,7,12,7);}button.Invalidate();}
     private static Color[] Palette()=>[Primary,Background,Surface,Container,Border,Text,Muted,Success,Error,Amber,SecondaryFill,SecondaryText];
     public static void Apply(System.Windows.Forms.Control root,bool dark) {
         var before=Palette();Dark=dark;var after=Palette();
         void Refresh(System.Windows.Forms.Control c) {
             int background=Array.IndexOf(before,c.BackColor),foreground=Array.IndexOf(before,c.ForeColor);
             if(background>=0)c.BackColor=after[background];if(foreground>=0)c.ForeColor=after[foreground];
+            if(c is AetherButton b && (b.PrimaryAction || b.IsSelectedSegment)){b.BackColor=Primary;b.ForeColor=PrimaryText;}
             if(c is ComboBox or TextBoxBase or ListBox) {c.BackColor=Surface;c.ForeColor=Text;}
             foreach(System.Windows.Forms.Control child in c.Controls)Refresh(child);c.Invalidate();
         }
@@ -33,8 +38,9 @@ internal static class Aether {
         path.AddArc(r.Right-d,r.Bottom-d,d,d,0,90);path.AddArc(r.X,r.Bottom-d,d,d,90,90);path.CloseFigure();return path;
     }
     public static void Style(Button button,bool primary=false) {
+        if(button is AetherButton a)a.PrimaryAction=primary;button.MinimumSize=new Size(36,36);
         button.FlatStyle=FlatStyle.Flat;button.FlatAppearance.BorderSize=0;
-        button.BackColor=primary?Primary:SecondaryFill;button.ForeColor=primary?Color.White:SecondaryText;
+        button.BackColor=primary?Primary:SecondaryFill;button.ForeColor=primary?PrimaryText:SecondaryText;
         button.Font=new Font("Segoe UI",10,FontStyle.Bold);button.Padding=new Padding(12,7,12,7);button.AutoSize=true;button.Cursor=Cursors.Hand;
     }
     public static Color SurfaceBehind(System.Windows.Forms.Control control) {
@@ -44,6 +50,8 @@ internal static class Aether {
     }
 }
 internal sealed class AetherButton : Button {
+    public bool PrimaryAction {get;set;}
+    public bool ThemeAction {get;set;}
     private bool hover;
     private bool selectedSegment;
     public bool IsSelectedSegment {get=>selectedSegment;set{if(selectedSegment==value)return;selectedSegment=value;Invalidate();}}
@@ -59,7 +67,11 @@ internal sealed class AetherButton : Button {
         var color=Enabled||IsSelectedSegment?BackColor:Aether.Container;if(hover && Enabled)color=ControlPaint.Light(color,.1f);
         using var fill=new SolidBrush(color);g.FillPath(fill,path);
         if(Focused){using var border=new Pen(Aether.Primary,1.5f);g.DrawPath(border,path);}
-        TextRenderer.DrawText(g,Text,Font,new Rectangle(4,3,Width-8,Height-6),Enabled||IsSelectedSegment?ForeColor:Color.FromArgb(115,118,134),TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter|TextFormatFlags.EndEllipsis|TextFormatFlags.NoPrefix);
+        if(ThemeAction){using var icon=new Pen(Aether.Primary,1.5f);float y=Height/2f-7;
+            if(Aether.Dark){g.DrawEllipse(icon,13,y+3,8,8);g.DrawLine(icon,17,y-1,17,y+1);g.DrawLine(icon,17,y+13,17,y+15);g.DrawLine(icon,9,y+7,11,y+7);g.DrawLine(icon,23,y+7,25,y+7);}
+            else {g.DrawArc(icon,11,y,13,14,70,260);g.DrawArc(icon,16,y-2,10,12,150,160);}}
+        int inset=ThemeAction?32:4;
+        TextRenderer.DrawText(g,Text,Font,new Rectangle(inset,3,Width-inset-4,Height-6),Enabled||IsSelectedSegment?ForeColor:Aether.Outline,TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter|TextFormatFlags.EndEllipsis|TextFormatFlags.NoPrefix);
     }
 }
 internal sealed class AetherCard : Panel {

@@ -28,13 +28,13 @@ class AetherButton(text: String,private val variant: ButtonVariant=ButtonVariant
         try {
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON)
             g.color=when { !isEnabled -> AetherSwingTheme.container
-                variant==ButtonVariant.PRIMARY -> if(model.isRollover) Color(0x003A9B) else AetherSwingTheme.primary
-                variant==ButtonVariant.SECONDARY -> if(model.isRollover) Color(0xD0E1FF) else AetherSwingTheme.primaryContainer
+                variant==ButtonVariant.PRIMARY -> if(model.isRollover) (if(AetherSwingTheme.dark) AetherSwingTheme.primary.brighter() else Color(0x003A9B)) else AetherSwingTheme.primary
+                variant==ButtonVariant.SECONDARY -> if(model.isRollover) (if(AetherSwingTheme.dark) AetherSwingTheme.primaryContainer.brighter() else Color(0xD0E1FF)) else AetherSwingTheme.primaryContainer
                 else -> if(model.isRollover) AetherSwingTheme.container else AetherSwingTheme.surface }
             g.fillRoundRect(1,1,width-2,height-2,12,12)
             if(variant==ButtonVariant.OUTLINE || hasFocus()) { g.color=if(hasFocus()) AetherSwingTheme.primary else AetherSwingTheme.border;g.drawRoundRect(1,1,width-3,height-3,12,12) }
         } finally { g.dispose() }
-        foreground=if(!isEnabled) AetherSwingTheme.outline else if(variant==ButtonVariant.PRIMARY) Color.WHITE else AetherSwingTheme.onPrimaryContainer
+        foreground=if(!isEnabled) AetherSwingTheme.outline else if(variant==ButtonVariant.PRIMARY) AetherSwingTheme.onPrimary else AetherSwingTheme.onPrimaryContainer
         super.paintComponent(graphics)
     }
 }
@@ -43,7 +43,7 @@ enum class PillState { IDLE, WAITING, CONNECTED, ERROR }
 class AetherToggleChip(text: String,selected: Boolean=false) : JCheckBox(text,selected) {
     init { isOpaque=false;isBorderPainted=false;isFocusPainted=false;cursor=Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
         border=EmptyBorder(7,12,7,12);font=Font("Segoe UI",Font.PLAIN,12) }
-    override fun getPreferredSize()=Dimension(getFontMetrics(font).stringWidth(text)+34,34)
+    override fun getPreferredSize()=Dimension(getFontMetrics(font).stringWidth(text)+34,36)
     override fun paintComponent(graphics: Graphics) {
         val g=graphics.create() as Graphics2D
         try { g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON)
@@ -65,9 +65,9 @@ class AetherStatusPill : JLabel("Desconectado") {
     override fun paintComponent(graphics: Graphics) {
         val g=graphics.create() as Graphics2D
         try { g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON)
-            g.color=when(state) { PillState.CONNECTED->AetherSwingTheme.secondaryContainer;PillState.WAITING->Color(0xFFF8E1);PillState.ERROR->Color(0xFFEDEA);else->AetherSwingTheme.container }
+            g.color=when(state) { PillState.CONNECTED->AetherSwingTheme.secondaryContainer;PillState.WAITING->if(AetherSwingTheme.dark) Color(0x443512) else Color(0xFFF8E1);PillState.ERROR->if(AetherSwingTheme.dark) Color(0x5C2524) else Color(0xFFEDEA);else->AetherSwingTheme.container }
             g.fillRoundRect(0,0,width,height,height,height)
-            g.color=when(state) { PillState.CONNECTED->AetherSwingTheme.secondary;PillState.WAITING->Color(0xD97706);PillState.ERROR->AetherSwingTheme.error;else->AetherSwingTheme.outline }
+            g.color=when(state) { PillState.CONNECTED->AetherSwingTheme.secondary;PillState.WAITING->if(AetherSwingTheme.dark) Color(0xFBBF24) else Color(0xD97706);PillState.ERROR->AetherSwingTheme.error;else->AetherSwingTheme.outline }
             g.fillOval(10,height/2-3,6,6)
         } finally { g.dispose() }
         foreground=AetherSwingTheme.muted;super.paintComponent(graphics)

@@ -1,5 +1,6 @@
 package pe.gob.reniec.dnie.ui.vault
 
+import pe.gob.reniec.dnie.ui.design.AetherCard as Card
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts

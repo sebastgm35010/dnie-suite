@@ -1,5 +1,6 @@
 package pe.gob.reniec.dnie.ui.identity
 
+import pe.gob.reniec.dnie.ui.design.AetherCard as Card
 import android.graphics.Bitmap
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult

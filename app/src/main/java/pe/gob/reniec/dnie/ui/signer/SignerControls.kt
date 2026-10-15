@@ -2,6 +2,8 @@ package pe.gob.reniec.dnie.ui.signer
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
+import androidx.compose.animation.animateContentSize
+import pe.gob.reniec.dnie.ui.design.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
@@ -19,6 +21,7 @@ import pe.gob.reniec.dnie.pdf.*
 internal fun SignerControls(viewModel: SignerViewModel, workspace: SigningWorkspace, doc: SigningDocument,
     enabled: Boolean, editing: Boolean, batch: Boolean, onReadIdentity: () -> Unit,
     onReadCertificates: () -> Unit, onExportCertificate: (Boolean) -> Unit) {
+    val reducedMotion = rememberReducedMotion()
     var tab by rememberSaveable { mutableStateOf(0) }
     val config = doc.options
     val look = config.appearance
@@ -36,7 +39,7 @@ internal fun SignerControls(viewModel: SignerViewModel, workspace: SigningWorksp
             Tab(selected = tab == index, onClick = { tab = index }, text = { Text(title, style = MaterialTheme.typography.labelMedium) })
         }
     }
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(Modifier.animateContentSize(aetherSpring(reducedMotion)), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         when (tab) {
             0 -> {
                 SwitchRow("Mostrar sello en el PDF", config.visible, enabled) { value -> viewModel.updateOptions { it.copy(visible = value) } }

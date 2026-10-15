@@ -62,6 +62,7 @@ fun NavGraph(
     onOpenBridge: () -> Unit = {},
     onOpenSuite: () -> Unit = {}
 ) {
+    val reducedMotion = pe.gob.reniec.dnie.ui.design.rememberReducedMotion()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     LaunchedEffect(currentRoute) { onRouteChanged(currentRoute) }
@@ -119,10 +120,10 @@ fun NavGraph(
             modifier = Modifier.padding(innerPadding),
             // Bottom tabs switch immediately: avoid laying out and drawing two
             // feature screens together during Navigation's default crossfade.
-            enterTransition = { EnterTransition.None },
-            exitTransition = { ExitTransition.None },
-            popEnterTransition = { EnterTransition.None },
-            popExitTransition = { ExitTransition.None }
+            enterTransition = { if (!reducedMotion && (targetState.destination.route == "settings" || initialState.destination.route == "settings")) androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(140)) else EnterTransition.None },
+            exitTransition = { if (!reducedMotion && (targetState.destination.route == "settings" || initialState.destination.route == "settings")) androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(100)) else ExitTransition.None },
+            popEnterTransition = { if (!reducedMotion && (targetState.destination.route == "settings" || initialState.destination.route == "settings")) androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(140)) else EnterTransition.None },
+            popExitTransition = { if (!reducedMotion && (targetState.destination.route == "settings" || initialState.destination.route == "settings")) androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(100)) else ExitTransition.None }
         ) {
             composable(Screen.Home.route) {
                 fun open(route: String) { navController.navigate(route) { launchSingleTop = true } }

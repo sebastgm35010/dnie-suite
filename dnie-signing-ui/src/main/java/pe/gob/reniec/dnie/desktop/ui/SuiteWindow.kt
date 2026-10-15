@@ -56,7 +56,9 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
     private val clearWhite=AetherToggleChip("Limpiar fondo blanco",true)
     private var handwrittenImage: ByteArray?=null
     private var imageLoading=false
-    private val themeButton=AetherButton("Oscuro",ButtonVariant.GHOST)
+    private val themeButton=AetherButton("Modo oscuro",ButtonVariant.GHOST)
+    private val guideButton=AetherButton("?",ButtonVariant.GHOST).apply { name="suite-guide";toolTipText="Guía rápida";getAccessibleContext().accessibleName="Guía rápida" }
+    private val quickGuide=SuiteQuickGuideDialog(this)
     private val target=AetherComboBox(StampPageTarget.entries.toTypedArray())
     private val colors=ColorSwatchSelector()
     private val title=JTextField("FIRMADO DIGITALMENTE")
@@ -99,7 +101,7 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
         brand.add(JLabel("Firma digital PAdES y lotes privados").apply { foreground=AetherSwingTheme.muted;font=font.deriveFont(11f) })
         header.add(brand,BorderLayout.WEST)
         header.add(JPanel(FlowLayout(FlowLayout.RIGHT,7,0)).apply { isOpaque=false
-            add(pill);add(JLabel("Teléfono").apply { border=EmptyBorder(0,0,0,5) });phone.preferredSize=Dimension(155,36);add(phone);add(connect);add(qr);add(disconnect);add(network);add(themeButton)
+            add(pill);add(JLabel("Teléfono").apply { border=EmptyBorder(0,0,0,5) });phone.preferredSize=Dimension(155,36);add(phone);add(connect);add(qr);add(disconnect);add(network);add(themeButton);add(guideButton)
         },BorderLayout.EAST);add(header,BorderLayout.NORTH)
         buildAdvancedDialog()
         val add=AetherButton("+ Añadir archivos");val remove=AetherButton("Quitar",ButtonVariant.GHOST)
@@ -209,9 +211,10 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
         canvas.transferHandler=list.transferHandler
         imageButton.name="stamp-image";backgroundMode.name="stamp-background";dateFormat.name="stamp-date-format";density.name="stamp-density";themeButton.name="suite-theme"
         imageButton.addActionListener {if(!busy && !imageLoading)chooseImage()}
+        guideButton.addActionListener { quickGuide.open() }
         themeButton.addActionListener {
             AetherSwingTheme.apply(this,!AetherSwingTheme.dark);prefs.putBoolean("theme.dark",AetherSwingTheme.dark)
-            themeButton.text=if(AetherSwingTheme.dark) "Claro" else "Oscuro"
+            updateThemeButton(themeButton)
         }
         listOf(canvas,list).forEach {component->PdfDropSupport.install(component,{!busy},{canvas.dropHighlight=it}) {dropped->addFiles(dropped,javax.swing.filechooser.FileSystemView.getFileSystemView())}}
 
@@ -279,7 +282,7 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
         }
         align(contentPane);align(advanced.contentPane)
         status.addPropertyChangeListener("text") { status.toolTipText=status.text }
-        AetherSwingTheme.apply(this,prefs.getBoolean("theme.dark",false));themeButton.text=if(AetherSwingTheme.dark) "Claro" else "Oscuro"
+        AetherSwingTheme.apply(this,prefs.getBoolean("theme.dark",false));updateThemeButton(themeButton)
         restoreDesign(savedDesign);setBusy(false);scheduleStamp()
         if(initialFiles.isNotEmpty()) addFiles(initialFiles.map(Path::toFile),javax.swing.filechooser.FileSystemView.getFileSystemView())
     }
@@ -447,7 +450,7 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
         controller.openOutput(output,reveal,desktopActions) { ok -> if(!ok)status.text="No se pudo abrir el resultado; comprueba su carpeta." }
     }
     override fun dispose() {
-        if(!resourcesClosed) { resourcesClosed=true;stampTimer.stop();canvas.stampImage=null;canvas.image=null;designStore.close();pairingQr.close();advanced.dispose();controller.close();bridgePanel?.close() }
+        if(!resourcesClosed) { resourcesClosed=true;stampTimer.stop();canvas.stampImage=null;canvas.image=null;designStore.close();pairingQr.close();quickGuide.close();advanced.dispose();controller.close();bridgePanel?.close() }
         super.dispose()
     }
     private fun renderStamp() {

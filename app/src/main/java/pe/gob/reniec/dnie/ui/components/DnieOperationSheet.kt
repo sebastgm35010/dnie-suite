@@ -1,5 +1,6 @@
 package pe.gob.reniec.dnie.ui.components
 
+import pe.gob.reniec.dnie.ui.design.*
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.*
 import androidx.compose.runtime.getValue
@@ -32,10 +33,12 @@ fun DnieOperationSheet(
     terminalActions: @Composable () -> Unit = {}
 ) {
     if (!show) return
+    val reducedMotion = rememberReducedMotion()
     ModalBottomSheet(onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         modifier = Modifier.testTag("dnie_operation_sheet")) {
-        AnimatedContent(targetState = phase, label = "dnie-operation-phase") { current ->
+        AnimatedContent(targetState = phase, transitionSpec = { aetherContentTransition(reducedMotion, targetState == DnieOperationPhase.COMPLETED) }, label = "dnie-operation-phase") { current ->
             Column(Modifier.fillMaxWidth().imePadding().verticalScroll(rememberScrollState()).padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -43,18 +46,7 @@ fun DnieOperationSheet(
                 if (current == DnieOperationPhase.CREDENTIALS) credentials()
                 else {
                     val terminal = current == DnieOperationPhase.COMPLETED || current == DnieOperationPhase.ERROR
-                    val tint = if (current == DnieOperationPhase.ERROR) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-                    val pulse = if (!terminal) {
-                        val transition = rememberInfiniteTransition(label = "nfc-pulse")
-                        transition.animateFloat(1f, 1.07f, infiniteRepeatable(tween(1100), RepeatMode.Reverse), label = "nfc-scale")
-                    } else null
-                    Box(Modifier.size(104.dp).graphicsLayer { val scale = pulse?.value ?: 1f; scaleX = scale; scaleY = scale }.background(tint.copy(alpha = .12f), CircleShape), contentAlignment = Alignment.Center) {
-                        Icon(when (current) {
-                            DnieOperationPhase.COMPLETED -> Icons.Default.CheckCircle
-                            DnieOperationPhase.ERROR -> Icons.Default.ErrorOutline
-                            else -> Icons.Default.Nfc
-                        }, contentDescription = null, tint = tint, modifier = Modifier.size(52.dp))
-                    }
+                    NfcOperationVisual(current, reducedMotion)
                     Text(when (current) {
                         DnieOperationPhase.AWAITING_TAG -> "Acerca tu DNIe al reverso del teléfono"
                         DnieOperationPhase.TAG_ENGAGED -> "DNIe detectado · mantenlo inmóvil"

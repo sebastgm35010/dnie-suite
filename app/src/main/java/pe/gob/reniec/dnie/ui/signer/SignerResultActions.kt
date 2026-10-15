@@ -1,5 +1,6 @@
 package pe.gob.reniec.dnie.ui.signer
 
+import pe.gob.reniec.dnie.ui.design.AetherCard as Card
 import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.layout.*

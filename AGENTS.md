@@ -1,5 +1,7 @@
 # Fork de evolución
 
+- Para decisiones visuales, paleta Claro/Oscuro, tipografía y animaciones, seguir `DESIGN.md`.
+
 Repositorio privado unificado: `sebastgm35010/dnie-suite`, rama principal `main`. Leer `README.md` y `docs/operations/GITHUB_Y_COMPILACION_MONOREPO.md` para compilar un clon. Mantener motores, plataformas e interfaces separados dentro del monorepo; claves privadas, datos de ejecución y compilaciones quedan fuera de Git.
 
 Esta carpeta es el fork autorizado para nuevas funcionalidades y refactorización.

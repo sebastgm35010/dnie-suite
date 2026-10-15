@@ -32,6 +32,8 @@ class OperationSheetR8Test {
         rule.onNodeWithTag("operation_pin").performTextInput("1234")
         rule.onNodeWithText("Continuar a lectura NFC").assertIsEnabled()
         rule.onNodeWithText("Cambiar").performClick()
+        // IME/insets and sheet layout settle asynchronously on physical Android.
+        rule.waitUntil(5000) { rule.onAllNodesWithText("CAN (6 dígitos)").fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithText("CAN (6 dígitos)").assertExists()
     }
     @Test fun anErrorRequiresAnExplicitNewAuthorization() {

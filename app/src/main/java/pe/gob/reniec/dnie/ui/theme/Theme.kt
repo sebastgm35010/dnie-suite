@@ -39,6 +39,7 @@ private val LightColorScheme = lightColorScheme(
     onSurface = androidx.compose.ui.graphics.Color(0xFF0B1C30),
     surfaceVariant = androidx.compose.ui.graphics.Color(0xFFEFF4FF),
     onSurfaceVariant = androidx.compose.ui.graphics.Color(0xFF434655),
+    outlineVariant = androidx.compose.ui.graphics.Color(0xFFDCE9FF),
     outline = androidx.compose.ui.graphics.Color(0xFF737686),
     surfaceTint = androidx.compose.ui.graphics.Color(0xFF004AC6),
     surfaceBright = androidx.compose.ui.graphics.Color(0xFFF8F9FF),
@@ -51,18 +52,18 @@ private val LightColorScheme = lightColorScheme(
     error = androidx.compose.ui.graphics.Color(0xFFBA1A1A)
 )
 private val DarkColorScheme = darkColorScheme(
-    primary = androidx.compose.ui.graphics.Color(0xFFB4C5FF),
+    primary = androidx.compose.ui.graphics.Color(0xFF6B9EFF),
     onPrimary = androidx.compose.ui.graphics.Color(0xFF00174B),
-    primaryContainer = androidx.compose.ui.graphics.Color(0xFF193B70),
+    primaryContainer = androidx.compose.ui.graphics.Color(0xFF243554),
     onPrimaryContainer = androidx.compose.ui.graphics.Color(0xFFE5EEFF),
-    secondary = androidx.compose.ui.graphics.Color(0xFF80D5CB),
-    secondaryContainer = androidx.compose.ui.graphics.Color(0xFF00504A),
+    secondary = androidx.compose.ui.graphics.Color(0xFF67D9C8),
+    secondaryContainer = androidx.compose.ui.graphics.Color(0xFF123D39),
     onSecondaryContainer = androidx.compose.ui.graphics.Color(0xFF9CF2E8),
-    background = androidx.compose.ui.graphics.Color(0xFF101A29),
-    surface = androidx.compose.ui.graphics.Color(0xFF172539),
+    background = androidx.compose.ui.graphics.Color(0xFF0B1326),
+    surface = androidx.compose.ui.graphics.Color(0xFF131B2E),
     onSurface = androidx.compose.ui.graphics.Color(0xFFEAF1FF),
-    surfaceVariant = androidx.compose.ui.graphics.Color(0xFF24354B),
-    onSurfaceVariant = androidx.compose.ui.graphics.Color(0xFFC3C6D7),
+    surfaceVariant = androidx.compose.ui.graphics.Color(0xFF1D2840),
+    onSurfaceVariant = androidx.compose.ui.graphics.Color(0xFFA9B5CB),
     onBackground = androidx.compose.ui.graphics.Color(0xFFEAF1FF),
     onSecondary = androidx.compose.ui.graphics.Color(0xFF00201D),
     tertiary = androidx.compose.ui.graphics.Color(0xFF93CCFF),
@@ -70,15 +71,15 @@ private val DarkColorScheme = darkColorScheme(
     tertiaryContainer = androidx.compose.ui.graphics.Color(0xFF004B73),
     onTertiaryContainer = androidx.compose.ui.graphics.Color(0xFFCCE5FF),
     outline = androidx.compose.ui.graphics.Color(0xFF8D94A6),
-    outlineVariant = androidx.compose.ui.graphics.Color(0xFF434C5F),
-    surfaceTint = androidx.compose.ui.graphics.Color(0xFFB4C5FF),
-    surfaceBright = androidx.compose.ui.graphics.Color(0xFF293A52),
-    surfaceDim = androidx.compose.ui.graphics.Color(0xFF101A29),
-    surfaceContainerLowest = androidx.compose.ui.graphics.Color(0xFF0B1421),
-    surfaceContainerLow = androidx.compose.ui.graphics.Color(0xFF172539),
-    surfaceContainer = androidx.compose.ui.graphics.Color(0xFF1D2D42),
-    surfaceContainerHigh = androidx.compose.ui.graphics.Color(0xFF24354B),
-    surfaceContainerHighest = androidx.compose.ui.graphics.Color(0xFF2B3E55)
+    outlineVariant = androidx.compose.ui.graphics.Color(0xFF2E3C56),
+    surfaceTint = androidx.compose.ui.graphics.Color(0xFF6B9EFF),
+    surfaceBright = androidx.compose.ui.graphics.Color(0xFF243554),
+    surfaceDim = androidx.compose.ui.graphics.Color(0xFF0B1326),
+    surfaceContainerLowest = androidx.compose.ui.graphics.Color(0xFF080E1C),
+    surfaceContainerLow = androidx.compose.ui.graphics.Color(0xFF131B2E),
+    surfaceContainer = androidx.compose.ui.graphics.Color(0xFF1D2840),
+    surfaceContainerHigh = androidx.compose.ui.graphics.Color(0xFF243554),
+    surfaceContainerHighest = androidx.compose.ui.graphics.Color(0xFF2E4063)
 )
 
 @Composable
@@ -112,6 +113,8 @@ fun DnieTheme(
             val window = (view.context as? Activity)?.window
             if (window != null) {
                 window.statusBarColor = colorScheme.background.toArgb()
+                window.navigationBarColor = colorScheme.surface.toArgb()
+                WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = !resolvedDark
                 WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !resolvedDark
             }
             onDispose { }
@@ -121,7 +124,7 @@ fun DnieTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
-        shapes = Shapes(small = RoundedCornerShape(10.dp), medium = RoundedCornerShape(12.dp), large = RoundedCornerShape(16.dp)),
+        shapes = Shapes(small = RoundedCornerShape(8.dp), medium = RoundedCornerShape(12.dp), large = RoundedCornerShape(16.dp)),
         content = {
             if (mode != null || darkTheme != null || view.isInEditMode) content()
             else androidx.compose.material3.Surface(modifier = androidx.compose.ui.Modifier.fillMaxSize()) {}

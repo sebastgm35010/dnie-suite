@@ -15,7 +15,7 @@ class RedesignContinuityTest {
 
     @Test fun vaultIsAPrimaryDestinationAndDoesNotHideOtherTabs() {
         rule.onNodeWithTag("nav_vault").performClick()
-        rule.onNodeWithText("ARCHIVOS PROTEGIDOS").assertExists()
+        rule.onNodeWithText("Archivos protegidos").assertExists()
         rule.onNodeWithTag("nav_home").assertIsDisplayed()
         rule.onNodeWithTag("nav_certificates").performClick()
         rule.onNodeWithTag("nav_certificates").assertIsSelected()
