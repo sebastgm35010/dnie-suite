@@ -32,9 +32,9 @@ fun AetherSegmentedTabs(items: List<String>, selectedIndex: Int, onSelect: (Int)
     BoxWithConstraints(modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium)
         .background(MaterialTheme.colorScheme.surfaceContainer).padding(4.dp).selectableGroup()) {
         val cell = maxWidth / items.size
-        val position = animateDpAsState(cell * (if (rtl) items.lastIndex - selectedIndex else selectedIndex), aetherSpring(reduced), label = "segmented-position")
+        val position = animateDpAsState(cell * selectedIndex, aetherSpring(reduced), label = "segmented-position")
         Box(Modifier.matchParentSize()) {
-            Box(Modifier.width(cell).fillMaxHeight().graphicsLayer { translationX = with(density) { position.value.toPx() } }
+            Box(Modifier.width(cell).fillMaxHeight().graphicsLayer { translationX = with(density) { position.value.toPx() } * if (rtl) -1f else 1f }.testTag("segmented_indicator")
                 .clip(MaterialTheme.shapes.small).background(if (MaterialTheme.colorScheme.surface.luminance() < .2f) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface)
                 .border(BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant), MaterialTheme.shapes.small))
         }

@@ -34,7 +34,7 @@ Referencias: [listas y animación de elementos Compose](https://developer.androi
 
 - 255 casos JVM/Android unitarios en 65 suites: 254 aprobados, 0 fallos/errores y 1 omisión preexistente por permisos Windows de un enlace de directorio.
 - Manager: 52 comprobaciones, sin llamar al servicio ni operar la tarjeta. Diálogo PIN: confirmar/cancelar/Escape/cerrar y borrado de campo aprobados. Selección redondeada y finalización de temporizadores verificadas.
-- Android: 13 instrumentadas aprobadas en 29,883 s, incluidas R8/R9 y medición de navegación. Se usan CAN/PIN sintéticos y almacenes inyectados; no se cambia CAN ni ajustes del usuario. Capturas de guía y pantalla Inicio verificadas.
+- Android: 14 instrumentadas aprobadas en 29,435 s, incluidas R8/R9 y medición de navegación. Se usan CAN/PIN sintéticos y almacenes inyectados; no se cambia CAN ni ajustes del usuario. Capturas de guía y pantalla Inicio verificadas.
 - Debug/release y auxiliar compilados offline. Instalaciones Success; versión instalada 3.1.3 / código 87 y misma identidad de firma que 86. Producción Android sin diagnóstico compilado/manifiesto; exclusiones nativas verificadas separadamente del paquete Windows heredado usado por el verificador general.
 - Accesos Windows actualizados con respaldo de los anteriores; procesos de usuario, servicio SYSTEM, controlador e identidad de PC conservados. AndroidPackages conserva 86 y 87; 85 archivada en D.
 
@@ -44,12 +44,16 @@ Mismo auxiliar y recorrido sobre los ejecutables instalados 86 y 87. FrameMetric
 
 | Medida | 3.1.2 / 86 | 3.1.3 / 87 |
 | --- | ---: | ---: |
-| Muestras | 997 | 1014 |
-| Mediana | 6,01 ms | 6,12 ms |
-| Percentil 95 | 8,88 ms | 7,71 ms |
-| Máximo | 140,33 ms | 110,41 ms |
+| Muestras | 997 | 900 |
+| Mediana | 6,01 ms | 6,13 ms |
+| Percentil 95 | 8,88 ms | 8,94 ms |
+| Máximo | 140,33 ms | 80,15 ms |
 | Más de 16,67 ms | 5 | 2 |
 
-El percentil 95 mejora en esta ejecución; la mediana es similar y persisten cuadros largos aislados. Una comparación bajo instrumentación no prueba causalidad ni 60 FPS constantes. Pendiente carga representativa con PDF, lotes y DNI físico.
+El percentil 95 aumenta en esta ejecución; la mediana es similar y persisten cuadros largos aislados. Una comparación bajo instrumentación no prueba causalidad ni 60 FPS constantes. Pendiente carga representativa con PDF, lotes y DNI físico.
 
 La primera prueba Swing usó un ActionEvent nulo al simular Escape; se corrigió el fixture y se añadió un watchdog. Una medición móvil se interrumpió por bloqueo de pantalla; se repitió tras el aviso y desbloqueo del usuario. No se reinterpretan esos fallos de ensayo como errores del motor.
+
+Revisión final: indicador segmentado correcto en LTR/RTL y coordenadas semánticas alineadas con la capa de dibujo. La prueba de geometría adicional pasó junto a las regresiones; APK 87 se recompiló e instaló con la misma firma y versión, sin borrar datos.
+
+Se conserva también la medición del candidato previo (P95 7,71 ms); la tabla corresponde al APK final. La variación entre ejecuciones impide atribuir una reducción estable al rediseño.

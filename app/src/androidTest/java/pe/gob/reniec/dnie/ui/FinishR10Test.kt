@@ -49,4 +49,16 @@ class FinishR10Test {
         rule.onNodeWithText("Comparar huella con la PC").performClick()
         rule.onNodeWithText("AA:BB:CC").assertExists()
     }
+    @Test fun segmentedIndicatorFollowsTabsInRightToLeftLayout() {
+        val selected=mutableStateOf(0)
+        rule.setContent {CompositionLocalProvider(LocalReducedMotionOverride provides true,
+            androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Rtl) {DnieTheme(false) {
+            AetherSegmentedTabs(listOf("Primero","Segundo","Tercero"),selected.value,{selected.value=it})
+        }}}
+        fun center(text: String)=rule.onNodeWithText(text).fetchSemanticsNode().boundsInRoot.center.x
+        fun indicator()=rule.onNodeWithTag("segmented_indicator").fetchSemanticsNode().boundsInRoot.center.x
+        assertEquals(center("Primero"),indicator(),1f)
+        rule.onNodeWithText("Tercero").performClick()
+        assertEquals(center("Tercero"),indicator(),1f)
+    }
 }
