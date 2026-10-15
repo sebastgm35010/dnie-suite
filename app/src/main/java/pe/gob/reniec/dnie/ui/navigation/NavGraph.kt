@@ -239,31 +239,15 @@ fun NavGraph(
 /** PDF and batch retain separate routes and ViewModels. */
 @Composable
 private fun SigningModeNavigation(batch: Boolean, navController: NavHostController) {
-    androidx.compose.material3.Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = MaterialTheme.shapes.medium, modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
-    Row(Modifier.fillMaxWidth().padding(4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        listOf(Screen.Signer to "PDF individual", Screen.BatchSigner to "Lotes").forEach { (screen, label) ->
-            androidx.compose.material3.FilledTonalButton(modifier = Modifier.weight(1f), enabled = (screen == Screen.BatchSigner) != batch,
-                shape = MaterialTheme.shapes.small,
-                colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
-                    containerColor = androidx.compose.ui.graphics.Color.Transparent,
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    disabledContainerColor = MaterialTheme.colorScheme.surface,
-                    disabledContentColor = MaterialTheme.colorScheme.primary),
-                onClick = { navController.navigate(screen.route) { launchSingleTop = true } }) { Text(label) }
-        }
-    }
-}
+    pe.gob.reniec.dnie.ui.design.AetherSegmentedTabs(listOf("PDF individual", "Lotes"), if (batch) 1 else 0, { index ->
+        navController.navigate(if (index == 1) Screen.BatchSigner.route else Screen.Signer.route) { launchSingleTop = true }
+    }, Modifier.padding(horizontal = 16.dp, vertical = 6.dp))
 }
 
 /** Visual grouping only: each route retains its independent reader and NFC owner. */
 @Composable
 private fun DniSectionNavigation(identity: Boolean, navController: NavHostController) {
-    androidx.compose.material3.TabRow(if (identity) 1 else 0) {
-        listOf(Screen.Certificates to "Certificados", Screen.Identity to "Identidad ICAO").forEach { (screen, title) ->
-            androidx.compose.material3.Tab(selected = (screen == Screen.Identity) == identity,
-                modifier = Modifier.testTag(if (screen == Screen.Identity) "nav_identity" else "dni_certificates"),
-                onClick = { if ((screen == Screen.Identity) != identity) navController.navigate(screen.route) { launchSingleTop = true } },
-                text = { Text(title) })
-        }
-    }
+    pe.gob.reniec.dnie.ui.design.AetherSegmentedTabs(listOf("Certificados", "Identidad ICAO"), if (identity) 1 else 0, { index ->
+        navController.navigate(if (index == 1) Screen.Identity.route else Screen.Certificates.route) { launchSingleTop = true }
+    }, Modifier.padding(horizontal = 16.dp, vertical = 6.dp), tags = listOf("dni_certificates", "nav_identity"))
 }

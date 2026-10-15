@@ -23,6 +23,12 @@ fun rememberReducedMotion(): Boolean {
 fun <T> aetherSpring(reduced: Boolean, stiffness: Float = 380f, damping: Float = .82f): FiniteAnimationSpec<T> =
     if (reduced) snap() else spring(stiffness = stiffness, dampingRatio = damping)
 
+fun AnimatedContentTransitionScope<Int>.aetherTabTransition(reduced: Boolean): ContentTransform =
+    if (reduced) EnterTransition.None.togetherWith(ExitTransition.None).using(SizeTransform(sizeAnimationSpec = { _, _ -> snap() }))
+    else (slideInHorizontally(aetherSpring(false)) { if (targetState > initialState) it / 6 else -it / 6 } + fadeIn(tween(140)))
+        .togetherWith(slideOutHorizontally(aetherSpring(false)) { if (targetState > initialState) -it / 6 else it / 6 } + fadeOut(tween(100)))
+        .using(SizeTransform(sizeAnimationSpec = { _, _ -> aetherSpring(false) }))
+
 fun <S> AnimatedContentTransitionScope<S>.aetherContentTransition(reduced: Boolean, completed: Boolean = false): ContentTransform =
     if (reduced) EnterTransition.None.togetherWith(ExitTransition.None).using(SizeTransform(sizeAnimationSpec = { _, _ -> snap() }))
     else (fadeIn(tween(180)) + scaleIn(initialScale = .96f, animationSpec = spring(stiffness = 380f,

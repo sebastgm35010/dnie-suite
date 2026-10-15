@@ -57,7 +57,7 @@ fun OnboardingGuideSheet(onDismiss: () -> Unit, onFinish: () -> Unit, onCanSaved
             }
             AnimatedContent(step, transitionSpec = { aetherContentTransition(reduced) }, label = "onboarding-step") { page ->
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                    GuideIllustration(page)
+                    GuideScene(page)
                     when (page) {
                         0 -> {
                             Text("Tu DNIe y el código CAN", style = MaterialTheme.typography.titleLarge)
@@ -91,32 +91,6 @@ fun OnboardingGuideSheet(onDismiss: () -> Unit, onFinish: () -> Unit, onCanSaved
                 if (step == 0) TextButton(onClick = onDismiss) { Text("Saltar guía") }
                 else TextButton(onClick = { step-- }) { Text("Anterior") }
                 Button(onClick = { if (step < 2) step++ else onFinish() }) { Text(if (step < 2) "Siguiente" else "Empezar a usar") }
-            }
-        }
-    }
-}
-
-/** Code-native illustrations, without real identity data, external assets or image downloads. */
-@Composable
-private fun GuideIllustration(step: Int) {
-    val ink = MaterialTheme.colorScheme.primary
-    val fill = MaterialTheme.colorScheme.primaryContainer
-    Canvas(Modifier.fillMaxWidth().height(110.dp).semantics { contentDescription = when(step) { 0 -> "Tarjeta ilustrativa: CAN en la zona inferior"; 1 -> "DNIe junto al reverso del teléfono"; else -> "Teléfono vinculado a una PC" } }) {
-        val w = 150.dp.toPx(); val h = 86.dp.toPx(); val x = (size.width - w) / 2; val y = (size.height - h) / 2
-        if (step == 0) {
-            drawRoundRect(fill, Offset(x, y), Size(w, h), CornerRadius(10.dp.toPx()))
-            drawRoundRect(ink, Offset(x, y), Size(w, h), CornerRadius(10.dp.toPx()), style = Stroke(2.dp.toPx()))
-            drawCircle(ink.copy(alpha = .45f), 12.dp.toPx(), Offset(x + 28.dp.toPx(), y + 30.dp.toPx()))
-            repeat(3) { drawLine(ink.copy(alpha = .5f), Offset(x + 56.dp.toPx(), y + (22 + it * 12).dp.toPx()), Offset(x + 132.dp.toPx(), y + (22 + it * 12).dp.toPx()), 3.dp.toPx()) }
-            repeat(6) { drawCircle(ink, 2.dp.toPx(), Offset(x + (88 + it * 7).dp.toPx(), y + 70.dp.toPx())) }
-        } else {
-            drawRoundRect(fill, Offset(x + 15.dp.toPx(), y), Size(44.dp.toPx(), h), CornerRadius(8.dp.toPx()))
-            drawRoundRect(ink, Offset(x + 15.dp.toPx(), y), Size(44.dp.toPx(), h), CornerRadius(8.dp.toPx()), style = Stroke(2.dp.toPx()))
-            if (step == 1) drawRoundRect(ink.copy(alpha = .5f), Offset(x + 44.dp.toPx(), y + 24.dp.toPx()), Size(86.dp.toPx(), 50.dp.toPx()), CornerRadius(5.dp.toPx()))
-            else {
-                drawRoundRect(fill, Offset(x + 80.dp.toPx(), y + 10.dp.toPx()), Size(80.dp.toPx(), 58.dp.toPx()), CornerRadius(5.dp.toPx()))
-                drawRoundRect(ink, Offset(x + 80.dp.toPx(), y + 10.dp.toPx()), Size(80.dp.toPx(), 58.dp.toPx()), CornerRadius(5.dp.toPx()), style = Stroke(2.dp.toPx()))
-                drawLine(ink, Offset(x + 120.dp.toPx(), y + 68.dp.toPx()), Offset(x + 120.dp.toPx(), y + 82.dp.toPx()), 3.dp.toPx())
             }
         }
     }

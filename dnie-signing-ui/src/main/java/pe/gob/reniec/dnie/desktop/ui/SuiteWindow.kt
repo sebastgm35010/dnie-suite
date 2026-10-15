@@ -95,7 +95,7 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
         setSize(minOf(1350,available.width),minOf(900,available.height));setLocationRelativeTo(null)
         contentPane.background=AetherSwingTheme.background;layout=BorderLayout(12,12)
         style.name="stamp-style";badge.name="stamp-badge";target.name="stamp-target";previewName.name="stamp-preview-name";page.name="stamp-page"
-        val header=JPanel(BorderLayout(12,0)).apply { isOpaque=false;border=EmptyBorder(12,20,12,20) }
+        val header=JPanel(BorderLayout(12,0)).apply { background=AetherSwingTheme.surface;border=javax.swing.BorderFactory.createCompoundBorder(javax.swing.BorderFactory.createMatteBorder(0,0,1,0,AetherSwingTheme.border),EmptyBorder(12,20,12,20)) }
         val brand=JPanel().apply { isOpaque=false;layout=BoxLayout(this,BoxLayout.Y_AXIS);preferredSize=Dimension(if(available.width<1160) 190 else 260,46) }
         brand.add(JLabel("DNIe Suite 3.1",AetherVectorIcon(),SwingConstants.LEFT).apply { font=Font("Segoe UI",Font.BOLD,if(available.width<1160) 18 else 22);foreground=AetherSwingTheme.text })
         brand.add(JLabel("Firma digital PAdES y lotes privados").apply { foreground=AetherSwingTheme.muted;font=font.deriveFont(11f) })
@@ -147,8 +147,8 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
         fun card(caption: String,build: (JPanel)->Unit) {
             val card=AetherCardPanel().apply { layout=BoxLayout(this,BoxLayout.Y_AXIS);alignmentX=LEFT_ALIGNMENT }
             val contents=JPanel().apply {isOpaque=false;layout=BoxLayout(this,BoxLayout.Y_AXIS)}
-            val toggle=AetherButton(caption+"  -",ButtonVariant.GHOST).apply {alignmentX=LEFT_ALIGNMENT}
-            toggle.addActionListener {contents.isVisible=!contents.isVisible;toggle.text=caption+if(contents.isVisible) "  -" else "  +";inspector.revalidate()}
+            val toggle=AetherDisclosureButton(caption).apply {alignmentX=LEFT_ALIGNMENT}
+            toggle.addActionListener {contents.isVisible=!contents.isVisible;toggle.expanded=contents.isVisible;inspector.revalidate()}
             card.add(toggle);card.add(Box.createVerticalStrut(12));build(contents);card.add(contents)
             inspector.add(card);inspector.add(Box.createVerticalStrut(12))
         }
@@ -253,7 +253,7 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
             override fun intervalRemoved(e: javax.swing.event.ListDataEvent) = update()
             override fun contentsChanged(e: javax.swing.event.ListDataEvent) = update()
         })
-        connect.addActionListener { connect() };disconnect.addActionListener { if(busy && connected && JOptionPane.showConfirmDialog(this,"Interrumpir un lote puede dejar resultados parciales. ¿Desconectar?","Desconectar",JOptionPane.OK_CANCEL_OPTION)!=JOptionPane.OK_OPTION) return@addActionListener; controller.disconnect();connecting=false;pairing=null;pairingQr.close();connected=false;setBusy(false);status.text="Desconectado. No se repite ninguna operación." }
+        connect.addActionListener { connect() };disconnect.addActionListener { if(busy && connected && !AetherConfirmDialog.ask(this,"Desconectar","Interrumpir un lote puede dejar resultados parciales.","Desconectar")) return@addActionListener; controller.disconnect();connecting=false;pairing=null;pairingQr.close();connected=false;setBusy(false);status.text="Desconectado. No se repite ninguna operación." }
         qr.addActionListener { pairing?.let(pairingQr::open) ?: connect(showQr=true) }
         add.addActionListener {
             val chooser=JFileChooser().apply { isMultiSelectionEnabled=true }
@@ -269,7 +269,7 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
         openPdf.addActionListener { openSigned(list.selectedValue,false) }
         open.addActionListener { resultDirectory?.let { runCatching { Desktop.getDesktop().open(it.toFile()) }.onFailure { status.text="No se pudo abrir la carpeta de salida." } } }
         addWindowListener(object: WindowAdapter() { override fun windowClosing(e: WindowEvent) {
-            if(!busy || JOptionPane.showConfirmDialog(this@SuiteWindow,"Hay una operación activa. Cerrar interrumpe la conexión; no se repetirá.","Cerrar Suite",JOptionPane.OK_CANCEL_OPTION)==JOptionPane.OK_OPTION) {
+            if(!busy || AetherConfirmDialog.ask(this@SuiteWindow,"Cerrar Suite","Hay una operación activa. Cerrar interrumpe la conexión; no se repetirá.","Cerrar Suite")) {
                 dispose()
             }
         } })
@@ -341,9 +341,7 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
     }
     private fun signValidated(inputs: List<Path>) {
         if(imageLoading) {status.text="Espera a que termine de cargar la rúbrica.";return}
-        val password=SigningPinPanel(inputs.size);password.focusPin()
-        if(JOptionPane.showConfirmDialog(this,password,"Autorizar firma",JOptionPane.OK_CANCEL_OPTION,JOptionPane.PLAIN_MESSAGE)!=JOptionPane.OK_OPTION) { password.clear();return }
-        val pin=password.takePin()
+        val pin=AetherPinDialog(this,inputs.size).requestPin() ?: return
         if(pin.size !in 4..8 || pin.any { it !in '0'..'9' }) { pin.fill('\u0000');status.text="PIN inválido; no enviado al DNI.";return }
         try {
             val pdfMode=when(mode.selectedIndex) { 0->DesktopPdfMode.VISIBLE;1->DesktopPdfMode.INVISIBLE;else->DesktopPdfMode.DETACHED }

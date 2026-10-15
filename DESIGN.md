@@ -45,6 +45,8 @@ Resorte compartido: rigidez 380 y amortiguación .82; presión .98 con rigidez 5
 
 Observar la escala de animación de Android sin modificarla. Con movimiento reducido: no crear bucles infinitos, escala estable y transiciones inmediatas. La preferencia se adapta en la capa Android; el motor nunca depende de animaciones ni vibración.
 
+R10: selectores segmentados compartidos, indicador consumido en dibujo y transiciones direccionales finitas. Elementos de firma con claves estables y animación de lista desactivada con movimiento reducido. Hover de escritorio finito (140 ms, temporizador coalescente de 16 ms), detenido al completar u ocultar/disponer el control. No llamar 60 FPS garantizados a ese temporizador: medir cuadros reales y declarar muestra, percentiles y limitaciones.
+
 ## 7. Navegación y primer inicio
 
 Cinco destinos principales: Inicio, Mi DNIe, Firmar, Bóveda y PC. Guía de tres pasos solo por acción explícita: CAN opcional, colocación NFC y móvil/Windows. Tarjeta de bienvenida ocultable y persistente; no aparece si hay CAN recordado o datos leídos. Configuración permite reabrir la guía. Guardar CAN es una acción explícita y asíncrona; no pedir PIN ni iniciar NFC en la guía. Explicar que la antena varía por teléfono y que el resultado en pantalla autoriza retirar el DNI. No prometer descubrimiento en redes que lo bloquean, vibración disponible ni instalación cero del lector Windows.
@@ -52,6 +54,8 @@ Cinco destinos principales: Inicio, Mi DNIe, Firmar, Bóveda y PC. Guía de tres
 ## 8. Límites entre interfaz y motores
 
 Compose/Swing/WinForms presentan estado y emiten acciones. ViewModels coordinan persistencia/adaptadores; motores mantienen formato, autorización, sesión y criptografía. No cambiar PIN, presupuesto de firmas, reintentos ni secuencias APDU para conseguir una animación. Guía de escritorio sin conexiones ni cambios de servicio. Errores requieren la autorización prevista por el flujo; jamás repetir automáticamente una firma.
+
+R10: el PIN de Suite se introduce en un diálogo propio tras preflight y se confirma explícitamente. Cancelar/Escape/cerrar limpian el campo; el controlador recibe y borra el CharArray confirmado. Una tarjeta de PC vinculada describe identidad/configuración, no una conexión activa. Autocompletar CAN no inicia sesiones ni sustituye una edición del usuario.
 
 ## 9. Verificación y mantenimiento
 

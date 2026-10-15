@@ -20,9 +20,12 @@ public sealed partial class MainForm : Form {
         var layout=new TableLayoutPanel{Dock=DockStyle.Top,AutoSize=true,ColumnCount=1,RowCount=7};
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
         void Whole(System.Windows.Forms.Control control,int row){control.Dock=DockStyle.Fill;control.Margin=new Padding(0,0,0,16);layout.Controls.Add(control,0,row);}
-        var header=new FlowLayoutPanel{AutoSize=true,FlowDirection=FlowDirection.TopDown,WrapContents=false};
-        header.Controls.Add(new Label{Text="◈ DNIe Bridge",Font=new Font("Segoe UI",23,FontStyle.Bold),AutoSize=true});
-        header.Controls.Add(new Label{Text="Tu DNI, conectado a las aplicaciones de Windows",ForeColor=Aether.Muted,AutoSize=true});Aether.Style(themeToggle);header.Controls.Add(themeToggle);Whole(header,0);
+        var header=new TableLayoutPanel{AutoSize=true,ColumnCount=2,RowCount=1};
+        header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));header.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        var brand=new FlowLayoutPanel{AutoSize=true,FlowDirection=FlowDirection.TopDown,WrapContents=false,Dock=DockStyle.Fill};
+        brand.Controls.Add(new Label{Text="DNIe Bridge",Font=new Font("Segoe UI",22,FontStyle.Bold),AutoSize=true});
+        brand.Controls.Add(new Label{Text="Lector virtual PC/SC y enlace seguro con tu teléfono",ForeColor=Aether.Muted,AutoSize=true});
+        header.Controls.Add(brand,0,0);Aether.Style(themeToggle);themeToggle.Anchor=AnchorStyles.Right;header.Controls.Add(themeToggle,1,0);Whole(header,0);
         var health=new TableLayoutPanel{ColumnCount=3,RowCount=1,Height=114};
         foreach(var card in new[]{serviceHealth,readerHealth,cardHealth}){health.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,33.33f));card.Dock=DockStyle.Fill;card.Margin=new Padding(0,0,10,0);health.Controls.Add(card);}
         Whole(health,1);

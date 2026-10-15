@@ -68,6 +68,14 @@ internal static class Program {
         Check(Aether.Surface==Color.FromArgb(19,27,46),"Dark surface matches Android palette");
         Check(Aether.Primary.ToArgb()==unchecked((int)0xFF6B9EFF),"Dark primary R9");
         Check(Aether.PrimaryText.ToArgb()==unchecked((int)0xFF00174B),"Dark primary foreground R9");
+        Check(Field<Button>("themeToggle").Parent is TableLayoutPanel,"R10 theme action uses the two-column header");
+        using(var hoverForm=new Form())using(var hoverButton=new AetherButton()) {
+            hoverForm.Controls.Add(hoverButton);hoverForm.Show();Application.DoEvents();
+            typeof(AetherButton).GetMethod("OnMouseEnter",BindingFlags.Instance|BindingFlags.NonPublic)!.Invoke(hoverButton,new object[]{EventArgs.Empty});
+            Check(hoverButton.HoverAnimating==SystemInformation.IsMenuAnimationEnabled,"R10 hover respects Windows animation preference");
+            hoverButton.Hide();Application.DoEvents();Check(!hoverButton.HoverAnimating,"R10 hidden control stops its timer");
+            hoverButton.Dispose();Check(hoverButton.IsDisposed,"R10 animation control disposes cleanly");
+        }
         Check(Field<Button>("themeToggle").Text=="Modo claro","Readable theme action");
         Check(Field<Button>("start").ForeColor==Aether.PrimaryText,"Primary action keeps semantic foreground after theme change");
         if(args.Length>0) {using var darkImage=new Bitmap(form.Width,form.Height);form.DrawToBitmap(darkImage,new Rectangle(Point.Empty,form.Size));darkImage.Save(Path.Combine(args[0],"bridge-dark-r7.png"));}

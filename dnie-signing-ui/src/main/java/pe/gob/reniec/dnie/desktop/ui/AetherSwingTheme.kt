@@ -11,6 +11,7 @@ object AetherSwingTheme {
     var secondary=Color(0x006A63);var secondaryContainer=Color(0xD0F7F0)
     var background=Color(0xF8F9FF);var surface=Color.WHITE;var container=Color(0xEFF4FF)
     var border=Color(0xDCE9FF);var text=Color(0x0B1C30);var muted=Color(0x434655);var outline=Color(0x737686);var error=Color(0xBA1A1A)
+    val reducedMotion get() = java.lang.Boolean.getBoolean("dnie.ui.reduceMotion") || java.awt.Toolkit.getDefaultToolkit().getDesktopProperty("win.clientAreaAnimation") == false
     var onPrimary=Color.WHITE
     var dark=false
         private set

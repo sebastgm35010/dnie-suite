@@ -23,7 +23,16 @@ fun RemoteSigningScreen(state: RemoteSigningState, nfcEnabled: Boolean, addresse
     var pin by remember { mutableStateOf("") } // Not saveable, never stored in ViewModel UI state.
     LaunchedEffect(state.pc) { if (state.pc.isEmpty()) pin = "" }
     DisposableEffect(Unit) { onDispose { pin = "" } }
-    pe.gob.reniec.dnie.ui.design.FeatureScaffold("Suite · firma remota", "Firma desde PC", onBack = onBack, bottomBar = { pe.gob.reniec.dnie.ui.navigation.ActivityNavigation() }) { padding ->
+    pe.gob.reniec.dnie.ui.design.FeatureScaffold("Suite · firma remota", "Firma desde PC", onBack = onBack, bottomBar = { Column {
+        Surface(tonalElevation = 2.dp) {
+            Button(modifier = Modifier.fillMaxWidth().padding(16.dp),
+                enabled = nfcEnabled && state.pc.isNotEmpty() && state.can.length == 6 && (state.continuous || pin.length in 4..8) && !state.busy && !state.armed,
+                onClick = { if (state.continuous) onConnect() else { onAuthorize(pin); pin = "" } }) {
+                Text(if (!state.continuous) "Autorizar este lote" else if (state.remembered) "Conectar PC guardada" else "Recordar PC y conectar")
+            }
+        }
+        pe.gob.reniec.dnie.ui.navigation.ActivityNavigation()
+    } }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)) {
             pe.gob.reniec.dnie.ui.design.FeatureSection("1 · Vincular PC") {
@@ -32,17 +41,14 @@ fun RemoteSigningScreen(state: RemoteSigningState, nfcEnabled: Boolean, addresse
                 Button(onClick = onScan, enabled = !state.busy && !state.armed) { Text("Escanear solicitud de la PC") }
                 OutlinedButton(onClick = onImport, enabled = !state.busy && !state.armed) { Text("Importar solicitud TXT") }
                 if (state.pc.isNotEmpty()) {
-                    Text(if (state.continuous) "PC guardada · conexión continua" else "Solicitud para hasta ${state.count} documento(s)")
-                    Text("Dirección al vincular: ${state.pc}. Puede cambiar; la PC se reconoce por su huella.", style = MaterialTheme.typography.bodySmall)
-                    Text("Compara esta huella con la que muestra tu PC:")
-                    Text(state.fingerprint, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall)
+                    pe.gob.reniec.dnie.ui.components.LinkedPcCard(state.pc, state.fingerprint) {
+                        Text(if (state.continuous) "PC guardada · conexión continua" else "Solicitud para hasta ${state.count} documento(s)")
+                    }
                     Text("Autoriza solo solicitudes que hayas iniciado. El teléfono autoriza el lote y no muestra los documentos guardados en PC.")
             }
             }
             pe.gob.reniec.dnie.ui.design.FeatureSection("2 · Autorizar conexión") {
-                OutlinedTextField(state.can, onCan, label = { Text("CAN del DNI") }, singleLine = true,
-                    enabled = !state.busy && !state.armed, visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword))
+                pe.gob.reniec.dnie.ui.components.ConnectionCanField(state.can, onCan, !state.busy && !state.armed)
                 if (!state.continuous) OutlinedTextField(pin, { pin = it.filter { c -> c in '0'..'9' }.take(8) }, label = { Text("PIN de firma") }, singleLine = true,
                     enabled = !state.busy && !state.armed, visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword))
@@ -65,13 +71,8 @@ fun RemoteSigningScreen(state: RemoteSigningState, nfcEnabled: Boolean, addresse
             }
             Text(state.message)
             if (!nfcEnabled) Text("Activa NFC para firmar.")
-            if (!state.continuous) Button(onClick = { onAuthorize(pin); pin = "" }, enabled = nfcEnabled && state.pc.isNotEmpty() &&
-                state.can.length == 6 && pin.length in 4..8 && !state.busy && !state.armed) { Text("Autorizar este lote") }
             if (state.continuous) {
                 Text("El PIN se introduce en Windows y viaja cifrado. Autorizar esta conexión permite a la PC enviar lotes mientras Suite está abierta; no guarda el PIN.")
-                Button(onClick = onConnect, enabled = nfcEnabled && state.can.length == 6 && !state.busy && !state.armed) {
-                    Text(if (state.remembered) "Conectar PC guardada" else "Recordar PC y conectar")
-                }
                 OutlinedButton(onClick = onForget, enabled = !state.busy && !state.armed) { Text("Olvidar PC") }
             }
             if (state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())

@@ -19,6 +19,7 @@ import pe.gob.reniec.dnie.ui.design.FeatureScaffold
 /** Screen coordinates UI actions; engines, documents and authorization remain owned by the ViewModel. */
 @Composable
 fun SignerScreen(viewModel: SignerViewModel, batch: Boolean = false, onReadIdentity: () -> Unit = {}, onReadCertificates: () -> Unit = {}) {
+    val reducedMotion = pe.gob.reniec.dnie.ui.design.rememberReducedMotion()
     val context = androidx.compose.ui.platform.LocalContext.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val workspace by viewModel.workspace.collectAsStateWithLifecycle()
@@ -48,8 +49,8 @@ fun SignerScreen(viewModel: SignerViewModel, batch: Boolean = false, onReadIdent
         }) { padding ->
         LazyColumn(Modifier.padding(padding).fillMaxSize(), contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            if (signed.isNotEmpty()) item { SignedResultHeroCard(signed.size, workspace.documents.size, busy) }
-            item {
+            if (signed.isNotEmpty()) item(key = "signed-result") { Box(if (reducedMotion) Modifier else Modifier.animateItem()) { SignedResultHeroCard(signed.size, workspace.documents.size, busy) } }
+            item(key = "inputs") {
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(if (batch) "${workspace.documents.size} archivos · ${signed.size} firmados" else workspace.selected?.name ?: "Selecciona un PDF", style = MaterialTheme.typography.titleMedium)
@@ -62,16 +63,17 @@ fun SignerScreen(viewModel: SignerViewModel, batch: Boolean = false, onReadIdent
                 }
             }
             if (batch) items(workspace.documents, key = { it.id }) { doc ->
-                SigningDocumentRow(doc, doc.id == workspace.selectedId,
+                Box(if (reducedMotion) Modifier else Modifier.animateItem()) { SigningDocumentRow(doc, doc.id == workspace.selectedId,
                     workspace.artifacts.firstOrNull { it.document.id == doc.id }, editing,
                     onSelect = { viewModel.selectDocument(doc.id) }, onRemove = { viewModel.removeDocument(doc.id) },
-                    onSave = ::saveArtifact, onShare = { shareSignedArtifact(context, it) })
+                    onSave = ::saveArtifact, onShare = { shareSignedArtifact(context, it) }) }
             }
             workspace.selected?.let { doc ->
                 val enabled = editing && workspace.artifacts.none { it.document.id == doc.id && it.status == DocumentSignStatus.SIGNED }
                 val config = doc.options
                 val look = config.appearance
-                if (doc.isPdf && config.visible && doc.pages.isNotEmpty()) item {
+                if (doc.isPdf && config.visible && doc.pages.isNotEmpty()) item(key = "preview-${doc.id}") {
+                    Box(if (reducedMotion) Modifier else Modifier.animateItem()) {
                     val page = doc.pages[(config.pageNumber - 1).coerceIn(0, doc.pages.lastIndex)]
                     StampPreviewCard(page.width * config.placement.width, page.height * config.placement.height,
                         workspace.previewName, workspace.previewDni, config.copy(appearance = look.copy(handwrittenPng = if (look.requiresHandwritten) workspace.mark?.png else null)),
@@ -84,8 +86,9 @@ fun SignerScreen(viewModel: SignerViewModel, batch: Boolean = false, onReadIdent
                             }
                             Button(enabled = enabled && (!look.requiresHandwritten || workspace.mark != null), onClick = { showPlacement = true }, modifier = Modifier.fillMaxWidth()) { Text("Colocar sello · pantalla completa") }
                         })
+                    }
                 }
-                item {
+                item(key = "controls-${doc.id}") {
                     if (batch && doc.pages.isNotEmpty()) SwitchRow("Firma separada (.p7s)", doc.detached, enabled, viewModel::setDetached)
                     if (doc.isPdf && doc.pages.isNotEmpty()) SignerControls(viewModel, workspace, doc, enabled, editing, batch, onReadIdentity, onReadCertificates) { pem ->
                         exportPem = pem; exportArtifact = null; save.launch(if (pem) "certificado_firma.pem" else "certificado_firma.cer")

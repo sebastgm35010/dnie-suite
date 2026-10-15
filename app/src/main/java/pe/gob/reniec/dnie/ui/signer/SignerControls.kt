@@ -2,7 +2,6 @@ package pe.gob.reniec.dnie.ui.signer
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
-import androidx.compose.animation.animateContentSize
 import pe.gob.reniec.dnie.ui.design.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -34,13 +33,10 @@ internal fun SignerControls(viewModel: SignerViewModel, workspace: SigningWorksp
                 onClick = { viewModel.updateOptions(template::apply) }, label = { Text(template.label) })
         }
     }
-    TabRow(tab) {
-        listOf("Apariencia", "Datos y TSA", "Páginas y Titular").forEachIndexed { index, title ->
-            Tab(selected = tab == index, onClick = { tab = index }, text = { Text(title, style = MaterialTheme.typography.labelMedium) })
-        }
-    }
-    Column(Modifier.animateContentSize(aetherSpring(reducedMotion)), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        when (tab) {
+    AetherSegmentedTabs(listOf("Apariencia", "Datos y TSA", "Páginas y Titular"), tab, { tab = it })
+    androidx.compose.animation.AnimatedContent(tab, transitionSpec = { aetherTabTransition(reducedMotion) }, label = "signer-controls") { selectedTab ->
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        when (selectedTab) {
             0 -> {
                 SwitchRow("Mostrar sello en el PDF", config.visible, enabled) { value -> viewModel.updateOptions { it.copy(visible = value) } }
                 if (config.visible) {
@@ -111,8 +107,9 @@ internal fun SignerControls(viewModel: SignerViewModel, workspace: SigningWorksp
                 }
             }
         }
-        if (batch) OutlinedButton(enabled = enabled, onClick = viewModel::applyOptionsToAll) { Text("Copiar configuración a los PDF pendientes") }
     }
+    }
+    if (batch) OutlinedButton(enabled = enabled, onClick = viewModel::applyOptionsToAll) { Text("Copiar configuración a los PDF pendientes") }
 }
 
 @OptIn(ExperimentalLayoutApi::class)

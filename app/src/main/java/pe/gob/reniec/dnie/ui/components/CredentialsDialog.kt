@@ -30,12 +30,12 @@ fun CredentialsDialog(show: Boolean, title: String = "Credenciales del DNIe", su
 }
 
 @Composable
-fun SavedCanChip(can: String, saved: Boolean = true, onChange: () -> Unit) {
+fun SavedCanChip(can: String, saved: Boolean = true, enabled: Boolean = true, onChange: () -> Unit) {
     Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = MaterialTheme.shapes.medium) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween) {
             Text((if (saved) "CAN guardado: ••••" else "CAN de esta sesión: ••••") + can.takeLast(2), style = MaterialTheme.typography.bodyMedium)
-            TextButton(onClick = onChange) { Text("Cambiar") }
+            TextButton(onClick = onChange, enabled = enabled) { Text("Cambiar") }
         }
     }
 }
