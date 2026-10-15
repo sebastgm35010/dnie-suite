@@ -21,7 +21,7 @@ INSERT INTO "checkpoints" VALUES('checkpoint/desktop-pades-profile-h7','38863f36
 INSERT INTO "checkpoints" VALUES('checkpoint/diagnostics-direct-apk72','b1d4d9fea76898d52e31ff926a3d82bf8fca141d','feat: add direct debug diagnostics and layered performance tracing');
 INSERT INTO "checkpoints" VALUES('checkpoint/driver-completion-r2','81997a259fc7c4cf6b41030fa324d95e622317d9','Driver 2.0.0.4 installed; C++ and native PCSC/TLS synthetic regressions passed');
 INSERT INTO "checkpoints" VALUES('checkpoint/driver-power-r1','d1882fb80f0b4c80a2c6eb95273e2dca412745b4','fix(driver): retire pending I/O on suspend and report PCSC publication');
-INSERT INTO "checkpoints" VALUES('checkpoint/finish-r10-apk87','2fd64abbc7aca77dfdfe36c3056621b276a217ca','feat(ui): deliver Aether R10 polish and measured transitions (3.1.3)');
+INSERT INTO "checkpoints" VALUES('checkpoint/finish-r10-apk87','28f1e2245706252acb7ec77f6fd5d52e7cd2c240','fix(ui): align segmented indicators and verify final R10 geometry');
 INSERT INTO "checkpoints" VALUES('checkpoint/firma-windows-1.8.14','91a3d4a05013e54fb086c9f1e0e39744cfbbcd3c','Validated Android18 RENIEC reading and Android21 Firma Peru PDF signing before core cleanup');
 INSERT INTO "checkpoints" VALUES('checkpoint/flows-r8-apk84-candidate','30cc7a1abe63268aa8e6341758e70cf1b96240f4','feat(ui): implement R8 continuous NFC flow and compact signing screens');
 INSERT INTO "checkpoints" VALUES('checkpoint/network-r6-apk82','87d6e18caa32fc876252002ea3605c5a7d3aea00','R6: 283 JVM tests, 8 Android tests, authenticated LAN/Tailnet discovery; physical DNI regression pending');
@@ -6986,7 +6986,7 @@ INSERT INTO "metadata" VALUES('catalog_review_date','2026-10-15');
 INSERT INTO "metadata" VALUES('index_method','tracked files; lexical symbols/imports, not runtime call graph');
 INSERT INTO "metadata" VALUES('project','DnieSignerPeruEvolution');
 INSERT INTO "metadata" VALUES('schema_version','1');
-INSERT INTO "metadata" VALUES('source_commit','2fd64abbc7aca77dfdfe36c3056621b276a217ca');
+INSERT INTO "metadata" VALUES('source_commit','28f1e2245706252acb7ec77f6fd5d52e7cd2c240');
 CREATE TABLE module_dependencies(source TEXT REFERENCES modules(id), target TEXT REFERENCES modules(id),
  scope TEXT NOT NULL, line INTEGER NOT NULL, PRIMARY KEY(source,target,scope,line));
 INSERT INTO "module_dependencies" VALUES('app','dnie-core','implementation',113);
