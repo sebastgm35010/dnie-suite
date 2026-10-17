@@ -29,11 +29,20 @@ internal fun EmptyCertificatesView(onScanClicked: () -> Unit) {
             }
         }
         FeatureSection("Cómo leer", "Necesitas el CAN de seis dígitos impreso en el documento.") {
-            Text("1 · Autoriza la lectura e introduce el CAN.")
-            Text("2 · Acerca el DNI al sensor NFC del teléfono.")
-            Text("3 · Mantenlo inmóvil hasta completar ambas etapas.")
+            CertificateReadStep("1", "Autoriza con tu CAN")
+            CertificateReadStep("2", "Apoya el DNIe al reverso")
+            CertificateReadStep("3", "Consulta certificados e identidad ICAO")
         }
         Text("Comprueba la confianza de cada certificado desde su ficha.",
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable private fun CertificateReadStep(number: String, text: String) {
+    Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = MaterialTheme.shapes.small) {
+            Text(number, Modifier.padding(horizontal = 9.dp, vertical = 5.dp), color = MaterialTheme.colorScheme.primary)
+        }
+        Text(text)
     }
 }

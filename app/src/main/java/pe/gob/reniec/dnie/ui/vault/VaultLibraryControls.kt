@@ -35,37 +35,22 @@ data class VaultLibraryActions(
 @Composable
 internal fun VaultLibraryControls(state: VaultUiState, actions: VaultLibraryActions) {
     val busy = state.running || state.awaitingCard
-    var filters by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         OutlinedTextField(state.query, actions.query, label = { Text("Buscar nombre, carpeta o etiqueta") },
-            singleLine = true, modifier = Modifier.fillMaxWidth())
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButton(onClick = { filters = true }, enabled = !busy) { Text("Filtros y orden") }
-            TextButton(onClick = { actions.trash(!state.showTrash) }, enabled = !busy) {
-                Text(if (state.showTrash) "Volver a archivos" else "Papelera")
-            }
-        }
-    }
-    if (filters) AlertDialog(onDismissRequest = { filters = false }, title = { Text("Filtros y orden") }, text = {
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            singleLine = true, modifier = Modifier.fillMaxWidth(),
+            leadingIcon = { Text("⌕") },
+            trailingIcon = { if (state.query.isNotBlank()) IconButton(onClick = { actions.query("") }) { Text("×") } })
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(selected = !state.showTrash, onClick = { actions.trash(false) }, label = { Text("Archivos (${state.totalItems})") })
+            FilterChip(selected = state.folder == null && !state.showTrash, onClick = { actions.trash(false); actions.folder(null) }, label = { Text("Todas") })
+            FilterChip(selected = state.folder == "" && !state.showTrash, onClick = { actions.trash(false); actions.folder("") }, label = { Text("Sin carpeta") })
+            state.folders.forEach { folder -> key(folder) { FilterChip(selected = state.folder == folder && !state.showTrash, onClick = { actions.trash(false); actions.folder(folder) }, label = { Text(folder) }) } }
             FilterChip(selected = state.showTrash, onClick = { actions.trash(true) }, label = { Text("Papelera") })
         }
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(selected = state.folder == null, onClick = { actions.folder(null) }, label = { Text("Todas las carpetas") })
-            FilterChip(selected = state.folder == "", onClick = { actions.folder("") }, label = { Text("Sin carpeta") })
-            state.folders.forEach { folder -> key(folder) { FilterChip(selected = state.folder == folder, onClick = { actions.folder(folder) }, label = { Text(folder) }) } }
+            Text("Ordenar", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 8.dp))
+            VaultSort.entries.forEach { sort -> FilterChip(selected = state.sort == sort, onClick = { actions.sort(sort) }, label = { Text(when (sort) { VaultSort.NEWEST -> "Fecha"; VaultSort.NAME -> "Nombre"; VaultSort.SIZE -> "Tamaño" }) }) }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            VaultSort.entries.forEach { sort ->
-                FilterChip(selected = state.sort == sort, onClick = { actions.sort(sort) }, label = {
-                    Text(when (sort) { VaultSort.NEWEST -> "Fecha"; VaultSort.NAME -> "Nombre"; VaultSort.SIZE -> "Tamaño" })
-                })
-            }
-        }
-        }
-    }, confirmButton = { TextButton(onClick = { filters = false }) { Text("Listo") } })
+    }
 }
 
 @Composable

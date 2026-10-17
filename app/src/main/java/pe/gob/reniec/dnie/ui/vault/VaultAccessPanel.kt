@@ -12,6 +12,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import pe.gob.reniec.dnie.ui.components.ConnectionCanField
+import pe.gob.reniec.dnie.ui.components.CredentialDigitsIndicator
 
 /** Credentials only; no IO, cryptography or file management controls. */
 @Composable
@@ -62,18 +64,15 @@ internal fun VaultCredentialFields(state: VaultUiState, onCanChange: (String) ->
     onPinChange: (String) -> Unit, onRememberCan: (Boolean) -> Unit) {
     val busy = state.running || state.awaitingCard
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        OutlinedTextField(value = state.can, onValueChange = onCanChange,
-            label = { Text("CAN") }, supportingText = { Text("6 dígitos impresos en el DNI") },
-            singleLine = true, enabled = !busy,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-            visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp))
+        ConnectionCanField(state.can, onCanChange, enabled = !busy)
+        CredentialDigitsIndicator(state.can.length, minTarget = 6, maxTarget = 6, completeAt = 6)
         OutlinedTextField(value = state.pin, onValueChange = onPinChange,
             label = { Text("PIN del DNI") }, supportingText = { Text("4 a 8 dígitos. Sin reintentos automáticos.") },
             singleLine = true, enabled = !busy,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
             visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(14.dp))
+        CredentialDigitsIndicator(state.pin.length, minTarget = 4, maxTarget = 8)
         Row {
             Checkbox(checked = state.rememberCan, onCheckedChange = onRememberCan, enabled = !busy)
             Text("Recordar CAN · compartido con la pantalla principal", modifier = Modifier.padding(top = 12.dp))

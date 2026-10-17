@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -65,6 +66,12 @@ fun PdfPlacementEditor(document: SigningDocument, name: String, dni: String, opt
         preparingStamp = false
     }
     var size by remember { mutableStateOf(IntSize.Zero) }
+    var snapGuides by remember(document.id) { mutableStateOf<StampPlacementGeometry.Snap?>(null) }
+    fun applySnap(next: NormalizedStampPlacement) {
+        val snapped = StampPlacementGeometry.snap(next)
+        snapGuides = snapped
+        draft = current.copy(placement = snapped.placement)
+    }
     var pageText by remember(draft.pageNumber) { mutableStateOf(draft.pageNumber.toString()) }
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         pe.gob.reniec.dnie.ui.design.FeatureScaffold("Colocar firma", "Vista previa PDF", modifier = Modifier.fillMaxSize(),
@@ -73,18 +80,18 @@ fun PdfPlacementEditor(document: SigningDocument, name: String, dni: String, opt
                     onClick = { onApply(draft) }) { Text("Aplicar") }
             }) { insets ->
             Column(Modifier.fillMaxSize().padding(insets).navigationBarsPadding().background(MaterialTheme.colorScheme.surfaceContainer)) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                    TextButton(enabled = draft.pageNumber > 1, onClick = { draft = draft.copy(pageNumber = draft.pageNumber - 1) }) { Text("Anterior") }
-                    Text("Página " + draft.pageNumber + " de " + document.pages.size)
-                    TextButton(enabled = draft.pageNumber < document.pages.size, onClick = { draft = draft.copy(pageNumber = draft.pageNumber + 1) }) { Text("Siguiente") }
-                }
-                androidx.compose.foundation.layout.FlowRow(Modifier.padding(horizontal=12.dp),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.padding(10.dp).fillMaxWidth()) {
+                Row(Modifier.padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                    TextButton(enabled = draft.pageNumber > 1, onClick = { draft = draft.copy(pageNumber = draft.pageNumber - 1) }) { Text("‹") }
+                    Text("Pág. ${draft.pageNumber}/${document.pages.size}", modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelLarge)
+                    TextButton(enabled = draft.pageNumber < document.pages.size, onClick = { draft = draft.copy(pageNumber = draft.pageNumber + 1) }) { Text("›") }
                     listOf(SignaturePreset.TOP_LEFT to "↖",SignaturePreset.TOP_RIGHT to "↗",SignaturePreset.BOTTOM_LEFT to "↙",SignaturePreset.BOTTOM_RIGHT to "↘").forEach { (preset,label) ->
                         OutlinedButton(onClick={draft=current.copy(placement=StampPlacementGeometry.preset(current.placement,preset))}) { Text(label) }
                     }
                 }
-                StampPageTargetSelector(draft.pageTarget,true) { choice -> draft=current.copy(pageTarget=choice,
-                    pageNumber=when(choice) { StampPageTarget.FIRST_PAGE->1;StampPageTarget.LAST_PAGE->document.pages.size;else->current.pageNumber }) }
+                }
+                StampPageTargetSelector(draft.pageTarget, true) { choice -> draft = current.copy(pageTarget = choice,
+                    pageNumber = when (choice) { StampPageTarget.FIRST_PAGE -> 1; StampPageTarget.LAST_PAGE -> document.pages.size; else -> current.pageNumber }) }
                 if (document.pages.size > 3) OutlinedTextField(pageText, { text ->
                     pageText = text.filter { it.isDigit() }.take(5)
                     pageText.toIntOrNull()?.takeIf { it in 1..document.pages.size }?.let { draft = draft.copy(pageNumber = it) }
@@ -95,6 +102,12 @@ fun PdfPlacementEditor(document: SigningDocument, name: String, dni: String, opt
                     val fitWidth = minOf(maxWidth, maxHeight * ratio)
                     Box(Modifier.width(fitWidth).aspectRatio(ratio).background(Color.White).border(1.dp, Color.LightGray)
                         .onSizeChanged { size = it }
+                        .drawBehind {
+                            val guides = snapGuides
+                            val guideColor = Color(0xFF004AC6).copy(alpha = .7f)
+                            guides?.vertical?.let { x -> drawLine(guideColor, Offset(x * size.width, 0f), Offset(x * size.width, size.height.toFloat()), 1.dp.toPx()) }
+                            guides?.horizontal?.let { y -> drawLine(guideColor, Offset(0f, y * size.height), Offset(size.width.toFloat(), y * size.height), 1.dp.toPx()) }
+                        }
                         .pointerInput(document.id) {
                             detectTapGestures { point ->
                                 if (size.width > 0 && size.height > 0) {
@@ -102,7 +115,7 @@ fun PdfPlacementEditor(document: SigningDocument, name: String, dni: String, opt
                                     val x = point.x / size.width
                                     val y = point.y / size.height
                                     if (x !in p.left..(p.left + p.width) || y !in p.top..(p.top + p.height))
-                                        draft = current.copy(placement = p.moved(x - p.width / 2, y - p.height / 2))
+                                        applySnap(p.moved(x - p.width / 2, y - p.height / 2))
                                 }
                             }
                         }) {
@@ -110,13 +123,13 @@ fun PdfPlacementEditor(document: SigningDocument, name: String, dni: String, opt
                         if (pageBitmap == null) Text(error ?: "Preparando página…", color = Color.DarkGray, modifier = Modifier.padding(16.dp))
                         val p = draft.placement
                         Box(Modifier.offset { IntOffset((p.left * size.width).roundToInt(), (p.top * size.height).roundToInt()) }
-                            .fillMaxWidth(p.width).fillMaxHeight(p.height).border(1.dp, Color(0xFF004AC6))
+                            .fillMaxWidth(p.width).fillMaxHeight(p.height).border(2.dp, Color(0xFF004AC6))
                             .semantics { contentDescription = "Sello: arrastrar para mover, pellizcar para cambiar tamaño" }
                             .pointerInput(document.id) {
                                 detectTransformGestures { centroid, pan, zoom, _ ->
                                     if (size.width > 0 && size.height > 0) {
                                         val placement = current.placement
-                                        draft = current.copy(placement = placement.transformed(zoom, pan.x / size.width, pan.y / size.height,
+                                        applySnap(placement.transformed(zoom, pan.x / size.width, pan.y / size.height,
                                             placement.left + centroid.x / size.width, placement.top + centroid.y / size.height))
                                     }
                                 }
@@ -127,7 +140,7 @@ fun PdfPlacementEditor(document: SigningDocument, name: String, dni: String, opt
                         fun resize(delta: Offset, width: Boolean, height: Boolean) {
                             if (size.width > 0 && size.height > 0) {
                                 val placement = current.placement
-                                draft = current.copy(placement = placement.resizedAnchored(
+                                applySnap(placement.resizedAnchored(
                                     placement.width + if (width) delta.x / size.width else 0f,
                                     placement.height + if (height) delta.y / size.height else 0f))
                             }
@@ -145,8 +158,10 @@ fun PdfPlacementEditor(document: SigningDocument, name: String, dni: String, opt
                 }
                 Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
                     Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text("Arrastra para mover. Pellizca con dos dedos para escalar. Arrastra los puntos del borde para ajustar ancho y alto.", style = MaterialTheme.typography.bodySmall)
-                        Text("El texto se distribuye en líneas dentro del sello. Amplíalo para mejorar su legibilidad.", style = MaterialTheme.typography.bodySmall)
+                        Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.primaryContainer) {
+                            Text("Ancho ${(draft.placement.width * 100).toInt()}% · Alto ${(draft.placement.height * 100).toInt()}% · Página ${draft.pageNumber}", Modifier.padding(8.dp), style = MaterialTheme.typography.labelMedium)
+                        }
+                        Text("Arrastra, pellizca o usa los puntos para ajustar el sello.", style = MaterialTheme.typography.bodySmall)
                         stampError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                     }
                 }

@@ -12,6 +12,7 @@ internal class AetherPinDialog(owner: JFrame, count: Int) : JDialog(owner, "Auto
     private val password = JPasswordField(12).apply { name="signing-pin";font=Font("Segoe UI",Font.PLAIN,18);preferredSize=Dimension(300,46) }
     private val masked = password.echoChar
     private val confirm = AetherButton("Firmar ahora",ButtonVariant.PRIMARY).apply { name="confirm-pin";isEnabled=false }
+    private val lengthBar=PinLengthBar()
     private var result: CharArray? = null
     init {
         defaultCloseOperation = DO_NOTHING_ON_CLOSE
@@ -30,6 +31,7 @@ internal class AetherPinDialog(owner: JFrame, count: Int) : JDialog(owner, "Auto
         }
         password.background=AetherSwingTheme.surface;password.foreground=AetherSwingTheme.text;password.caretColor=AetherSwingTheme.primary
         password.alignmentX=Component.LEFT_ALIGNMENT;password.maximumSize=Dimension(Int.MAX_VALUE,46);card.add(password)
+        lengthBar.alignmentX=Component.LEFT_ALIGNMENT;card.add(Box.createVerticalStrut(8));card.add(lengthBar)
         val reveal=AetherToggleChip("Mostrar PIN").apply { name="reveal-pin";alignmentX=Component.LEFT_ALIGNMENT;addActionListener { password.echoChar=if(isSelected) 0.toChar() else masked } }
         card.add(reveal)
         card.add(JLabel("<html>Los intentos incorrectos pueden bloquear el PIN.<br>Mantén el DNI junto al teléfono hasta ver el resultado.</html>").apply { foreground=AetherSwingTheme.muted;alignmentX=Component.LEFT_ALIGNMENT })
@@ -37,7 +39,7 @@ internal class AetherPinDialog(owner: JFrame, count: Int) : JDialog(owner, "Auto
         footer.add(AetherButton("Cancelar",ButtonVariant.GHOST).apply { name="cancel-pin";addActionListener { cancel() } });footer.add(confirm);card.add(Box.createVerticalStrut(12));card.add(footer)
         add(card)
         password.document.addDocumentListener(object: DocumentListener {
-            fun update(){val p=password.password;try{confirm.isEnabled=p.size in 4..8 && p.all {it in '0'..'9'}}finally{p.fill('\u0000')}}
+            fun update(){val p=password.password;try{lengthBar.length=p.size;confirm.isEnabled=p.size in 4..8 && p.all {it in '0'..'9'}}finally{p.fill('\u0000')}}
             override fun insertUpdate(e: DocumentEvent)=update();override fun removeUpdate(e: DocumentEvent)=update();override fun changedUpdate(e: DocumentEvent)=update()
         })
         confirm.addActionListener {
@@ -54,6 +56,12 @@ internal class AetherPinDialog(owner: JFrame, count: Int) : JDialog(owner, "Auto
     fun requestPin(): CharArray? { try {isVisible=true;return result.also {result=null}} finally {dispose()} }
     private fun cancel(){result?.fill('\u0000');result=null;password.text="";password.echoChar=masked;isVisible=false}
     override fun dispose(){result?.fill('\u0000');result=null;password.text="";password.echoChar=masked;super.dispose()}
+}
+
+private class PinLengthBar : JComponent() {
+    var length=0; set(value){field=value.coerceIn(0,8);repaint()}
+    init { preferredSize=Dimension(300,10);maximumSize=Dimension(Int.MAX_VALUE,10);isOpaque=false }
+    override fun paintComponent(graphics: Graphics) { val g=graphics.create() as Graphics2D;try { val gap=6;val w=((width-gap*7)/8).coerceAtLeast(1);for(i in 0 until 8){g.color=if(i<length) AetherSwingTheme.primary else AetherSwingTheme.container;g.fillRoundRect(i*(w+gap),1,w,7,7,7)}}finally{g.dispose()} }
 }
 
 internal class AetherShieldIcon : Icon {

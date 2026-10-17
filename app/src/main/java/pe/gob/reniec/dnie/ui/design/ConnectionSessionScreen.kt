@@ -2,12 +2,16 @@ package pe.gob.reniec.dnie.ui.design
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
+import androidx.compose.animation.core.*
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -32,13 +36,15 @@ import pe.gob.reniec.dnie.ui.design.StatusCheck
                     color = MaterialTheme.colorScheme.secondary)
                 Text(headline, style = MaterialTheme.typography.headlineMedium)
                 Text(channel, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceEvenly) {
-                    SessionNode(Icons.Default.Computer, "PC", pcConnected)
-                    Icon(Icons.Default.SyncAlt, null, tint = MaterialTheme.colorScheme.outline)
-                    SessionNode(Icons.Default.PhoneAndroid, "Teléfono", phoneReady)
-                    Icon(Icons.Default.SyncAlt, null, tint = MaterialTheme.colorScheme.outline)
-                    SessionNode(Icons.Default.Badge, "DNI", cardReady)
+                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+                    Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceEvenly) {
+                        SessionNode(Icons.Default.Computer, "PC", pcConnected, if (pcConnected) "Enlazada" else "Esperando")
+                        SessionLinkConnector(pcConnected, pcConnected && phoneReady)
+                        SessionNode(Icons.Default.PhoneAndroid, "Teléfono", phoneReady, if (phoneReady) "Activo" else "Esperando")
+                        SessionLinkConnector(cardReady || inProgress, cardReady || inProgress)
+                        SessionNode(Icons.Default.Badge, "DNIe", cardReady, if (cardReady) "Conectado" else "Acerca DNIe")
+                    }
                 }
                 if (inProgress)
                     LinearProgressIndicator(Modifier.fillMaxWidth())
@@ -60,7 +66,7 @@ import pe.gob.reniec.dnie.ui.design.StatusCheck
     }
 }
 
-@Composable private fun SessionNode(icon: ImageVector, label: String, complete: Boolean) {
+@Composable private fun SessionNode(icon: ImageVector, label: String, complete: Boolean, status: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Surface(shape = MaterialTheme.shapes.medium,
             color = if (complete) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer) {
@@ -68,5 +74,18 @@ import pe.gob.reniec.dnie.ui.design.StatusCheck
                 tint = if (complete) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outline)
         }
         Text(label, style = MaterialTheme.typography.labelLarge)
+        Surface(color = if (complete) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer,
+            shape = MaterialTheme.shapes.extraSmall) { Text(status, Modifier.padding(horizontal = 6.dp, vertical = 3.dp), style = MaterialTheme.typography.labelSmall) }
     }
+}
+
+@Composable private fun SessionLinkConnector(active: Boolean, flowing: Boolean) {
+    val infinite = rememberInfiniteTransition(label = "session_link")
+    val pulse by infinite.animateFloat(0f, 1f, infiniteRepeatable(tween(1050, easing = LinearEasing)), label = "link_pulse")
+    val color = if (active) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outlineVariant
+    Spacer(Modifier.width(30.dp).height(22.dp).drawBehind {
+        val y = size.height / 2
+        drawLine(color.copy(alpha = .65f), androidx.compose.ui.geometry.Offset(0f, y), androidx.compose.ui.geometry.Offset(size.width, y), 2.dp.toPx(), StrokeCap.Round)
+        if (flowing) drawCircle(color, 4.dp.toPx(), androidx.compose.ui.geometry.Offset(size.width * pulse, y))
+    })
 }

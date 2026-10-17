@@ -78,6 +78,12 @@ fun VaultScreen(state: VaultUiState, onCanChange: (String) -> Unit, onPinChange:
                     state = when (page) { VaultPage.FILES -> filesScroll; VaultPage.DNI -> dniScroll
                         VaultPage.RECOVERY -> recoveryScroll; VaultPage.TOOLS -> toolsScroll },
                     contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    item("sections") {
+                        pe.gob.reniec.dnie.ui.design.AetherSegmentedTabs(
+                            VaultPage.entries.map { it.title }, VaultPage.entries.indexOf(page),
+                            onSelect = { pageName = VaultPage.entries[it].name }
+                        )
+                    }
                     if (page != VaultPage.FILES) item("return") {
                         TextButton(onClick = { pageName = VaultPage.FILES.name }) { Text("Mis archivos") }
                     }
@@ -107,6 +113,7 @@ fun VaultScreen(state: VaultUiState, onCanChange: (String) -> Unit, onPinChange:
                             }
                         }
                         VaultPage.FILES -> {
+                            item("key-status") { VaultKeyStatusBanner(state.pairedFingerprint) { pageName = VaultPage.DNI.name } }
                             item("add") {
                                 pe.gob.reniec.dnie.ui.design.FeatureSection("Mis archivos") {
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

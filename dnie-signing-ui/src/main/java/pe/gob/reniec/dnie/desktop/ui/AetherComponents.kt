@@ -22,6 +22,24 @@ class AetherCardPanel(layout: LayoutManager=BorderLayout(8,8)) : JPanel(layout) 
 }
 
 enum class ButtonVariant { PRIMARY, SECONDARY, OUTLINE, GHOST }
+
+/** Rounded editable field; it keeps JTextField semantics for automation and accessibility. */
+class AetherTextField(text: String = "", columns: Int = 0) : JTextField(text, columns) {
+    private val focus=AetherSwingAnimator(this)
+    init {
+        isOpaque=false;border=EmptyBorder(8,11,8,11);background=AetherSwingTheme.surface
+        addFocusListener(object: java.awt.event.FocusAdapter(){override fun focusGained(e: java.awt.event.FocusEvent?) {focus.to(1f)};override fun focusLost(e: java.awt.event.FocusEvent?) {focus.to(0f)}})
+    }
+    override fun removeNotify(){focus.stop();super.removeNotify()}
+    override fun paintComponent(graphics: Graphics) {
+        val g=graphics.create() as Graphics2D
+        try {g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON)
+            g.color=AetherSwingTheme.surface;g.fillRoundRect(0,0,width-1,height-1,10,10)
+            val accent=AetherSwingAnimator.blend(AetherSwingTheme.border,AetherSwingTheme.primary,focus.value)
+            g.color=accent;g.stroke=BasicStroke(1f+focus.value);g.drawRoundRect(1,1,width-3,height-3,10,10)
+        } finally {g.dispose()};super.paintComponent(graphics)
+    }
+}
 open class AetherButton(text: String,private val variant: ButtonVariant=ButtonVariant.SECONDARY) : JButton(text) {
     private val hover=AetherSwingAnimator(this)
     override fun removeNotify(){hover.stop();super.removeNotify()}

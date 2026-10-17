@@ -8,6 +8,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,6 +24,21 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import java.util.Locale
+
+@Composable internal fun VaultKeyStatusBanner(fingerprint: String?, onLink: () -> Unit) {
+    val linked = fingerprint != null
+    Surface(color = if (linked) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.primaryContainer,
+        shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
+        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Icon(Icons.Default.Lock, null)
+            Column(Modifier.weight(1f)) {
+                Text(if (linked) "Llave DNIe vinculada" else "Vincula tu DNIe", fontWeight = FontWeight.SemiBold)
+                Text(if (linked) "Cifrado inmediato · ${fingerprint.take(12)}" else "Necesitas el DNI para cifrar", style = MaterialTheme.typography.bodySmall)
+            }
+            if (!linked) TextButton(onClick = onLink) { Text("Vincular") }
+        }
+    }
+}
 
 @Composable
 internal fun VaultHero(pairedFingerprint: String?) {
@@ -60,6 +78,12 @@ internal fun VaultResult(running: Boolean, awaitingCard: Boolean, verified: Bool
     Card(colors = CardDefaults.cardColors(containerColor = VaultSurface), shape = RoundedCornerShape(12.dp)) {
         Column(Modifier.fillMaxWidth().padding(18.dp).semantics { liveRegion = LiveRegionMode.Polite },
             verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            if (running || awaitingCard) {
+                pe.gob.reniec.dnie.ui.components.NfcOperationVisual(
+                    if (awaitingCard) pe.gob.reniec.dnie.ui.components.DnieOperationPhase.AWAITING_TAG else pe.gob.reniec.dnie.ui.components.DnieOperationPhase.TAG_ENGAGED,
+                    pe.gob.reniec.dnie.ui.design.rememberReducedMotion()
+                )
+            }
             if (running || awaitingCard) LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), color = VaultAccent)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (verified) Icon(Icons.Default.CheckCircle, null, tint = VaultAccent)
@@ -93,11 +117,18 @@ internal fun VaultFileCard(item: VaultItemUi, enabled: Boolean, selected: Boolea
         Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (selectionMode) Checkbox(checked = checked, onCheckedChange = { onToggle() }, enabled = enabled)
-                else Icon(Icons.Default.Lock, null, tint = VaultAccent, modifier = Modifier.padding(end = 10.dp))
+                else Surface(shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
+                    Icon(vaultFileIcon(item.displayName), null, tint = VaultAccent, modifier = Modifier.padding(10.dp).size(22.dp))
+                }
+                Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
                     Text(item.displayName ?: "Archivo cifrado", fontWeight = FontWeight.Medium)
                     Text(encryptedSize(item.encryptedBytes) + if (item.folder.isNotBlank()) " · ${item.folder}" else "",
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (item.folder.isNotBlank() || item.tags.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                        if (item.folder.isNotBlank()) AssistChip(onClick = {}, enabled = false, label = { Text(item.folder) })
+                        item.tags.take(3).forEach { tag -> AssistChip(onClick = {}, enabled = false, label = { Text(tag) }) }
+                    }
                     if (selected) Text("Pendiente de abrir", style = MaterialTheme.typography.labelSmall)
                 }
                 if (!selectionMode) Box {
@@ -115,11 +146,17 @@ internal fun VaultFileCard(item: VaultItemUi, enabled: Boolean, selected: Boolea
                     }
                 }
             }
-            if (!selectionMode) TextButton(onClick = when {
-                item.trashed -> onRecover; else -> onRestore
-            }, enabled = enabled) { Text(if (item.trashed) "Restaurar" else "Descifrar") }
+            if (!selectionMode) FilledTonalButton(onClick = if (item.trashed) onRecover else onRestore,
+                enabled = enabled, modifier = Modifier.align(Alignment.End)) { Text(if (item.trashed) "Restaurar" else "Descifrar") }
         }
     }
+}
+
+private fun vaultFileIcon(name: String?) = when (name?.substringAfterLast('.', "")?.lowercase()) {
+    "pdf" -> Icons.Default.PictureAsPdf
+    "png", "jpg", "jpeg", "webp" -> Icons.Default.Image
+    "txt", "md", "doc", "docx" -> Icons.Default.Description
+    else -> Icons.Default.Lock
 }
 
 private fun encryptedSize(bytes: Long): String = when {

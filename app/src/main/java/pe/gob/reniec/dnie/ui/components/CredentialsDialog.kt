@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.*
@@ -36,6 +37,29 @@ fun SavedCanChip(can: String, saved: Boolean = true, enabled: Boolean = true, on
             horizontalArrangement = Arrangement.SpaceBetween) {
             Text((if (saved) "CAN guardado: ••••" else "CAN de esta sesión: ••••") + can.takeLast(2), style = MaterialTheme.typography.bodyMedium)
             TextButton(onClick = onChange, enabled = enabled) { Text("Cambiar") }
+        }
+    }
+}
+
+/** Visual count only; the editable field remains the accessible source of truth. */
+@Composable
+fun CredentialDigitsIndicator(length: Int, minTarget: Int = 4, maxTarget: Int = 8, completeAt: Int = maxTarget) {
+    val count = if (minTarget == maxTarget) maxTarget else maxTarget
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+        repeat(count) { index ->
+            val filled = index < length
+            val scale by androidx.compose.animation.core.animateFloatAsState(
+                targetValue = if (filled) 1f else .82f, label = "credential_digit"
+            )
+            Surface(
+                modifier = Modifier.size(width = 22.dp, height = 6.dp)
+                    .graphicsLayer { scaleX = scale; scaleY = scale },
+                color = when {
+                    !filled -> MaterialTheme.colorScheme.surfaceContainerHigh
+                    length >= completeAt -> MaterialTheme.colorScheme.secondary
+                    else -> MaterialTheme.colorScheme.primary
+                }, shape = MaterialTheme.shapes.extraSmall, content = {}
+            )
         }
     }
 }
@@ -74,6 +98,7 @@ fun CredentialsForm(subtitle: String? = null, requireCan: Boolean = true, requir
                 OutlinedTextField(can, { if (it.length <= 6 && it.all { c -> c in '0'..'9' }) can = it },
                     enabled = loaded, textStyle = MaterialTheme.typography.bodyLarge, label = { Text("CAN (6 dígitos)") }, singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+                CredentialDigitsIndicator(can.length, minTarget = 6, maxTarget = 6, completeAt = 6)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(remembered, { remembered = it })
                     Text("Recordar CAN en este dispositivo", style = MaterialTheme.typography.bodySmall)
@@ -88,6 +113,7 @@ fun CredentialsForm(subtitle: String? = null, requireCan: Boolean = true, requir
                 trailingIcon = { IconButton(onClick = { visible = !visible }) {
                     Icon(if (visible) Icons.Default.VisibilityOff else Icons.Default.Visibility, if (visible) "Ocultar PIN" else "Mostrar PIN")
                 } }, modifier = Modifier.fillMaxWidth().focusRequester(focus).testTag("operation_pin"))
+            CredentialDigitsIndicator(pin.length, minTarget = 4, maxTarget = 8)
             Text("Usa el PIN que configuraste. Los intentos incorrectos consumen los intentos del chip y pueden bloquearlo.",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }

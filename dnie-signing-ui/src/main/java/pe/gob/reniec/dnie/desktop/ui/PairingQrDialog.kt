@@ -16,12 +16,16 @@ internal class PairingQrDialog(private val owner: Window) : AutoCloseable {
         dialog?.let { it.isVisible=true;it.toFront();return }
         val window=JDialog(owner,"Emparejar Android",Dialog.ModalityType.MODELESS)
         val qr=JLabel("Preparando QR…",SwingConstants.CENTER).apply { preferredSize=Dimension(450,450);isOpaque=true;background=Color.WHITE }
-        val content=AetherCardPanel(BorderLayout(10,12)).apply { border=EmptyBorder(16,16,16,16) }
-        content.add(JLabel("<html>En Android abre Suite → Escanear solicitud de la PC.<br>Compara la huella y recuerda esta PC.</html>"),BorderLayout.NORTH)
+        val content=AetherCardPanel(BorderLayout(10,12)).apply { border=EmptyBorder(20,20,20,20) }
+        content.add(JLabel("<html><b>Vincular teléfono con DNIe Suite</b><br><br>1 · Escanea este QR en Android.<br>2 · Compara la huella antes de recordar esta PC.</html>",AetherShieldIcon(),SwingConstants.LEFT),BorderLayout.NORTH)
         content.add(qr,BorderLayout.CENTER)
         content.add(JPanel(BorderLayout(8,8)).apply {
-            add(JTextArea("Huella PC:\n${info.fingerprint}").apply { isEditable=false;lineWrap=true;wrapStyleWord=true;rows=3;isOpaque=false },BorderLayout.CENTER)
-            add(AetherButton("Cerrar",ButtonVariant.PRIMARY).apply { addActionListener { close() } },BorderLayout.SOUTH)
+            val formatted=info.fingerprint.replace(":","").chunked(4).joinToString(" ")
+            add(JTextArea("Huella PC:\n$formatted").apply { isEditable=false;lineWrap=true;wrapStyleWord=true;rows=3;isOpaque=false;font=Font(Font.MONOSPACED,Font.PLAIN,12) },BorderLayout.CENTER)
+            add(JPanel(FlowLayout(FlowLayout.RIGHT,8,0)).apply { isOpaque=false
+                add(AetherButton("Copiar huella").apply { addActionListener { Toolkit.getDefaultToolkit().systemClipboard.setContents(java.awt.datatransfer.StringSelection(info.fingerprint),null);text="✓ Copiada" } })
+                add(AetherButton("Cerrar",ButtonVariant.PRIMARY).apply { addActionListener { close() } })
+            },BorderLayout.SOUTH)
         },BorderLayout.SOUTH)
         window.contentPane=content;window.defaultCloseOperation=WindowConstants.DO_NOTHING_ON_CLOSE
         window.addWindowListener(object: WindowAdapter() { override fun windowClosing(e: WindowEvent) { close() } })

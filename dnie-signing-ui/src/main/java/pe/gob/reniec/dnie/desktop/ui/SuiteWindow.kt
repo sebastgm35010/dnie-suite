@@ -29,16 +29,16 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
     private val phone=AetherComboBox((listOf("")+prefs.get("phone.history",prefs.get("phone","")).split('\n')).distinct().take(5).toTypedArray()).apply {
         name="suite-phone";isEditable=true;text=prefs.get("phone","");toolTipText="Vacío: buscar Android automáticamente. También admite una IP o nombre Tailscale."
     }
-    private val pc=JTextField(pe.gob.reniec.dnie.desktop.remote.SuiteNetworkAddress.choose(prefs.get("pc",""),phone.text),12).apply { name="suite-pc" }
-    private val workspace=JTextField(prefs.get("workspace",defaultPath("SuiteContinuousJobs")),38).apply { name="suite-workspace" }
-    private val identity=JTextField(prefs.get("identity",defaultPath("SuiteContinuousState/pc.dpapi")),38).apply { name="suite-identity" }
+    private val pc=AetherTextField(pe.gob.reniec.dnie.desktop.remote.SuiteNetworkAddress.choose(prefs.get("pc",""),phone.text),12).apply { name="suite-pc" }
+    private val workspace=AetherTextField(prefs.get("workspace",defaultPath("SuiteContinuousJobs")),38).apply { name="suite-workspace" }
+    private val identity=AetherTextField(prefs.get("identity",defaultPath("SuiteContinuousState/pc.dpapi")),38).apply { name="suite-identity" }
     private val connect=AetherButton("Conectar Android",ButtonVariant.PRIMARY)
     private val disconnect=AetherButton("Desconectar",ButtonVariant.OUTLINE)
     private val qr=AetherButton("Abrir QR")
     private val progress=JProgressBar().apply { name="suite-progress";preferredSize=Dimension(180,6);isVisible=false }
     private val templateButtons=linkedMapOf<StampTemplate,AetherToggleChip>()
     private val status=JLabel("Conecta Android desde Suite → Conectar PC guardada.")
-    private val fingerprint=JTextField().apply { isEditable=false }
+    private val fingerprint=AetherTextField().apply { isEditable=false }
     private val files=DefaultListModel<Path>()
     private val list=JList(files)
     private val canvas=PreviewCanvas()
@@ -61,8 +61,8 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
     private val quickGuide=SuiteQuickGuideDialog(this)
     private val target=AetherComboBox(StampPageTarget.entries.toTypedArray())
     private val colors=ColorSwatchSelector()
-    private val title=JTextField("FIRMADO DIGITALMENTE")
-    private val previewName=JTextField("",18)
+    private val title=AetherTextField("FIRMADO DIGITALMENTE")
+    private val previewName=AetherTextField("",18)
     private val tsaBadge=AetherToggleChip("Mostrar distintivo TSA",true)
     private val pill=AetherStatusPill()
     private val network=AetherButton("Red y rutas",ButtonVariant.GHOST)
@@ -74,8 +74,8 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
     private var pageHeight=842f
     private val previewTime=System.currentTimeMillis()
     private val stampTimer=Timer(160) { renderStamp() }.apply { isRepeats=false }
-    private val reason=JTextField("Doy conformidad")
-    private val location=JTextField()
+    private val reason=AetherTextField("Doy conformidad")
+    private val location=AetherTextField()
     private val fields=linkedMapOf("DNI" to AetherToggleChip("DNI",true),"Fecha" to AetherToggleChip("Fecha",true),
         "Hora" to AetherToggleChip("Hora",true),"Motivo" to AetherToggleChip("Motivo",true),"Lugar" to AetherToggleChip("Lugar",true))
     private val sign=AetherButton("Firmar lote",ButtonVariant.PRIMARY)

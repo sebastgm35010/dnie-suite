@@ -24,12 +24,11 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -138,34 +137,24 @@ fun CertificatesScreen(
                         state.scanMessage?.let { message ->
                             Text(message, modifier=Modifier.padding(16.dp),style=MaterialTheme.typography.bodyMedium)
                         }
-                        // Barra de Pestañas (Firma, Autenticación, Cifrado)
-                        TabRow(
-                            selectedTabIndex = CertificateType.entries.indexOf(state.selectedType)
-                                .coerceAtLeast(0)
+                        androidx.compose.foundation.layout.FlowRow(
+                            Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             CertificateType.entries.forEach { type ->
                                 val hasCert = state.certificates.containsKey(type)
-                                Tab(
-                                    selected = state.selectedType == type,
-                                    onClick = { viewModel.selectTab(type) },
-                                    text = {
-                                        Text(
-                                            text = type.displayName + if (hasCert) "" else " (N/D)",
-                                            fontWeight = if (state.selectedType == type) FontWeight.Bold else FontWeight.Normal
-                                        )
-                                    }
-                                )
+                                FilterChip(selected = state.selectedType == type, onClick = { viewModel.selectTab(type) },
+                                    label = { Text((if (hasCert) "● " else "○ ") + type.displayName + if (hasCert) "" else " (N/D)") })
                             }
                         }
 
                         Column(Modifier.fillMaxWidth().padding(16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
                             Text("Usar este DNIe",style=MaterialTheme.typography.titleSmall)
-                            if(state.certificates.containsKey(CertificateType.SIGNATURE)) Text("Certificado público listo para la vista previa de firma PDF",style=MaterialTheme.typography.bodySmall)
                             androidx.compose.foundation.layout.FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                                androidx.compose.material3.OutlinedButton(onClick=onOpenSigner) {Text("Firmar PDF")}
-                                androidx.compose.material3.OutlinedButton(onClick=onOpenVault) {Text("Bóveda")}
-                                androidx.compose.material3.OutlinedButton(onClick=onOpenBridge) {Text("Puente PC")}
-                                androidx.compose.material3.OutlinedButton(onClick=onOpenSuite) {Text("Firma remota")}
+                                androidx.compose.material3.AssistChip(onClick=onOpenSigner,label={Text("Firmar PDF")})
+                                androidx.compose.material3.AssistChip(onClick=onOpenVault,label={Text("Bóveda")})
+                                androidx.compose.material3.AssistChip(onClick=onOpenBridge,label={Text("Puente PC")})
+                                androidx.compose.material3.AssistChip(onClick=onOpenSuite,label={Text("Firma remota")})
                             }
                         }
                         val activeCert = state.certificates[state.selectedType]
