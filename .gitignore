@@ -35,4 +35,5 @@ local.properties
 /docs/
 /AGENTS.md
 /tools/project-registry/
-
+# Exportaciones locales
+/zip/
