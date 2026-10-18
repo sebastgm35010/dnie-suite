@@ -19,17 +19,17 @@ La plataforma desacopla el hardware criptográfico (tarjeta con chip NFC) de los
                             ▼
 ┌────────────────────────────────────────────────────────┐
 │                     App Android                        │
-│  - Jetpack Compose (Aether Fluid UI 120 Hz)            │
+│  - Jetpack Compose            │
 │  - Gestor NFC & PACE                                   │
-│  - Bóveda Cifrada DNIe (Cero Biometría)                │
+│  - Bóveda Cifrada DNIe                 │
 │  - Respaldo Autónomo DNIEBKP2                          │
 └─────────────┬────────────────────────────┬─────────────┘
               │ TLS Inverso                │ PC/SC Bridge
               ▼                            ▼
 ┌───────────────────────────┐┌───────────────────────────┐
 │     DNIe Suite Desktop    ││    DNIe Bridge Windows    │
-│  - Firma PAdES (B-B, B-T) ││  - Lector PC/SC Virtual   │
-│  - TSA Oficial (RENIEC)   ││  - ReFirma / Firma Perú   │
+│  - Firma PAdES            ││  - Lector PC/SC Virtual   │
+│  - TSA Oficial            ││  - ReFirma / Firma Perú   │
 │  - Visor & Estampado PDF  ││  - Servicio de Fondo SCM  │
 └───────────────────────────┘└───────────────────────────┘
 ```
@@ -39,10 +39,9 @@ La plataforma desacopla el hardware criptográfico (tarjeta con chip NFC) de los
 ## 2. Invariantes de Seguridad y Diseño
 
 1. **Soberanía Criptográfica:** Las claves privadas de autenticación y firma nunca salen del chip seguro del DNIe. Las operaciones de cifrado/firma se ejecutan mediante comandos APDU delegados (`PSO: COMPUTE DIGITAL SIGNATURE`).
-2. **Secuencia de Protocolo Estricta:** `IAS` → `PKI` → `PACE` → `PKI protegido`. Se mantiene Secure Messaging (SM) activo con token PACE, autenticación de mensaje (MAC), contador SSC secuencial y desenvolvimiento estricto de respuestas.
-3. **Bóveda sin Biometría:** Por especificación de seguridad, la bóveda de archivos personales utiliza cifrado asimétrico híbrido vinculado al certificado del DNIe. El descifrado exige presencia física del DNIe y PIN; no se permite desbloqueo biométrico para evitar vulnerabilidades de suplantación en el sistema operativo.
-4. **Protección de Secretos:** El PIN y CAN se almacenan únicamente en memoria volátil transitoria y se limpian al salir de la pantalla o pausar la actividad (`onPause`). No se persisten en disco ni se registran en registros del sistema.
-5. **Aislamiento de Capas:** Los módulos JVM puros no importan dependencias de la plataforma Android (`android.*`) ni de interfaces de usuario.
+2. **Bóveda sin Biometría:** Por especificación de seguridad, la bóveda de archivos personales utiliza cifrado asimétrico híbrido vinculado al certificado del DNIe. El descifrado exige presencia física del DNIe y PIN; no se permite desbloqueo biométrico para evitar vulnerabilidades de suplantación en el sistema operativo.
+3. **Protección de Secretos:** El PIN se almacena únicamente en memoria volátil transitoria y se limpian al salir de la pantalla o pausar la actividad (`onPause`). No se persisten en disco ni se registran en registros del sistema.
+4. **Aislamiento de Capas:** Los módulos JVM puros no importan dependencias de la plataforma Android (`android.*`) ni de interfaces de usuario.
 
 ---
 
