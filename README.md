@@ -8,13 +8,10 @@ El teléfono gestiona NFC/PACE y las operaciones del DNI. La Suite procesa docum
 
 - [Corrección de Bugs y Bóveda R12 (3.1.5 / APK 89)](docs/architecture/CORRECCION_BUGS_Y_BOVEDA_R12.md). Corrección integral de 17 defectos de concurrencia, SAF, ciclo de vida y experiencia de bóveda.
 - [Experiencia Flagship R11 y Fluid UI (3.1.4 / APK 88)](docs/design/EXPERIENCIA_FLAGSHIP_R11.md). Rediseño de flujos insignia y pulido Organic Motion en Android Compose, Swing y WinForms.
-- [Rediseño Aether 3.1: cambios y pruebas](docs/design/RESULTADO_AETHER_R2.md). Android82 instalada; APK83 preparada sin ADB y Windows R7 actualizado. [Pulido R4 y pruebas](docs/design/RESULTADO_AETHER_R4.md). [Red coordinada y simplificación R6](docs/architecture/RED_COORDINADA_R6.md). [Personalización R7 y pruebas](docs/design/PERSONALIZACION_SELLO_HAPTICA_R7.md). QR R5 permanece como referencia histórica.
-
 - [Estado actual](docs/CONTEXTO_ACTUAL.md), [pendientes](docs/PENDIENTES_ACTUALES.md) y [arquitectura](docs/architecture/ARQUITECTURA_ACTUAL_2_0.md).
-- [Versión 3.1 y verificaciones](docs/architecture/SEGURIDAD_BACKEND_3_1_V4.md).
 - [Compilación y configuración de un clon](docs/operations/GITHUB_Y_COMPILACION_MONOREPO.md).
 - [Contexto de la Suite](docs/suite/CONTEXTO_SUITE_FIRMA.md) y [registro SQL consultable](docs/project-registry/README.md).
-- [Índice completo de documentación](docs/README.md) y [reglas de trabajo](AGENTS.md).
+- [Índice de documentación](docs/README.md) y [reglas de trabajo](AGENTS.md).
 
 ## Organización
 

@@ -31,3 +31,8 @@ local.properties
 /dist/
 /out/
 /docs/project-registry/registry-*.sqlite3
+
+# Documentación interna de investigación, diagnósticos y resultados detallados
+/docs/internal/
+docs/operations/*.json
+docs/design/*.json

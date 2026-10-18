@@ -2,73 +2,18 @@
   "review_date": "2026-10-18",
   "document_roles": {
     "AGENTS.md": "operational_instructions",
+    "DESIGN.md": "current_design_system",
+    "README.md": "repository_entrypoint",
     "docs/CONTEXTO_ACTUAL.md": "current_state",
     "docs/PENDIENTES_ACTUALES.md": "current_pending",
+    "docs/README.md": "documentation_index",
     "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md": "current_architecture",
-    "docs/suite/CONTEXTO_SUITE_FIRMA.md": "current_suite",
-    "docs/operations/RETOMAR_TRAS_REINICIO_RC4.md": "resume_operations",
-    "docs/suite/REFIRMA_ISSUER_SERIAL_H15.md": "validation_evidence",
-    "docs/project-registry/README.md": "registry_operations",
-    "docs/suite/REVOCACION_CA_DIAGNOSTICO_H9B.md": "validation_or_architecture_reference",
-    "docs/suite/ANDROID_TSA_RENIEC_H11.md": "validation_or_architecture_reference",
-    "docs/suite/INTEGRACION_BRIDGE_MODULAR_H13.md": "validation_or_architecture_reference",
-    "docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md": "current_recovery_architecture",
-    "docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md": "research_recovery_proposal",
-    "docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md": "identity_research_not_implemented",
-    "docs/architecture/RIESGOS_RECUPERACION_PASSWORD_Y_DNI.md": "current_recovery_risk_analysis",
-    "docs/architecture/CICLO_ARCHIVO_Y_PLAN_PRUEBAS_RECUPERACION.md": "proposed_lifecycle_and_test_plan",
-    "docs/architecture/PRUEBAS_RECUPERACION_WINDOWS_R1.md": "synthetic_validation_recovery_windows",
-    "docs/architecture/PRUEBAS_RECUPERACION_WINDOWS_R2.md": "synthetic_validation_recovery_windows",
-    "docs/architecture/RECUPERACION_ANDROID_R3.md": "historical_android_recovery_architecture",
-    "docs/architecture/BOVEDA_UI_SIMPLE_R4.md": "historical_vault_ui_architecture",
-    "docs/architecture/RECUPERACION_COMPLETA_Y_FLUJO_R5.md": "historical_whole_vault_recovery_architecture",
-    "docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md": "current_unified_vault_archive_architecture",
-    "docs/architecture/BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md": "current_vault_picker_lifecycle_fix",
-    "docs/architecture/RETIRO_PASSKEYS_R3.md": "current_feature_retirement_and_upgrade_cleanup",
-    "docs/architecture/DIAGNOSTICOS_DIRECTOS_Y_CAPAS_R1.md": "current_diagnostics_runtime_and_direct_export",
-    "docs/architecture/DIAGNOSTICO_RENDIMIENTO_UI_R2.md": "current_ui_performance_diagnosis",
-    "docs/architecture/REDISENO_ANDROID_3_0_R1.md": "current_android_redesign_3_0_first_stage",
-    "docs/architecture/REDISENO_ANDROID_3_0_R2.md": "previous_android_ui_architecture",
-    "docs/architecture/REDISENO_ANDROID_3_0_R3.md": "current_android_ui_architecture",
-    "docs/architecture/CONEXIONES_INDEPENDIENTES_R4.md": "previous_connection_architecture",
-    "docs/architecture/CONTROLADOR_ENERGIA_Y_PUBLICACION_R1.md": "current_driver_power_architecture",
-    "docs/architecture/CONEXIONES_DIRECCION_E_IDENTIDAD_R5.md": "current_connection_architecture",
-    "docs/architecture/SEGURIDAD_BACKEND_3_1_V4.md": "current_backend_hardening_3_1",
-    "README.md": "repository_entrypoint",
-    "docs/operations/GITHUB_Y_COMPILACION_MONOREPO.md": "current_repository_workflow",
-    "docs/operations/PUBLICACION_GITHUB_20261013.md": "repository_publication_evidence",
-    "docs/architecture/CONTROLADOR_COMPLETADOS_Y_PROTOCOLO_R2.md": "current_driver_completion_and_protocol_architecture",
-    "docs/suite/QR_NATIVO_SUITE_R1.md": "current_suite_qr_presentation",
-    "docs/suite/SELECCION_RECIENTES_Y_PIN_R2.md": "current_suite_file_selection_and_pin_flow",
-    "docs/design/ESPECIFICACION_AETHER_Y_SELLOS_PDF.md": "approved_redesign_specification",
-    "docs/design/RESULTADO_AETHER_R2.md": "current_aether_redesign_results",
-    "docs/design/CONTEXTO_REDISENO_AETHER.md": "current_aether_execution_context",
-    "docs/operations/AETHER_R2_RESULTADOS.json": "aether_machine_readable_results",
-    "docs/design/INVARIANTES_AETHER_BASE.json": "aether_protected_sources_baseline",
-    "docs/design/VALIDACION_ANDROID_AETHER_R3.md": "current_android_aether_installation_and_instrumented_validation",
-    "docs/design/RESULTADO_AETHER_R4.md": "current_aether_r4_results",
-    "docs/design/ALCANCE_AETHER_R4.md": "approved_aether_r4_scope_qr_deferred",
-    "docs/design/ESPECIFICACION_PULIDO_AETHER_R4.md": "external_aether_r4_recommendations",
-    "docs/operations/AETHER_R4_RESULTADOS.json": "aether_r4_machine_readable_results",
-    "docs/design/QR_COTEJO_R5.md": "current_stamp_qr_format_and_comparison",
-    "docs/operations/QR_R5_RESULTADOS.json": "stamp_qr_r5_verifiable_results",
-    "docs/architecture/RED_COORDINADA_R6.md": "current_network_coordination_and_r6_runtime_evidence",
-    "docs/design/PERSONALIZACION_SELLO_HAPTICA_R7.md": "current_stamp_personalization_haptics_and_r7_evidence",
-    "docs/design/ESPECIFICACION_R7_RECIBIDA.md": "received_specification_not_runtime_evidence",
-    "docs/design/PANTALLAS_FLUJOS_NFC_R8.md": "current_android_flows_and_windows_suite_ui_r8",
-    "docs/design/ESPECIFICACION_R8_RECIBIDA.md": "received_specification_not_runtime_evidence",
-    "docs/operations/FLUJOS_R8_RESULTADOS.json": "flows_r8_machine_readable_results",
-    "docs/operations/VERSIONADO_Y_FIRMA_3_1_1.md": "current_versioning_and_android_installation",
-    "docs/operations/VERSIONADO_3_1_1_RESULTADOS.json": "version_3_1_1_machine_readable_results",
-    "DESIGN.md": "current_design_system",
-    "docs/design/ESPECIFICACION_R9_RECIBIDA.md": "external_r9_requested_specification",
-    "docs/design/SISTEMA_DISENO_GUIA_R9.md": "current_r9_implementation_and_validation",
-    "docs/operations/DISENO_R9_RESULTADOS.json": "r9_verifiable_results",
-    "docs/design/ESPECIFICACION_R10_RECIBIDA.md": "external_r10_requested_specification",
-    "docs/design/ACABADO_FLUIDEZ_R10.md": "current_r10_implementation_and_performance_evidence",
-    "docs/operations/ACABADO_R10_RESULTADOS.json": "r10_verifiable_results",
+    "docs/architecture/CORRECCION_BUGS_Y_BOVEDA_R12.md": "current_bugfix_and_vault_stabilization_r12",
     "docs/design/EXPERIENCIA_FLAGSHIP_R11.md": "current_flagship_flows_and_ui_r11",
-    "docs/architecture/CORRECCION_BUGS_Y_BOVEDA_R12.md": "current_bugfix_and_vault_stabilization_r12"
+    "docs/operations/GITHUB_Y_COMPILACION_MONOREPO.md": "current_repository_workflow",
+    "docs/operations/RETOMAR_TRAS_REINICIO_RC4.md": "resume_operations",
+    "docs/project-registry/README.md": "registry_operations",
+    "docs/suite/CONTEXTO_SUITE_FIRMA.md": "current_suite"
   },
   "features": [
     {
@@ -76,7 +21,7 @@
       "name": "Motor CMS/CAdES compartido",
       "status": "validated_real",
       "note": "issuerSerial corregido y aceptación externa de firma nueva confirmada; las firmas antiguas no se alteran.",
-      "evidence": "docs/suite/REFIRMA_ISSUER_SERIAL_H15.md",
+      "evidence": "docs/suite/CONTEXTO_SUITE_FIRMA.md",
       "files": {
         "engine": [
           "dnie-core/src/main/java/pe/gob/reniec/dnie/crypto/CmsSignatureBuilder.kt",
@@ -110,7 +55,7 @@
       "name": "Firma PDF Android",
       "status": "validated_real",
       "note": "Visible/invisible, PAdES B y TSA opcional T; issuerSerial compartido corregido. Usuario confirma firma nueva Android 3.1 como PAdES Baseline T; sin PDF recibido para repetir inspección local. Aether R2: nueva apariencia/preview/páginas comprobadas con datos sintéticos; ver stamp_aether/desktop_aether. No acredita firma física nueva. Continuación R3: Android79 instalada, 2 pruebas instrumentadas pasan; Firma física nueva sigue pendiente. R8: interfaz candidata APK84 compilada sin instalar ni ADB, Suite Windows con plantillas/progreso/apertura; motores preservados. Ver android_flows_r8.",
-      "evidence": "docs/architecture/SEGURIDAD_BACKEND_3_1_V4.md",
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md",
       "files": {
         "engine": [
           "dnie-pdf/src/main/"
@@ -232,7 +177,7 @@
       "name": "Confianza TSL Perú y revocación",
       "status": "validated_real_manual",
       "note": "TSL autenticada, ruta PKIX, OCSP titular y CRL CA; consulta manual, evidencia caduca. No clasificación eIDAS.",
-      "evidence": "docs/suite/REVOCACION_CA_DIAGNOSTICO_H9B.md",
+      "evidence": "docs/suite/CONTEXTO_SUITE_FIRMA.md",
       "files": {
         "engine": [
           "dnie-validation-core/src/main/java/pe/gob/reniec/dnie/validation/"
@@ -252,7 +197,7 @@
       "name": "Sello de tiempo RENIEC",
       "status": "validated_real",
       "note": "PAdES T opcional, confianza ROOT5/TSL y revocación; fallo TSA no publica B silenciosamente ni repite firma.",
-      "evidence": "docs/suite/ANDROID_TSA_RENIEC_H11.md",
+      "evidence": "docs/suite/CONTEXTO_SUITE_FIRMA.md",
       "files": {
         "engine": [
           "dnie-validation-core/src/main/java/pe/gob/reniec/dnie/timestamp/"
@@ -274,7 +219,7 @@
       "name": "Bóveda personal cifrada",
       "status": "implemented_real_use",
       "note": "2026-10-08 · Bóveda R7: corregido inicio tras SAF: selector primero, credenciales después y autorización explícita. onPause limpiaba PIN y R6 rechazaba el inicio automático, dejando destino vacío. APK69 instalada por ADB y versión comprobada; 79 pruebas app pasan y 3 pruebas instrumentadas de interfaz pasan (8,537 s). El selector se simula con registro aislado; exportación/importación con SAF real y DNI físico pendientes. Usuario confirma funcionamiento aparente de exportación R7; no implica prueba de importación física.",
-      "evidence": "docs/architecture/BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md",
+      "evidence": "docs/architecture/CORRECCION_BUGS_Y_BOVEDA_R12.md",
       "files": {
         "engine": [
           "dnie-vault-core/src/main/"
@@ -289,11 +234,7 @@
           "app/src/main/java/pe/gob/reniec/dnie/domain/vault/"
         ],
         "architecture": [
-          "docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md",
-          "docs/architecture/INVESTIGACION_RECUPERACION_COMUNIDAD.md",
-          "docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md",
-          "docs/architecture/RIESGOS_RECUPERACION_PASSWORD_Y_DNI.md",
-          "docs/architecture/CICLO_ARCHIVO_Y_PLAN_PRUEBAS_RECUPERACION.md"
+          "docs/architecture/CORRECCION_BUGS_Y_BOVEDA_R12.md"
         ]
       },
       "depends_on": [
@@ -305,7 +246,7 @@
       "name": "Proveedor passkeys Android",
       "status": "removed_by_user",
       "note": "2026-10-08 · Retiro R3: passkeys eliminadas. APK71 / 2.0.0-rc23-core-only instalada por ADB. Limpieza automática al primer arranque verificada: catálogo y aliases ausentes, proveedor no registrado. 165 pruebas JVM y 5 Android pasan; un caso Windows omitido por permisos se verifica en Android. Bóveda y emparejamientos fuera del alcance de borrado.",
-      "evidence": "docs/architecture/RETIRO_PASSKEYS_R3.md",
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md",
       "files": {},
       "depends_on": []
     },
@@ -361,7 +302,7 @@
       "name": "Coordinación modular Suite + Bridge",
       "status": "implemented_partial",
       "note": "Adaptador .NET opcional; permiso de modo solo local a GUI, sin exclusión global entre procesos.",
-      "evidence": "docs/suite/INTEGRACION_BRIDGE_MODULAR_H13.md",
+      "evidence": "docs/suite/CONTEXTO_SUITE_FIRMA.md",
       "files": {
         "engine": [
           "dnie-desktop-orchestration/src/main/"
@@ -384,7 +325,7 @@
       "name": "Diagnóstico aislado de producción",
       "status": "implemented_runtime_validated",
       "note": "APK72 mantiene diagnóstico directo validado. R2 mide navegación caliente y edición por ADB: picos de medición/recomposición Compose; no atribuir a NFC. Trazas con pérdida descartadas. Optimización concreta pendiente.",
-      "evidence": "docs/architecture/DIAGNOSTICOS_DIRECTOS_Y_CAPAS_R1.md",
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md",
       "files": {
         "engine": [
           "dnie-diagnostics-core/src/main/"
@@ -404,8 +345,7 @@
           "dnie-diagnostics-core/src/test/"
         ],
         "architecture": [
-          "docs/architecture/DIAGNOSTICOS_DIRECTOS_Y_CAPAS_R1.md",
-          "docs/architecture/DIAGNOSTICO_RENDIMIENTO_UI_R2.md"
+          "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md"
         ]
       },
       "depends_on": []
@@ -415,7 +355,7 @@
       "name": "Recuperación portable con paquete separado",
       "status": "android_integrated_physical_pending",
       "note": "2026-10-08 · Bóveda R7: corregido inicio tras SAF: selector primero, credenciales después y autorización explícita. onPause limpiaba PIN y R6 rechazaba el inicio automático, dejando destino vacío. APK69 instalada por ADB y versión comprobada; 79 pruebas app pasan y 3 pruebas instrumentadas de interfaz pasan (8,537 s). El selector se simula con registro aislado; exportación/importación con SAF real y DNI físico pendientes.",
-      "evidence": "docs/architecture/BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md",
+      "evidence": "docs/architecture/CORRECCION_BUGS_Y_BOVEDA_R12.md",
       "files": {
         "engine": [
           "dnie-vault-recovery/src/main/"
@@ -439,8 +379,7 @@
           "app/src/main/java/pe/gob/reniec/dnie/domain/vault/UnlockRecoveryBatch.kt"
         ],
         "architecture": [
-          "docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md",
-          "docs/architecture/BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md"
+          "docs/architecture/CORRECCION_BUGS_Y_BOVEDA_R12.md"
         ]
       },
       "depends_on": [
@@ -452,7 +391,7 @@
       "name": "Limpieza de funciones retiradas al actualizar",
       "status": "implemented_verified_on_android",
       "note": "Limpieza automática al primer arranque comprobada con datos previos reales; aliases y proveedor ausentes. Receptor de actualización implementado; en este dispositivo no se observó ejecución antes de abrir la app. 5 pruebas Android pasan.",
-      "evidence": "docs/architecture/RETIRO_PASSKEYS_R3.md",
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md",
       "files": {
         "adapter": [
           "app/src/main/java/pe/gob/reniec/dnie/data/migrations/"
@@ -468,7 +407,7 @@
       "name": "Interfaz Android 3.0 basada en Aether",
       "status": "implemented_runtime_validated",
       "note": "2026-10-09 · Conexiones R5: APK77 / 3.0.0-alpha05-mobility instalada sin borrar datos. Suite y Bridge Wi-Fi ya no fijan identidad a la IP; TLS y token siguen obligatorios. Windows conserva la identidad DPAPI al cambiar IP. TLS directo permite editar destino; Suite tiene pantalla completa independiente y limpia conexión al finalizar lote único. 159 JVM pasan / 3 omitidas, release compilado y 3 pruebas instrumentadas de Suite/Bridge pasan en el móvil. Cambio físico de IP con DNI pendiente. Aether R2: nueva apariencia/preview/páginas comprobadas con datos sintéticos; ver stamp_aether/desktop_aether. No acredita firma física nueva. Continuación R3: Android79 instalada, 2 pruebas instrumentadas pasan; Firma física nueva sigue pendiente. R8: interfaz candidata APK84 compilada sin instalar ni ADB, Suite Windows con plantillas/progreso/apertura; motores preservados. Ver android_flows_r8. R9:3.1.2/86 instalada; guía optativa, paleta compartida y movimiento reducido verificados. Ver design_r9. R10: 3.1.3/87 instalada; acabado y medición puntual comprobados. Ver finish_r10.",
-      "evidence": "docs/architecture/CONEXIONES_DIRECCION_E_IDENTIDAD_R5.md",
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md",
       "files": {
         "frontend": [
           "app/src/main/java/pe/gob/reniec/dnie/ui/home/",
@@ -506,9 +445,7 @@
           "app/src/androidTest/java/pe/gob/reniec/dnie/ui/SuiteSessionPresentationTest.kt"
         ],
         "architecture": [
-          "docs/architecture/REDISENO_ANDROID_3_0_R1.md",
-          "docs/architecture/REDISENO_ANDROID_3_0_R2.md",
-          "docs/architecture/REDISENO_ANDROID_3_0_R3.md"
+          "docs/design/EXPERIENCIA_FLAGSHIP_R11.md"
         ],
         "adapter": [
           "app/src/main/java/pe/gob/reniec/dnie/data/preferences/AppearancePreferences.kt",
@@ -530,7 +467,7 @@
       "name": "Seguridad backend 3.1 / v4",
       "status": "implemented_runtime_validated",
       "note": "2026-10-13 · Versión 3.1.0 / APK78 instalada: integración v4 de autenticación resistente, plazos por candidato, integridad SHA-256 de originales/resultados, migración de identidad Windows protegida y DPAPI acotado. Servicio/gestor Windows y Suite actualizados; identidad conservada según metadatos. 177 JVM, 134 comprobaciones Windows y 3 pruebas Android pasan; debug/release compilados y producción comprobada. Firma PDF Android nueva confirmada por el usuario como PAdES Baseline T; regresión física Suite/puente/USB pendiente.",
-      "evidence": "docs/architecture/SEGURIDAD_BACKEND_3_1_V4.md",
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md",
       "files": {
         "engine": [
           "dnie-signing-core/src/main/"
@@ -568,8 +505,7 @@
         ],
         "documentation": [
           "README.md",
-          "docs/operations/GITHUB_Y_COMPILACION_MONOREPO.md",
-          "docs/operations/PUBLICACION_GITHUB_20261013.md"
+          "docs/operations/GITHUB_Y_COMPILACION_MONOREPO.md"
         ]
       },
       "depends_on": []
@@ -579,7 +515,7 @@
       "name": "Controlador UMDF y backend PCSC",
       "status": "installed_synthetic_validated",
       "note": "2026-10-13 · Controlador R2 2.0.0.4/oem239 y backend Windows instalados sin reinicio. Errores locales de transmisión ya no retiran la tarjeta; protocolo tras apagado y cancelación antes de entrega corregidos. Pulsos 2 s/operaciones 25 s frente a plazo del driver 30 s. 7860 comprobaciones C++, 137 backend, 31 PCSC nativas y 13 TLSrelay pasan. PnP0 y ReaderPublished=true al finalizar, sin tarjeta. Firma DNI y suspensión físicas pendientes; Android78 no cambia.",
-      "evidence": "docs/architecture/CONTROLADOR_COMPLETADOS_Y_PROTOCOLO_R2.md",
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md",
       "files": {
         "driver": [
           "tools/windows-pcsc-driver/DniBridgeReader.cpp",
@@ -604,7 +540,7 @@
       "name": "QR nativo de emparejamiento Suite",
       "status": "installed_ui_synthetic_validated",
       "note": "2026-10-13 · Suite QR R1: Abrir QR inicia preparación y muestra QR nativo en memoria, permite reabrirlo y lo retira al conectar/cancelar. Corregida espera de EOF heredado por gestor Bridge que bloqueaba conexiones. 45 tests UI/escritorio/orquestación pasan, incluida pulsación real del botón sin teléfono/DNI y proceso Windows con stdout heredado. Acceso directo actualizado; lectura QR desde Android físico pendiente.",
-      "evidence": "docs/suite/QR_NATIVO_SUITE_R1.md",
+      "evidence": "docs/suite/CONTEXTO_SUITE_FIRMA.md",
       "files": {
         "frontend": [
           "dnie-signing-ui/src/main/java/pe/gob/reniec/dnie/desktop/ui/PairingQrDialog.kt",
@@ -629,7 +565,7 @@
       "name": "Selección de documentos y preflight GUI",
       "status": "installed_ui_and_pdf_validated",
       "note": "2026-10-13 · Suite entradas R2: alias virtual de Recientes era una ruta inexistente y causaba tanto la falta de vista previa como rechazo local al firmar. Selector resuelve shell shortcuts a archivos reales, preflight anterior a PIN, conexión conservada ante rechazo previo a BEGIN y diálogo PIN explícito. 50 tests pasan; PDF real seleccionado y GUI muestran página 1/11 a 918×1188. Acceso directo actualizado; firma DNI física pendiente.",
-      "evidence": "docs/suite/SELECCION_RECIENTES_Y_PIN_R2.md",
+      "evidence": "docs/suite/CONTEXTO_SUITE_FIRMA.md",
       "files": {
         "adapter": [
           "dnie-signing-ui/src/main/java/pe/gob/reniec/dnie/desktop/ui/DesktopFileSelection.kt"
@@ -657,7 +593,7 @@
       "name": "Apariencia vectorial Aether y selección de páginas PDF",
       "status": "implemented_local_validated_android_install_pending",
       "note": "2026-10-14 · Personalización R7 / APK83 (3.1.0) compilada debug/release; no instalada: ADB suspendido hasta nuevo aviso del usuario. APK82 sigue siendo la última instalada. Sello con fondo transparente, insignias check/candado, fecha/densidad/colores, plantillas y esquinas al6%; diseño Android persistente, navegación y acciones Mi DNIe. Respuesta táctil por eventos NFC con ajuste de usuario. Windows añade PNG de rúbrica, DnD visual y tema claro/oscuro. 241 JVM pasan/1 omitida por permisos Windows y 44 comprobaciones Manager pasan. Interfaces Windows y accesos actualizados; servicio, driver, identidad y motores criptográficos conservados. Pruebas Android y firma física R7 pendientes.",
-      "evidence": "docs/design/PERSONALIZACION_SELLO_HAPTICA_R7.md",
+      "evidence": "docs/design/EXPERIENCIA_FLAGSHIP_R11.md",
       "files": {
         "model": [
           "dnie-signing-core/src/main/java/pe/gob/reniec/dnie/pdf/SignatureAppearance.kt"
@@ -700,7 +636,7 @@
       "name": "Presentación Aether Suite y Manager Windows",
       "status": "installed_ui_local_validated",
       "note": "2026-10-14 · Personalización R7 / APK83 (3.1.0) compilada debug/release; no instalada: ADB suspendido hasta nuevo aviso del usuario. APK82 sigue siendo la última instalada. Sello con fondo transparente, insignias check/candado, fecha/densidad/colores, plantillas y esquinas al6%; diseño Android persistente, navegación y acciones Mi DNIe. Respuesta táctil por eventos NFC con ajuste de usuario. Windows añade PNG de rúbrica, DnD visual y tema claro/oscuro. 241 JVM pasan/1 omitida por permisos Windows y 44 comprobaciones Manager pasan. Interfaces Windows y accesos actualizados; servicio, driver, identidad y motores criptográficos conservados. Pruebas Android y firma física R7 pendientes. R9:3.1.2/86 instalada; guía optativa, paleta compartida y movimiento reducido verificados. Ver design_r9. R10: 3.1.3/87 instalada; acabado y medición puntual comprobados. Ver finish_r10.",
-      "evidence": "docs/design/PERSONALIZACION_SELLO_HAPTICA_R7.md",
+      "evidence": "docs/design/EXPERIENCIA_FLAGSHIP_R11.md",
       "files": {
         "frontend": [
           "dnie-signing-ui/src/main/java/pe/gob/reniec/dnie/desktop/ui/AetherSwingTheme.kt",
@@ -739,7 +675,7 @@
       "name": "Sello QR público y cotejo Android",
       "status": "retired_ui_by_user_r6",
       "note": "R6 retira generador QR de opciones nuevas y cotejador; conserva codec/enum y render históricos para compatibilidad. QR de emparejamiento sigue disponible.",
-      "evidence": "docs/architecture/RED_COORDINADA_R6.md",
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md",
       "files": {
         "model": [
           "dnie-signing-core/src/main/java/pe/gob/reniec/dnie/pdf/StampQrCodec.kt",
@@ -770,7 +706,7 @@
       "name": "Red coordinada Bridge y Suite sin IP fija",
       "status": "implemented_synthetic_and_device_discovery_validated",
       "note": "2026-10-14 · Red R6 / APK82 (3.1.0) instalada: Bridge Red (Wi-Fi/Tailscale) + USB; descubrimiento autenticado y TLS fijado por huella/token, IP opcional en Suite/gestor y CLI. Vista previa Android muestra anotaciones existentes. QR de sello/cotejador retirados de UI; QR de emparejamiento conservado. 283 pruebas JVM pasan, 3 optativas/privilegios omitidas; 261 Bridge + 48 Control + 41 Manager + 3 servicio instalado pasan; 8 instrumentadas Android pasan. Descubrimiento Windows→Android verificado por LAN y Tailscale por separado, credenciales sintéticas, sin DNI. Gestor/servicio/Suite actualizados, identidad conservada y driver sin reinstalar. Firma NFC y cambio físico de red pendientes.",
-      "evidence": "docs/architecture/RED_COORDINADA_R6.md",
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md",
       "files": {
         "engine": [
           "dnie-network-core/src/main/java/pe/gob/reniec/dnie/network/"
@@ -804,7 +740,7 @@
       "name": "Respuesta táctil NFC por eventos de operación",
       "status": "implemented_local_validated_physical_pending",
       "note": "Eventos de dominio sin replay; Activities adaptan a Vibrator. Éxito de lote exige todas las firmas; cancelación no emite éxito. Ajuste persistente. No medido en hardware sin ADB.",
-      "evidence": "docs/design/PERSONALIZACION_SELLO_HAPTICA_R7.md",
+      "evidence": "docs/design/EXPERIENCIA_FLAGSHIP_R11.md",
       "files": {
         "model": [
           "app/src/main/java/pe/gob/reniec/dnie/domain/feedback/ReadingCue.kt"
@@ -834,7 +770,7 @@
       "name": "Hoja continua DNIe y pantallas R8",
       "status": "instrumented_ui_validated_physical_dni_pending",
       "note": "2026-10-14 · Pantallas y NFC R8 / APK84 (3.1.0) compilada debug/release, sin instalar ni usar ADB; APK82 sigue siendo la última instalada. Hoja continua credenciales→NFC→progreso→resultado; CAN compacto y PIN transitorio. Firma con preview superior, tres pestañas y barra fija, resultados parciales explícitos. Cinco destinos comunes; Mi DNIe agrupa visualmente Certificados/Identidad, credencial ICAO y detalles plegables. Suite Windows con plantillas 2×2, indicador de actividad y apertura del PDF real. 251 JVM pasan/1 omitida y Manager44 pasan; auxiliar Android compilado, sin ejecutar. Suite preparada y acceso actualizado; Bridge/servicio/driver y motores criptográficos sin cambios. Pruebas Android/NFC pendientes. 3.1.1/85 instalada por ADB;4 instrumentadas R8 pasan, sin DNI físico.",
-      "evidence": "docs/design/PANTALLAS_FLUJOS_NFC_R8.md",
+      "evidence": "docs/design/EXPERIENCIA_FLAGSHIP_R11.md",
       "files": {
         "frontend": [
           "app/src/main/java/pe/gob/reniec/dnie/ui/components/",
@@ -854,7 +790,7 @@
           "dnie-signing-ui/src/test/java/pe/gob/reniec/dnie/desktop/ui/FlowsR8Test.kt"
         ],
         "architecture": [
-          "docs/design/PANTALLAS_FLUJOS_NFC_R8.md"
+          "docs/design/EXPERIENCIA_FLAGSHIP_R11.md"
         ]
       },
       "depends_on": [
@@ -870,7 +806,7 @@
       "name": "Versionado y firma estable Android",
       "status": "installed_validated",
       "note": "2026-10-14 · Android 3.1.1 / APK85 instalada por ADB, sin desinstalar ni borrar datos. Usuario confirmó APK84 y reactivó ADB. Versionado central en gradle.properties y comando para incrementar patch/código por entrega; Configuración muestra versión. Firma app/auxiliar idéntica y compatible con84; ambos instalados. 89 unitarias pasan/1 omitida y4 instrumentadas R8 pasan (9,22s), sin DNI. Auxiliar queda instalado con identidad estable. NFC/TSA/háptica físicos siguen pendientes; Windows instalado conserva R8. R9:3.1.2/86 instalada; guía optativa, paleta compartida y movimiento reducido verificados. Ver design_r9. R10: 3.1.3/87 instalada; acabado y medición puntual comprobados. Ver finish_r10.",
-      "evidence": "docs/operations/VERSIONADO_Y_FIRMA_3_1_1.md",
+      "evidence": "docs/operations/GITHUB_Y_COMPILACION_MONOREPO.md",
       "files": {
         "configuration": [
           "gradle.properties",
@@ -886,7 +822,7 @@
           "app/src/main/java/pe/gob/reniec/dnie/ui/settings/SettingsScreen.kt"
         ],
         "architecture": [
-          "docs/operations/VERSIONADO_Y_FIRMA_3_1_1.md"
+          "docs/operations/GITHUB_Y_COMPILACION_MONOREPO.md"
         ]
       },
       "depends_on": []
@@ -896,7 +832,7 @@
       "name": "Sistema Aether y guía optativa R9",
       "status": "installed_instrumented_ui_validated",
       "note": "2026-10-15 · R9 / Android3.1.2 (APK86) instalada por ADB sin borrar datos y con firma compatible; auxiliar actualizado con la misma firma. DESIGN.md, paleta compartida claro/oscuro, categorías sans y números tabulares; radar NFC/resortes con movimiento reducido y guía optativa CAN/NFC/móvil-PC. Suite/gestor Windows compilados y accesos actualizados. 252 pruebas JVM pasan/1 omitida preexistente,48 comprobaciones Manager y8 instrumentadas Android pasan. Motores, servicio y driver sin cambios. NFC/TSA/háptica físicos y regresión USB/suspensión pendientes.",
-      "evidence": "docs/design/SISTEMA_DISENO_GUIA_R9.md",
+      "evidence": "docs/design/EXPERIENCIA_FLAGSHIP_R11.md",
       "files": {
         "frontend": [
           "DESIGN.md",
@@ -927,7 +863,7 @@
       "name": "Acabado y fluidez Aether R10",
       "status": "installed_instrumented_and_runtime_measured",
       "note": "2026-10-15 · R10 / Android 3.1.3 (APK 87) instalada por ADB sin borrar datos, misma firma y auxiliar compatible. Selector segmentado compartido, Bento/credencial/guía refinados, CAN compacto y PC vinculada con acciones fijas. Suite incorpora diálogo PIN propio y hover finito; Bridge mejora cabecera y tarjetas de salud. 254 pruebas JVM aprobadas, 1 omisión preexistente, 52 comprobaciones Manager y 14 instrumentadas Android aprobadas. Comparación puntual de cuadros por VSYNC: P95 8,88→8,94 ms; no garantiza 60 FPS constantes. Motores, servicio y controlador sin cambios. Pendientes pruebas físicas NFC/TSA/USB/suspensión y documentos representativos.",
-      "evidence": "docs/design/ACABADO_FLUIDEZ_R10.md",
+      "evidence": "docs/design/EXPERIENCIA_FLAGSHIP_R11.md",
       "files": {
         "frontend": [
           "app/src/main/java/pe/gob/reniec/dnie/ui/design/AetherSegmentedTabs.kt",
@@ -1031,35 +967,35 @@
       "feature": "vault",
       "state": "android_integrated_physical_pending",
       "description": "APK69 instalada: selector antes de credenciales y autorización explícita; 3 pruebas instrumentadas de interfaz pasan con selector simulado. Pendientes lote NFC/SAF reales, cruces Windows.",
-      "evidence": "docs/architecture/BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md"
+      "evidence": "docs/architecture/CORRECCION_BUGS_Y_BOVEDA_R12.md"
     },
     {
       "id": "tsa_recovery",
       "feature": "tsa",
       "state": "open",
       "description": "Recuperación persistente de solo TSA sin repetir operación privada.",
-      "evidence": "docs/suite/VALIDACIONES_SINTETICAS_H14.md"
+      "evidence": "docs/suite/CONTEXTO_SUITE_FIRMA.md"
     },
     {
       "id": "online_preflight",
       "feature": "validation",
       "state": "open",
       "description": "Validación online automática previa a firma; actual consulta manual.",
-      "evidence": "docs/suite/VALIDACIONES_SINTETICAS_H14.md"
+      "evidence": "docs/suite/CONTEXTO_SUITE_FIRMA.md"
     },
     {
       "id": "global_mode_lock",
       "feature": "orchestration",
       "state": "open",
       "description": "Exclusión global Bridge/Suite entre procesos; guard actual local a GUI.",
-      "evidence": "docs/suite/INTEGRACION_BRIDGE_MODULAR_H13.md"
+      "evidence": "docs/suite/CONTEXTO_SUITE_FIRMA.md"
     },
     {
       "id": "redesign_v3",
       "feature": "orchestration",
       "state": "closed",
       "description": "Presentación Android Aether previa y entrega actual Suite/Manager/sellos completadas según especificación aprobada. Nuevas pruebas físicas, distribución y driver continúan en pendientes independientes.",
-      "evidence": "docs/design/RESULTADO_AETHER_R2.md"
+      "evidence": "docs/design/EXPERIENCIA_FLAGSHIP_R11.md"
     },
     {
       "id": "distribution",
@@ -1080,21 +1016,21 @@
       "feature": "passkeys",
       "state": "cancelled_by_user",
       "description": "Función retirada por decisión del usuario; no continuar su implementación ni pruebas de uso.",
-      "evidence": "docs/architecture/RETIRO_PASSKEYS_R3.md"
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md"
     },
     {
       "id": "dni_migration",
       "feature": "passkeys",
       "state": "cancelled_by_user",
       "description": "Función retirada por decisión del usuario; no continuar su implementación ni pruebas de uso.",
-      "evidence": "docs/architecture/RETIRO_PASSKEYS_R3.md"
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md"
     },
     {
       "id": "refirma_issuer",
       "feature": "cms",
       "state": "closed",
       "description": "Aceptación externa de firma nueva con issuerSerial confirmada por usuario; integridad verificada localmente.",
-      "evidence": "docs/suite/REFIRMA_ISSUER_SERIAL_H15.md"
+      "evidence": "docs/suite/CONTEXTO_SUITE_FIRMA.md"
     },
     {
       "id": "usb_cycles",
@@ -1136,147 +1072,147 @@
       "feature": "passkeys",
       "state": "cancelled_by_user",
       "description": "Función retirada por decisión del usuario; no continuar su implementación ni pruebas de uso.",
-      "evidence": "docs/architecture/RETIRO_PASSKEYS_R3.md"
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md"
     },
     {
       "id": "passkeys_independent_store",
       "feature": "passkeys",
       "state": "cancelled_by_user",
       "description": "Función retirada por decisión del usuario; no continuar su implementación ni pruebas de uso.",
-      "evidence": "docs/architecture/RETIRO_PASSKEYS_R3.md"
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md"
     },
     {
       "id": "passkeys_independent_recovery",
       "feature": "passkeys",
       "state": "cancelled_by_user",
       "description": "Función retirada por decisión del usuario; no continuar su implementación ni pruebas de uso.",
-      "evidence": "docs/architecture/RETIRO_PASSKEYS_R3.md"
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md"
     },
     {
       "id": "diagnostics_live_nfc_and_ui_performance",
       "feature": "diagnostics",
       "state": "open",
       "description": "R2 diagnóstico cotidiano ejecutado: navegación P50 6 ms y edición 11 ms, picos de medición/recomposición UI. Falta optimización y comparar variante optimizada, biblioteca grande y firma/lote/bóveda con DNI, Bridge/Suite. No extrapolar fixtures a NFC físico.",
-      "evidence": "docs/architecture/DIAGNOSTICO_RENDIMIENTO_UI_R2.md"
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md"
     },
     {
       "id": "android_redesign_inner_screens",
       "feature": "android_redesign",
       "state": "closed",
       "description": "Presentación común aplicada a todos los interiores y vistas previas, configuración de apariencia y navegación continua de bóveda/PC. 32 Android pasan. Validación NFC física y rendimiento con biblioteca real se conservan como pendientes separados.",
-      "evidence": "docs/architecture/REDISENO_ANDROID_3_0_R2.md"
+      "evidence": "docs/design/EXPERIENCIA_FLAGSHIP_R11.md"
     },
     {
       "id": "android_redesign_physical_workflows",
       "feature": "android_redesign",
       "state": "open",
       "description": "Validar cambio real de IP PC con emparejamiento existente (sin QR nuevo), PC autenticada antes de NFC, retirada/presencia en Bridge LAN/Tailscale/USB y Suite. R5 instalada, TLS/DPAPI sintéticos pasan; 3 pruebas instrumentadas de pantallas Suite/Bridge pasan en el móvil. No confundirlo con firma física.",
-      "evidence": "docs/architecture/CONEXIONES_DIRECCION_E_IDENTIDAD_R5.md"
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md"
     },
     {
       "id": "bridge_remote_close_before_card",
       "feature": "bridge",
       "state": "open",
       "description": "Detectar cierre remoto durante espera Tag/ATR antes de NFC; cierre local cancela, EOF remoto puede esperar hasta entregar tarjeta o detener. No bajar autenticación.",
-      "evidence": "docs/architecture/CONEXIONES_INDEPENDIENTES_R4.md"
+      "evidence": "docs/PENDIENTES_ACTUALES.md"
     },
     {
       "id": "reader_resume_recovery",
       "feature": "bridge",
       "state": "open",
       "description": "R2 instalado driver2.0.0.4/oem239 y backend acotado; 7860 C++, 137 backend, 31 PCSC y 13 TLSrelay pasan. Lector ya estaba no publicado con PnP0 antes de actualizar y se publica después. Falta reproducir suspensión/reanudación y nueva firma DNI real; no se demuestra causa original ni se permite replay. 2026-10-13: aplazado por usuario. Propuesta externa de conservar esperas aún sin validar; cola principal PowerManaged impide inferir entrega durante D0Exit. Requiere trazas reales WDF/SCardSvr y comparación, sin replay; no tocar driver en rediseño.",
-      "evidence": "docs/architecture/CONTROLADOR_COMPLETADOS_Y_PROTOCOLO_R2.md"
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md"
     },
     {
       "id": "backend_3_1_physical_regression",
       "feature": "backend_hardening",
       "state": "needs_physical_test",
       "description": "Nueva sesión Suite y puente LAN/Tailnet/USB con DNI real, lote PDF/CMS y exportación íntegra tras integrar v4. No repetir privadas ante fallo; pruebas sintéticas y de presentación no acreditan esta regresión física.",
-      "evidence": "docs/architecture/SEGURIDAD_BACKEND_3_1_V4.md"
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md"
     },
     {
       "id": "suite_cli_qr_legacy",
       "feature": "suite",
       "state": "open",
       "description": "GUI usa QR nativo R1. El helper de QR de consola aún depende de PowerShell, QRCoder instalado por Bridge y PNG CreateNew; modernizarlo por separado si se requiere QR en CLI. Lectura QR real desde Android tras R1 pendiente.",
-      "evidence": "docs/suite/QR_NATIVO_SUITE_R1.md"
+      "evidence": "docs/suite/CONTEXTO_SUITE_FIRMA.md"
     },
     {
       "id": "aether_android_runtime_review",
       "feature": "stamp_aether",
       "state": "open",
       "description": "Android80 instalada; AetherStampPresentationTest 2/2 pasa. Quedan uso de controles con DNI real, PDF/lote con TSA y regresión física Suite/puente. No cerrar por pruebas UI/sintéticas.",
-      "evidence": "docs/design/RESULTADO_AETHER_R4.md"
+      "evidence": "docs/design/EXPERIENCIA_FLAGSHIP_R11.md"
     },
     {
       "id": "aether_qr_enrichment",
       "feature": "stamp_qr",
       "state": "cancelled_by_user_r6",
       "description": "QR del sello y cotejador retirados de interfaz por R6; conservar compatibilidad de archivos históricos. No reabrir este trabajo sin instrucción.",
-      "evidence": "docs/architecture/RED_COORDINADA_R6.md"
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md"
     },
     {
       "id": "stamp_qr_physical",
       "feature": "stamp_qr",
       "state": "cancelled_by_user_r6",
       "description": "QR del sello y cotejador retirados de interfaz por R6; conservar compatibilidad de archivos históricos. No reabrir este trabajo sin instrucción.",
-      "evidence": "docs/architecture/RED_COORDINADA_R6.md"
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md"
     },
     {
       "id": "stamp_qr_pdf_cms_validation",
       "feature": "stamp_qr",
       "state": "cancelled_by_user_r6",
       "description": "QR del sello y cotejador retirados de interfaz por R6; conservar compatibilidad de archivos históricos. No reabrir este trabajo sin instrucción.",
-      "evidence": "docs/architecture/RED_COORDINADA_R6.md"
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md"
     },
     {
       "id": "android_pdf_widget_preview",
       "feature": "pdf_android",
       "state": "implemented_device_validated",
       "description": "APK82: AndroidStampPreview renderiza anotaciones con PDFBox fuera de UI. Instrumentada sobre PDF sintético firmado verifica CMS y decodifica widget histórico; entrada/original sin cambios.",
-      "evidence": "docs/architecture/RED_COORDINADA_R6.md"
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md"
     },
     {
       "id": "network_r6_physical_signing_and_mobility",
       "feature": "network_coordination",
       "state": "needs_physical_test",
       "description": "Firma con DNI por Red LAN/Tailscale, regresión USB y cambio físico de IP entre sesiones; HMAC físico sintético y TLS loopback ya probados. No migrar TCP ni reenviar firmas.",
-      "evidence": "docs/architecture/RED_COORDINADA_R6.md"
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md"
     },
     {
       "id": "r7_android_install_and_physical_feedback",
       "feature": "reading_feedback",
       "state": "waiting_user_adb_notice",
       "description": "3.1.1/85 instalada y4 instrumentadas R8 pasan. Pendientes NFC/TSA/firma real, háptica percibida y rendimiento con documentos/biblioteca reales; ADB habilitado nuevamente por usuario.",
-      "evidence": "docs/design/PERSONALIZACION_SELLO_HAPTICA_R7.md"
+      "evidence": "docs/design/EXPERIENCIA_FLAGSHIP_R11.md"
     },
     {
       "id": "r7_visual_physical_signing",
       "feature": "stamp_aether",
       "state": "needs_physical_test",
       "description": "PAdES-T real transparente/insignias/réplicas, PNG Windows y drag/drop Explorer; comparar ReFirma/Firma Perú. PDF/CMS sintético local ya verificado. Rendimiento Android pendiente con dispositivo.",
-      "evidence": "docs/design/PERSONALIZACION_SELLO_HAPTICA_R7.md"
+      "evidence": "docs/design/EXPERIENCIA_FLAGSHIP_R11.md"
     },
     {
       "id": "r8_android_install_and_physical_flows",
       "feature": "android_flows_r8",
       "state": "needs_physical_test",
       "description": "3.1.1/85 instalada y4 instrumentadas R8 pasan. Pendientes NFC/TSA/firma real, háptica percibida y rendimiento con documentos/biblioteca reales; ADB habilitado nuevamente por usuario.",
-      "evidence": "docs/design/PANTALLAS_FLUJOS_NFC_R8.md"
+      "evidence": "docs/design/EXPERIENCIA_FLAGSHIP_R11.md"
     },
     {
       "id": "r9_physical_and_accessibility",
       "feature": "design_r9",
       "state": "needs_physical_test",
       "description": "NFC/TSA/firma real y háptica percibida, regresión USB/suspensión y tamaños de pantalla/fuente adicionales; interfaz sintética ya comprobada, sin modificar ajustes de animación del teléfono.",
-      "evidence": "docs/design/SISTEMA_DISENO_GUIA_R9.md"
+      "evidence": "docs/design/EXPERIENCIA_FLAGSHIP_R11.md"
     },
     {
       "id": "r10_representative_performance_and_physical_flows",
       "feature": "finish_r10",
       "state": "needs_physical_test",
       "description": "NFC/TSA/firma reales, USB/suspensión y rendimiento con PDFs/lotes representativos; revisar cuadros largos aislados y pantallas/fuentes adicionales. Medición puntual no garantiza 60 FPS constantes.",
-      "evidence": "docs/design/ACABADO_FLUIDEZ_R10.md"
+      "evidence": "docs/design/EXPERIENCIA_FLAGSHIP_R11.md"
     },
     {
       "id": "r11_flagship_device_validation_and_physical_flows",
@@ -1291,19 +1227,19 @@
       "id": "android_current",
       "category": "installed_instrumented_ui_validated",
       "value": "2026-10-14 · Aether R4 / 3.1.0: Bridge corrige pintura y selección, inputs, bandeja y consulta WinSCard. Suite añade hoja de muestra, controles, preferencias visuales, zoom y apertura/autocompletado de resultados; emblema compartido actualizado. 196 pruebas pasan/1 omitida preexistente, 60 comprobaciones nativas y 2 instrumentadas Android pasan. Windows actualizado con identidad y 13 archivos runtime conservados; APK80 instalada. QR enriquecido diferido; firma física nueva y suspensión siguen pendientes.",
-      "evidence": "docs/design/RESULTADO_AETHER_R4.md"
+      "evidence": "docs/design/EXPERIENCIA_FLAGSHIP_R11.md"
     },
     {
       "id": "desktop_current",
       "category": "artifact",
       "value": "Suite D:/DNIeToolchain/Builds/aether-r4/signing-ui/install/dnie-signing-ui; acceso del escritorio actualizado. Manager D:\\DNIeBridgeApp\\versions\\ee788ca28de64c8e89adf8f47ce7fc09\\DNIeBridge.exe. Identidad privada y runtime del servicio conservados.",
-      "evidence": "docs/design/RESULTADO_AETHER_R4.md"
+      "evidence": "docs/design/EXPERIENCIA_FLAGSHIP_R11.md"
     },
     {
       "id": "h15_tests",
       "category": "verification",
       "value": "247 pruebas, cero fallos/errores; algunas tareas Gradle reutilizadas.",
-      "evidence": "docs/suite/REFIRMA_ISSUER_SERIAL_H15.md"
+      "evidence": "docs/suite/CONTEXTO_SUITE_FIRMA.md"
     },
     {
       "id": "vault_no_biometrics",
@@ -1333,67 +1269,67 @@
       "id": "renewal_not_key_continuity",
       "category": "invariant",
       "value": "Mismo DNI físico/identidad no garantiza misma clave. Comparar pública; certificado viejo guardado no conserva privada.",
-      "evidence": "docs/architecture/RECUPERACION_Y_RENOVACION_DNI.md"
+      "evidence": "docs/architecture/CORRECCION_BUGS_Y_BOVEDA_R12.md"
     },
     {
       "id": "identity_hash_not_encryption_secret",
       "category": "invariant",
       "value": "Subject.serialNumber PNOPE es candidato a continuidad verificada del titular; hash de datos públicos no es clave secreta ni recupera CIF hard antiguo. Identificador aún sin implementar.",
-      "evidence": "docs/architecture/IDENTIDAD_ESTABLE_ENTRE_CERTIFICADOS.md"
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md"
     },
     {
       "id": "password_recovery_requested",
       "category": "android_integrated_physical_pending",
       "value": "2026-10-08 · Bóveda R6: APK68 instalada; biblioteca única con Cifrar/Descifrar/Importar/Exportar. Respaldo autosuficiente DNIEBKP2 comprimido y cifrado por contraseña. Importar verifica DNI destino y recifra todo, actualiza UUID coincidentes sin duplicarlos, conserva archivos ajenos y usa journal durable. 137 pruebas JVM y 4 instrumentadas Android pasan; NFC/SAF reales y cruce Windows pendientes.",
-      "evidence": "docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md"
+      "evidence": "docs/architecture/CORRECCION_BUGS_Y_BOVEDA_R12.md"
     },
     {
       "id": "recovery_copy_and_rotation_limits",
       "category": "design_constraint",
       "value": "Archivo de respaldo + contraseña permite acceso independiente del DNI antiguo. Cambiar contraseña no revoca copias anteriores. DNIEBKP2 implementado; bóveda cotidiana continúa CIF hard + PIN.",
-      "evidence": "docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md"
+      "evidence": "docs/architecture/CORRECCION_BUGS_Y_BOVEDA_R12.md"
     },
     {
       "id": "vault_lifecycle_windows_first",
       "category": "android_integrated_physical_pending",
       "value": "2026-10-08 · Bóveda R6: APK68 instalada; biblioteca única con Cifrar/Descifrar/Importar/Exportar. Respaldo autosuficiente DNIEBKP2 comprimido y cifrado por contraseña. Importar verifica DNI destino y recifra todo, actualiza UUID coincidentes sin duplicarlos, conserva archivos ajenos y usa journal durable. 137 pruebas JVM y 4 instrumentadas Android pasan; NFC/SAF reales y cruce Windows pendientes.",
-      "evidence": "docs/architecture/BOVEDA_RESPALDO_UNIFICADO_R6.md"
+      "evidence": "docs/architecture/CORRECCION_BUGS_Y_BOVEDA_R12.md"
     },
     {
       "id": "android_candidate_vault_picker",
       "category": "installed_ui_validated",
       "value": "APK69 / 2.0.0-rc21-vault-picker instalada y versión comprobada; D:/DNIeToolchain/AndroidPackages/dnie-evolution-2.0.0-rc21-vault-picker-debug.apk. 79 pruebas app pasan; 3 instrumentadas de interfaz pasan (8,537 s), con selector simulado. SAF real y DNI físico pendientes.",
-      "evidence": "docs/architecture/BOVEDA_SELECTOR_Y_AUTORIZACION_R7.md"
+      "evidence": "docs/architecture/CORRECCION_BUGS_Y_BOVEDA_R12.md"
     },
     {
       "id": "ui_performance_r2",
       "category": "diagnosis",
       "value": "APK72 sin modificación: navegación 2350/2348 cuadros, jank moderno 0,13%/0,04%, P50 6 ms; edición 528 cuadros, 0,95%, P50 11 ms. Trazas completas: medición Compose hasta 42,175 ms y recomposición al editar hasta 35,728 ms. Sin prueba física NFC.",
-      "evidence": "docs/architecture/DIAGNOSTICO_RENDIMIENTO_UI_R2.md"
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md"
     },
     {
       "id": "reader_resume_incident_20261009",
       "category": "observed_failure",
       "value": "2026-10-09 · Controlador R1: driver2.0.0.3 oem237 instalado, PnP0 y PCSC publicado. Retiro EvtIoStop sin replay, cancelación invalida backend, purge síncrono y host UMDF aislado. Servicio/gestor distinguen ReaderPublished del CardPresent privado. 6797 comprobaciones C++ pasan, 25 PCSC nativas y 13 TLSrelay pasan; Control45 Debug/45 Release. Firma física/suspensión reales pendientes; APK76 intacta.",
-      "evidence": "docs/architecture/CONTROLADOR_ENERGIA_Y_PUBLICACION_R1.md"
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md"
     },
     {
       "id": "driver_power_r1",
       "category": "installed_synthetic_validated",
       "value": "2026-10-09 · Controlador R1: driver2.0.0.3 oem237 instalado, PnP0 y PCSC publicado. Retiro EvtIoStop sin replay, cancelación invalida backend, purge síncrono y host UMDF aislado. Servicio/gestor distinguen ReaderPublished del CardPresent privado. 6797 comprobaciones C++ pasan, 25 PCSC nativas y 13 TLSrelay pasan; Control45 Debug/45 Release. Firma física/suspensión reales pendientes; APK76 intacta.",
-      "evidence": "docs/architecture/CONTROLADOR_ENERGIA_Y_PUBLICACION_R1.md"
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md"
     },
     {
       "id": "connection_address_not_identity_r5",
       "category": "invariant",
       "value": "Dirección de red como ruta, identidad TLS SHA256/token como confianza. Receptor inverso limitado a IPv4 privada/tailnet, sin fallback LAN en claro. Archivo DPAPI no cambia por nueva IP.",
-      "evidence": "docs/architecture/CONEXIONES_DIRECCION_E_IDENTIDAD_R5.md"
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md"
     },
     {
       "id": "backend_3_1_installed",
       "category": "installed_synthetic_and_ui_validated",
       "value": "2026-10-13 · Versión 3.1.0 / APK78 instalada: integración v4 de autenticación resistente, plazos por candidato, integridad SHA-256 de originales/resultados, migración de identidad Windows protegida y DPAPI acotado. Servicio/gestor Windows y Suite actualizados; identidad conservada según metadatos. 177 JVM, 134 comprobaciones Windows y 3 pruebas Android pasan; debug/release compilados y producción comprobada. Firma PDF Android nueva confirmada por el usuario como PAdES Baseline T; regresión física Suite/puente/USB pendiente.",
-      "evidence": "docs/architecture/SEGURIDAD_BACKEND_3_1_V4.md"
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md"
     },
     {
       "id": "github_private_repo",
@@ -1405,85 +1341,85 @@
       "id": "driver_completion_r2",
       "category": "installed_synthetic_validated",
       "value": "2026-10-13 · Controlador R2 2.0.0.4/oem239 y backend Windows instalados sin reinicio. Errores locales de transmisión ya no retiran la tarjeta; protocolo tras apagado y cancelación antes de entrega corregidos. Pulsos 2 s/operaciones 25 s frente a plazo del driver 30 s. 7860 comprobaciones C++, 137 backend, 31 PCSC nativas y 13 TLSrelay pasan. PnP0 y ReaderPublished=true al finalizar, sin tarjeta. Firma DNI y suspensión físicas pendientes; Android78 no cambia.",
-      "evidence": "docs/architecture/CONTROLADOR_COMPLETADOS_Y_PROTOCOLO_R2.md"
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md"
     },
     {
       "id": "suite_native_qr_r1",
       "category": "installed_ui_synthetic_validated",
       "value": "2026-10-13 · Suite QR R1: Abrir QR inicia preparación y muestra QR nativo en memoria, permite reabrirlo y lo retira al conectar/cancelar. Corregida espera de EOF heredado por gestor Bridge que bloqueaba conexiones. 45 tests UI/escritorio/orquestación pasan, incluida pulsación real del botón sin teléfono/DNI y proceso Windows con stdout heredado. Acceso directo actualizado; lectura QR desde Android físico pendiente.",
-      "evidence": "docs/suite/QR_NATIVO_SUITE_R1.md"
+      "evidence": "docs/suite/CONTEXTO_SUITE_FIRMA.md"
     },
     {
       "id": "suite_input_selection_r2",
       "category": "installed_ui_and_pdf_validated",
       "value": "2026-10-13 · Suite entradas R2: alias virtual de Recientes era una ruta inexistente y causaba tanto la falta de vista previa como rechazo local al firmar. Selector resuelve shell shortcuts a archivos reales, preflight anterior a PIN, conexión conservada ante rechazo previo a BEGIN y diálogo PIN explícito. 50 tests pasan; PDF real seleccionado y GUI muestran página 1/11 a 918×1188. Acceso directo actualizado; firma DNI física pendiente.",
-      "evidence": "docs/suite/SELECCION_RECIENTES_Y_PIN_R2.md"
+      "evidence": "docs/suite/CONTEXTO_SUITE_FIRMA.md"
     },
     {
       "id": "aether_redesign_r2",
       "category": "installed_desktop_android_candidate",
       "value": "2026-10-14 · Aether R2 / 3.1.0: Suite y Manager Windows rediseñados e instalados; sellos vectoriales/preview/colores/páginas compartidos con Android. Una firma, un widget y réplicas gráficas cubiertas por CMS; DocMDP P=2 se rechaza antes de firmar réplicas. 191 pruebas pasan, una omitida preexistente y 24 comprobaciones Manager pasan. APK79 debug/release compilada; Android78 sigue instalada, dos pruebas instrumentadas nuevas sin ejecutar por falta de ADB. Identidad y runtime del servicio conservados, driver intacto.",
-      "evidence": "docs/design/RESULTADO_AETHER_R2.md"
+      "evidence": "docs/design/EXPERIENCIA_FLAGSHIP_R11.md"
     },
     {
       "id": "android_candidate_aether79",
       "category": "installed_instrumented_ui_validated",
       "value": "2026-10-14 · Aether Android79 / 3.1.0 instalada por ADB con reemplazo sin borrar datos. Dos pruebas instrumentadas pasan (4,01 s): cinco estilos/rúbrica transparente y selector de páginas/preview Compose. Arranque normal comprobado, sin fatal en el PID observado; auxiliar retirado. Firma con DNI/TSA y regresión física Suite/puente pendientes. APK D:/DNIeToolchain/AndroidPackages/dnie-evolution-3.1.0-v79-aether-debug.apk.",
-      "evidence": "docs/design/VALIDACION_ANDROID_AETHER_R3.md"
+      "evidence": "docs/design/EXPERIENCIA_FLAGSHIP_R11.md"
     },
     {
       "id": "android_aether_runtime_r3",
       "category": "installed_instrumented_ui_validated",
       "value": "2026-10-14 · Aether Android79 / 3.1.0 instalada por ADB con reemplazo sin borrar datos. Dos pruebas instrumentadas pasan (4,01 s): cinco estilos/rúbrica transparente y selector de páginas/preview Compose. Arranque normal comprobado, sin fatal en el PID observado; auxiliar retirado. Firma con DNI/TSA y regresión física Suite/puente pendientes.",
-      "evidence": "docs/design/VALIDACION_ANDROID_AETHER_R3.md"
+      "evidence": "docs/design/EXPERIENCIA_FLAGSHIP_R11.md"
     },
     {
       "id": "aether_r4_delivered",
       "category": "installed_synthetic_and_instrumented_ui_validated",
       "value": "2026-10-14 · Aether R4 / 3.1.0: Bridge corrige pintura y selección, inputs, bandeja y consulta WinSCard. Suite añade hoja de muestra, controles, preferencias visuales, zoom y apertura/autocompletado de resultados; emblema compartido actualizado. 196 pruebas pasan/1 omitida preexistente, 60 comprobaciones nativas y 2 instrumentadas Android pasan. Windows actualizado con identidad y 13 archivos runtime conservados; APK80 instalada. QR enriquecido diferido; firma física nueva y suspensión siguen pendientes.",
-      "evidence": "docs/design/RESULTADO_AETHER_R4.md"
+      "evidence": "docs/design/EXPERIENCIA_FLAGSHIP_R11.md"
     },
     {
       "id": "stamp_qr_r5",
       "category": "installed_synthetic_and_instrumented_validated",
       "value": "2026-10-14 · QR R5: DNIEQR1 con SHA-256 completo del certificado DER y original, serie/identidad, muestra explícita y cotejo Android por cámara/texto. SAF IO acotado; huella/serie/identidad separadas de consulta manual TSL/OCSP/CRL. No valida CMS/papel por QR. APK81 instalada, Suite/CLI actualizadas, 207 pruebas pasan/1 omitida y 6 instrumentadas pasan. Nueva firma/cámara física pendiente.",
-      "evidence": "docs/design/QR_COTEJO_R5.md"
+      "evidence": "docs/design/EXPERIENCIA_FLAGSHIP_R11.md"
     },
     {
       "id": "network_r6_delivered",
       "category": "installed_synthetic_and_device_discovery_validated",
       "value": "2026-10-14 · Red R6 / APK82 (3.1.0) instalada: Bridge Red (Wi-Fi/Tailscale) + USB; descubrimiento autenticado y TLS fijado por huella/token, IP opcional en Suite/gestor y CLI. Vista previa Android muestra anotaciones existentes. QR de sello/cotejador retirados de UI; QR de emparejamiento conservado. 283 pruebas JVM pasan, 3 optativas/privilegios omitidas; 261 Bridge + 48 Control + 41 Manager + 3 servicio instalado pasan; 8 instrumentadas Android pasan. Descubrimiento Windows→Android verificado por LAN y Tailscale por separado, credenciales sintéticas, sin DNI. Gestor/servicio/Suite actualizados, identidad conservada y driver sin reinstalar. Firma NFC y cambio físico de red pendientes.",
-      "evidence": "docs/architecture/RED_COORDINADA_R6.md"
+      "evidence": "docs/architecture/ARQUITECTURA_ACTUAL_2_0.md"
     },
     {
       "id": "personalization_r7_candidate83",
       "category": "compiled_local_validated_android_not_installed",
       "value": "2026-10-14 · Personalización R7 / APK83 (3.1.0) compilada debug/release; no instalada: ADB suspendido hasta nuevo aviso del usuario. APK82 sigue siendo la última instalada. Sello con fondo transparente, insignias check/candado, fecha/densidad/colores, plantillas y esquinas al6%; diseño Android persistente, navegación y acciones Mi DNIe. Respuesta táctil por eventos NFC con ajuste de usuario. Windows añade PNG de rúbrica, DnD visual y tema claro/oscuro. 241 JVM pasan/1 omitida por permisos Windows y 44 comprobaciones Manager pasan. Interfaces Windows y accesos actualizados; servicio, driver, identidad y motores criptográficos conservados. Pruebas Android y firma física R7 pendientes.",
-      "evidence": "docs/design/PERSONALIZACION_SELLO_HAPTICA_R7.md"
+      "evidence": "docs/design/EXPERIENCIA_FLAGSHIP_R11.md"
     },
     {
       "id": "flows_r8_candidate84",
       "category": "compiled_local_validated_android_not_installed",
       "value": "2026-10-14 · Pantallas y NFC R8 / APK84 (3.1.0) compilada debug/release, sin instalar ni usar ADB; APK82 sigue siendo la última instalada. Hoja continua credenciales→NFC→progreso→resultado; CAN compacto y PIN transitorio. Firma con preview superior, tres pestañas y barra fija, resultados parciales explícitos. Cinco destinos comunes; Mi DNIe agrupa visualmente Certificados/Identidad, credencial ICAO y detalles plegables. Suite Windows con plantillas 2×2, indicador de actividad y apertura del PDF real. 251 JVM pasan/1 omitida y Manager44 pasan; auxiliar Android compilado, sin ejecutar. Suite preparada y acceso actualizado; Bridge/servicio/driver y motores criptográficos sin cambios. Pruebas Android/NFC pendientes.",
-      "evidence": "docs/design/PANTALLAS_FLUJOS_NFC_R8.md"
+      "evidence": "docs/design/EXPERIENCIA_FLAGSHIP_R11.md"
     },
     {
       "id": "android_3_1_1_apk85_installed",
       "category": "installed_same_signer_instrumented_validated",
       "value": "2026-10-14 · Android 3.1.1 / APK85 instalada por ADB, sin desinstalar ni borrar datos. Usuario confirmó APK84 y reactivó ADB. Versionado central en gradle.properties y comando para incrementar patch/código por entrega; Configuración muestra versión. Firma app/auxiliar idéntica y compatible con84; ambos instalados. 89 unitarias pasan/1 omitida y4 instrumentadas R8 pasan (9,22s), sin DNI. Auxiliar queda instalado con identidad estable. NFC/TSA/háptica físicos siguen pendientes; Windows instalado conserva R8.",
-      "evidence": "docs/operations/VERSIONADO_Y_FIRMA_3_1_1.md"
+      "evidence": "docs/operations/GITHUB_Y_COMPILACION_MONOREPO.md"
     },
     {
       "id": "design_r9_delivered",
       "category": "installed_synthetic_and_instrumented_ui_validated",
       "value": "2026-10-15 · R9 / Android3.1.2 (APK86) instalada por ADB sin borrar datos y con firma compatible; auxiliar actualizado con la misma firma. DESIGN.md, paleta compartida claro/oscuro, categorías sans y números tabulares; radar NFC/resortes con movimiento reducido y guía optativa CAN/NFC/móvil-PC. Suite/gestor Windows compilados y accesos actualizados. 252 pruebas JVM pasan/1 omitida preexistente,48 comprobaciones Manager y8 instrumentadas Android pasan. Motores, servicio y driver sin cambios. NFC/TSA/háptica físicos y regresión USB/suspensión pendientes.",
-      "evidence": "docs/design/SISTEMA_DISENO_GUIA_R9.md"
+      "evidence": "docs/design/EXPERIENCIA_FLAGSHIP_R11.md"
     },
     {
       "id": "finish_r10_delivered",
       "category": "installed_synthetic_instrumented_and_measured",
       "value": "2026-10-15 · R10 / Android 3.1.3 (APK 87) instalada por ADB sin borrar datos, misma firma y auxiliar compatible. Selector segmentado compartido, Bento/credencial/guía refinados, CAN compacto y PC vinculada con acciones fijas. Suite incorpora diálogo PIN propio y hover finito; Bridge mejora cabecera y tarjetas de salud. 254 pruebas JVM aprobadas, 1 omisión preexistente, 52 comprobaciones Manager y 14 instrumentadas Android aprobadas. Comparación puntual de cuadros por VSYNC: P95 8,88→8,94 ms; no garantiza 60 FPS constantes. Motores, servicio y controlador sin cambios. Pendientes pruebas físicas NFC/TSA/USB/suspensión y documentos representativos.",
-      "evidence": "docs/design/ACABADO_FLUIDEZ_R10.md"
+      "evidence": "docs/design/EXPERIENCIA_FLAGSHIP_R11.md"
     },
     {
       "id": "flagship_r11_delivered",
