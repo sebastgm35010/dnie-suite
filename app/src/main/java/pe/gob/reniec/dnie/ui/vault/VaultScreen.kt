@@ -65,6 +65,9 @@ fun VaultScreen(state: VaultUiState, onCanChange: (String) -> Unit, onPinChange:
         selection = selection.intersect(state.items.map { it.id }.toSet())
     }
     fun finishSelection() { selection = emptySet(); selecting = false }
+    androidx.activity.compose.BackHandler(enabled = page != VaultPage.FILES) {
+        pageName = VaultPage.FILES.name
+    }
     Box(Modifier.fillMaxSize()) {
         pe.gob.reniec.dnie.ui.design.FeatureScaffold("Bóveda", "Archivos protegidos",
             subtitle = if (page == VaultPage.FILES) "Tus archivos protegidos con DNI." else page.title,
@@ -86,9 +89,6 @@ fun VaultScreen(state: VaultUiState, onCanChange: (String) -> Unit, onPinChange:
                         onSelect = { pageName = VaultPage.entries[it].name }
                     )
                 }
-                if (page != VaultPage.FILES) item("return") {
-                    TextButton(onClick = { pageName = VaultPage.FILES.name }) { Text("Mis archivos") }
-                }
                 if (!state.riskAcknowledged) item("risk") {
                     Card { Column(Modifier.padding(16.dp)) {
                         Text("Conserva tus originales", style = MaterialTheme.typography.titleMedium)
@@ -105,9 +105,10 @@ fun VaultScreen(state: VaultUiState, onCanChange: (String) -> Unit, onPinChange:
                         VaultAccessPanel(state, onCanChange, onPinChange, onRememberCan, onRun, onStartOpen, onClearSelection, onCancel)
                     }
                     VaultPage.RECOVERY -> {
-                        item("recovery") { VaultRecoveryControls(state, recovery, onCanChange, onPinChange, onRememberCan, importingVault) }
+                        item("recovery") { VaultRecoveryControls(state, recovery, onCanChange, onPinChange, onRememberCan, importingVault, onModeChange = { importingVault = it }) }
                     }
                     VaultPage.TOOLS -> {
+                        item("hero") { VaultHero(state.pairedFingerprint) }
                         item("options") {
                             TextButton(onClick = { pageName = VaultPage.DNI.name }, enabled = !busy) { Text("Vincular o cambiar DNI") }
                             Text("Vincular cambia el DNI para nuevos archivos. Para trasladar los anteriores, exporta e importa la bóveda.")

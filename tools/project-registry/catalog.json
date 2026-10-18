@@ -1,5 +1,5 @@
 {
-  "review_date": "2026-10-17",
+  "review_date": "2026-10-18",
   "document_roles": {
     "AGENTS.md": "operational_instructions",
     "docs/CONTEXTO_ACTUAL.md": "current_state",
@@ -67,7 +67,8 @@
     "docs/design/ESPECIFICACION_R10_RECIBIDA.md": "external_r10_requested_specification",
     "docs/design/ACABADO_FLUIDEZ_R10.md": "current_r10_implementation_and_performance_evidence",
     "docs/operations/ACABADO_R10_RESULTADOS.json": "r10_verifiable_results",
-    "docs/design/EXPERIENCIA_FLAGSHIP_R11.md": "current_flagship_flows_and_ui_r11"
+    "docs/design/EXPERIENCIA_FLAGSHIP_R11.md": "current_flagship_flows_and_ui_r11",
+    "docs/architecture/CORRECCION_BUGS_Y_BOVEDA_R12.md": "current_bugfix_and_vault_stabilization_r12"
   },
   "features": [
     {
@@ -1489,6 +1490,12 @@
       "category": "installed_synthetic_and_ui_motion_validated",
       "value": "2026-10-17 · R11 / Android 3.1.4 (APK 88) y Windows Manager 3.1.4: flujos flagship y pulido Organic Motion / Fluid UI completados en Android Compose (aetherPressScale, aetherAnimateSize, AnimatedContent, Crossfade, animateItem, VaultHero adaptativo, rememberReducedMotion) y Windows Desktop (AetherSwingAnimator cúbico, micro-escala táctil 0.985x, halos de foco suaves, chevrons continuos, cápsulas PIN animadas, PreviewCanvas con sombra multicapa y 8 manijas, AetherScrollPanel con doble buffer). 254 pruebas JVM, unitarias Android y 52 comprobaciones Windows Manager aprobadas; límites de arquitectura OK. Pruebas físicas en hardware real (NFC/TSA/USB/suspensión) pendientes.",
       "evidence": "docs/design/EXPERIENCIA_FLAGSHIP_R11.md"
+    },
+    {
+      "id": "bugfix_vault_r12_delivered",
+      "category": "installed_synthetic_and_vault_validated",
+      "value": "2026-10-18 · R12 / Android 3.1.5 (APK 89): Corrección integral de 17 bugs de estabilidad, concurrencia, SAF y experiencia de bóveda. Bloque A: nulidad en streams de firma remota, sincronización de ciclo de vida y borrado seguro de PIN en ContinuousSigningConnection, desconexión limpia de sockets bridge sin fugas de PFD, y manejo explícito de BridgeProvisionFileException. Bloque B: exportación individual cifrada (.dnievault) en menú contextual, selección compacta de CAN preservada, toggle Exportar/Importar con chips accesibles, visualización de tags en FlowRow, diálogo de detalles scrolleable y con hash legible, navegación BackHandler preservando selección, y zoom 2.5x con doble toque en visor. Bloque C: reciclado seguro de bitmaps en preview, limpieza estricta de temporales en VaultFileStore, verificación segura de existencia antes de acciones en lote, y localización de fecha en CertificateCard. 100% pruebas JVM y Android unitarias aprobadas, APK 89 compilada y verificada.",
+      "evidence": "docs/architecture/CORRECCION_BUGS_Y_BOVEDA_R12.md"
     }
   ]
 }

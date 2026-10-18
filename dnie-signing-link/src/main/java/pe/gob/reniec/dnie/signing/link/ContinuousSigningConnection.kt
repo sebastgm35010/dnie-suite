@@ -22,51 +22,92 @@ class ContinuousSigningConnection(private val channel: SigningDuplex,
     init { require(cardWaitMillis in 1..120_000) }
     private val closed = AtomicBoolean()
     private val used = AtomicBoolean()
+    private val stateLock = Any()
     @Volatile private var endpoint: AuthorizedSigningEndpoint? = null
     private val seen = mutableSetOf<UUID>()
+
     suspend fun run() = withContext(Dispatchers.IO) {
         check(used.compareAndSet(false, true))
         try {
             while (!closed.get()) {
                 val begin = SuitePackets.read(channel.input) ?: break
-                check(endpoint == null)
+                check(synchronized(stateLock) { endpoint == null })
                 val job = try { SuitePackets.job(begin) } finally { begin.bytes.fill(0) }
-                try {
+                val activeEndpoint: AuthorizedSigningEndpoint = try {
                     job.use {
                         check(seen.size < 4096 && seen.add(job.id))
                         onJob(job.count)
-                        endpoint = AuthorizedSigningEndpoint(job.id, kotlinx.coroutines.withTimeout(cardWaitMillis) { acquireCard() }, job.pin, job.count)
+                        val card = kotlinx.coroutines.withTimeout(cardWaitMillis) { acquireCard() }
+                        val created = AuthorizedSigningEndpoint(job.id, card, job.pin, job.count)
+                        synchronized(stateLock) {
+                            if (closed.get()) {
+                                created.close()
+                                error("Connection closed")
+                            }
+                            endpoint = created
+                        }
+                        created
                     }
                 } catch (_: kotlinx.coroutines.TimeoutCancellationException) {
                     SuitePackets.write(channel.output, SuitePacket(SuitePacketKind.NOT_READY))
                     onIdle(); onUnavailable(); continue // No card/PIN/signature operation was started.
                 }
-                SuitePackets.write(channel.output, SuitePacket(SuitePacketKind.READY))
-                var failed = false
-                while (!closed.get()) {
-                    val packet = SuitePackets.read(channel.input) ?: error("Connection lost during job")
-                    if (packet.kind == SuitePacketKind.END) {
-                        require(packet.bytes.isEmpty())
-                        endpoint?.close(); endpoint = null; finishJob()
-                        SuitePackets.write(channel.output, SuitePacket(SuitePacketKind.ENDED))
-                        onIdle(); break
+                var jobCompletedCleanly = false
+                try {
+                    SuitePackets.write(channel.output, SuitePacket(SuitePacketKind.READY))
+                    var failed = false
+                    while (!closed.get()) {
+                        val packet = SuitePackets.read(channel.input) ?: error("Connection lost during job")
+                        if (packet.kind == SuitePacketKind.END) {
+                            require(packet.bytes.isEmpty())
+                            synchronized(stateLock) {
+                                if (endpoint === activeEndpoint) endpoint = null
+                            }
+                            activeEndpoint.close()
+                            finishJob()
+                            jobCompletedCleanly = true
+                            SuitePackets.write(channel.output, SuitePacket(SuitePacketKind.ENDED))
+                            onIdle(); break
+                        }
+                        check(!failed && packet.kind == SuitePacketKind.FRAME)
+                        val response = activeEndpoint.process(SuitePackets.frame(packet))
+                        onStatus(response.status)
+                        onOperation(response.operation, response.status)
+                        SuitePackets.write(channel.output, SuitePackets.frame(SuitePacketKind.REPLY, response))
+                        if (response.status != SigningStatus.OK || response.operation == SigningOperation.CLOSE) {
+                            failed = true
+                            activeEndpoint.close()
+                            invalidateCard()
+                        }
                     }
-                    check(!failed && packet.kind == SuitePacketKind.FRAME)
-                    val response = endpoint!!.process(SuitePackets.frame(packet))
-                    onStatus(response.status)
-                    onOperation(response.operation, response.status)
-                    SuitePackets.write(channel.output, SuitePackets.frame(SuitePacketKind.REPLY, response))
-                    if (response.status != SigningStatus.OK || response.operation == SigningOperation.CLOSE) {
-                        failed = true
-                        endpoint?.close(); invalidateCard()
+                } finally {
+                    val detached = synchronized(stateLock) {
+                        if (endpoint === activeEndpoint) {
+                            endpoint = null
+                            true
+                        } else false
+                    }
+                    activeEndpoint.close()
+                    if (detached && !jobCompletedCleanly) {
+                        invalidateCard()
                     }
                 }
             }
         } finally { close() }
     }
+
     override fun close() {
-        if (closed.compareAndSet(false, true)) {
-            try { channel.close() } finally { endpoint?.close(); endpoint = null; invalidateCard() }
+        val current = synchronized(stateLock) {
+            val firstClose = closed.compareAndSet(false, true)
+            val active = endpoint
+            endpoint = null
+            if (firstClose) active to true else active to false
+        }
+        try {
+            if (current.second) channel.close()
+        } finally {
+            current.first?.close()
+            if (current.second) invalidateCard()
         }
     }
 }

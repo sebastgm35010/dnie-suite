@@ -51,8 +51,14 @@ private fun PreviewContent(name: String, reader: VaultPreviewReader, onClose: ()
     var frame by remember { mutableStateOf<VaultPreviewFrame?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var loading by remember { mutableStateOf(true) }
+    DisposableEffect(Unit) {
+        onDispose { frame?.bitmap?.recycle() }
+    }
     LaunchedEffect(page) {
-        loading = true; error = null; frame = null
+        loading = true; error = null
+        val previous = frame
+        frame = null
+        previous?.bitmap?.recycle()
         try { frame = reader.read(page) }
         catch (e: kotlinx.coroutines.CancellationException) { throw e }
         catch (_: Exception) { error = "No se pudo mostrar este contenido. Puedes descifrarlo a un archivo para abrirlo con otra aplicación." }
@@ -62,7 +68,7 @@ private fun PreviewContent(name: String, reader: VaultPreviewReader, onClose: ()
         Column(Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Vista privada · se cierra al salir", style = MaterialTheme.typography.labelMedium)
             if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
-            error?.let { Text(it) }
+            error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium) }
             frame?.let { content ->
                 if (content.pages > 1) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     TextButton(onClick = { page-- }, enabled = page > 0 && !loading) { Text("Anterior") }

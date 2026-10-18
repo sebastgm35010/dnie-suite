@@ -72,7 +72,9 @@ class VaultFileStore(private val root: File, private val staging: File,
             FileInputStream(temporary).use { publish(it, metadata) }
             rememberName(id, metadata.name)
             return metadata
-        } finally { temporary.delete() }
+        } finally {
+            check(temporary.delete() || !temporary.exists()) { "No se pudo retirar el archivo temporal privado" }
+        }
     }
 
     fun delete(id: String) {

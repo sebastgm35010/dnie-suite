@@ -119,4 +119,73 @@ class ContinuousProtocolTest {
         assertEquals(1, signatures); assertEquals(1, closes)
     }
 
+    @Test fun concurrentCloseDuringCardAcquireAndProcessNeverThrowsNpe() = runBlocking {
+        val pin = "5678".toCharArray()
+        val id = UUID.randomUUID()
+        val requests = ByteArrayOutputStream()
+        SuitePackets.write(requests, SuitePackets.begin(id, 1, pin))
+        SuitePackets.write(requests, SuitePackets.frame(SuitePacketKind.FRAME,
+            SigningFrame(id, 1L, SigningOperation.OPEN, SigningStatus.REQUEST, byteArrayOf())))
+
+        val card = object : DnieTransceiverInterface {
+            override suspend fun selectPkiApplet() = Result.success(Unit)
+            override suspend fun verifyPin(pin: String) = Result.success<PinVerificationResult>(PinVerificationResult.Success)
+            override suspend fun readCertificate(type: CertificateType) = Result.success(byteArrayOf(1))
+            override suspend fun signSha256Hash(hash32Bytes: ByteArray) = Result.success(ByteArray(256))
+            override fun close() {}
+        }
+
+        val channel1 = object : SigningDuplex {
+            override val input = ByteArrayInputStream(requests.toByteArray())
+            override val output = ByteArrayOutputStream()
+            override fun close() {}
+        }
+        val acquireSuspended = java.util.concurrent.CountDownLatch(1)
+        val closeLatch = java.util.concurrent.CountDownLatch(1)
+        val connection1 = ContinuousSigningConnection(channel1, {
+            acquireSuspended.countDown()
+            closeLatch.await()
+            card
+        }, {})
+
+        val job1 = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).async {
+            runCatching { connection1.run() }
+        }
+        acquireSuspended.await()
+        connection1.close()
+        closeLatch.countDown()
+        val result1 = job1.await()
+        assertFalse(result1.exceptionOrNull() is NullPointerException)
+
+        val requests2 = ByteArrayOutputStream()
+        val pin2 = "9999".toCharArray()
+        SuitePackets.write(requests2, SuitePackets.begin(id, 1, pin2))
+        SuitePackets.write(requests2, SuitePackets.frame(SuitePacketKind.FRAME,
+            SigningFrame(id, 1L, SigningOperation.OPEN, SigningStatus.REQUEST, byteArrayOf())))
+        val channel2 = object : SigningDuplex {
+            override val input = ByteArrayInputStream(requests2.toByteArray())
+            override val output = ByteArrayOutputStream()
+            override fun close() {}
+        }
+        val processLatch = java.util.concurrent.CountDownLatch(1)
+        val blockingCard = object : DnieTransceiverInterface {
+            override suspend fun selectPkiApplet(): Result<Unit> {
+                processLatch.countDown()
+                delay(50)
+                return Result.success(Unit)
+            }
+            override suspend fun verifyPin(pin: String) = Result.success<PinVerificationResult>(PinVerificationResult.Success)
+            override suspend fun readCertificate(type: CertificateType) = Result.success(byteArrayOf(1))
+            override suspend fun signSha256Hash(hash32Bytes: ByteArray) = Result.success(ByteArray(256))
+            override fun close() {}
+        }
+        val connection2 = ContinuousSigningConnection(channel2, { blockingCard }, {})
+        val job2 = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).async {
+            runCatching { connection2.run() }
+        }
+        processLatch.await()
+        connection2.close()
+        val result2 = job2.await()
+        assertFalse(result2.exceptionOrNull() is NullPointerException)
+    }
 }

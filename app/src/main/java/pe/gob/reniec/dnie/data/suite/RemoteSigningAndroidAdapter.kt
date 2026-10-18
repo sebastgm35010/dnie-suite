@@ -3,22 +3,28 @@ package pe.gob.reniec.dnie.data.suite
 import android.content.Context
 import android.net.Uri
 import android.nfc.Tag
+import java.io.ByteArrayOutputStream
+import java.io.IOException
 import pe.gob.reniec.dnie.core.logging.ApduLogger
 import pe.gob.reniec.dnie.core.nfc.DnieTransceiver
 import pe.gob.reniec.dnie.core.nfc.IsoDepCardChannel
 
 /** Android storage/NFC APIs; caller runs blocking storage/card operations on IO. */
 class RemoteSigningAndroidAdapter(private val context: Context) {
-    fun read(uri: Uri): String = context.contentResolver.openInputStream(uri)!!.use { input ->
-        val output = java.io.ByteArrayOutputStream()
-        val buffer = ByteArray(1025)
-        while (true) {
-            val count = input.read(buffer)
-            if (count < 0) break
-            output.write(buffer, 0, count)
-            require(output.size() <= 1024)
+    fun read(uri: Uri): String {
+        val stream = context.contentResolver.openInputStream(uri)
+            ?: throw IOException("No se pudo abrir el archivo de solicitud")
+        return stream.use { input ->
+            val output = ByteArrayOutputStream()
+            val buffer = ByteArray(1025)
+            while (true) {
+                val count = input.read(buffer)
+                if (count < 0) break
+                output.write(buffer, 0, count)
+                require(output.size() <= 1024) { "La solicitud supera el tamaño máximo permitido (1 KiB)" }
+            }
+            output.toString("UTF-8")
         }
-        output.toString("UTF-8")
     }
     fun continuousCard(tag: Tag, can: String): Pair<pe.gob.reniec.dnie.core.nfc.DnieTransceiverInterface, () -> Boolean> {
         val iso = android.nfc.tech.IsoDep.get(tag) ?: error("Not an ISO DEP card")

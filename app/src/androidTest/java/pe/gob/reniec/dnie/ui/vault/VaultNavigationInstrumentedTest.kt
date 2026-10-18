@@ -49,4 +49,57 @@ class VaultNavigationInstrumentedTest {
         }
         compose.onNodeWithText("2 seleccionado(s)").assertDoesNotExist()
     }
+
+
+    @Test fun fileCardMenuShowsExportOptionAndInvokesCallback() {
+        val actions = VaultLibraryActions(
+            importFiles = {}, exportBackup = {}, importBackup = {}, query = {}, folder = {}, sort = {}, trash = {},
+            organize = { _, _, _ -> }, recover = {}, purge = {}, preview = {}, createNote = { _, _ -> },
+            encryptIncoming = {}, dismissIncoming = {}, inspect = {}, closeDetails = {},
+            trashMany = { _, _ -> }, organizeMany = { _, _, _ -> })
+        compose.setContent {
+            VaultScreen(
+                VaultUiState(riskAcknowledged = true, pairedFingerprint = "fixture", allItems = 1,
+                    items = listOf(VaultItemUi("test-1", 100, "documento.pdf"))),
+                onCanChange = {}, onPinChange = {}, onRememberCan = {}, onRun = {}, onBack = {}, onCancel = {},
+                onImportArchive = {}, onExportEncrypted = { _, _ -> },
+                onRequestOpen = { _, _ -> }, onStartOpen = {}, onClearSelection = {},
+                onDelete = {}, onAcknowledgeRisk = {}, library = actions,
+                recovery = VaultRecoveryActions({ _, _ -> }, { _, _ -> }))
+        }
+        compose.onNodeWithContentDescription("Opciones del archivo").performClick()
+        compose.onNodeWithText("Exportar copia cifrada (.dnievault)").assertExists()
+        compose.onNodeWithText("Exportar copia cifrada (.dnievault)").performClick()
+    }
+
+    @Test fun backFromSubpageReturnsToFilesWithoutLeavingVault() {
+        var leftVault = false
+        val actions = VaultLibraryActions(
+            importFiles = {}, exportBackup = {}, importBackup = {}, query = {}, folder = {}, sort = {}, trash = {},
+            organize = { _, _, _ -> }, recover = {}, purge = {}, preview = {}, createNote = { _, _ -> },
+            encryptIncoming = {}, dismissIncoming = {}, inspect = {}, closeDetails = {},
+            trashMany = { _, _ -> }, organizeMany = { _, _, _ -> })
+        compose.setContent {
+            VaultScreen(
+                VaultUiState(riskAcknowledged = true, pairedFingerprint = "fixture", allItems = 1,
+                    items = listOf(VaultItemUi("test-1", 100, "documento.pdf"))),
+                onCanChange = {}, onPinChange = {}, onRememberCan = {}, onRun = {},
+                onBack = { leftVault = true }, onCancel = {},
+                onImportArchive = {}, onExportEncrypted = { _, _ -> },
+                onRequestOpen = { _, _ -> }, onStartOpen = {}, onClearSelection = {},
+                onDelete = {}, onAcknowledgeRisk = {}, library = actions,
+                recovery = VaultRecoveryActions({ _, _ -> }, { _, _ -> }))
+        }
+        compose.onNodeWithText("Respaldo").performClick()
+        compose.onNodeWithText("Exportar bóveda").assertExists()
+        compose.onNodeWithContentDescription("Volver").performClick()
+        compose.onNodeWithText("Mis archivos").assertExists()
+        assertFalse(leftVault)
+
+        compose.onNodeWithContentDescription("Opciones de bóveda").performClick()
+        compose.onNodeWithText("Vincular o cambiar DNI").assertExists()
+        compose.onNodeWithContentDescription("Volver").performClick()
+        compose.onNodeWithText("Mis archivos").assertExists()
+        assertFalse(leftVault)
+    }
 }

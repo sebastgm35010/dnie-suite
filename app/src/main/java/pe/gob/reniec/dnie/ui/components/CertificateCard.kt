@@ -9,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
@@ -29,7 +30,8 @@ fun CertificateCard(certificate: CertificateInfo, onExportCer: () -> Unit, onExp
     modifier: Modifier = Modifier) {
     var details by remember(certificate.sha256FingerprintHex) { mutableStateOf(false) }
     val clipboard = LocalClipboardManager.current
-    val dateFormat = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
+    val locale = LocalConfiguration.current.locales[0] ?: Locale.getDefault()
+    val dateFormat = remember(locale) { SimpleDateFormat("dd/MM/yyyy", locale) }
     val critical = certificate.isExpired || certificate.daysRemaining < 60
     val tone = when { certificate.isExpired -> MaterialTheme.colorScheme.error; critical -> Color(0xFF9A6500); else -> MaterialTheme.colorScheme.secondary }
     val timeline = certificate.daysRemaining.coerceIn(0, 1460).toFloat() / 1460f

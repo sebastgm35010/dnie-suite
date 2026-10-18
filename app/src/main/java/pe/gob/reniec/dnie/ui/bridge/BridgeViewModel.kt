@@ -17,6 +17,7 @@ import pe.gob.reniec.dnie.bridge.android.BridgeConnection
 import pe.gob.reniec.dnie.bridge.android.BridgePairing
 import pe.gob.reniec.dnie.bridge.BridgeMode
 import pe.gob.reniec.dnie.data.bridge.BridgeAndroidAdapter
+import pe.gob.reniec.dnie.data.bridge.BridgeProvisionFileException
 import pe.gob.reniec.dnie.data.preferences.CanStorage
 import pe.gob.reniec.dnie.diagnostics.DiagnosticLog
 /** Coordinates import and exclusive foreground sessions; secrets never enter Compose state. */
@@ -148,9 +149,13 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
                     fingerprint = p.fingerprint(), busy = false, tailscale = p.transport.startsWith("tailscale_"),
                     message = if (p.transport == "tailscale_tcp") "Tailscale directo listo. Activa Tailscale y autoriza el DNI." else "Comprueba esta huella con la PC antes de autorizar.") }
             } catch (cancelled: CancellationException) { throw cancelled }
-            catch (_: Exception) {
+            catch (failure: BridgeProvisionFileException) {
+                DiagnosticLog.event("bridge", "pairing_import_failed", "reason" to "file_inaccessible")
+                if (epoch == generation) mutable.update { it.copy(busy = false, message = failure.message ?: "No se pudo leer el archivo de emparejamiento.") }
+            } catch (failure: Exception) {
                 DiagnosticLog.event("bridge", "pairing_import_failed")
-                if (epoch == generation) mutable.update { it.copy(busy = false, message = "Emparejamiento inválido, vencido o inaccesible. Genera otro QR en la PC.") }
+                val specific = failure.message?.takeIf { it.contains("Vincula esta PC con el QR de Red segura") }
+                if (epoch == generation) mutable.update { it.copy(busy = false, message = specific ?: "Emparejamiento inválido, vencido o inaccesible. Genera otro QR en la PC.") }
             } finally { imported?.close() }
         }
     }

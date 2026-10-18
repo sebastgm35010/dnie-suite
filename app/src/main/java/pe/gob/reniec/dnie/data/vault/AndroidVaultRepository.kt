@@ -102,7 +102,7 @@ class AndroidVaultRepository(context: Context) {
     suspend fun list(): List<VaultStoredItem> = io { files.list() }
     suspend fun inventory(): List<VaultCatalogItem> = io { files.list().map { VaultCatalogItem(it, catalog.read(it.id)) } }
     suspend fun details(id: String): VaultFileDetails = io {
-        val item = files.list().first { it.id == id }
+        val item = files.list().firstOrNull { it.id == id } ?: error("El archivo ya no existe en la bóveda.")
         VaultFileDetails(VaultCatalogItem(item, catalog.read(id)), files.readHeader(id).recipient.joinToString("") { "%02x".format(it.toInt() and 255) })
     }
     suspend fun organize(id: String, labels: VaultLabels) = io {
@@ -125,7 +125,8 @@ class AndroidVaultRepository(context: Context) {
         } ?: error("No se pudo leer el respaldo")
     }
     suspend fun preview(id: String, secret: ByteArray, recipient: ByteArray): VaultPreviewTicket = io {
-        require(files.list().first { it.id == id }.encryptedBytes <= VaultPreviewFiles.MAX_BYTES + 1048576) {
+        val stored = files.list().firstOrNull { it.id == id } ?: error("El archivo ya no existe en la bóveda.")
+        require(stored.encryptedBytes <= VaultPreviewFiles.MAX_BYTES + 1048576) {
             "Vista previa limitada a 32 MiB. Puedes descifrar este archivo a un destino externo."
         }
         val active = currentCoroutineContext()

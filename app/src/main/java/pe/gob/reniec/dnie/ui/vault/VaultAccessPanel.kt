@@ -64,7 +64,12 @@ internal fun VaultCredentialFields(state: VaultUiState, onCanChange: (String) ->
     onPinChange: (String) -> Unit, onRememberCan: (Boolean) -> Unit) {
     val busy = state.running || state.awaitingCard
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        ConnectionCanField(state.can, onCanChange, enabled = !busy)
+        ConnectionCanField(
+            can = state.can,
+            onCan = onCanChange,
+            enabled = !busy,
+            readSavedCan = { state.can }
+        )
         CredentialDigitsIndicator(state.can.length, minTarget = 6, maxTarget = 6, completeAt = 6)
         OutlinedTextField(value = state.pin, onValueChange = onPinChange,
             label = { Text("PIN del DNI") }, supportingText = { Text("4 a 8 dígitos. Sin reintentos automáticos.") },
@@ -73,9 +78,15 @@ internal fun VaultCredentialFields(state: VaultUiState, onCanChange: (String) ->
             visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(14.dp))
         CredentialDigitsIndicator(state.pin.length, minTarget = 4, maxTarget = 8)
-        Row {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+        ) {
             Checkbox(checked = state.rememberCan, onCheckedChange = onRememberCan, enabled = !busy)
-            Text("Recordar CAN · compartido con la pantalla principal", modifier = Modifier.padding(top = 12.dp))
+            Text(
+                text = "Recordar CAN · compartido con la pantalla principal",
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
     }
 }

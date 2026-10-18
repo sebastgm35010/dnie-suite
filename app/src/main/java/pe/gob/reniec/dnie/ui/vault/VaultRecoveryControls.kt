@@ -24,7 +24,8 @@ data class VaultRecoveryActions(
 @Composable
 internal fun VaultRecoveryControls(state: VaultUiState, actions: VaultRecoveryActions,
     onCanChange: (String) -> Unit, onPinChange: (String) -> Unit, onRememberCan: (Boolean) -> Unit,
-    importing: Boolean = false) {
+    importing: Boolean = false,
+    onModeChange: ((Boolean) -> Unit)? = null) {
     val busy = state.running || state.awaitingCard
     val focus = LocalFocusManager.current
     var password by remember { mutableStateOf("") }
@@ -38,6 +39,20 @@ internal fun VaultRecoveryControls(state: VaultUiState, actions: VaultRecoveryAc
     }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(if (importing) "Importar bóveda" else "Exportar bóveda", style = MaterialTheme.typography.titleLarge)
+        if (!busy && onModeChange != null) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = !importing,
+                    onClick = { if (importing) { selectedUri = null; password = ""; confirmation = ""; onModeChange(false) } },
+                    label = { Text("Exportar") }
+                )
+                FilterChip(
+                    selected = importing,
+                    onClick = { if (!importing) { selectedUri = null; password = ""; confirmation = ""; onModeChange(true) } },
+                    label = { Text("Importar") }
+                )
+            }
+        }
         if (busy) {
             Text(if (state.awaitingCard) {
                 if (importing) "Acerca el DNI de destino" else "Acerca el DNI para exportar"

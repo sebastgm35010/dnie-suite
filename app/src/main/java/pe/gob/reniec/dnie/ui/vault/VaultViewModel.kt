@@ -344,7 +344,7 @@ class VaultViewModel(private val cryptoDispatcher: CoroutineDispatcher = Dispatc
     private fun launchDisk(message: String, success: () -> String = { "Operación completada." }, action: suspend () -> Unit) {
         if (busy) return
         val operation = ++generation
-        state.value = state.value.copy(running = true, can = "", pin = "", message = message,
+        state.value = state.value.copy(running = true, pin = "", message = message,
             restoredName = null, restoredNameApplied = null)
         job = viewModelScope.launch {
             try {
@@ -355,12 +355,13 @@ class VaultViewModel(private val cryptoDispatcher: CoroutineDispatcher = Dispatc
             } catch (e: CancellationException) { throw e }
             catch (e: Exception) {
                 if (generation == operation) state.value = state.value.copy(message = e.message ?: "No se pudo completar la operación.")
-            } finally { if (generation == operation) state.value = state.value.copy(running = false, can = idleCan()) }
+            } finally { if (generation == operation) state.value = state.value.copy(running = false) }
         }
     }
     fun requestPreview(id: String) {
-        if (busy || !state.value.riskAcknowledged || state.value.items.none { it.id == id && !it.trashed && it.canPreview }) return
-        if (state.value.items.first { it.id == id }.encryptedBytes > pe.gob.reniec.dnie.data.vault.VaultPreviewFiles.MAX_BYTES + 1048576) {
+        if (busy || !state.value.riskAcknowledged) return
+        val targetItem = state.value.items.firstOrNull { it.id == id && !it.trashed && it.canPreview } ?: return
+        if (targetItem.encryptedBytes > pe.gob.reniec.dnie.data.vault.VaultPreviewFiles.MAX_BYTES + 1048576) {
             state.value = state.value.copy(message = "Vista previa limitada a 32 MiB. Puedes descifrar este archivo a un destino externo.")
             return
         }
@@ -380,13 +381,15 @@ class VaultViewModel(private val cryptoDispatcher: CoroutineDispatcher = Dispatc
     fun showTrash(value: Boolean) { state.value = state.value.copy(showTrash = value); clearSelection(); filterItems() }
     fun sortBy(sort: VaultSort) { state.value = state.value.copy(sort = sort); filterItems() }
     fun organize(id: String, folder: String, tags: List<String>) = launchDisk("Organizando archivo…") {
-        val labels = inventory.first { it.file.id == id }.labels
+        val labels = inventory.firstOrNull { it.file.id == id }?.labels
+            ?: error("El archivo ya no se encuentra en la bóveda.")
         files.organize(id, labels.copy(folder = folder.trim(), tags = tags.map(String::trim).filter(String::isNotEmpty).distinct()))
     }
     fun recoverTrash(id: String) = launchDisk("Recuperando archivo…") { files.trash(id, false) }
     fun trashMany(ids: List<String>, trashed: Boolean) = batchLibrary(ids) { files.trash(it, trashed) }
     fun organizeMany(ids: List<String>, folder: String, tags: List<String>) = batchLibrary(ids) { id ->
-        val labels = inventory.first { it.file.id == id }.labels
+        val labels = inventory.firstOrNull { it.file.id == id }?.labels
+            ?: error("El archivo ya no se encuentra en la bóveda.")
         files.organize(id, labels.copy(folder = folder.trim(), tags = tags.map(String::trim).filter(String::isNotEmpty).distinct()))
     }
     private fun batchLibrary(ids: List<String>, action: suspend (String) -> Unit) {

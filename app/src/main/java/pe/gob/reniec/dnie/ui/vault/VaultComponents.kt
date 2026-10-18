@@ -114,6 +114,7 @@ internal fun VaultResult(running: Boolean, awaitingCard: Boolean, verified: Bool
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun VaultFileCard(item: VaultItemUi, enabled: Boolean, selected: Boolean,
     onRestore: () -> Unit, onExport: () -> Unit, onDelete: () -> Unit,
@@ -135,15 +136,41 @@ internal fun VaultFileCard(item: VaultItemUi, enabled: Boolean, selected: Boolea
                     }
                 }
                 Spacer(Modifier.width(10.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(item.displayName ?: "Archivo cifrado", fontWeight = FontWeight.Medium)
-                    Text(encryptedSize(item.encryptedBytes) + if (item.folder.isNotBlank()) " · ${item.folder}" else "",
-                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    if (item.folder.isNotBlank() || item.tags.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                        if (item.folder.isNotBlank()) AssistChip(onClick = {}, enabled = false, label = { Text(item.folder) })
-                        item.tags.take(3).forEach { tag -> AssistChip(onClick = {}, enabled = false, label = { Text(tag) }) }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = item.displayName ?: "Archivo cifrado",
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 2,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = encryptedSize(item.encryptedBytes) + if (item.folder.isNotBlank()) " · ${item.folder}" else "",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                    if (item.tags.isNotEmpty()) {
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            item.tags.take(3).forEach { tag ->
+                                AssistChip(
+                                    onClick = {},
+                                    enabled = false,
+                                    label = {
+                                        Text(
+                                            text = tag,
+                                            maxLines = 1,
+                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                        )
+                                    }
+                                )
+                            }
+                        }
                     }
-                    if (selected) Text("Pendiente de abrir", style = MaterialTheme.typography.labelSmall)
+                    if (selected) Text("Pendiente de abrir", style = MaterialTheme.typography.labelSmall, color = VaultAccent)
                 }
                 if (!selectionMode) Box {
                     IconButton(onClick = { menu = true }, enabled = enabled) {
@@ -154,6 +181,7 @@ internal fun VaultFileCard(item: VaultItemUi, enabled: Boolean, selected: Boolea
                         if (!item.trashed) {
                             if (item.canPreview) DropdownMenuItem(text = { Text("Vista previa con DNI") }, onClick = { run(onPreview) })
                             DropdownMenuItem(text = { Text("Carpeta y etiquetas") }, onClick = { run(onOrganize) })
+                            DropdownMenuItem(text = { Text("Exportar copia cifrada (.dnievault)") }, onClick = { run(onExport) })
                         }
                         DropdownMenuItem(text = { Text("Ficha del archivo") }, onClick = { run(onInspect) })
                         DropdownMenuItem(text = { Text(if (item.trashed) "Eliminar definitivamente" else "Mover a papelera") }, onClick = { run(onDelete) })

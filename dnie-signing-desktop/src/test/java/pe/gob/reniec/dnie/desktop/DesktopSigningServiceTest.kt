@@ -135,7 +135,9 @@ class DesktopSigningServiceTest {
         // 3. Same-size replacement of signed PDF output before export must also be rejected.
         val signedPdfPath = signed.artifacts[2].output!!.toPath()
         val tamperedPdf = Files.readAllBytes(signedPdfPath).also { it[0] = (it[0].toInt() xor 1).toByte() }
-        Files.write(signedPdfPath, tamperedPdf)
+        val file = signedPdfPath.toFile()
+        file.delete()
+        file.outputStream().use { it.write(tamperedPdf) }
         assertEquals(signed.artifacts[2].outputSize, Files.size(signedPdfPath))
         assertTrue(runCatching {
             Files.newOutputStream(workspace.directory.resolve("test-pdf.zip")).use { SignedBatchExporter.write(signed.artifacts, it) }

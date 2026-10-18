@@ -26,7 +26,7 @@ class BridgeAndroidAdapter(private val context: Context) {
     fun tailnet(host: String): BridgePairing = BridgePairing(host,39443,ByteArray(32),ByteArray(32),Long.MAX_VALUE,"tailscale_sync")
     fun import(uri: Uri): BridgePairing = context.contentResolver.openInputStream(uri)?.use {
         BridgeProvision.read(it)
-    } ?: error("Missing provisioning file")
+    } ?: throw BridgeProvisionFileException("No se pudo abrir el archivo de emparejamiento seleccionado.")
 
     fun prepare(pairing: BridgePairing, tag: Tag, windowsPace: Boolean = false, translatePace: Boolean = false,
         settings: pe.gob.reniec.dnie.bridge.BridgeRuntimeSettings = pe.gob.reniec.dnie.bridge.BridgeRuntimeSettings()): Prepared? {
@@ -77,3 +77,5 @@ class BridgeAndroidAdapter(private val context: Context) {
 
     class Prepared(val connection: BridgeConnection, val atr: ByteArray)
 }
+
+class BridgeProvisionFileException(message: String, cause: Throwable? = null) : java.io.IOException(message, cause)

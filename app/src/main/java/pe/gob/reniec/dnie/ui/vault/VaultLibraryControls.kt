@@ -2,6 +2,7 @@ package pe.gob.reniec.dnie.ui.vault
 
 import android.net.Uri
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.*
@@ -60,18 +61,26 @@ internal fun VaultDetailsDialog(details: pe.gob.reniec.dnie.domain.vault.VaultFi
     val labels = details.item.labels
     fun date(value: Long) = if (value == 0L) "Sin registro" else java.text.DateFormat.getDateTimeInstance().format(java.util.Date(value))
     AlertDialog(onDismissRequest = onDismiss, title = { Text("Ficha del archivo") }, text = {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(item.displayName ?: "Nombre pendiente")
+        Column(
+            modifier = Modifier.verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(item.displayName ?: "Nombre pendiente", fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
             Text("Contenedor: ${item.encryptedBytes} bytes")
             Text("Añadido: ${date(item.createdAt)}")
             Text("Carpeta: ${labels.folder.ifBlank { "Sin carpeta" }}")
             Text("Estado: ${if (labels.trashed) "Papelera" else "Activo"}")
             Text("Última apertura verificada: ${date(labels.verifiedAt)}")
             Text("Última copia cifrada guardada: ${date(labels.backedUpAt)}")
-            Text("Destinatario · SHA-256 de la clave pública")
-            Text(details.recipient.chunked(16).joinToString("\n"), style = MaterialTheme.typography.bodySmall)
+            Text("Destinatario · SHA-256 de la clave pública", style = MaterialTheme.typography.labelMedium)
+            Text(
+                text = details.recipient.chunked(16).joinToString("\n"),
+                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                style = MaterialTheme.typography.bodySmall
+            )
             Text("El destinatario procede de la cabecera. Los registros de actividad son informativos; la integridad se comprueba de nuevo al abrir.",
-                style = MaterialTheme.typography.bodySmall)
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }, confirmButton = { TextButton(onClick = onDismiss) { Text("Cerrar") } })
 }

@@ -172,6 +172,26 @@ class VaultViewModelTest {
         assertTrue(card.closed)
     }
 
+    @Test fun sessionCanIsNotClearedOnLocalDiskOperation() = runTest(dispatcher) {
+        val store = MemoryCanStore("")
+        vm = VaultViewModel(dispatcher, store)
+        vm.setRememberCan(false)
+        vm.updateCan("654321")
+        assertEquals("654321", vm.uiState.value.can)
+        assertFalse(vm.uiState.value.rememberCan)
+        vm.inspect("fake-id")
+        dispatcher.scheduler.advanceUntilIdle()
+        assertEquals("654321", vm.uiState.value.can)
+    }
+
+    @Test fun organizeMissingIdPublishesControlledMessageWithoutCrashing() = runTest(dispatcher) {
+        vm = VaultViewModel(dispatcher)
+        vm.organize("non-existent-id", "Carpeta", listOf("tag1"))
+        dispatcher.scheduler.advanceUntilIdle()
+        assertFalse(vm.uiState.value.running)
+        assertEquals("El archivo ya no se encuentra en la bóveda.", vm.uiState.value.message)
+    }
+
     private class SyntheticCard(private val pinResult: PinVerificationResult = PinVerificationResult.Success) : FakeCard() {
         var deciphers = 0
         companion object {
