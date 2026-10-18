@@ -62,8 +62,7 @@ python tools/build_suite.py --component bridge --output D:/DNIeToolchain/Builds/
 ## Invariantes de Seguridad
 
 - **Custodia en el Chip:** Las claves privadas de firma y autenticación residen exclusivamente dentro de la tarjeta inteligente; el software nunca las extrae ni las almacena en memoria de host.
-- **Bóveda sin Biometría:** El desbloqueo de la bóveda requiere estrictamente la posesión física del DNIe y el PIN del usuario. No se admiten sensores biométricos de hardware como sustitutos.
-- **Cero Persistencia de Secretos:** Los códigos PIN y CAN son manipulados exclusivamente en estructuras temporales en memoria y se limpian al salir de pantalla o al pausar la aplicación.
+- **Cero Persistencia de Secretos:** Los códigos PIN son manipulados exclusivamente en estructuras temporales en memoria y se limpian al salir de pantalla o al pausar la aplicación.
 - **Validación Continua:** Las capas de software se verifican de manera automatizada mediante:
   ```powershell
   python tools/check_architecture.py
