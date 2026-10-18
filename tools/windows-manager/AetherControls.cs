@@ -76,13 +76,9 @@ internal sealed class AetherButton : Button {
     protected override void OnPaint(PaintEventArgs e){
         var g=e.Graphics;g.Clear(Aether.SurfaceBehind(this));g.SmoothingMode=SmoothingMode.AntiAlias;g.PixelOffsetMode=PixelOffsetMode.HighQuality;
         if(Width<3 || Height<3)return;
-        if(pressAmount>0f && SystemInformation.IsMenuAnimationEnabled && Width>10 && Height>10){
-            float cx=Width/2f,cy=Height/2f;
-            g.TranslateTransform(cx,cy);
-            g.ScaleTransform(0.985f,0.985f);
-            g.TranslateTransform(-cx,-cy);
-        }
-        using var path=Aether.Rounded(new RectangleF(.5f,.5f,Width-1,Height-1),10);
+        float pressInset=(pressAmount>0f && SystemInformation.IsMenuAnimationEnabled && Width>12 && Height>12)?1f*pressAmount:0f;
+        var rect=new RectangleF(.5f+pressInset,.5f+pressInset,Width-1-pressInset*2,Height-1-pressInset*2);
+        using var path=Aether.Rounded(rect,10);
         var color=Enabled||IsSelectedSegment?BackColor:Aether.Container;
         if(Enabled){
             var light=ControlPaint.Light(color,.1f);
@@ -98,11 +94,12 @@ internal sealed class AetherButton : Button {
             using var border=new Pen(Aether.Primary,1.5f);
             g.DrawPath(border,path);
         }
-        if(ThemeAction){using var icon=new Pen(Aether.Primary,1.5f);float y=Height/2f-7;
+        int yShift=(int)Math.Round(pressInset);
+        if(ThemeAction){using var icon=new Pen(Aether.Primary,1.5f);float y=Height/2f-7+pressInset;
             if(Aether.Dark){g.DrawEllipse(icon,13,y+3,8,8);g.DrawLine(icon,17,y-1,17,y+1);g.DrawLine(icon,17,y+13,17,y+15);g.DrawLine(icon,9,y+7,11,y+7);g.DrawLine(icon,23,y+7,25,y+7);}
             else {g.DrawArc(icon,11,y,13,14,70,260);g.DrawArc(icon,16,y-2,10,12,150,160);}}
         int inset=ThemeAction?32:4;
-        TextRenderer.DrawText(g,Text,Font,new Rectangle(inset,3,Width-inset-4,Height-6),Enabled||IsSelectedSegment?ForeColor:Aether.Outline,TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter|TextFormatFlags.EndEllipsis|TextFormatFlags.NoPrefix);
+        TextRenderer.DrawText(g,Text,Font,new Rectangle(inset,3+yShift,Width-inset-4,Height-6),Enabled||IsSelectedSegment?ForeColor:Aether.Outline,TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter|TextFormatFlags.EndEllipsis|TextFormatFlags.NoPrefix);
     }
 }
 internal sealed class AetherCard : Panel {

@@ -25,6 +25,10 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import java.util.Locale
+import pe.gob.reniec.dnie.ui.design.aetherAnimateSize
+import pe.gob.reniec.dnie.ui.design.aetherPressScale
+import pe.gob.reniec.dnie.ui.design.aetherSpring
+import pe.gob.reniec.dnie.ui.design.rememberReducedMotion
 
 @Composable internal fun VaultKeyStatusBanner(fingerprint: String?, onLink: () -> Unit) {
     val linked = fingerprint != null
@@ -116,12 +120,23 @@ internal fun VaultFileCard(item: VaultItemUi, enabled: Boolean, selected: Boolea
     onPreview: () -> Unit, onOrganize: () -> Unit, onRecover: () -> Unit, onInspect: () -> Unit,
     selectionMode: Boolean = false, checked: Boolean = false, onToggle: () -> Unit = {}) {
     var menu by remember { mutableStateOf(false) }
-    Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = VaultSurface)) {
+    val reducedMotion = rememberReducedMotion()
+    Card(
+        modifier = Modifier.aetherAnimateSize(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = VaultSurface)
+    ) {
         Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                if (selectionMode) Checkbox(checked = checked, onCheckedChange = { onToggle() }, enabled = enabled)
-                else Surface(shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
-                    Icon(vaultFileIcon(item.displayName), null, tint = VaultAccent, modifier = Modifier.padding(10.dp).size(22.dp))
+                androidx.compose.animation.Crossfade(
+                    targetState = selectionMode,
+                    animationSpec = aetherSpring(reducedMotion),
+                    label = "vault_select_mode"
+                ) { isSelect ->
+                    if (isSelect) Checkbox(checked = checked, onCheckedChange = { onToggle() }, enabled = enabled)
+                    else Surface(shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
+                        Icon(vaultFileIcon(item.displayName), null, tint = VaultAccent, modifier = Modifier.padding(10.dp).size(22.dp))
+                    }
                 }
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
@@ -149,8 +164,11 @@ internal fun VaultFileCard(item: VaultItemUi, enabled: Boolean, selected: Boolea
                     }
                 }
             }
-            if (!selectionMode) FilledTonalButton(onClick = if (item.trashed) onRecover else onRestore,
-                enabled = enabled, modifier = Modifier.align(Alignment.End)) { Text(if (item.trashed) "Restaurar" else "Descifrar") }
+            if (!selectionMode) FilledTonalButton(
+                onClick = if (item.trashed) onRecover else onRestore,
+                enabled = enabled,
+                modifier = Modifier.align(Alignment.End).aetherPressScale(enabled)
+            ) { Text(if (item.trashed) "Restaurar" else "Descifrar") }
         }
     }
 }
