@@ -23,6 +23,7 @@ local.properties
 *.jks
 *.etl
 *.jsonl
+*.zip
 .env
 .env.*
 !.env.example
