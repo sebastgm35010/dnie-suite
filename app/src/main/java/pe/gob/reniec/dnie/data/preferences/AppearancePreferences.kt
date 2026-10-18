@@ -12,7 +12,7 @@ enum class ThemeMode(val label: String) { SYSTEM("Del sistema"), LIGHT("Claro"),
 /** Application-scoped appearance adapter. Disk reads and ordered writes never run in composition. */
 class AppearancePreferences(context: Context) {
     private val app = context.applicationContext
-    private val selected = MutableStateFlow<ThemeMode?>(null)
+    private val selected = MutableStateFlow<ThemeMode?>(ThemeMode.SYSTEM)
     val mode = selected.asStateFlow()
     private val dismissed = MutableStateFlow(false)
     val onboardingDismissed = dismissed.asStateFlow()

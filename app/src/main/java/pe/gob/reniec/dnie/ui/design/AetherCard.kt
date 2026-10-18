@@ -13,6 +13,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.drawOutline
+import androidx.compose.ui.graphics.drawscope.Stroke
 
 /** Shared surface geometry, preserving semantic success/error colors passed by each feature. */
 @Composable
@@ -38,16 +41,31 @@ fun AetherCard(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Bool
     val pressed by interactionSource.collectIsPressedAsState()
     val focused by interactionSource.collectIsFocusedAsState()
     val reduced = rememberReducedMotion()
-    val activeBorderColor by animateColorAsState(
+    val restBorderColor = MaterialTheme.colorScheme.outlineVariant
+    val activeBorderColor = animateColorAsState(
         targetValue = if ((pressed || focused) && enabled) MaterialTheme.colorScheme.primary.copy(alpha = .65f)
-                      else MaterialTheme.colorScheme.outlineVariant,
+                      else restBorderColor,
         animationSpec = aetherSpring(reduced),
         label = "aether-card-border"
     )
-    val effectiveBorder = if (border != null) BorderStroke(border.width, activeBorderColor) else null
     val cardModifier = (if (animateSize) modifier.aetherAnimateSize() else modifier)
         .heightIn(min = 48.dp)
         .aetherPressScale(interactionSource)
+        .let { base ->
+            if (border != null) {
+                base.drawWithContent {
+                    drawContent()
+                    val current = activeBorderColor.value
+                    if (current != restBorderColor) {
+                        drawOutline(
+                            outline = shape.createOutline(size, layoutDirection, this),
+                            color = current,
+                            style = Stroke(border.width.toPx())
+                        )
+                    }
+                }
+            } else base
+        }
     MaterialCard(onClick, cardModifier, enabled,
-        shape, colors, elevation, effectiveBorder, interactionSource, content)
+        shape, colors, elevation, border, interactionSource, content)
 }

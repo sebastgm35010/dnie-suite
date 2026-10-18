@@ -110,11 +110,14 @@ class SignerViewModel(private val signerEngine: PadesSignerEngineInterface? = nu
     fun removeDocument(id: String) {
         if (busy || _workspace.value.importing || _workspace.value.exporting) return
         val doc = _workspace.value.documents.firstOrNull { it.id == id } ?: return
-        _workspace.value.artifacts.filter { it.document.id == id }.forEach { it.output?.delete(); it.output?.parentFile?.delete() }
-        doc.file.delete(); doc.file.parentFile?.delete()
+        val removedArtifacts = _workspace.value.artifacts.filter { it.document.id == id }
         _workspace.update { w -> w.copy(documents = w.documents.filter { it.id != id }, artifacts = w.artifacts.filter { it.document.id != id },
             selectedId = if (w.selectedId == id) w.documents.firstOrNull { it.id != id }?.id else w.selectedId) }
         if (_workspace.value.documents.isEmpty()) _uiState.value = SignerUiState.NoDocument else selectDocument(_workspace.value.selectedId)
+        viewModelScope.launch(Dispatchers.IO) {
+            removedArtifacts.forEach { it.output?.delete(); it.output?.parentFile?.delete() }
+            doc.file.delete(); doc.file.parentFile?.delete()
+        }
     }
     fun updateOptions(transform: (PdfSigningOptions) -> PdfSigningOptions) {
         if (busy) return
@@ -272,11 +275,13 @@ class SignerViewModel(private val signerEngine: PadesSignerEngineInterface? = nu
     fun reset() {
         if (_workspace.value.exporting) return
         cancelSigning(); ++importOperation; importJob?.cancel()
-        _workspace.value.artifacts.forEach { it.output?.delete(); it.output?.parentFile?.delete() }
-        _workspace.value.documents.forEach { it.file.delete(); it.file.parentFile?.delete() }
         val previous = _workspace.value
         _workspace.value = SigningWorkspace(mark = previous.mark, certificate = previous.certificate, previewName = previous.previewName, previewDni = previous.previewDni)
         editor = null; _uiState.value = SignerUiState.NoDocument
+        viewModelScope.launch(Dispatchers.IO) {
+            previous.artifacts.forEach { it.output?.delete(); it.output?.parentFile?.delete() }
+            previous.documents.forEach { it.file.delete(); it.file.parentFile?.delete() }
+        }
     }
     fun onCardDetected(
         transceiver: DnieTransceiverInterface,

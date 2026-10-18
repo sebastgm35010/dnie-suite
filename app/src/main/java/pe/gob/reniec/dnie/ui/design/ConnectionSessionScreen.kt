@@ -92,16 +92,17 @@ import pe.gob.reniec.dnie.ui.design.StatusCheck
 
 @Composable private fun SessionLinkConnector(active: Boolean, flowing: Boolean) {
     val reduced = rememberReducedMotion()
-    val pulse = if (reduced || !flowing) {
-        0.5f
+    val pulseState = if (reduced || !flowing) {
+        null
     } else {
         val infinite = rememberInfiniteTransition(label = "session_link")
-        val pulseState by infinite.animateFloat(0f, 1f, infiniteRepeatable(tween(1050, easing = LinearEasing)), label = "link_pulse")
-        pulseState
+        infinite.animateFloat(0f, 1f, infiniteRepeatable(tween(1050, easing = LinearEasing)), label = "link_pulse")
     }
     val targetColor = if (active) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outlineVariant
-    val color by animateColorAsState(targetColor, aetherSpring(reduced), label = "link_color")
+    val colorState = animateColorAsState(targetColor, aetherSpring(reduced), label = "link_color")
     Spacer(Modifier.width(30.dp).height(22.dp).drawBehind {
+        val pulse = pulseState?.value ?: 0.5f
+        val color = colorState.value
         val y = size.height / 2
         drawLine(color.copy(alpha = .65f), androidx.compose.ui.geometry.Offset(0f, y), androidx.compose.ui.geometry.Offset(size.width, y), 2.dp.toPx(), StrokeCap.Round)
         if (flowing) drawCircle(color, 4.dp.toPx(), androidx.compose.ui.geometry.Offset(size.width * pulse, y))

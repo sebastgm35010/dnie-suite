@@ -953,11 +953,13 @@
     {
       "id": "flagship_r11",
       "name": "Experiencia Flagship y Organic Motion R11",
-      "status": "installed_synthetic_and_ui_motion_validated",
-      "note": "2026-10-17 · R11 / Android 3.1.4 (APK 88) y Windows Manager 3.1.4: rediseño de flujos insignia y pulido Organic Motion / Fluid UI. En Android Compose: aetherPressScale universal, aetherAnimateSize, transiciones AnimatedContent en pestañas de Bóveda y Certificados, Crossfade en fotos ICAO y sellos de firma, animateItem en listas, gradiente adaptativo en VaultHero, guardia rememberReducedMotion() en SessionLinkConnector y confirmación temporal de copiado. En Windows (Swing y WinForms): desaceleración cúbica en AetherSwingAnimator, micro-escala táctil 0.985x, halos de foco suaves, rotación continua 0°-90° de chevrons, cápsulas de PIN animadas con transición esmeralda, scrollbar elástico, sombra multicapa y 8 manijas en PreviewCanvas, interpolación suave en HealthCard, AetherScrollPanel con doble buffer y restauración automática al copiar huellas. 254 pruebas JVM, unitarias Android y 52 comprobaciones Windows Manager aprobadas; límites de arquitectura OK. Motores, servicio y controlador sin alteraciones. Pruebas físicas NFC/TSA/USB/suspensión en dispositivo pendientes.",
+      "status": "installed_instrumented_and_120hz_validated",
+      "note": "2026-10-18 · R11 / Android 3.1.4 (APK 88) instalada en POCO F6 y Windows Manager 3.1.4: rediseño de flujos insignia, pulido Organic Motion / Fluid UI y optimización a 120 Hz (lectura diferida en graphicsLayer/drawBehind/drawWithContent, arranque directo sin pantalla vacía ni cambio tardío de reducedMotion, eliminación de animateContentSize anidados y traslado de I/O fuera del hilo principal). 59/59 pruebas instrumentadas aprobadas en teléfono real (incluyendo FlagshipR11FlowAndDiagnosticsTest), 0 main_thread_stall, p50=6.37ms / p95=7.41-8.43ms; 254 pruebas JVM y 52 comprobaciones Windows Manager aprobadas.",
       "evidence": "docs/design/EXPERIENCIA_FLAGSHIP_R11.md",
       "files": {
         "frontend": [
+          "app/src/main/java/pe/gob/reniec/dnie/DnieApplication.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/MainActivity.kt",
           "app/src/main/java/pe/gob/reniec/dnie/ui/certificates/CertificateValidationPanel.kt",
           "app/src/main/java/pe/gob/reniec/dnie/ui/certificates/CertificatesScreen.kt",
           "app/src/main/java/pe/gob/reniec/dnie/ui/certificates/EmptyCertificatesView.kt",
@@ -974,7 +976,9 @@
           "app/src/main/java/pe/gob/reniec/dnie/ui/signer/PdfPlacementEditor.kt",
           "app/src/main/java/pe/gob/reniec/dnie/ui/signer/SignerControls.kt",
           "app/src/main/java/pe/gob/reniec/dnie/ui/signer/SignerResultActions.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/signer/SignerViewModel.kt",
           "app/src/main/java/pe/gob/reniec/dnie/ui/signer/StampPreviewCard.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/ui/theme/Theme.kt",
           "app/src/main/java/pe/gob/reniec/dnie/ui/vault/VaultAccessPanel.kt",
           "app/src/main/java/pe/gob/reniec/dnie/ui/vault/VaultComponents.kt",
           "app/src/main/java/pe/gob/reniec/dnie/ui/vault/VaultLibraryControls.kt",
@@ -996,9 +1000,16 @@
           "dnie-pdf-desktop/src/main/java/pe/gob/reniec/dnie/pdf/desktop/PrivatePdfWorkspace.kt"
         ],
         "adapter": [
+          "app/src/debug/java/pe/gob/reniec/dnie/diagnostics/RuntimeDiagnostics.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/data/preferences/AndroidMotionPreference.kt",
+          "app/src/main/java/pe/gob/reniec/dnie/data/preferences/AppearancePreferences.kt",
           "dnie-signing-desktop/src/main/java/pe/gob/reniec/dnie/desktop/continuous/WindowsPrivateStore.kt"
         ],
         "test": [
+          "app/src/androidTest/java/pe/gob/reniec/dnie/ui/FlagshipR11FlowAndDiagnosticsTest.kt",
+          "app/src/androidTest/java/pe/gob/reniec/dnie/ui/SuiteSessionPresentationTest.kt",
+          "app/src/androidTest/java/pe/gob/reniec/dnie/ui/identity/IdentityNavigationTest.kt",
+          "app/src/androidTest/java/pe/gob/reniec/dnie/ui/vault/VaultNavigationInstrumentedTest.kt",
           "dnie-signing-ui/src/test/java/pe/gob/reniec/dnie/desktop/ui/DesktopFileSelectionTest.kt"
         ],
         "configuration": [

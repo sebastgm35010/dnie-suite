@@ -76,102 +76,94 @@ fun VaultScreen(state: VaultUiState, onCanChange: (String) -> Unit, onPinChange:
             }) { padding ->
             // Separate scroll state per page; switching does not recreate the vault session.
             val reducedMotion = rememberReducedMotion()
-            val targetPageIndex = VaultPage.entries.indexOf(page)
-            AnimatedContent(
-                targetState = targetPageIndex,
-                transitionSpec = { aetherTabTransition(reducedMotion) },
-                label = "vault_tab_transition"
-            ) { pageIdx ->
-                val currentPage = VaultPage.entries[pageIdx]
-                LazyColumn(Modifier.fillMaxSize().padding(padding).imePadding(),
-                    state = when (currentPage) { VaultPage.FILES -> filesScroll; VaultPage.DNI -> dniScroll
-                        VaultPage.RECOVERY -> recoveryScroll; VaultPage.TOOLS -> toolsScroll },
-                    contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    item("sections") {
-                        pe.gob.reniec.dnie.ui.design.AetherSegmentedTabs(
-                            VaultPage.entries.map { it.title }, VaultPage.entries.indexOf(currentPage),
-                            onSelect = { pageName = VaultPage.entries[it].name }
-                        )
+            LazyColumn(Modifier.fillMaxSize().padding(padding).imePadding(),
+                state = when (page) { VaultPage.FILES -> filesScroll; VaultPage.DNI -> dniScroll
+                    VaultPage.RECOVERY -> recoveryScroll; VaultPage.TOOLS -> toolsScroll },
+                contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                item("sections") {
+                    pe.gob.reniec.dnie.ui.design.AetherSegmentedTabs(
+                        VaultPage.entries.map { it.title }, VaultPage.entries.indexOf(page),
+                        onSelect = { pageName = VaultPage.entries[it].name }
+                    )
+                }
+                if (page != VaultPage.FILES) item("return") {
+                    TextButton(onClick = { pageName = VaultPage.FILES.name }) { Text("Mis archivos") }
+                }
+                if (!state.riskAcknowledged) item("risk") {
+                    Card { Column(Modifier.padding(16.dp)) {
+                        Text("Conserva tus originales", style = MaterialTheme.typography.titleMedium)
+                        Text("Renovar el DNI puede sustituir sus claves. Prepara y prueba la recuperación antes del cambio.")
+                        TextButton(onClick = onAcknowledgeRisk, enabled = !busy) { Text("Entendido") }
+                    } }
+                }
+                if (busy || state.message != null) item("status") {
+                    VaultResult(state.running, state.awaitingCard, state.verified, state.message, state.restoredName)
+                    if (busy) TextButton(onClick = onCancel) { Text("Cancelar operación") }
+                }
+                when (page) {
+                    VaultPage.DNI -> item("access") {
+                        VaultAccessPanel(state, onCanChange, onPinChange, onRememberCan, onRun, onStartOpen, onClearSelection, onCancel)
                     }
-                    if (currentPage != VaultPage.FILES) item("return") {
-                        TextButton(onClick = { pageName = VaultPage.FILES.name }) { Text("Mis archivos") }
+                    VaultPage.RECOVERY -> {
+                        item("recovery") { VaultRecoveryControls(state, recovery, onCanChange, onPinChange, onRememberCan, importingVault) }
                     }
-                    if (!state.riskAcknowledged) item("risk") {
-                        Card { Column(Modifier.padding(16.dp)) {
-                            Text("Conserva tus originales", style = MaterialTheme.typography.titleMedium)
-                            Text("Renovar el DNI puede sustituir sus claves. Prepara y prueba la recuperación antes del cambio.")
-                            TextButton(onClick = onAcknowledgeRisk, enabled = !busy) { Text("Entendido") }
-                        } }
-                    }
-                    if (busy || state.message != null) item("status") {
-                        VaultResult(state.running, state.awaitingCard, state.verified, state.message, state.restoredName)
-                        if (busy) TextButton(onClick = onCancel) { Text("Cancelar operación") }
-                    }
-                    when (currentPage) {
-                        VaultPage.DNI -> item("access") {
-                            VaultAccessPanel(state, onCanChange, onPinChange, onRememberCan, onRun, onStartOpen, onClearSelection, onCancel)
+                    VaultPage.TOOLS -> {
+                        item("options") {
+                            TextButton(onClick = { pageName = VaultPage.DNI.name }, enabled = !busy) { Text("Vincular o cambiar DNI") }
+                            Text("Vincular cambia el DNI para nuevos archivos. Para trasladar los anteriores, exporta e importa la bóveda.")
+                            TextButton(onClick = { note = true }, enabled = !busy && state.pairedFingerprint != null) { Text("Nueva nota cifrada") }
                         }
-                        VaultPage.RECOVERY -> {
-                            item("recovery") { VaultRecoveryControls(state, recovery, onCanChange, onPinChange, onRememberCan, importingVault) }
-                        }
-                        VaultPage.TOOLS -> {
-                            item("options") {
-                                TextButton(onClick = { pageName = VaultPage.DNI.name }, enabled = !busy) { Text("Vincular o cambiar DNI") }
-                                Text("Vincular cambia el DNI para nuevos archivos. Para trasladar los anteriores, exporta e importa la bóveda.")
-                                TextButton(onClick = { note = true }, enabled = !busy && state.pairedFingerprint != null) { Text("Nueva nota cifrada") }
-                            }
-                        }
-                        VaultPage.FILES -> {
-                            item("key-status") { VaultKeyStatusBanner(state.pairedFingerprint) { pageName = VaultPage.DNI.name } }
-                            item("add") {
-                                pe.gob.reniec.dnie.ui.design.FeatureSection("Mis archivos") {
-                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        Button(onClick = { importFiles.launch(arrayOf("*/*")) },
-                                            enabled = !busy && state.riskAcknowledged && state.pairedFingerprint != null,
-                                            modifier = Modifier.weight(1f)) { Text("Cifrar archivos") }
-                                        OutlinedButton(onClick = { importChoice = true },
-                                            enabled = !busy && state.riskAcknowledged, modifier = Modifier.weight(1f)) { Text("Importar cifrados") }
-                                    }
-                                    OutlinedButton(onClick = { importingVault = false; pageName = VaultPage.RECOVERY.name },
-                                        enabled = !busy && state.riskAcknowledged && state.allItems > 0,
-                                        modifier = Modifier.fillMaxWidth()) { Text("Exportar bóveda") }
-                                    if (state.pairedFingerprint == null) TextButton(onClick = { pageName = VaultPage.DNI.name }) { Text("Vincular DNI para cifrar") }
-                                }
-                            }
-                            item("search") { VaultLibraryControls(state, library) }
-                            if (state.incomingFiles > 0) item("incoming") {
-                                Text("${state.incomingFiles} archivo(s) recibidos")
-                                TextButton(onClick = library.encryptIncoming, enabled = !busy && state.riskAcknowledged && state.pairedFingerprint != null) { Text("Cifrar recibidos") }
-                                TextButton(onClick = library.dismissIncoming, enabled = !busy) { Text("Descartar") }
-                            }
-                            item("selection") {
+                    }
+                    VaultPage.FILES -> {
+                        item("key-status") { VaultKeyStatusBanner(state.pairedFingerprint) { pageName = VaultPage.DNI.name } }
+                        item("add") {
+                            pe.gob.reniec.dnie.ui.design.FeatureSection("Mis archivos") {
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    TextButton(onClick = { if (selecting) finishSelection() else selecting = true }, enabled = !busy) {
-                                        Text(if (selecting) "Cancelar selección" else "Seleccionar varios")
-                                    }
-                                    if (selecting) TextButton(onClick = { selection = state.items.map { it.id }.toSet() }, enabled = !busy) { Text("Todos los visibles") }
+                                    Button(onClick = { importFiles.launch(arrayOf("*/*")) },
+                                        enabled = !busy && state.riskAcknowledged && state.pairedFingerprint != null,
+                                        modifier = Modifier.weight(1f)) { Text("Cifrar archivos") }
+                                    OutlinedButton(onClick = { importChoice = true },
+                                        enabled = !busy && state.riskAcknowledged, modifier = Modifier.weight(1f)) { Text("Importar cifrados") }
                                 }
-                                if (selecting) {
-                                    Text("${selection.size} seleccionado(s)")
-                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        if (!state.showTrash) TextButton(onClick = { bulkOrganize = true }, enabled = !busy && selection.isNotEmpty() && state.riskAcknowledged) { Text("Organizar") }
-                                        TextButton(onClick = { bulkTrash = true }, enabled = !busy && selection.isNotEmpty() && state.riskAcknowledged) {
-                                            Text(if (state.showTrash) "Restaurar" else "A papelera")
-                                        }
+                                OutlinedButton(onClick = { importingVault = false; pageName = VaultPage.RECOVERY.name },
+                                    enabled = !busy && state.riskAcknowledged && state.allItems > 0,
+                                    modifier = Modifier.fillMaxWidth()) { Text("Exportar bóveda") }
+                                if (state.pairedFingerprint == null) TextButton(onClick = { pageName = VaultPage.DNI.name }) { Text("Vincular DNI para cifrar") }
+                            }
+                        }
+                        item("search") { VaultLibraryControls(state, library) }
+                        if (state.incomingFiles > 0) item("incoming") {
+                            Text("${state.incomingFiles} archivo(s) recibidos")
+                            TextButton(onClick = library.encryptIncoming, enabled = !busy && state.riskAcknowledged && state.pairedFingerprint != null) { Text("Cifrar recibidos") }
+                            TextButton(onClick = library.dismissIncoming, enabled = !busy) { Text("Descartar") }
+                        }
+                        item("selection") {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                TextButton(onClick = { if (selecting) finishSelection() else selecting = true }, enabled = !busy) {
+                                    Text(if (selecting) "Cancelar selección" else "Seleccionar varios")
+                                }
+                                if (selecting) TextButton(onClick = { selection = state.items.map { it.id }.toSet() }, enabled = !busy) { Text("Todos los visibles") }
+                            }
+                            if (selecting) {
+                                Text("${selection.size} seleccionado(s)")
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    if (!state.showTrash) TextButton(onClick = { bulkOrganize = true }, enabled = !busy && selection.isNotEmpty() && state.riskAcknowledged) { Text("Organizar") }
+                                    TextButton(onClick = { bulkTrash = true }, enabled = !busy && selection.isNotEmpty() && state.riskAcknowledged) {
+                                        Text(if (state.showTrash) "Restaurar" else "A papelera")
                                     }
                                 }
                             }
-                            if (state.items.isEmpty()) item("empty") { Text(if (state.showTrash) "No hay archivos en esta vista de papelera." else "No hay archivos en esta vista.") }
-                            items(state.items, key = { it.id }) { item ->
-                                Box(if (reducedMotion) Modifier else Modifier.animateItem()) {
-                                    VaultFileCard(item, !busy && state.riskAcknowledged, state.selectedItemId == item.id,
-                                        onRestore = { pendingOpen = item.id; restore.launch(item.displayName ?: "documento-restaurado") },
-                                        onExport = { pendingExport = item.id; export.launch("${item.displayName ?: item.id}.dnievault") },
-                                        onDelete = { delete = item.id }, onPreview = { library.preview(item.id); pageName = VaultPage.DNI.name },
-                                        onOrganize = { organize = item }, onRecover = { library.recover(item.id) }, onInspect = { library.inspect(item.id) },
-                                        selectionMode = selecting, checked = item.id in selection,
-                                        onToggle = { selection = if (item.id in selection) selection - item.id else selection + item.id })
-                                }
+                        }
+                        if (state.items.isEmpty()) item("empty") { Text(if (state.showTrash) "No hay archivos en esta vista de papelera." else "No hay archivos en esta vista.") }
+                        items(state.items, key = { it.id }) { item ->
+                            Box(if (reducedMotion) Modifier else Modifier.animateItem()) {
+                                VaultFileCard(item, !busy && state.riskAcknowledged, state.selectedItemId == item.id,
+                                    onRestore = { pendingOpen = item.id; restore.launch(item.displayName ?: "documento-restaurado") },
+                                    onExport = { pendingExport = item.id; export.launch("${item.displayName ?: item.id}.dnievault") },
+                                    onDelete = { delete = item.id }, onPreview = { library.preview(item.id); pageName = VaultPage.DNI.name },
+                                    onOrganize = { organize = item }, onRecover = { library.recover(item.id) }, onInspect = { library.inspect(item.id) },
+                                    selectionMode = selecting, checked = item.id in selection,
+                                    onToggle = { selection = if (item.id in selection) selection - item.id else selection + item.id })
                             }
                         }
                     }

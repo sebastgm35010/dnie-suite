@@ -36,7 +36,7 @@ internal fun VaultRecoveryControls(state: VaultUiState, actions: VaultRecoveryAc
     val open = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) {
         if (it != null) selectedUri = it.toString()
     }
-    Column(Modifier.fillMaxWidth().aetherAnimateSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(if (importing) "Importar bóveda" else "Exportar bóveda", style = MaterialTheme.typography.titleLarge)
         if (busy) {
             Text(if (state.awaitingCard) {

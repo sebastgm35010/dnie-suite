@@ -120,21 +120,17 @@ internal fun VaultFileCard(item: VaultItemUi, enabled: Boolean, selected: Boolea
     onPreview: () -> Unit, onOrganize: () -> Unit, onRecover: () -> Unit, onInspect: () -> Unit,
     selectionMode: Boolean = false, checked: Boolean = false, onToggle: () -> Unit = {}) {
     var menu by remember { mutableStateOf(false) }
-    val reducedMotion = rememberReducedMotion()
+    val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     Card(
-        modifier = Modifier.aetherAnimateSize(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = VaultSurface)
     ) {
         Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                androidx.compose.animation.Crossfade(
-                    targetState = selectionMode,
-                    animationSpec = aetherSpring(reducedMotion),
-                    label = "vault_select_mode"
-                ) { isSelect ->
-                    if (isSelect) Checkbox(checked = checked, onCheckedChange = { onToggle() }, enabled = enabled)
-                    else Surface(shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
+                if (selectionMode) {
+                    Checkbox(checked = checked, onCheckedChange = { onToggle() }, enabled = enabled)
+                } else {
+                    Surface(shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
                         Icon(vaultFileIcon(item.displayName), null, tint = VaultAccent, modifier = Modifier.padding(10.dp).size(22.dp))
                     }
                 }
@@ -167,7 +163,8 @@ internal fun VaultFileCard(item: VaultItemUi, enabled: Boolean, selected: Boolea
             if (!selectionMode) FilledTonalButton(
                 onClick = if (item.trashed) onRecover else onRestore,
                 enabled = enabled,
-                modifier = Modifier.align(Alignment.End).aetherPressScale(enabled)
+                interactionSource = interactionSource,
+                modifier = Modifier.align(Alignment.End).aetherPressScale(interactionSource)
             ) { Text(if (item.trashed) "Restaurar" else "Descifrar") }
         }
     }

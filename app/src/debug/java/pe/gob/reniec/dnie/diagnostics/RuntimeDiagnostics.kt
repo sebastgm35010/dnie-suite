@@ -24,6 +24,7 @@ internal object RuntimeDiagnostics {
         if (Build.VERSION.SDK_INT >= 28) {
             StrictMode.setThreadPolicy(StrictMode.ThreadPolicy.Builder().detectDiskReads().detectDiskWrites().detectNetwork()
                 .penaltyListener({ task -> background.post(task) }) { violation ->
+                    if (violation.stackTrace.none { it.className.startsWith("pe.gob.reniec.dnie") }) return@penaltyListener
                     DiagnosticLog.event("performance", "main_thread_io", "layer" to "adapter",
                         "exception" to violation.javaClass.simpleName, "frames" to frames(violation.stackTrace))
                 }.build())

@@ -28,10 +28,10 @@ fun <T> aetherSpring(reduced: Boolean, stiffness: Float = 380f, damping: Float =
     if (reduced) snap() else spring(stiffness = stiffness, dampingRatio = damping)
 
 fun AnimatedContentTransitionScope<Int>.aetherTabTransition(reduced: Boolean): ContentTransform =
-    if (reduced) EnterTransition.None.togetherWith(ExitTransition.None).using(SizeTransform(sizeAnimationSpec = { _, _ -> snap() }))
+    if (reduced) EnterTransition.None.togetherWith(ExitTransition.None).using(SizeTransform(clip = false, sizeAnimationSpec = { _, _ -> snap() }))
     else (slideInHorizontally(aetherSpring(false)) { if (targetState > initialState) it / 6 else -it / 6 } + fadeIn(tween(140)))
         .togetherWith(slideOutHorizontally(aetherSpring(false)) { if (targetState > initialState) -it / 6 else it / 6 } + fadeOut(tween(100)))
-        .using(SizeTransform(sizeAnimationSpec = { _, _ -> aetherSpring(false) }))
+        .using(SizeTransform(clip = false, sizeAnimationSpec = { _, _ -> snap() }))
 
 fun <S> AnimatedContentTransitionScope<S>.aetherContentTransition(reduced: Boolean, completed: Boolean = false): ContentTransform =
     if (reduced) EnterTransition.None.togetherWith(ExitTransition.None).using(SizeTransform(sizeAnimationSpec = { _, _ -> snap() }))
@@ -49,29 +49,7 @@ fun Modifier.aetherPressScale(source: MutableInteractionSource): Modifier {
     return graphicsLayer { scaleX = scale.value; scaleY = scale.value }
 }
 
-fun Modifier.aetherPressScale(enabled: Boolean = true): Modifier = composed {
-    if (!enabled) return@composed this
-    val reduced = rememberReducedMotion()
-    if (reduced) return@composed this
-    var isPressed by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) .98f else 1f,
-        animationSpec = aetherSpring(reduced, 500f),
-        label = "aether-press-standalone"
-    )
-    this
-        .pointerInput(Unit) {
-            awaitPointerEventScope {
-                while (true) {
-                    awaitFirstDown(requireUnconsumed = false)
-                    isPressed = true
-                    waitForUpOrCancellation()
-                    isPressed = false
-                }
-            }
-        }
-        .graphicsLayer { scaleX = scale; scaleY = scale }
-}
+fun Modifier.aetherPressScale(enabled: Boolean = true): Modifier = this
 
 fun Modifier.aetherAnimateSize(): Modifier = composed {
     val reduced = rememberReducedMotion()

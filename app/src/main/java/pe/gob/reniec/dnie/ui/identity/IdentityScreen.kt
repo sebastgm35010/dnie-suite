@@ -188,8 +188,11 @@ internal fun IdentityImage(image: IcaoImage, modifier: Modifier = Modifier.fillM
     ) { state ->
         val bitmap = state?.bitmap
         when {
-            bitmap != null -> Image(bitmap.asImageBitmap(), contentDescription = "Imagen del documento",
-                modifier = modifier, contentScale = ContentScale.Fit)
+            bitmap != null -> {
+                val imageBitmap = remember(bitmap) { bitmap.asImageBitmap() }
+                Image(imageBitmap, contentDescription = "Imagen del documento",
+                    modifier = modifier, contentScale = ContentScale.Fit)
+            }
             state?.error != null -> Text("Imagen leída; ${state.error}. Puede guardar el original.")
             else -> Text("Preparando imagen…")
         }

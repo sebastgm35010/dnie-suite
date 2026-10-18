@@ -164,7 +164,7 @@ fun CertificatesScreen(
                         androidx.compose.animation.AnimatedContent(
                             targetState = state.selectedType to activeCert,
                             transitionSpec = { aetherContentTransition(reduced) },
-                            modifier = Modifier.fillMaxWidth().aetherAnimateSize(),
+                            modifier = Modifier.fillMaxWidth(),
                             label = "cert_tab_transition"
                         ) { (selectedType, cert) ->
                             if (cert != null) {

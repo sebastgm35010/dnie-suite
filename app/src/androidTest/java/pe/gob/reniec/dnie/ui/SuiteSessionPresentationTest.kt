@@ -19,7 +19,7 @@ class SuiteSessionPresentationTest {
                 onConnect = { state.value = state.value.copy(sessionVisible = true, busy = true) },
                 onForget = {}, onStop = { state.value = state.value.copy(sessionVisible = false, busy = false) }, onBack = {})
         } }
-        rule.onNodeWithText("Conectar PC guardada").performScrollTo().performClick()
+        rule.onNodeWithText("Conectar PC guardada").performClick()
         rule.onNodeWithTag("suite_session").assertExists()
         rule.onNodeWithText("CAN del DNI").assertDoesNotExist()
         rule.onAllNodes(hasClickAction()).assertCountEquals(1)
@@ -28,7 +28,7 @@ class SuiteSessionPresentationTest {
         rule.onNodeWithText("PC 192.168.20.8 · conexión privada").assertExists()
         rule.onNodeWithText("Detener sesión").performClick()
         rule.onNodeWithTag("suite_session").assertDoesNotExist()
-        rule.onNodeWithText("CAN del DNI").assertExists()
+        rule.onNodeWithText("••••56", substring = true).assertExists()
     }
     @Test fun suiteShowsPcBeforeDniAndRetainsOneStopActionOnFailure() {
         val state = mutableStateOf(RemoteSigningState(sessionVisible = true, busy = true))

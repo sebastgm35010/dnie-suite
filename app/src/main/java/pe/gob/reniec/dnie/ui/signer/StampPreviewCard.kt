@@ -45,7 +45,7 @@ internal fun StampPreviewCard(width: Float,height: Float,name: String,dni: Strin
         finally { preparing=false }
     }
     val reduced = rememberReducedMotion()
-    AetherCard(Modifier.fillMaxWidth().aetherAnimateSize()) {
+    AetherCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Vista previa del sello", style = MaterialTheme.typography.labelLarge)
             val grid = androidx.compose.ui.graphics.Color(0xFFDCE9FF).copy(alpha = .55f)
@@ -61,7 +61,8 @@ internal fun StampPreviewCard(width: Float,height: Float,name: String,dni: Strin
                     label = "stamp_preview_crossfade"
                 ) { (currentBitmap, hasError) ->
                     if (currentBitmap != null) {
-                        Image(currentBitmap.asImageBitmap(), "Vista previa del sello configurado", Modifier.fillMaxSize().padding(8.dp), contentScale = ContentScale.Fit)
+                        val imageBitmap = remember(currentBitmap) { currentBitmap.asImageBitmap() }
+                        Image(imageBitmap, "Vista previa del sello configurado", Modifier.fillMaxSize().padding(8.dp), contentScale = ContentScale.Fit)
                     } else if (!hasError) {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             Text("Preparando sello…", style = MaterialTheme.typography.bodySmall, color = androidx.compose.ui.graphics.Color(0xFF434655))

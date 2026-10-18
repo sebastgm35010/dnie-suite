@@ -39,7 +39,7 @@ class VaultNavigationInstrumentedTest {
         click("Importar cifrados"); click("Bóveda completa (.dniebackup)")
         compose.onNodeWithText("Elegir respaldo").assertExists()
         compose.onNodeWithContentDescription("Volver").performClick()
-        compose.onNodeWithContentDescription("Opciones de bóveda").performClick(); click("Vincular o cambiar DNI"); compose.onNodeWithText("CAN").assertExists()
+        compose.onNodeWithContentDescription("Opciones de bóveda").performClick(); click("Vincular o cambiar DNI"); compose.onNodeWithText("PIN del DNI").assertExists()
         compose.onNodeWithContentDescription("Volver").performClick(); compose.onNodeWithText("2 seleccionado(s)").assertExists()
         click("A papelera"); click("Continuar")
         compose.runOnIdle {

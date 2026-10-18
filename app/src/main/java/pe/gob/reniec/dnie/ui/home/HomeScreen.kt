@@ -8,7 +8,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
@@ -48,10 +50,11 @@ fun HomeScreen(summary: HomeSummary, onRead: () -> Unit, onIdentity: () -> Unit,
                         }
                         Text(if (summary.reading) "Lectura en curso" else if (loaded) "Datos cargados en sesión" else "Tu DNIe en tu teléfono", style = MaterialTheme.typography.titleLarge)
                         Text(if (loaded) "${summary.certificates} certificados · " + if (summary.identityAvailable) "identidad disponible" else "identidad sin lectura" else "Identidad y certificados en una sola lectura.")
+                        val heroButtonInteraction = remember { MutableInteractionSource() }
                         if (loaded) {
-                            Button(onClick = onCertificates, modifier = Modifier.fillMaxWidth().aetherPressScale()) { Text("Ver mi DNIe") }
+                            Button(onClick = onCertificates, interactionSource = heroButtonInteraction, modifier = Modifier.fillMaxWidth().aetherPressScale(heroButtonInteraction)) { Text("Ver mi DNIe") }
                             TextButton(enabled = !summary.reading, onClick = onRead) { Text("Actualizar lectura") }
-                        } else Button(enabled = !summary.reading, onClick = onRead, modifier = Modifier.fillMaxWidth().aetherPressScale(!summary.reading)) { Text("Leer mi DNIe") }
+                        } else Button(enabled = !summary.reading, onClick = onRead, interactionSource = heroButtonInteraction, modifier = Modifier.fillMaxWidth().aetherPressScale(heroButtonInteraction)) { Text("Leer mi DNIe") }
                         Text(if (savedCan) "CAN recordado en este teléfono" else "Necesitas el CAN impreso en tu DNIe", style = MaterialTheme.typography.bodySmall)
                     }
                 }
@@ -85,7 +88,8 @@ fun HomeScreen(summary: HomeSummary, onRead: () -> Unit, onIdentity: () -> Unit,
         }
         if (loaded) item(key = "home_identity_shortcut") {
             Box(if (reducedMotion) Modifier else Modifier.animateItem()) {
-                OutlinedCard(onClick = onIdentity, modifier = Modifier.fillMaxWidth().aetherPressScale()) {
+                val identityInteraction = remember { MutableInteractionSource() }
+                OutlinedCard(onClick = onIdentity, interactionSource = identityInteraction, modifier = Modifier.fillMaxWidth().aetherPressScale(identityInteraction)) {
                     Column(Modifier.padding(16.dp)) {
                         Text("Identidad y certificados", style = MaterialTheme.typography.titleMedium)
                         Text("Resultados de la última lectura; no indican conexión actual.", style = MaterialTheme.typography.bodySmall)

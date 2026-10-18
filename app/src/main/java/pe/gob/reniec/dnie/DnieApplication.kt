@@ -3,6 +3,7 @@ package pe.gob.reniec.dnie
 import android.app.Application
 import android.util.Log
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
+import kotlinx.coroutines.launch
 import pe.gob.reniec.dnie.crypto.CryptoProviderInitializer
 
 /**
@@ -37,10 +38,12 @@ class DnieApplication : Application() {
         pe.gob.reniec.dnie.data.migrations.RemovedFeatureMigration.schedule(this)
         pe.gob.reniec.dnie.core.logging.ApduLogger.configureDefault(BuildConfig.DEBUG)
         pe.gob.reniec.dnie.diagnostics.AppDiagnostics.initialize(this)
-        pe.gob.reniec.dnie.data.vault.VaultPreviewFiles(this).clear()
-        // Remove plaintext left by process death before any vault screen is opened.
-        java.io.File(cacheDir, "vault-private").listFiles()
-            ?.filter { it.isFile && it.name.endsWith(".plain") }?.forEach { it.delete() }
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO).launch {
+            pe.gob.reniec.dnie.data.vault.VaultPreviewFiles(this@DnieApplication).clear()
+            // Remove plaintext left by process death before any vault screen is opened.
+            java.io.File(cacheDir, "vault-private").listFiles()
+                ?.filter { it.isFile && it.name.endsWith(".plain") }?.forEach { it.delete() }
+        }
 
         try {
             // Inicializar cargador de recursos y fuentes de PDFBox Android

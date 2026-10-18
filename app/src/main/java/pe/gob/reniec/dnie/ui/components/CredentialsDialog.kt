@@ -9,8 +9,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -50,7 +52,7 @@ fun CredentialDigitsIndicator(length: Int, minTarget: Int = 4, maxTarget: Int = 
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
         repeat(count) { index ->
             val filled = index < length
-            val scale by androidx.compose.animation.core.animateFloatAsState(
+            val scaleState = androidx.compose.animation.core.animateFloatAsState(
                 targetValue = if (filled) 1f else .82f,
                 animationSpec = pe.gob.reniec.dnie.ui.design.aetherSpring(reduced),
                 label = "credential_digit_scale"
@@ -60,15 +62,21 @@ fun CredentialDigitsIndicator(length: Int, minTarget: Int = 4, maxTarget: Int = 
                 length >= completeAt -> MaterialTheme.colorScheme.secondary
                 else -> MaterialTheme.colorScheme.primary
             }
-            val color by androidx.compose.animation.animateColorAsState(
+            val colorState = androidx.compose.animation.animateColorAsState(
                 targetValue = targetColor,
                 animationSpec = pe.gob.reniec.dnie.ui.design.aetherSpring(reduced),
                 label = "credential_digit_color"
             )
-            Surface(
-                modifier = Modifier.size(width = 22.dp, height = 6.dp)
-                    .graphicsLayer { scaleX = scale; scaleY = scale },
-                color = color, shape = MaterialTheme.shapes.extraSmall, content = {}
+            Box(
+                Modifier
+                    .size(width = 22.dp, height = 6.dp)
+                    .graphicsLayer { scaleX = scaleState.value; scaleY = scaleState.value }
+                    .drawBehind {
+                        drawRoundRect(
+                            color = colorState.value,
+                            cornerRadius = CornerRadius(3.dp.toPx())
+                        )
+                    }
             )
         }
     }
@@ -103,7 +111,7 @@ fun CredentialsForm(subtitle: String? = null, requireCan: Boolean = true, requir
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         subtitle?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
         if (requireCan) {
-            Box(Modifier.fillMaxWidth().aetherAnimateSize()) {
+            Box(Modifier.fillMaxWidth()) {
                 if (!editingCan) SavedCanChip(can, saved = remembered) { editingCan = true }
                 else {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {

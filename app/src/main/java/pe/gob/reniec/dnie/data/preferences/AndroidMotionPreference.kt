@@ -13,6 +13,9 @@ import kotlinx.coroutines.flow.*
 class AndroidMotionPreference(context: Context) {
     private val resolver = context.applicationContext.contentResolver
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val initialReduced = if (android.os.Build.VERSION.SDK_INT >= 26) {
+        !android.animation.ValueAnimator.areAnimatorsEnabled()
+    } else false
     val reduced: StateFlow<Boolean> = callbackFlow {
         val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
             override fun onChange(selfChange: Boolean) { trySend(Unit) }
@@ -22,6 +25,6 @@ class AndroidMotionPreference(context: Context) {
         awaitClose { resolver.unregisterContentObserver(observer) }
     }.conflate().map {
         runCatching { val scale = Settings.Global.getFloat(resolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f)
-            !scale.isFinite() || scale <= 0f }.getOrDefault(true)
-    }.distinctUntilChanged().flowOn(Dispatchers.IO).stateIn(scope, SharingStarted.WhileSubscribed(5000), true)
+            !scale.isFinite() || scale <= 0f }.getOrDefault(initialReduced)
+    }.distinctUntilChanged().flowOn(Dispatchers.IO).stateIn(scope, SharingStarted.WhileSubscribed(5000), initialReduced)
 }

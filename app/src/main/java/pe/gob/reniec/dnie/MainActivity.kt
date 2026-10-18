@@ -86,23 +86,6 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                var fingerprint="<not-observed>"
-                certificatesViewModel.uiState.collect {state->
-                    if(state is pe.gob.reniec.dnie.ui.certificates.CertificatesUiState.Loaded) {
-                        val certificate=state.certificates[pe.gob.reniec.dnie.domain.model.CertificateType.SIGNATURE]
-                        val next=certificate?.sha256FingerprintHex.orEmpty()
-                        if(next!=fingerprint) {
-                            fingerprint=next
-                            signerViewModel.setPublicCertificate(certificate?.rawDerBytes)
-                            batchSignerViewModel.setPublicCertificate(certificate?.rawDerBytes)
-                        }
-                    }
-                }
-            }
-        }
-
         // Escucha reactiva de tags NFC descubiertos
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.RESUMED) {

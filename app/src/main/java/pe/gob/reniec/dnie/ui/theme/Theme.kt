@@ -125,9 +125,6 @@ fun DnieTheme(
         colorScheme = colorScheme,
         typography = Typography,
         shapes = Shapes(small = RoundedCornerShape(8.dp), medium = RoundedCornerShape(12.dp), large = RoundedCornerShape(16.dp)),
-        content = {
-            if (mode != null || darkTheme != null || view.isInEditMode) content()
-            else androidx.compose.material3.Surface(modifier = androidx.compose.ui.Modifier.fillMaxSize()) {}
-        }
+        content = content
     )
 }

@@ -70,11 +70,13 @@ fun PdfPlacementEditor(document: SigningDocument, name: String, dni: String, opt
     var snapGuides by remember(document.id) { mutableStateOf<StampPlacementGeometry.Snap?>(null) }
     val reduced = rememberReducedMotion()
     val hasGuides = snapGuides != null && (snapGuides?.vertical != null || snapGuides?.horizontal != null)
-    val guideAlpha by androidx.compose.animation.core.animateFloatAsState(
+    val guideAlpha = androidx.compose.animation.core.animateFloatAsState(
         targetValue = if (hasGuides) .75f else 0f,
         animationSpec = aetherSpring(reduced),
         label = "snap_guide_alpha"
     )
+    val pageImageBitmap = remember(pageBitmap) { pageBitmap?.asImageBitmap() }
+    val stampImageBitmap = remember(stamp) { stamp?.asImageBitmap() }
     fun applySnap(next: NormalizedStampPlacement) {
         val snapped = StampPlacementGeometry.snap(next)
         snapGuides = snapped
@@ -111,9 +113,10 @@ fun PdfPlacementEditor(document: SigningDocument, name: String, dni: String, opt
                     Box(Modifier.width(fitWidth).aspectRatio(ratio).background(Color.White).border(1.dp, Color.LightGray)
                         .onSizeChanged { size = it }
                         .drawBehind {
-                            if (guideAlpha > 0.01f) {
+                            val alpha = guideAlpha.value
+                            if (alpha > 0.01f) {
                                 val guides = snapGuides
-                                val guideColor = Color(0xFF004AC6).copy(alpha = guideAlpha)
+                                val guideColor = Color(0xFF004AC6).copy(alpha = alpha)
                                 guides?.vertical?.let { x -> drawLine(guideColor, Offset(x * size.width, 0f), Offset(x * size.width, size.height.toFloat()), 1.dp.toPx()) }
                                 guides?.horizontal?.let { y -> drawLine(guideColor, Offset(0f, y * size.height), Offset(size.width.toFloat(), y * size.height), 1.dp.toPx()) }
                             }
@@ -129,7 +132,7 @@ fun PdfPlacementEditor(document: SigningDocument, name: String, dni: String, opt
                                 }
                             }
                         }) {
-                        pageBitmap?.let { Image(it.asImageBitmap(), "Página del documento", Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds) }
+                        pageImageBitmap?.let { Image(it, "Página del documento", Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds) }
                         if (pageBitmap == null) Text(error ?: "Preparando página…", color = Color.DarkGray, modifier = Modifier.padding(16.dp))
                         val p = draft.placement
                         Box(Modifier.offset { IntOffset((p.left * size.width).roundToInt(), (p.top * size.height).roundToInt()) }
@@ -144,7 +147,7 @@ fun PdfPlacementEditor(document: SigningDocument, name: String, dni: String, opt
                                     }
                                 }
                             }) {
-                            stamp?.let { Image(it.asImageBitmap(), "Vista previa de la firma", Modifier.fillMaxSize(),
+                            stampImageBitmap?.let { Image(it, "Vista previa de la firma", Modifier.fillMaxSize(),
                                 contentScale = if (draft.appearance.style == StampStyle.HANDWRITTEN_ONLY) ContentScale.Fit else ContentScale.FillBounds) }
                         }
                         fun resize(delta: Offset, width: Boolean, height: Boolean) {
@@ -167,7 +170,7 @@ fun PdfPlacementEditor(document: SigningDocument, name: String, dni: String, opt
                     }
                 }
                 Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
-                    Column(Modifier.fillMaxWidth().aetherAnimateSize().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.primaryContainer) {
                             Text("Ancho ${(draft.placement.width * 100).toInt()}% · Alto ${(draft.placement.height * 100).toInt()}% · Página ${draft.pageNumber}", Modifier.padding(8.dp), style = MaterialTheme.typography.labelMedium)
                         }
