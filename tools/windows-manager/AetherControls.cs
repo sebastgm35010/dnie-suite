@@ -53,14 +53,15 @@ internal sealed class AetherButton : Button {
     public bool PrimaryAction {get;set;}
     public bool ThemeAction {get;set;}
     private float hoverAmount,hoverFrom,hoverTarget;
+    private float pressAmount;
     private long hoverStarted;
     private readonly System.Windows.Forms.Timer hoverTimer=new(){Interval=16};
     private void HoverTo(float target){hoverTarget=target;hoverFrom=hoverAmount;hoverStarted=System.Diagnostics.Stopwatch.GetTimestamp();
         if(!Visible || !Enabled || !SystemInformation.IsMenuAnimationEnabled){hoverAmount=target;hoverTimer.Stop();Invalidate();return;}hoverTimer.Start();}
     internal bool HoverAnimating=>hoverTimer.Enabled;
     protected override void Dispose(bool disposing){if(disposing){hoverTimer.Stop();hoverTimer.Dispose();}base.Dispose(disposing);}
-    protected override void OnVisibleChanged(EventArgs e){base.OnVisibleChanged(e);if(!Visible){hoverTimer.Stop();hoverAmount=hoverTarget;}}
-    protected override void OnEnabledChanged(EventArgs e){base.OnEnabledChanged(e);if(!Enabled)HoverTo(0);}
+    protected override void OnVisibleChanged(EventArgs e){base.OnVisibleChanged(e);if(!Visible){hoverTimer.Stop();hoverAmount=hoverTarget;pressAmount=0;}}
+    protected override void OnEnabledChanged(EventArgs e){base.OnEnabledChanged(e);if(!Enabled){HoverTo(0);pressAmount=0;}}
 
     private bool selectedSegment;
     public bool IsSelectedSegment {get=>selectedSegment;set{if(selectedSegment==value)return;selectedSegment=value;Invalidate();}}
@@ -68,16 +69,35 @@ internal sealed class AetherButton : Button {
         hoverTimer.Tick+=(_,_)=>{float t=Math.Clamp((float)System.Diagnostics.Stopwatch.GetElapsedTime(hoverStarted).TotalMilliseconds/140f,0,1);float ease=t*t*(3-2*t);hoverAmount=hoverFrom+(hoverTarget-hoverFrom)*ease;Invalidate();if(t>=1)hoverTimer.Stop();};
         SetStyle(ControlStyles.UserPaint|ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer|ControlStyles.ResizeRedraw,true);}
     protected override void OnMouseEnter(EventArgs e){HoverTo(1);base.OnMouseEnter(e);}
-    protected override void OnMouseLeave(EventArgs e){HoverTo(0);base.OnMouseLeave(e);}
+    protected override void OnMouseLeave(EventArgs e){HoverTo(0);pressAmount=0;base.OnMouseLeave(e);}
+    protected override void OnMouseDown(MouseEventArgs mevent){base.OnMouseDown(mevent);if(Enabled){pressAmount=1f;Invalidate();}}
+    protected override void OnMouseUp(MouseEventArgs mevent){base.OnMouseUp(mevent);if(pressAmount>0f){pressAmount=0f;Invalidate();}}
     protected override void OnPaintBackground(PaintEventArgs e){e.Graphics.Clear(Aether.SurfaceBehind(this));}
     protected override void OnPaint(PaintEventArgs e){
         var g=e.Graphics;g.Clear(Aether.SurfaceBehind(this));g.SmoothingMode=SmoothingMode.AntiAlias;g.PixelOffsetMode=PixelOffsetMode.HighQuality;
         if(Width<3 || Height<3)return;
-        using var path=Aether.Rounded(new RectangleF(.5f,.5f,Width-1,Height-1),7);
-        var color=Enabled||IsSelectedSegment?BackColor:Aether.Container;if(Enabled){var light=ControlPaint.Light(color,.1f);color=Color.FromArgb((int)(color.R+(light.R-color.R)*hoverAmount),(int)(color.G+(light.G-color.G)*hoverAmount),(int)(color.B+(light.B-color.B)*hoverAmount));}
+        if(pressAmount>0f && SystemInformation.IsMenuAnimationEnabled && Width>10 && Height>10){
+            float cx=Width/2f,cy=Height/2f;
+            g.TranslateTransform(cx,cy);
+            g.ScaleTransform(0.985f,0.985f);
+            g.TranslateTransform(-cx,-cy);
+        }
+        using var path=Aether.Rounded(new RectangleF(.5f,.5f,Width-1,Height-1),10);
+        var color=Enabled||IsSelectedSegment?BackColor:Aether.Container;
+        if(Enabled){
+            var light=ControlPaint.Light(color,.1f);
+            color=Color.FromArgb((int)(color.R+(light.R-color.R)*hoverAmount),(int)(color.G+(light.G-color.G)*hoverAmount),(int)(color.B+(light.B-color.B)*hoverAmount));
+            if(pressAmount>0f)color=ControlPaint.Dark(color,.08f);
+        }
         using var fill=new SolidBrush(color);g.FillPath(fill,path);
         if(PrimaryAction && Enabled && hoverAmount>0){using var ring=new Pen(Color.FromArgb((int)(100*hoverAmount),Aether.PrimaryText),1.2f);g.DrawPath(ring,path);}
-        if(Focused){using var border=new Pen(Aether.Primary,1.5f);g.DrawPath(border,path);}
+        if(Focused){
+            using var halo=new Pen(Color.FromArgb(60,Aether.Primary),2.5f);
+            using var haloPath=Aether.Rounded(new RectangleF(.5f,.5f,Width-1,Height-1),11);
+            g.DrawPath(halo,haloPath);
+            using var border=new Pen(Aether.Primary,1.5f);
+            g.DrawPath(border,path);
+        }
         if(ThemeAction){using var icon=new Pen(Aether.Primary,1.5f);float y=Height/2f-7;
             if(Aether.Dark){g.DrawEllipse(icon,13,y+3,8,8);g.DrawLine(icon,17,y-1,17,y+1);g.DrawLine(icon,17,y+13,17,y+15);g.DrawLine(icon,9,y+7,11,y+7);g.DrawLine(icon,23,y+7,25,y+7);}
             else {g.DrawArc(icon,11,y,13,14,70,260);g.DrawArc(icon,16,y-2,10,12,150,160);}}
@@ -97,15 +117,51 @@ internal sealed class AetherCard : Panel {
 internal enum HealthTone { Idle, Waiting, Good, Error, Ready }
 internal sealed class HealthCard : System.Windows.Forms.Control {
     private string heading="",detail="";private HealthTone tone;
-    public HealthCard(){DoubleBuffered=true;BackColor=Aether.Background;MinimumSize=new Size(180,104);Height=112;}
-    public void ShowState(string title,string value,HealthTone state){if(heading==title && detail==value && tone==state)return;heading=title;detail=value;tone=state;AccessibleName=title;AccessibleDescription=value;Invalidate();}
+    private readonly System.Windows.Forms.Timer toneTimer=new(){Interval=16};
+    private float toneProgress=1f;
+    private Color fromToneColor,targetToneColor;
+    private long toneStarted;
+    private Color ColorForTone(HealthTone t)=>t switch {
+        HealthTone.Good=>Aether.Success,HealthTone.Waiting=>Aether.Amber,HealthTone.Error=>Aether.Error,HealthTone.Ready=>Aether.Primary,_=>Aether.Border
+    };
+    private Color CurrentToneColor()=>toneProgress>=1f?targetToneColor:Color.FromArgb(
+        (int)(fromToneColor.R+(targetToneColor.R-fromToneColor.R)*toneProgress),
+        (int)(fromToneColor.G+(targetToneColor.G-fromToneColor.G)*toneProgress),
+        (int)(fromToneColor.B+(targetToneColor.B-fromToneColor.B)*toneProgress));
+    public HealthCard(){
+        DoubleBuffered=true;BackColor=Aether.Background;MinimumSize=new Size(180,104);Height=112;
+        targetToneColor=Aether.Border;fromToneColor=Aether.Border;
+        toneTimer.Tick+=(_,_)=>{
+            float t=Math.Clamp((float)System.Diagnostics.Stopwatch.GetElapsedTime(toneStarted).TotalMilliseconds/140f,0,1);
+            float ease=t*t*(3-2*t);
+            toneProgress=ease;Invalidate();
+            if(t>=1)toneTimer.Stop();
+        };
+    }
+    protected override void Dispose(bool disposing){if(disposing){toneTimer.Stop();toneTimer.Dispose();}base.Dispose(disposing);}
+    protected override void OnVisibleChanged(EventArgs e){base.OnVisibleChanged(e);if(!Visible){toneTimer.Stop();toneProgress=1f;}}
+    public void ShowState(string title,string value,HealthTone state){
+        if(heading==title && detail==value && tone==state)return;
+        heading=title;detail=value;
+        AccessibleName=title;AccessibleDescription=value;
+        Color prev=ColorForTone(tone);
+        tone=state;
+        Color next=ColorForTone(tone);
+        if(prev!=next && Visible && SystemInformation.IsMenuAnimationEnabled){
+            fromToneColor=CurrentToneColor();targetToneColor=next;toneProgress=0f;toneStarted=System.Diagnostics.Stopwatch.GetTimestamp();toneTimer.Start();
+        } else {
+            fromToneColor=next;targetToneColor=next;toneProgress=1f;toneTimer.Stop();
+        }
+        Invalidate();
+    }
     protected override void OnPaint(PaintEventArgs e) {
         base.OnPaint(e);var g=e.Graphics;g.Clear(Aether.SurfaceBehind(this));if(Width<3 || Height<3)return;g.SmoothingMode=SmoothingMode.AntiAlias;
         using var path=Aether.Rounded(new RectangleF(.5f,.5f,Width-1,Height-1),14);using var white=new SolidBrush(Aether.Surface);
         using var border=new Pen(Aether.Border);g.FillPath(white,path);g.DrawPath(border,path);
+        using(var topGlow=new Pen(Color.FromArgb(Aether.Dark?16:90,Color.White),1f))g.DrawLine(topGlow,16,2,Width-16,2);
         using var titleFont=new Font("Segoe UI",10);using var valueFont=new Font("Segoe UI",11,FontStyle.Bold);
         var flags=TextFormatFlags.WordBreak|TextFormatFlags.EndEllipsis|TextFormatFlags.NoPadding;
-        var color=tone switch {HealthTone.Good=>Aether.Success,HealthTone.Waiting=>Aether.Amber,HealthTone.Error=>Aether.Error,HealthTone.Ready=>Aether.Primary,_=>Aether.Border};
+        var color=CurrentToneColor();
         using(var accent=new SolidBrush(color))g.FillRectangle(accent,14,1,Width-28,3);
         using(var medal=Aether.Rounded(new RectangleF(15,17,34,34),10))using(var tint=new SolidBrush(Color.FromArgb(28,color)))g.FillPath(tint,medal);
         using(var icon=new Pen(tone==HealthTone.Idle?Aether.Muted:color,1.5f)){
@@ -116,24 +172,48 @@ internal sealed class HealthCard : System.Windows.Forms.Control {
         TextRenderer.DrawText(g,heading,titleFont,new Rectangle(58,20,Width-72,28),Aether.Muted,flags);
         using(var pill=Aether.Rounded(new RectangleF(15,61,Width-30,Height-74),8))using(var tint=new SolidBrush(Color.FromArgb(18,color)))g.FillPath(tint,pill);
         TextRenderer.DrawText(g,detail,valueFont,new Rectangle(24,65,Width-48,Height-78),Aether.Text,flags);
-
     }
 }
 
 /** Keeps native input/keyboard/accessibility behavior inside a painted frame. */
 internal sealed class AetherInputBox : Panel {
     private readonly System.Windows.Forms.Control input;
+    private float focusAmount,focusFrom,focusTarget;
+    private long focusStarted;
+    private readonly System.Windows.Forms.Timer focusTimer=new(){Interval=16};
+    private void FocusTo(float target){focusTarget=target;focusFrom=focusAmount;focusStarted=System.Diagnostics.Stopwatch.GetTimestamp();
+        if(!Visible || !SystemInformation.IsMenuAnimationEnabled){focusAmount=target;focusTimer.Stop();Invalidate();return;}focusTimer.Start();}
+    protected override void Dispose(bool disposing){if(disposing){focusTimer.Stop();focusTimer.Dispose();}base.Dispose(disposing);}
     public AetherInputBox(System.Windows.Forms.Control field) {
         input=field;DoubleBuffered=true;BackColor=Aether.Surface;Height=42;MinimumSize=new Size(80,42);
         Padding=new Padding(10,7,10,6);field.Dock=DockStyle.Fill;field.BackColor=Aether.Surface;field.ForeColor=Aether.Text;
         field.Font=new Font("Segoe UI",10.5f);if(field is TextBox text)text.BorderStyle=BorderStyle.None;
         if(field is ComboBox combo)combo.FlatStyle=FlatStyle.Flat;
-        field.GotFocus+=(_,_)=>Invalidate();field.LostFocus+=(_,_)=>Invalidate();Controls.Add(field);
+        focusTimer.Tick+=(_,_)=>{float t=Math.Clamp((float)System.Diagnostics.Stopwatch.GetElapsedTime(focusStarted).TotalMilliseconds/140f,0,1);float ease=t*t*(3-2*t);focusAmount=focusFrom+(focusTarget-focusFrom)*ease;Invalidate();if(t>=1)focusTimer.Stop();};
+        field.GotFocus+=(_,_)=>FocusTo(1f);field.LostFocus+=(_,_)=>FocusTo(0f);Controls.Add(field);
     }
     protected override void OnPaint(PaintEventArgs e) {
         base.OnPaint(e);e.Graphics.SmoothingMode=SmoothingMode.AntiAlias;
         if(Width<3 || Height<3)return;
         using var path=Aether.Rounded(new RectangleF(.5f,.5f,Width-1,Height-1),8);
-        using var pen=new Pen(input.ContainsFocus?Aether.Primary:Aether.Border,input.ContainsFocus?1.5f:1f);e.Graphics.DrawPath(pen,path);
+        if(focusAmount>0f){
+            using var haloPen=new Pen(Color.FromArgb((int)(55*focusAmount),Aether.Primary),2.5f);
+            using var haloPath=Aether.Rounded(new RectangleF(.5f,.5f,Width-1,Height-1),9);
+            e.Graphics.DrawPath(haloPen,haloPath);
+        }
+        var borderColor=Color.FromArgb(
+            (int)(Aether.Border.R+(Aether.Primary.R-Aether.Border.R)*focusAmount),
+            (int)(Aether.Border.G+(Aether.Primary.G-Aether.Border.G)*focusAmount),
+            (int)(Aether.Border.B+(Aether.Primary.B-Aether.Border.B)*focusAmount));
+        using var pen=new Pen(input.ContainsFocus||focusAmount>0f?borderColor:Aether.Border,1f+0.5f*focusAmount);
+        e.Graphics.DrawPath(pen,path);
     }
 }
+
+internal sealed class AetherScrollPanel : Panel {
+    public AetherScrollPanel() {
+        DoubleBuffered = true;
+        SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
+    }
+}
+

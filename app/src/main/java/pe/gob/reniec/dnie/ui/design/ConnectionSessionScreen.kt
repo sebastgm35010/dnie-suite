@@ -2,6 +2,7 @@ package pe.gob.reniec.dnie.ui.design
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.StrokeCap
@@ -67,22 +68,39 @@ import pe.gob.reniec.dnie.ui.design.StatusCheck
 }
 
 @Composable private fun SessionNode(icon: ImageVector, label: String, complete: Boolean, status: String) {
+    val reduced = rememberReducedMotion()
+    val containerColor by animateColorAsState(
+        targetValue = if (complete) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer,
+        animationSpec = aetherSpring(reduced),
+        label = "session_node_container"
+    )
+    val iconTint by animateColorAsState(
+        targetValue = if (complete) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outline,
+        animationSpec = aetherSpring(reduced),
+        label = "session_node_icon"
+    )
     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Surface(shape = MaterialTheme.shapes.medium,
-            color = if (complete) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer) {
-            Icon(icon, null, Modifier.padding(16.dp).size(28.dp),
-                tint = if (complete) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outline)
+        Surface(shape = MaterialTheme.shapes.medium, color = containerColor) {
+            Icon(icon, null, Modifier.padding(16.dp).size(28.dp), tint = iconTint)
         }
         Text(label, style = MaterialTheme.typography.labelLarge)
-        Surface(color = if (complete) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer,
-            shape = MaterialTheme.shapes.extraSmall) { Text(status, Modifier.padding(horizontal = 6.dp, vertical = 3.dp), style = MaterialTheme.typography.labelSmall) }
+        Surface(color = containerColor, shape = MaterialTheme.shapes.extraSmall) {
+            Text(status, Modifier.padding(horizontal = 6.dp, vertical = 3.dp), style = MaterialTheme.typography.labelSmall)
+        }
     }
 }
 
 @Composable private fun SessionLinkConnector(active: Boolean, flowing: Boolean) {
-    val infinite = rememberInfiniteTransition(label = "session_link")
-    val pulse by infinite.animateFloat(0f, 1f, infiniteRepeatable(tween(1050, easing = LinearEasing)), label = "link_pulse")
-    val color = if (active) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outlineVariant
+    val reduced = rememberReducedMotion()
+    val pulse = if (reduced || !flowing) {
+        0.5f
+    } else {
+        val infinite = rememberInfiniteTransition(label = "session_link")
+        val pulseState by infinite.animateFloat(0f, 1f, infiniteRepeatable(tween(1050, easing = LinearEasing)), label = "link_pulse")
+        pulseState
+    }
+    val targetColor = if (active) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outlineVariant
+    val color by animateColorAsState(targetColor, aetherSpring(reduced), label = "link_color")
     Spacer(Modifier.width(30.dp).height(22.dp).drawBehind {
         val y = size.height / 2
         drawLine(color.copy(alpha = .65f), androidx.compose.ui.geometry.Offset(0f, y), androidx.compose.ui.geometry.Offset(size.width, y), 2.dp.toPx(), StrokeCap.Round)

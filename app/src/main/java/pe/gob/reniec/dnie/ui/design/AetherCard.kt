@@ -10,14 +10,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+
 /** Shared surface geometry, preserving semantic success/error colors passed by each feature. */
 @Composable
 fun AetherCard(modifier: Modifier = Modifier, shape: Shape = MaterialTheme.shapes.medium,
     colors: CardColors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     elevation: CardElevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     border: BorderStroke? = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+    animateSize: Boolean = false,
     content: @Composable ColumnScope.() -> Unit) {
-    MaterialCard(modifier, shape, colors, elevation, border, content)
+    val cardModifier = if (animateSize) modifier.aetherAnimateSize() else modifier
+    MaterialCard(cardModifier, shape, colors, elevation, border, content)
 }
 
 @Composable
@@ -26,8 +32,22 @@ fun AetherCard(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Bool
     colors: CardColors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     elevation: CardElevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     border: BorderStroke? = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+    animateSize: Boolean = false,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     content: @Composable ColumnScope.() -> Unit) {
-    MaterialCard(onClick, modifier.heightIn(min = 48.dp).aetherPressScale(interactionSource), enabled,
-        shape, colors, elevation, border, interactionSource, content)
+    val pressed by interactionSource.collectIsPressedAsState()
+    val focused by interactionSource.collectIsFocusedAsState()
+    val reduced = rememberReducedMotion()
+    val activeBorderColor by animateColorAsState(
+        targetValue = if ((pressed || focused) && enabled) MaterialTheme.colorScheme.primary.copy(alpha = .65f)
+                      else MaterialTheme.colorScheme.outlineVariant,
+        animationSpec = aetherSpring(reduced),
+        label = "aether-card-border"
+    )
+    val effectiveBorder = if (border != null) BorderStroke(border.width, activeBorderColor) else null
+    val cardModifier = (if (animateSize) modifier.aetherAnimateSize() else modifier)
+        .heightIn(min = 48.dp)
+        .aetherPressScale(interactionSource)
+    MaterialCard(onClick, cardModifier, enabled,
+        shape, colors, elevation, effectiveBorder, interactionSource, content)
 }

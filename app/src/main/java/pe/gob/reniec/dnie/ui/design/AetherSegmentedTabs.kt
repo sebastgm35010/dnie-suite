@@ -44,8 +44,13 @@ fun AetherSegmentedTabs(items: List<String>, selectedIndex: Int, onSelect: (Int)
                     .then(tags.getOrNull(i)?.let { Modifier.testTag(it) } ?: Modifier)
                     .selectable(selectedIndex == i, role = Role.Tab, onClick = { if (i != selectedIndex) onSelect(i) })
                     .padding(horizontal = 6.dp, vertical = 12.dp), contentAlignment = Alignment.Center) {
+                    val textColor by androidx.compose.animation.animateColorAsState(
+                        targetValue = if (selectedIndex == i) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        animationSpec = aetherSpring(reduced),
+                        label = "segmented-text-color-$i"
+                    )
                     Text(text, textAlign = TextAlign.Center, style = MaterialTheme.typography.labelMedium,
-                        color = if (selectedIndex == i) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                        color = textColor)
                 }
             }
         }

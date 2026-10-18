@@ -4,6 +4,7 @@ import pe.gob.reniec.dnie.ui.design.AetherCard as Card
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -16,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import pe.gob.reniec.dnie.ui.design.*
 
 private enum class VaultPage(val title: String) { FILES("Mis archivos"), DNI("Usar DNI"), RECOVERY("Respaldo"), TOOLS("Opciones") }
 
@@ -73,18 +75,25 @@ fun VaultScreen(state: VaultUiState, onCanChange: (String) -> Unit, onPinChange:
                 }
             }) { padding ->
             // Separate scroll state per page; switching does not recreate the vault session.
-            key(page) {
+            val reducedMotion = rememberReducedMotion()
+            val targetPageIndex = VaultPage.entries.indexOf(page)
+            AnimatedContent(
+                targetState = targetPageIndex,
+                transitionSpec = { aetherTabTransition(reducedMotion) },
+                label = "vault_tab_transition"
+            ) { pageIdx ->
+                val currentPage = VaultPage.entries[pageIdx]
                 LazyColumn(Modifier.fillMaxSize().padding(padding).imePadding(),
-                    state = when (page) { VaultPage.FILES -> filesScroll; VaultPage.DNI -> dniScroll
+                    state = when (currentPage) { VaultPage.FILES -> filesScroll; VaultPage.DNI -> dniScroll
                         VaultPage.RECOVERY -> recoveryScroll; VaultPage.TOOLS -> toolsScroll },
                     contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     item("sections") {
                         pe.gob.reniec.dnie.ui.design.AetherSegmentedTabs(
-                            VaultPage.entries.map { it.title }, VaultPage.entries.indexOf(page),
+                            VaultPage.entries.map { it.title }, VaultPage.entries.indexOf(currentPage),
                             onSelect = { pageName = VaultPage.entries[it].name }
                         )
                     }
-                    if (page != VaultPage.FILES) item("return") {
+                    if (currentPage != VaultPage.FILES) item("return") {
                         TextButton(onClick = { pageName = VaultPage.FILES.name }) { Text("Mis archivos") }
                     }
                     if (!state.riskAcknowledged) item("risk") {
@@ -98,7 +107,7 @@ fun VaultScreen(state: VaultUiState, onCanChange: (String) -> Unit, onPinChange:
                         VaultResult(state.running, state.awaitingCard, state.verified, state.message, state.restoredName)
                         if (busy) TextButton(onClick = onCancel) { Text("Cancelar operación") }
                     }
-                    when (page) {
+                    when (currentPage) {
                         VaultPage.DNI -> item("access") {
                             VaultAccessPanel(state, onCanChange, onPinChange, onRememberCan, onRun, onStartOpen, onClearSelection, onCancel)
                         }
@@ -154,13 +163,15 @@ fun VaultScreen(state: VaultUiState, onCanChange: (String) -> Unit, onPinChange:
                             }
                             if (state.items.isEmpty()) item("empty") { Text(if (state.showTrash) "No hay archivos en esta vista de papelera." else "No hay archivos en esta vista.") }
                             items(state.items, key = { it.id }) { item ->
-                                VaultFileCard(item, !busy && state.riskAcknowledged, state.selectedItemId == item.id,
-                                    onRestore = { pendingOpen = item.id; restore.launch(item.displayName ?: "documento-restaurado") },
-                                    onExport = { pendingExport = item.id; export.launch("${item.displayName ?: item.id}.dnievault") },
-                                    onDelete = { delete = item.id }, onPreview = { library.preview(item.id); pageName = VaultPage.DNI.name },
-                                    onOrganize = { organize = item }, onRecover = { library.recover(item.id) }, onInspect = { library.inspect(item.id) },
-                                    selectionMode = selecting, checked = item.id in selection,
-                                    onToggle = { selection = if (item.id in selection) selection - item.id else selection + item.id })
+                                Box(if (reducedMotion) Modifier else Modifier.animateItem()) {
+                                    VaultFileCard(item, !busy && state.riskAcknowledged, state.selectedItemId == item.id,
+                                        onRestore = { pendingOpen = item.id; restore.launch(item.displayName ?: "documento-restaurado") },
+                                        onExport = { pendingExport = item.id; export.launch("${item.displayName ?: item.id}.dnievault") },
+                                        onDelete = { delete = item.id }, onPreview = { library.preview(item.id); pageName = VaultPage.DNI.name },
+                                        onOrganize = { organize = item }, onRecover = { library.recover(item.id) }, onInspect = { library.inspect(item.id) },
+                                        selectionMode = selecting, checked = item.id in selection,
+                                        onToggle = { selection = if (item.id in selection) selection - item.id else selection + item.id })
+                                }
                             }
                         }
                     }

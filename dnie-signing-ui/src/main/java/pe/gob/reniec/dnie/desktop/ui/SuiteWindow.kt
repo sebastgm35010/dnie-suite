@@ -37,7 +37,7 @@ class SuiteWindow(initialFiles: List<Path> = emptyList(), settings: Preferences=
     private val qr=AetherButton("Abrir QR")
     private val progress=JProgressBar().apply { name="suite-progress";preferredSize=Dimension(180,6);isVisible=false }
     private val templateButtons=linkedMapOf<StampTemplate,AetherToggleChip>()
-    private val status=JLabel("Conecta Android desde Suite → Conectar PC guardada.")
+    private val status=JLabel("Conecta Android desde Suite → Conectar PC guardada.").apply { name="suite-status" }
     private val fingerprint=AetherTextField().apply { isEditable=false }
     private val files=DefaultListModel<Path>()
     private val list=JList(files)

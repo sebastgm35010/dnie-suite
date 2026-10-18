@@ -32,6 +32,7 @@ fun CertificateValidationPanel(certificate: CertificateInfo) {
         OutlinedButton(enabled = !state.checking, onClick = {
             model.check(certificate.rawDerBytes, certificate.sha256FingerprintHex, certificate.type == CertificateType.SIGNATURE)
         }) { Text(if (state.checking) "Consultando estado…" else "Comprobar confianza y revocación") }
+        val reduced = pe.gob.reniec.dnie.ui.design.rememberReducedMotion()
         if (state.fingerprint == certificate.sha256FingerprintHex) {
             state.error?.let { Text(it) }
             state.report?.let { report ->
@@ -54,43 +55,49 @@ fun CertificateValidationPanel(certificate: CertificateInfo) {
                     }, report.chainRevocation == RevocationStatus.GOOD)
                 report.chainValidUntil?.let { Text("Evidencia válida hasta: $it", style = MaterialTheme.typography.bodySmall) }
                 TextButton(onClick = { expanded.value = !expanded.value }) { Text(if (expanded.value) "Ocultar evidencias" else "Ver evidencias de validación") }
-                if (expanded.value) {
-                Text(if (report.certificate.acceptable) "Vigencia y uso del certificado: aptos" else report.certificate.issues.joinToString("; "))
-                val label = when (report.revocation.status) {
-                    RevocationStatus.GOOD -> "Sin revocación en evidencia verificada"
-                    RevocationStatus.REVOKED -> "Certificado revocado"
-                    RevocationStatus.UNKNOWN -> "Revocación indeterminada"
-                }
-                Text(label)
-                Text(report.revocation.detail, style = MaterialTheme.typography.bodySmall)
-                report.revocation.nextUpdate?.let { Text("Estado válido hasta: $it", style = MaterialTheme.typography.bodySmall) }
-                Text(when (report.trust) {
-                    TrustStatus.TRUSTED -> "Cadena de confianza: verificada con TSL Perú"
-                    TrustStatus.UNTRUSTED -> "Cadena de confianza: no admitida"
-                    TrustStatus.UNKNOWN -> "Cadena de confianza: indeterminada"
-                })
-                Text(report.trustDetail, style = MaterialTheme.typography.bodySmall)
-                if (pe.gob.reniec.dnie.BuildConfig.DEBUG && report.trustFailureCode.isNotEmpty())
-                    Text("Diagnóstico: ${report.trustFailureCode}", style = MaterialTheme.typography.bodySmall)
-                if (report.trust == TrustStatus.TRUSTED) Text(when (report.chainRevocation) {
-                    RevocationStatus.GOOD -> "Titular y CA intermedias: sin revocación en evidencia verificada"
-                    RevocationStatus.REVOKED -> "La cadena contiene un certificado revocado"
-                    RevocationStatus.UNKNOWN -> "Revocación de la cadena: indeterminada"
-                }, style = MaterialTheme.typography.bodySmall)
-                report.chainValidUntil?.let { Text("Evidencias de cadena válidas hasta: $it", style = MaterialTheme.typography.bodySmall) }
-                if (report.chainRevocationDetail.isNotEmpty())
-                    Text(report.chainRevocationDetail, style = MaterialTheme.typography.bodySmall)
-                report.caRevocationEvidence.forEach { evidence ->
-                    val caState = when (evidence.assessment.status) {
-                        RevocationStatus.GOOD -> "sin revocación en evidencia verificada"
-                        RevocationStatus.REVOKED -> "revocada"
-                        RevocationStatus.UNKNOWN -> "estado indeterminado"
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = expanded.value,
+                    enter = androidx.compose.animation.expandVertically(pe.gob.reniec.dnie.ui.design.aetherSpring(reduced)) + androidx.compose.animation.fadeIn(pe.gob.reniec.dnie.ui.design.aetherSpring(reduced)),
+                    exit = androidx.compose.animation.shrinkVertically(pe.gob.reniec.dnie.ui.design.aetherSpring(reduced)) + androidx.compose.animation.fadeOut(pe.gob.reniec.dnie.ui.design.aetherSpring(reduced))
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(if (report.certificate.acceptable) "Vigencia y uso del certificado: aptos" else report.certificate.issues.joinToString("; "))
+                        val label = when (report.revocation.status) {
+                            RevocationStatus.GOOD -> "Sin revocación en evidencia verificada"
+                            RevocationStatus.REVOKED -> "Certificado revocado"
+                            RevocationStatus.UNKNOWN -> "Revocación indeterminada"
+                        }
+                        Text(label)
+                        Text(report.revocation.detail, style = MaterialTheme.typography.bodySmall)
+                        report.revocation.nextUpdate?.let { Text("Estado válido hasta: $it", style = MaterialTheme.typography.bodySmall) }
+                        Text(when (report.trust) {
+                            TrustStatus.TRUSTED -> "Cadena de confianza: verificada con TSL Perú"
+                            TrustStatus.UNTRUSTED -> "Cadena de confianza: no admitida"
+                            TrustStatus.UNKNOWN -> "Cadena de confianza: indeterminada"
+                        })
+                        Text(report.trustDetail, style = MaterialTheme.typography.bodySmall)
+                        if (pe.gob.reniec.dnie.BuildConfig.DEBUG && report.trustFailureCode.isNotEmpty())
+                            Text("Diagnóstico: ${report.trustFailureCode}", style = MaterialTheme.typography.bodySmall)
+                        if (report.trust == TrustStatus.TRUSTED) Text(when (report.chainRevocation) {
+                            RevocationStatus.GOOD -> "Titular y CA intermedias: sin revocación en evidencia verificada"
+                            RevocationStatus.REVOKED -> "La cadena contiene un certificado revocado"
+                            RevocationStatus.UNKNOWN -> "Revocación de la cadena: indeterminada"
+                        }, style = MaterialTheme.typography.bodySmall)
+                        report.chainValidUntil?.let { Text("Evidencias de cadena válidas hasta: $it", style = MaterialTheme.typography.bodySmall) }
+                        if (report.chainRevocationDetail.isNotEmpty())
+                            Text(report.chainRevocationDetail, style = MaterialTheme.typography.bodySmall)
+                        report.caRevocationEvidence.forEach { evidence ->
+                            val caState = when (evidence.assessment.status) {
+                                RevocationStatus.GOOD -> "sin revocación en evidencia verificada"
+                                RevocationStatus.REVOKED -> "revocada"
+                                RevocationStatus.UNKNOWN -> "estado indeterminado"
+                            }
+                            Text("CA intermedia ${evidence.depth}: $caState", style = MaterialTheme.typography.bodySmall)
+                            Text(evidence.assessment.detail, style = MaterialTheme.typography.bodySmall)
+                            if (pe.gob.reniec.dnie.BuildConfig.DEBUG && evidence.diagnosticCode.isNotEmpty())
+                                Text("Diagnóstico: ${evidence.diagnosticCode}", style = MaterialTheme.typography.bodySmall)
+                        }
                     }
-                    Text("CA intermedia ${evidence.depth}: $caState", style = MaterialTheme.typography.bodySmall)
-                    Text(evidence.assessment.detail, style = MaterialTheme.typography.bodySmall)
-                    if (pe.gob.reniec.dnie.BuildConfig.DEBUG && evidence.diagnosticCode.isNotEmpty())
-                        Text("Diagnóstico: ${evidence.diagnosticCode}", style = MaterialTheme.typography.bodySmall)
-                }
                 }
             }
         }

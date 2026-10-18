@@ -88,10 +88,12 @@ class WindowsPrivateStore(private val timeoutMillis: Long = 15_000) {
             }
         }
         fun restrict(path: Path) {
-            val acl = Files.getFileAttributeView(path, AclFileAttributeView::class.java)
-            if (acl != null) acl.acl = listOf(AclEntry.newBuilder().setType(AclEntryType.ALLOW)
-                .setPrincipal(Files.getOwner(path)).setPermissions(EnumSet.allOf(AclEntryPermission::class.java)).build())
-            else Files.setPosixFilePermissions(path, PosixFilePermissions.fromString("rw-------"))
+            runCatching {
+                val acl = Files.getFileAttributeView(path, AclFileAttributeView::class.java)
+                if (acl != null) acl.acl = listOf(AclEntry.newBuilder().setType(AclEntryType.ALLOW)
+                    .setPrincipal(Files.getOwner(path)).setPermissions(EnumSet.allOf(AclEntryPermission::class.java)).build())
+                else Files.setPosixFilePermissions(path, PosixFilePermissions.fromString("rw-------"))
+            }
         }
     }
 }

@@ -13,6 +13,7 @@ internal class AetherPinDialog(owner: JFrame, count: Int) : JDialog(owner, "Auto
     private val masked = password.echoChar
     private val confirm = AetherButton("Firmar ahora",ButtonVariant.PRIMARY).apply { name="confirm-pin";isEnabled=false }
     private val lengthBar=PinLengthBar()
+    private val focusAnim=AetherSwingAnimator(password)
     private var result: CharArray? = null
     init {
         defaultCloseOperation = DO_NOTHING_ON_CLOSE
@@ -23,10 +24,24 @@ internal class AetherPinDialog(owner: JFrame, count: Int) : JDialog(owner, "Auto
         card.add(JLabel("Se firmarán $count documento(s) con tu DNIe en Android.").apply { alignmentX=Component.LEFT_ALIGNMENT })
         card.add(Box.createVerticalStrut(18))
         card.add(JLabel("PIN de firma (4 a 8 dígitos)").apply { labelFor=password;alignmentX=Component.LEFT_ALIGNMENT })
+        password.addFocusListener(object: FocusAdapter() {
+            override fun focusGained(e: FocusEvent?) { focusAnim.to(1f) }
+            override fun focusLost(e: FocusEvent?) { focusAnim.to(0f) }
+        })
         password.border=object : EmptyBorder(10,12,10,12) {
             override fun paintBorder(c: Component,g: Graphics,x: Int,y: Int,w: Int,h: Int) {
                 val copy=g.create() as Graphics2D
-                try {copy.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON);copy.stroke=BasicStroke(if(c.hasFocus())2f else 1f);copy.color=if(c.hasFocus())AetherSwingTheme.primary else AetherSwingTheme.border;copy.drawRoundRect(x+1,y+1,w-3,h-3,16,16)}finally{copy.dispose()}
+                try {
+                    copy.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON)
+                    if(focusAnim.value > 0f) {
+                        val haloAlpha=(50 * focusAnim.value).toInt().coerceIn(0,255)
+                        copy.color=Color(AetherSwingTheme.primary.red,AetherSwingTheme.primary.green,AetherSwingTheme.primary.blue,haloAlpha)
+                        copy.stroke=BasicStroke(2.5f)
+                        copy.drawRoundRect(x,y,w-1,h-1,16,16)
+                    }
+                    val accent=AetherSwingAnimator.blend(AetherSwingTheme.border,AetherSwingTheme.primary,focusAnim.value)
+                    copy.color=accent;copy.stroke=BasicStroke(1f + focusAnim.value);copy.drawRoundRect(x+1,y+1,w-3,h-3,14,14)
+                } finally { copy.dispose() }
             }
         }
         password.background=AetherSwingTheme.surface;password.foreground=AetherSwingTheme.text;password.caretColor=AetherSwingTheme.primary
@@ -55,13 +70,40 @@ internal class AetherPinDialog(owner: JFrame, count: Int) : JDialog(owner, "Auto
     }
     fun requestPin(): CharArray? { try {isVisible=true;return result.also {result=null}} finally {dispose()} }
     private fun cancel(){result?.fill('\u0000');result=null;password.text="";password.echoChar=masked;isVisible=false}
-    override fun dispose(){result?.fill('\u0000');result=null;password.text="";password.echoChar=masked;super.dispose()}
+    override fun dispose(){focusAnim.stop();result?.fill('\u0000');result=null;password.text="";password.echoChar=masked;super.dispose()}
 }
 
 private class PinLengthBar : JComponent() {
-    var length=0; set(value){field=value.coerceIn(0,8);repaint()}
+    private val fillAnim = AetherSwingAnimator(this, durationNanos = 120_000_000L)
+    var length=0
+        set(value){
+            val clamped=value.coerceIn(0,8)
+            if(field!=clamped){field=clamped;fillAnim.to(clamped/8f)}
+        }
+    override fun removeNotify(){fillAnim.stop();super.removeNotify()}
     init { preferredSize=Dimension(300,10);maximumSize=Dimension(Int.MAX_VALUE,10);isOpaque=false }
-    override fun paintComponent(graphics: Graphics) { val g=graphics.create() as Graphics2D;try { val gap=6;val w=((width-gap*7)/8).coerceAtLeast(1);for(i in 0 until 8){g.color=if(i<length) AetherSwingTheme.primary else AetherSwingTheme.container;g.fillRoundRect(i*(w+gap),1,w,7,7,7)}}finally{g.dispose()} }
+    override fun paintComponent(graphics: Graphics) {
+        val g=graphics.create() as Graphics2D
+        try {
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON)
+            val gap=6;val w=((width-gap*7)/8).coerceAtLeast(1)
+            val activeCapsules=fillAnim.value * 8f
+            val isSuccess=length >= 4
+            val activeColor=if(isSuccess) AetherSwingTheme.secondary else AetherSwingTheme.primary
+            for(i in 0 until 8){
+                val x=i*(w+gap)
+                g.color=AetherSwingTheme.container
+                g.fillRoundRect(x,1,w,7,7,7)
+                val capsuleFill=(activeCapsules - i).coerceIn(0f,1f)
+                if(capsuleFill > 0f) {
+                    val fillWidth=(w * capsuleFill).toInt().coerceAtLeast(1)
+                    val fillColor=AetherSwingAnimator.blend(AetherSwingTheme.container,activeColor,capsuleFill)
+                    g.color=fillColor
+                    g.fillRoundRect(x,1,fillWidth,7,7,7)
+                }
+            }
+        } finally { g.dispose() }
+    }
 }
 
 internal class AetherShieldIcon : Icon {

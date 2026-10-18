@@ -6,9 +6,18 @@ import javax.swing.plaf.basic.*
 
 private fun frame(g: Graphics,c: JComponent) {
     val copy=g.create() as Graphics2D
-    try { copy.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON)
+    try {
+        copy.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON)
+        val hasFocus=c.hasFocus() ||
+            (c is JComboBox<*> && (c.isPopupVisible || (c.isEditable && c.editor?.editorComponent?.hasFocus() == true))) ||
+            (c is JSpinner && (c.editor as? JSpinner.DefaultEditor)?.textField?.hasFocus() == true)
+        if(hasFocus) {
+            val halo=Color(AetherSwingTheme.primary.red,AetherSwingTheme.primary.green,AetherSwingTheme.primary.blue,45)
+            copy.color=halo;copy.stroke=BasicStroke(2.5f);copy.drawRoundRect(0,0,c.width-1,c.height-1,12,12)
+        }
         copy.color=AetherSwingTheme.surface;copy.fillRoundRect(1,1,c.width-2,c.height-2,10,10)
-        copy.color=if(c.hasFocus() || c is JComboBox<*> && c.isPopupVisible) AetherSwingTheme.primary else AetherSwingTheme.border
+        copy.color=if(hasFocus) AetherSwingTheme.primary else AetherSwingTheme.border
+        copy.stroke=BasicStroke(if(hasFocus) 1.5f else 1f)
         copy.drawRoundRect(1,1,c.width-3,c.height-3,10,10)
     } finally { copy.dispose() }
 }
@@ -47,8 +56,14 @@ class AetherScrollBarUI : BasicScrollBarUI() {
     override fun paintThumb(graphics: Graphics,c: JComponent,r: Rectangle) {
         if(r.isEmpty || !c.isEnabled)return
         val g=graphics.create() as Graphics2D
-        try { g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON)
-            g.color=if(isThumbRollover) AetherSwingTheme.outline else Color(0xCBDBF5);g.fillRoundRect(r.x+1,r.y+1,(r.width-2).coerceAtLeast(2),(r.height-2).coerceAtLeast(2),6,6)
+        try {
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON)
+            val idleColor=if(AetherSwingTheme.dark) Color(0x2E3C56) else Color(0xCBDBF5)
+            val rolloverColor=if(AetherSwingTheme.dark) AetherSwingTheme.muted else AetherSwingTheme.outline
+            g.color=if(isThumbRollover) rolloverColor else idleColor
+            val inset=if(isThumbRollover) 0 else 1
+            val arc=if(isThumbRollover) 8 else 6
+            g.fillRoundRect(r.x+inset,r.y+1,(r.width-inset*2).coerceAtLeast(2),(r.height-2).coerceAtLeast(2),arc,arc)
         } finally { g.dispose() }
     }
 }

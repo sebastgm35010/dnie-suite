@@ -46,7 +46,7 @@ class DesktopFileSelectionTest {
         val recent=folder.newFolder("Recent");val link=File(recent,"ficha.pdf.lnk")
         val script=folder.newFile("shortcut.ps1")
         Files.writeString(script.toPath(),"param([string]\u0024Link,[string]\u0024Target)\n\u0024shell=New-Object -ComObject WScript.Shell\n\u0024shortcut=\u0024shell.CreateShortcut(\u0024Link)\n\u0024shortcut.TargetPath=\u0024Target\n\u0024shortcut.Save()\n")
-        val process=ProcessBuilder("powershell.exe","-NoProfile","-NonInteractive","-File",script.absolutePath,"-Link",link.absolutePath,"-Target",target.absolutePath).start()
+        val process=ProcessBuilder("powershell.exe","-ExecutionPolicy","Bypass","-NoProfile","-NonInteractive","-File",script.absolutePath,"-Link",link.absolutePath,"-Target",target.absolutePath).start()
         try { assertTrue(process.waitFor(15,TimeUnit.SECONDS));assertEquals(0,process.exitValue()) }
         finally { if(process.isAlive)process.destroyForcibly() }
         val resolved=DesktopFileSelection.resolve(File(recent,"ficha.pdf"),FileSystemView.getFileSystemView(),recent.toPath())

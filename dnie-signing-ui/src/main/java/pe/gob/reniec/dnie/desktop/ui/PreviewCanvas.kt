@@ -98,7 +98,13 @@ class PreviewCanvas : JPanel(), Scrollable {
             val page=pageBounds()
             if(dropHighlight) {g.color=AetherSwingTheme.primary;g.stroke=BasicStroke(3f);g.drawRoundRect(3,3,width-7,height-7,12,12)}
             if(page==null) { g.color=AetherSwingTheme.muted;g.drawString("Selecciona un PDF para colocar tu firma",28,48);return }
-            g.color=Color(11,28,48,28);g.fillRoundRect(page.x-2,page.y+4,page.width+4,page.height+4,6,6)
+            val shadowColor = if (AetherSwingTheme.dark) Color(0, 0, 0) else Color(11, 28, 48)
+            g.color = Color(shadowColor.red, shadowColor.green, shadowColor.blue, if (AetherSwingTheme.dark) 42 else 12)
+            g.fillRoundRect(page.x - 4, page.y + 6, page.width + 8, page.height + 8, 12, 12)
+            g.color = Color(shadowColor.red, shadowColor.green, shadowColor.blue, if (AetherSwingTheme.dark) 60 else 22)
+            g.fillRoundRect(page.x - 2, page.y + 3, page.width + 4, page.height + 5, 8, 8)
+            g.color = Color(shadowColor.red, shadowColor.green, shadowColor.blue, if (AetherSwingTheme.dark) 80 else 32)
+            g.fillRoundRect(page.x - 1, page.y + 1, page.width + 2, page.height + 2, 4, 4)
             if(image!=null) g.drawImage(image,page.x,page.y,page.width,page.height,null) else {
                 g.color=Color.WHITE;g.fillRect(page.x,page.y,page.width,page.height)
                 val margin=(page.width*.10).toInt();val left=page.x+margin;val lineWidth=page.width-2*margin
@@ -116,10 +122,36 @@ class PreviewCanvas : JPanel(), Scrollable {
                 g.color=AetherSwingTheme.primary;g.stroke=BasicStroke(1.5f,BasicStroke.CAP_BUTT,BasicStroke.JOIN_ROUND,10f,floatArrayOf(5f,4f),0f)
                 g.drawRect(r.x,r.y,r.width,r.height)
                 if(stampImage==null) { g.font=font.deriveFont(11f);g.drawString(if(stampError==null) "Preparando sello…" else "Amplía el sello o quita campos",r.x+6,r.y+16) }
-                g.stroke=BasicStroke(1.5f)
-                for(x in listOf(r.x,r.x+r.width)) for(y in listOf(r.y,r.y+r.height)) { g.color=Color.WHITE;g.fillOval(x-5,y-5,10,10);g.color=AetherSwingTheme.primary;g.drawOval(x-5,y-5,10,10) }
-                snap?.vertical?.let { val x=page.x+(it*page.width).toInt();g.drawLine(x,page.y,x,page.y+page.height) }
-                snap?.horizontal?.let { val y=page.y+(it*page.height).toInt();g.drawLine(page.x,y,page.x+page.width,y) }
+                val handles = listOf(
+                    Point(r.x, r.y), Point(r.x + r.width, r.y),
+                    Point(r.x, r.y + r.height), Point(r.x + r.width, r.y + r.height),
+                    Point(r.x + r.width / 2, r.y), Point(r.x + r.width / 2, r.y + r.height),
+                    Point(r.x, r.y + r.height / 2), Point(r.x + r.width, r.y + r.height / 2)
+                )
+                for(pt in handles) {
+                    g.color=Color.WHITE;g.fillOval(pt.x-5,pt.y-5,10,10)
+                    g.color=AetherSwingTheme.primary;g.stroke=BasicStroke(1.5f);g.drawOval(pt.x-5,pt.y-5,10,10)
+                }
+                val snapColor = AetherSwingTheme.secondary
+                val snapStroke = BasicStroke(1.2f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10f, floatArrayOf(4f, 3f), 0f)
+                snap?.vertical?.let {
+                    val x=page.x+(it*page.width).toInt()
+                    g.color=Color(snapColor.red, snapColor.green, snapColor.blue, 60)
+                    g.stroke=BasicStroke(2.5f)
+                    g.drawLine(x,page.y,x,page.y+page.height)
+                    g.color=snapColor
+                    g.stroke=snapStroke
+                    g.drawLine(x,page.y,x,page.y+page.height)
+                }
+                snap?.horizontal?.let {
+                    val y=page.y+(it*page.height).toInt()
+                    g.color=Color(snapColor.red, snapColor.green, snapColor.blue, 60)
+                    g.stroke=BasicStroke(2.5f)
+                    g.drawLine(page.x,y,page.x+page.width,y)
+                    g.color=snapColor
+                    g.stroke=snapStroke
+                    g.drawLine(page.x,y,page.x+page.width,y)
+                }
             }
         } finally { g.dispose() }
     }

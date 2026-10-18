@@ -38,7 +38,7 @@ fun FeatureScaffold(title: String, category: String, subtitle: String? = null,
 
 @Composable
 fun FeatureSection(title: String, subtitle: String? = null, content: @Composable ColumnScope.() -> Unit) {
-    AetherCard(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+    AetherCard(Modifier.fillMaxWidth().aetherAnimateSize(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium)
             subtitle?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }

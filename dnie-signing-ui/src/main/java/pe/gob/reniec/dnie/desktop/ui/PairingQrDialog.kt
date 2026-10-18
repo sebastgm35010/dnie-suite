@@ -23,7 +23,14 @@ internal class PairingQrDialog(private val owner: Window) : AutoCloseable {
             val formatted=info.fingerprint.replace(":","").chunked(4).joinToString(" ")
             add(JTextArea("Huella PC:\n$formatted").apply { isEditable=false;lineWrap=true;wrapStyleWord=true;rows=3;isOpaque=false;font=Font(Font.MONOSPACED,Font.PLAIN,12) },BorderLayout.CENTER)
             add(JPanel(FlowLayout(FlowLayout.RIGHT,8,0)).apply { isOpaque=false
-                add(AetherButton("Copiar huella").apply { addActionListener { Toolkit.getDefaultToolkit().systemClipboard.setContents(java.awt.datatransfer.StringSelection(info.fingerprint),null);text="✓ Copiada" } })
+                val copyBtn = AetherButton("Copiar huella")
+                val resetTimer = Timer(2500) { if(dialog!=null) copyBtn.text="Copiar huella" }.apply { isRepeats=false }
+                copyBtn.addActionListener {
+                    Toolkit.getDefaultToolkit().systemClipboard.setContents(java.awt.datatransfer.StringSelection(info.fingerprint),null)
+                    copyBtn.text="✓ Copiada"
+                    resetTimer.restart()
+                }
+                add(copyBtn)
                 add(AetherButton("Cerrar",ButtonVariant.PRIMARY).apply { addActionListener { close() } })
             },BorderLayout.SOUTH)
         },BorderLayout.SOUTH)

@@ -13,6 +13,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import pe.gob.reniec.dnie.ui.design.*
 
 data class VaultRecoveryActions(
     val exportVault: (Uri, CharArray) -> Unit,
@@ -35,7 +36,7 @@ internal fun VaultRecoveryControls(state: VaultUiState, actions: VaultRecoveryAc
     val open = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) {
         if (it != null) selectedUri = it.toString()
     }
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(Modifier.fillMaxWidth().aetherAnimateSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(if (importing) "Importar bóveda" else "Exportar bóveda", style = MaterialTheme.typography.titleLarge)
         if (busy) {
             Text(if (state.awaitingCard) {

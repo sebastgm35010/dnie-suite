@@ -24,6 +24,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import pe.gob.reniec.dnie.icao.*
 import pe.gob.reniec.dnie.ui.components.*
+import pe.gob.reniec.dnie.ui.design.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,6 +49,7 @@ fun IdentityScreen(viewModel: IdentityViewModel, onUseMark: () -> Unit = {}) {
     }
     var operationVisible by remember { mutableStateOf(false) }
     var details by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    val reducedMotion = rememberReducedMotion()
     LaunchedEffect(state.enteringCan, state.awaitingCard, state.reading) {
         if (state.enteringCan || state.awaitingCard || state.reading) operationVisible = true
     }
@@ -56,11 +58,11 @@ fun IdentityScreen(viewModel: IdentityViewModel, onUseMark: () -> Unit = {}) {
         export.launch(ImageExportRequest(name, image.mimeType))
     }
     DisposableEffect(viewModel) { onDispose { viewModel.cancelReading() } }
-    pe.gob.reniec.dnie.ui.design.FeatureScaffold("Identidad del DNI", "Documento ICAO", subtitle = "Datos, foto y firma disponibles.") { padding ->
+    FeatureScaffold("Identidad del DNI", "Documento ICAO", subtitle = "Datos, foto y firma disponibles.") { padding ->
         LazyColumn(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(bottom = 24.dp)) {
             item {
-                pe.gob.reniec.dnie.ui.design.FeatureSection("Leer el documento") {
+                FeatureSection("Leer el documento") {
                     Text("Acerca tu DNI para leer sus datos. No necesitas PIN.",
                         style = MaterialTheme.typography.bodyMedium)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 12.dp)) {
@@ -79,7 +81,9 @@ fun IdentityScreen(viewModel: IdentityViewModel, onUseMark: () -> Unit = {}) {
                 item { DigitalIdCredentialCard(document, onUseMark) { exportImage(it, "dni_firma") } }
                 item { TextButton(onClick = { details = !details }) { Text("Detalles técnicos ICAO (DG1–DG14, EF.COM, EF.SOD)" + if (details) " −" else " +") } }
                 if (details) items(document.blocks.values.toList(), key = { it.file.name }) { block ->
-                    IdentityBlockCard(block) { exportImage(it, "dni_" + block.file.name.lowercase()) }
+                    Box(if (reducedMotion) Modifier else Modifier.animateItem()) {
+                        IdentityBlockCard(block) { exportImage(it, "dni_" + block.file.name.lowercase()) }
+                    }
                 }
             }
         }
@@ -176,11 +180,18 @@ internal fun IdentityImage(image: IcaoImage, modifier: Modifier = Modifier.fillM
         catch (e: Exception) { DecodedImage(error = e.message ?: "No se pudo mostrar la imagen") }
         catch (e: LinkageError) { DecodedImage(error = "El decodificador no está disponible en este dispositivo") }
     }
-    val bitmap = decoded?.bitmap
-    when {
-        bitmap != null -> Image(bitmap.asImageBitmap(), contentDescription = "Imagen del documento",
-            modifier = modifier, contentScale = ContentScale.Fit)
-        decoded?.error != null -> Text("Imagen leída; ${decoded?.error}. Puede guardar el original.")
-        else -> Text("Preparando imagen…")
+    val reduced = pe.gob.reniec.dnie.ui.design.rememberReducedMotion()
+    androidx.compose.animation.Crossfade(
+        targetState = decoded,
+        animationSpec = pe.gob.reniec.dnie.ui.design.aetherSpring(reduced),
+        label = "identity_image_crossfade"
+    ) { state ->
+        val bitmap = state?.bitmap
+        when {
+            bitmap != null -> Image(bitmap.asImageBitmap(), contentDescription = "Imagen del documento",
+                modifier = modifier, contentScale = ContentScale.Fit)
+            state?.error != null -> Text("Imagen leída; ${state.error}. Puede guardar el original.")
+            else -> Text("Preparando imagen…")
+        }
     }
 }

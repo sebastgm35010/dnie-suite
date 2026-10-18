@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import pe.gob.reniec.dnie.data.signing.AndroidStampPreview
 import pe.gob.reniec.dnie.pdf.*
+import pe.gob.reniec.dnie.ui.design.*
 import java.util.Date
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -43,21 +44,33 @@ internal fun StampPreviewCard(width: Float,height: Float,name: String,dni: Strin
         catch(failure: Exception) { bitmap=null;error=failure.message?:"Amplía el sello o quita campos" }
         finally { preparing=false }
     }
-    pe.gob.reniec.dnie.ui.design.AetherCard(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-            Text("Vista previa del sello",style=MaterialTheme.typography.labelLarge)
-            val grid=androidx.compose.ui.graphics.Color(0xFFDCE9FF).copy(alpha=.55f)
-            Box(Modifier.fillMaxWidth().height(140.dp).background(androidx.compose.ui.graphics.Color.White),contentAlignment=Alignment.Center) {
+    val reduced = rememberReducedMotion()
+    AetherCard(Modifier.fillMaxWidth().aetherAnimateSize()) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Vista previa del sello", style = MaterialTheme.typography.labelLarge)
+            val grid = androidx.compose.ui.graphics.Color(0xFFDCE9FF).copy(alpha = .55f)
+            Box(Modifier.fillMaxWidth().height(140.dp).background(androidx.compose.ui.graphics.Color.White), contentAlignment = Alignment.Center) {
                 Canvas(Modifier.fillMaxSize()) {
-                    val step=16.dp.toPx()
-                    var x=0f;while(x<size.width) { drawLine(grid,Offset(x,0f),Offset(x,size.height),1f);x+=step }
-                    var y=0f;while(y<size.height) { drawLine(grid,Offset(0f,y),Offset(size.width,y),1f);y+=step }
+                    val step = 16.dp.toPx()
+                    var x = 0f; while (x < size.width) { drawLine(grid, Offset(x, 0f), Offset(x, size.height), 1f); x += step }
+                    var y = 0f; while (y < size.height) { drawLine(grid, Offset(0f, y), Offset(size.width, y), 1f); y += step }
                 }
-                bitmap?.let { Image(it.asImageBitmap(),"Vista previa del sello configurado",Modifier.fillMaxSize().padding(8.dp),contentScale=ContentScale.Fit) }
-                if(bitmap==null && error==null) Text("Preparando sello…",style=MaterialTheme.typography.bodySmall,color=androidx.compose.ui.graphics.Color(0xFF434655))
+                androidx.compose.animation.Crossfade(
+                    targetState = bitmap to (error != null),
+                    animationSpec = aetherSpring(reduced),
+                    label = "stamp_preview_crossfade"
+                ) { (currentBitmap, hasError) ->
+                    if (currentBitmap != null) {
+                        Image(currentBitmap.asImageBitmap(), "Vista previa del sello configurado", Modifier.fillMaxSize().padding(8.dp), contentScale = ContentScale.Fit)
+                    } else if (!hasError) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("Preparando sello…", style = MaterialTheme.typography.bodySmall, color = androidx.compose.ui.graphics.Color(0xFF434655))
+                        }
+                    }
+                }
             }
-            if(preparing) LinearProgressIndicator(Modifier.fillMaxWidth())
-            error?.let { Text(it,color=MaterialTheme.colorScheme.error,style=MaterialTheme.typography.bodySmall) }
+            if (preparing) LinearProgressIndicator(Modifier.fillMaxWidth())
+            error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
             controls()
         }
     }

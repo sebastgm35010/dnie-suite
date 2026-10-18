@@ -2,11 +2,15 @@ package pe.gob.reniec.dnie.ui.design
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
@@ -44,3 +48,33 @@ fun Modifier.aetherPressScale(source: MutableInteractionSource): Modifier {
     // Read frame values only in drawing, keeping text/list composition stable.
     return graphicsLayer { scaleX = scale.value; scaleY = scale.value }
 }
+
+fun Modifier.aetherPressScale(enabled: Boolean = true): Modifier = composed {
+    if (!enabled) return@composed this
+    val reduced = rememberReducedMotion()
+    if (reduced) return@composed this
+    var isPressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) .98f else 1f,
+        animationSpec = aetherSpring(reduced, 500f),
+        label = "aether-press-standalone"
+    )
+    this
+        .pointerInput(Unit) {
+            awaitPointerEventScope {
+                while (true) {
+                    awaitFirstDown(requireUnconsumed = false)
+                    isPressed = true
+                    waitForUpOrCancellation()
+                    isPressed = false
+                }
+            }
+        }
+        .graphicsLayer { scaleX = scale; scaleY = scale }
+}
+
+fun Modifier.aetherAnimateSize(): Modifier = composed {
+    val reduced = rememberReducedMotion()
+    if (reduced) this else animateContentSize(aetherSpring(false))
+}
+

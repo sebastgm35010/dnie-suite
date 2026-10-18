@@ -35,7 +35,7 @@ internal fun SignerControls(viewModel: SignerViewModel, workspace: SigningWorksp
     }
     AetherSegmentedTabs(listOf("Apariencia", "Datos y TSA", "Páginas y Titular"), tab, { tab = it })
     androidx.compose.animation.AnimatedContent(tab, transitionSpec = { aetherTabTransition(reducedMotion) }, label = "signer-controls") { selectedTab ->
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(Modifier.fillMaxWidth().aetherAnimateSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         when (selectedTab) {
             0 -> {
                 SwitchRow("Mostrar sello en el PDF", config.visible, enabled) { value -> viewModel.updateOptions { it.copy(visible = value) } }

@@ -1,6 +1,6 @@
 package pe.gob.reniec.dnie.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -17,6 +17,8 @@ import androidx.compose.ui.unit.dp
 import pe.gob.reniec.dnie.domain.model.CertificateInfo
 import pe.gob.reniec.dnie.domain.model.CertificateType
 import pe.gob.reniec.dnie.ui.design.AetherCard
+import pe.gob.reniec.dnie.ui.design.aetherSpring
+import pe.gob.reniec.dnie.ui.design.rememberReducedMotion
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -35,6 +37,14 @@ fun CertificateCard(certificate: CertificateInfo, onExportCer: () -> Unit, onExp
         CertificateType.SIGNATURE -> Icons.Default.Draw
         CertificateType.AUTHENTICATION -> Icons.Default.VerifiedUser
         CertificateType.ENCRYPTION -> Icons.Default.EnhancedEncryption
+    }
+    val reduced = rememberReducedMotion()
+    var copied by remember { mutableStateOf(false) }
+    LaunchedEffect(copied) {
+        if (copied) {
+            kotlinx.coroutines.delay(2000)
+            copied = false
+        }
     }
     AetherCard(modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -61,14 +71,23 @@ fun CertificateCard(certificate: CertificateInfo, onExportCer: () -> Unit, onExp
                 CredentialDatum("Uso", certificate.keyUsageDescription, Modifier.weight(1f))
             }
             TextButton(onClick = { details = !details }) { Text(if (details) "Ocultar detalles" else "Ver detalles técnicos") }
-            AnimatedVisibility(details) {
+            AnimatedVisibility(
+                visible = details,
+                enter = expandVertically(animationSpec = aetherSpring(reduced)) + fadeIn(animationSpec = aetherSpring(reduced)),
+                exit = shrinkVertically(animationSpec = aetherSpring(reduced)) + fadeOut(animationSpec = aetherSpring(reduced))
+            ) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("Emisor · ${certificate.issuerDn}", style = MaterialTheme.typography.bodySmall)
                     Text("Serie · ${certificate.serialNumberHex}", style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace)
                     Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.small) {
                         Column(Modifier.padding(10.dp)) {
                             Text(certificate.sha256FingerprintHex.chunked(4).joinToString(" "), style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace)
-                            TextButton(onClick = { clipboard.setText(AnnotatedString(certificate.sha256FingerprintHex)) }) { Text("Copiar huella") }
+                            TextButton(onClick = {
+                                clipboard.setText(AnnotatedString(certificate.sha256FingerprintHex))
+                                copied = true
+                            }) {
+                                Text(if (copied) "✓ Copiada" else "Copiar huella")
+                            }
                         }
                     }
                 }

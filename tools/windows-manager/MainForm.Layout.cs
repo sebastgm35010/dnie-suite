@@ -14,9 +14,10 @@ public sealed partial class MainForm : Form {
     private readonly Label pcLabel=new(),phoneLabel=new();
     private readonly Dictionary<string,Button> transportButtons=new();
     private void BuildLayout() {
+        DoubleBuffered=true;SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
         Text="DNIe Bridge 3.1 · Gestor Windows";StartPosition=FormStartPosition.CenterScreen;MinimumSize=new Size(840,790);Size=new Size(960,880);
         Font=new Font("Segoe UI",10);BackColor=Aether.Background;ForeColor=Aether.Text;AutoScaleMode=AutoScaleMode.Dpi;
-        var scroll=new Panel{Dock=DockStyle.Fill,AutoScroll=true,Padding=new Padding(22)};
+        var scroll=new AetherScrollPanel{Dock=DockStyle.Fill,AutoScroll=true,Padding=new Padding(22)};
         var layout=new TableLayoutPanel{Dock=DockStyle.Top,AutoSize=true,ColumnCount=1,RowCount=7};
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
         void Whole(System.Windows.Forms.Control control,int row){control.Dock=DockStyle.Fill;control.Margin=new Padding(0,0,0,16);layout.Controls.Add(control,0,row);}

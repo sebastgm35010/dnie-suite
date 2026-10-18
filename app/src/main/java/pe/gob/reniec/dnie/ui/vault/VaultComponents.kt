@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -42,8 +43,10 @@ import java.util.Locale
 
 @Composable
 internal fun VaultHero(pairedFingerprint: String?) {
+    val isDark = VaultSurface.luminance() < 0.5f
+    val gradientStart = if (isDark) Color(0xFF1B2E28) else MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.55f)
     Card(shape = RoundedCornerShape(28.dp), colors = CardDefaults.cardColors(containerColor = VaultSurface)) {
-        Column(Modifier.fillMaxWidth().background(Brush.linearGradient(listOf(Color(0xFF263D36), VaultSurface)))
+        Column(Modifier.fillMaxWidth().background(Brush.linearGradient(listOf(gradientStart, VaultSurface)))
             .padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween) {

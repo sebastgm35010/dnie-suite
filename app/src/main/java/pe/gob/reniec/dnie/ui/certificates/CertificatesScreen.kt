@@ -1,6 +1,7 @@
 package pe.gob.reniec.dnie.ui.certificates
 
 import pe.gob.reniec.dnie.ui.design.AetherCard as Card
+import pe.gob.reniec.dnie.ui.design.*
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -158,43 +159,53 @@ fun CertificatesScreen(
                             }
                         }
                         val activeCert = state.certificates[state.selectedType]
+                        val reduced = rememberReducedMotion()
 
-                        if (activeCert != null) {
-                            CertificateValidationPanel(activeCert)
-                            Box(modifier = Modifier.padding(16.dp)) {
-                                CertificateCard(
-                                    certificate = activeCert,
-                                    onExportCer = {
-                                        pendingExportType = state.selectedType
-                                        pendingExportAsPem = false
-                                        exportDocumentLauncher.launch(
-                                            "dnie_cert_${state.selectedType.name.lowercase()}.cer"
-                                        )
-                                    },
-                                    onExportPem = {
-                                        pendingExportType = state.selectedType
-                                        pendingExportAsPem = true
-                                        exportDocumentLauncher.launch(
-                                            "dnie_cert_${state.selectedType.name.lowercase()}.pem"
+                        androidx.compose.animation.AnimatedContent(
+                            targetState = state.selectedType to activeCert,
+                            transitionSpec = { aetherContentTransition(reduced) },
+                            modifier = Modifier.fillMaxWidth().aetherAnimateSize(),
+                            label = "cert_tab_transition"
+                        ) { (selectedType, cert) ->
+                            if (cert != null) {
+                                Column {
+                                    CertificateValidationPanel(cert)
+                                    Box(modifier = Modifier.padding(16.dp)) {
+                                        CertificateCard(
+                                            certificate = cert,
+                                            onExportCer = {
+                                                pendingExportType = selectedType
+                                                pendingExportAsPem = false
+                                                exportDocumentLauncher.launch(
+                                                    "dnie_cert_${selectedType.name.lowercase()}.cer"
+                                                )
+                                            },
+                                            onExportPem = {
+                                                pendingExportType = selectedType
+                                                pendingExportAsPem = true
+                                                exportDocumentLauncher.launch(
+                                                    "dnie_cert_${selectedType.name.lowercase()}.pem"
+                                                )
+                                            }
                                         )
                                     }
-                                )
-                            }
-                        } else {
-                            // Certificado opcional no disponible en este chip
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(32.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(
-                                        text = "El certificado de ${state.selectedType.displayName} no se encuentra emitido en este DNIe.",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        textAlign = TextAlign.Center
-                                    )
+                                }
+                            } else {
+                                // Certificado opcional no disponible en este chip
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(32.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text(
+                                            text = "El certificado de ${selectedType.displayName} no se encuentra emitido en este DNIe.",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            textAlign = TextAlign.Center
+                                        )
+                                    }
                                 }
                             }
                         }

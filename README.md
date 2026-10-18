@@ -1,11 +1,12 @@
 # DNIe Suite
 
-Monorepo privado de Android, Suite de firma Windows y puente NFC–PC/SC. Versión funcional actual: **3.1.0**.
+Monorepo privado de Android, Suite de firma Windows y puente NFC–PC/SC. Versión funcional actual: **3.1.4**.
 
 El teléfono gestiona NFC/PACE y las operaciones del DNI. La Suite procesa documentos en la PC mediante su conexión privada al teléfono. El Bridge ofrece, por separado, compatibilidad PC/SC con aplicaciones como ReFirma y Firma Perú. Los motores, transportes e interfaces conservan sus módulos independientes.
 
 ## Empezar aquí
 
+- [Experiencia Flagship R11 y Fluid UI (3.1.4 / APK 88)](docs/design/EXPERIENCIA_FLAGSHIP_R11.md). Rediseño de flujos insignia y pulido Organic Motion en Android Compose, Swing y WinForms.
 - [Rediseño Aether 3.1: cambios y pruebas](docs/design/RESULTADO_AETHER_R2.md). Android82 instalada; APK83 preparada sin ADB y Windows R7 actualizado. [Pulido R4 y pruebas](docs/design/RESULTADO_AETHER_R4.md). [Red coordinada y simplificación R6](docs/architecture/RED_COORDINADA_R6.md). [Personalización R7 y pruebas](docs/design/PERSONALIZACION_SELLO_HAPTICA_R7.md). QR R5 permanece como referencia histórica.
 
 - [Estado actual](docs/CONTEXTO_ACTUAL.md), [pendientes](docs/PENDIENTES_ACTUALES.md) y [arquitectura](docs/architecture/ARQUITECTURA_ACTUAL_2_0.md).

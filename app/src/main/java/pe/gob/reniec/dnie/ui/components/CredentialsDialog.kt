@@ -20,6 +20,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import pe.gob.reniec.dnie.data.preferences.CanStorage
+import pe.gob.reniec.dnie.ui.design.*
 
 /** Legacy call sites share the same sheet and form as continuous operations. */
 @Composable
@@ -45,20 +46,29 @@ fun SavedCanChip(can: String, saved: Boolean = true, enabled: Boolean = true, on
 @Composable
 fun CredentialDigitsIndicator(length: Int, minTarget: Int = 4, maxTarget: Int = 8, completeAt: Int = maxTarget) {
     val count = if (minTarget == maxTarget) maxTarget else maxTarget
+    val reduced = pe.gob.reniec.dnie.ui.design.rememberReducedMotion()
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
         repeat(count) { index ->
             val filled = index < length
             val scale by androidx.compose.animation.core.animateFloatAsState(
-                targetValue = if (filled) 1f else .82f, label = "credential_digit"
+                targetValue = if (filled) 1f else .82f,
+                animationSpec = pe.gob.reniec.dnie.ui.design.aetherSpring(reduced),
+                label = "credential_digit_scale"
+            )
+            val targetColor = when {
+                !filled -> MaterialTheme.colorScheme.surfaceContainerHigh
+                length >= completeAt -> MaterialTheme.colorScheme.secondary
+                else -> MaterialTheme.colorScheme.primary
+            }
+            val color by androidx.compose.animation.animateColorAsState(
+                targetValue = targetColor,
+                animationSpec = pe.gob.reniec.dnie.ui.design.aetherSpring(reduced),
+                label = "credential_digit_color"
             )
             Surface(
                 modifier = Modifier.size(width = 22.dp, height = 6.dp)
                     .graphicsLayer { scaleX = scale; scaleY = scale },
-                color = when {
-                    !filled -> MaterialTheme.colorScheme.surfaceContainerHigh
-                    length >= completeAt -> MaterialTheme.colorScheme.secondary
-                    else -> MaterialTheme.colorScheme.primary
-                }, shape = MaterialTheme.shapes.extraSmall, content = {}
+                color = color, shape = MaterialTheme.shapes.extraSmall, content = {}
             )
         }
     }
@@ -93,15 +103,19 @@ fun CredentialsForm(subtitle: String? = null, requireCan: Boolean = true, requir
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         subtitle?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
         if (requireCan) {
-            if (!editingCan) SavedCanChip(can, saved = remembered) { editingCan = true }
-            else {
-                OutlinedTextField(can, { if (it.length <= 6 && it.all { c -> c in '0'..'9' }) can = it },
-                    enabled = loaded, textStyle = MaterialTheme.typography.bodyLarge, label = { Text("CAN (6 dígitos)") }, singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
-                CredentialDigitsIndicator(can.length, minTarget = 6, maxTarget = 6, completeAt = 6)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(remembered, { remembered = it })
-                    Text("Recordar CAN en este dispositivo", style = MaterialTheme.typography.bodySmall)
+            Box(Modifier.fillMaxWidth().aetherAnimateSize()) {
+                if (!editingCan) SavedCanChip(can, saved = remembered) { editingCan = true }
+                else {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(can, { if (it.length <= 6 && it.all { c -> c in '0'..'9' }) can = it },
+                            enabled = loaded, textStyle = MaterialTheme.typography.bodyLarge, label = { Text("CAN (6 dígitos)") }, singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+                        CredentialDigitsIndicator(can.length, minTarget = 6, maxTarget = 6, completeAt = 6)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(remembered, { remembered = it })
+                            Text("Recordar CAN en este dispositivo", style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
                 }
             }
         }

@@ -1,6 +1,7 @@
 package pe.gob.reniec.dnie.ui.signer
 
 import pe.gob.reniec.dnie.ui.design.AetherCard as Card
+import pe.gob.reniec.dnie.ui.design.*
 import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.layout.*
@@ -29,7 +30,7 @@ internal fun shareSignedArtifact(context: Context, artifact: SignedArtifact) {
 @Composable
 internal fun SignedResultHeroCard(signed: Int, total: Int, busy: Boolean) {
     val complete = signed == total && total > 0 && !busy
-    Card(colors = CardDefaults.cardColors(containerColor = if (complete) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceVariant)) {
+    Card(modifier = Modifier.aetherAnimateSize(), colors = CardDefaults.cardColors(containerColor = if (complete) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceVariant)) {
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(if (complete) "Firma completada" else if (busy) "Lote en curso" else "Resultados parciales", style = MaterialTheme.typography.titleLarge)
             Text("$signed de $total firmados" + if (complete) " · guarda o comparte el resultado" else " · se conservan los resultados disponibles")
@@ -60,7 +61,7 @@ internal fun SignerActionBar(workspace: SigningWorkspace, batch: Boolean, enable
     onSign: () -> Unit, onSave: (SignedArtifact) -> Unit, onShare: (SignedArtifact) -> Unit, onNew: () -> Unit, onSaveBatch: () -> Unit) {
     if (workspace.documents.isEmpty()) return
     Surface(modifier = Modifier.testTag("signer_action_bar"), tonalElevation = 3.dp, shadowElevation = 3.dp) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(Modifier.fillMaxWidth().aetherAnimateSize().padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             if (selectedResult != null) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(enabled = enabled, onClick = { onSave(selectedResult) }, modifier = Modifier.weight(1f)) { Text("Guardar") }

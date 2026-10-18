@@ -14,24 +14,32 @@ internal class AetherDocumentPill(private val success: Boolean=false): JLabel() 
     }
 }
 
-internal class AetherChevronIcon(private val expanded: Boolean): Icon {
+internal class AetherChevronIcon(var rotationFraction: Float = 1f): Icon {
+    constructor(expanded: Boolean): this(if(expanded) 1f else 0f)
     override fun getIconWidth()=20
     override fun getIconHeight()=20
     override fun paintIcon(c: Component,graphics: Graphics,x: Int,y: Int) {
         val g=graphics.create() as Graphics2D
-        try{g.translate(x,y);g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON);g.color=AetherSwingTheme.primary;g.stroke=BasicStroke(1.7f)
-            if(expanded)g.drawPolyline(intArrayOf(5,10,15),intArrayOf(7,12,7),3) else g.drawPolyline(intArrayOf(7,12,7),intArrayOf(5,10,15),3)
-        }finally{g.dispose()}
+        try {
+            g.translate(x,y)
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON)
+            g.color=AetherSwingTheme.primary
+            g.stroke=BasicStroke(1.7f)
+            val angle = Math.toRadians((rotationFraction * 90.0))
+            g.rotate(angle, 10.0, 10.0)
+            g.drawPolyline(intArrayOf(7, 12, 7), intArrayOf(5, 10, 15), 3)
+        } finally { g.dispose() }
     }
 }
 
 internal class AetherDisclosureButton(title: String): AetherButton(title,ButtonVariant.GHOST) {
-    private val opened=AetherChevronIcon(true)
-    private val closed=AetherChevronIcon(false)
+    private val expandAnim = AetherSwingAnimator(this, durationNanos = 160_000_000L)
+    private val chevron = AetherChevronIcon(1f)
     var expanded=true
-        set(value){field=value;toolTipText=if(value)"Plegar sección" else "Desplegar sección";repaint()}
+        set(value){field=value;toolTipText=if(value)"Plegar sección" else "Desplegar sección";expandAnim.to(if(value) 1f else 0f)}
+    override fun removeNotify(){expandAnim.stop();super.removeNotify()}
     init {font=Font("Segoe UI",Font.BOLD,14);horizontalAlignment=SwingConstants.LEFT;maximumSize=Dimension(Int.MAX_VALUE,48);border=EmptyBorder(10,12,10,36)}
-    override fun paintComponent(g: Graphics){super.paintComponent(g);(if(expanded)opened else closed).paintIcon(this,g,width-28,(height-20)/2)}
+    override fun paintComponent(g: Graphics){super.paintComponent(g);chevron.rotationFraction=expandAnim.value;chevron.paintIcon(this,g,width-28,(height-20)/2)}
 }
 
 internal object AetherConfirmDialog {
