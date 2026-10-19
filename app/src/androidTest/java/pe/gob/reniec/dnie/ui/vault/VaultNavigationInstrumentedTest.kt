@@ -93,13 +93,13 @@ class VaultNavigationInstrumentedTest {
         compose.onNodeWithText("Respaldo").performClick()
         compose.onNodeWithText("Exportar bóveda").assertExists()
         compose.onNodeWithContentDescription("Volver").performClick()
-        compose.onNodeWithText("Mis archivos").assertExists()
+        compose.onAllNodesWithText("Mis archivos")[0].assertExists()
         assertFalse(leftVault)
 
         compose.onNodeWithContentDescription("Opciones de bóveda").performClick()
         compose.onNodeWithText("Vincular o cambiar DNI").assertExists()
         compose.onNodeWithContentDescription("Volver").performClick()
-        compose.onNodeWithText("Mis archivos").assertExists()
+        compose.onAllNodesWithText("Mis archivos")[0].assertExists()
         assertFalse(leftVault)
     }
 }
