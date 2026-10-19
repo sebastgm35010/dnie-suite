@@ -67,3 +67,19 @@ python tools/build_suite.py --component bridge --output D:/DNIeToolchain/Builds/
   ```powershell
   python tools/check_architecture.py
   ```
+
+---
+
+## Aviso Legal y Deslinde de Responsabilidad Oficial
+
+1. **Desarrollo Independiente:** **DNIe Suite** es un desarrollo tecnológico independiente creado por Sebastian Orihuela para facilitar la interoperabilidad de hardware, la firma digital y la custodia segura de documentos electrónicos.
+2. **No Afiliación:** Este proyecto **NO** ha sido desarrollado, certificado, patrocinado ni se encuentra asociado de manera alguna con el **Registro Nacional de Identificación y Estado Civil (RENIEC)**, la **Presidencia del Consejo de Ministros (PCM)**, la **Secretaría de Gobierno y Transformación Digital (SGTD)**, ni con ninguna entidad del Estado Peruano.
+3. **Marcas Registradas:** Las denominaciones *"RENIEC"*, *"DNIe"*, *"ReFirma"*, *"Firma Perú"* y sus logotipos asociados son marcas registradas de sus respectivos titulares públicos. Su mención en este repositorio tiene un propósito puramente descriptivo y técnico de interoperabilidad bajo normas internacionales (ISO/IEC 7816, BSI TR-03110, ICAO Doc 9303) y el Decreto Legislativo 822 de la República del Perú.
+
+---
+
+## Licencia y Créditos de Terceros
+
+- **Código Propio y Arquitectura:** Copyright (c) 2026 Sebastian Orihuela. Todos los derechos reservados (*All Rights Reserved*). Consultar el archivo [LICENSE](LICENSE) para más detalles.
+- **Software de Terceros:** Este producto integra bibliotecas y recursos de código abierto bajo licencias permisivas (Apache-2.0, MIT, BSD 2-Clause y SIL Open Font License). El inventario completo de atribuciones, autores y avisos legales se encuentra detallado en el archivo [NOTICE](NOTICE).
+

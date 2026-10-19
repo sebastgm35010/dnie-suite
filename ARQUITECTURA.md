@@ -6,7 +6,7 @@ Documento canónico y consolidado de arquitectura del sistema para el monorepo D
 
 ## 1. Visión General
 
-**DNIe Suite** es una plataforma integral de software libre para la interacción, lectura, firma digital y custodia de archivos mediante el **DNI electrónico peruano (DNIe v3)**.
+**DNIe Suite** es una plataforma integral de software independiente para la interacción, lectura, firma digital y custodia de archivos mediante el **DNI electrónico peruano (DNIe v3)**.
 
 La plataforma desacopla el hardware criptográfico (tarjeta con chip NFC) de los entornos de ejecución, permitiendo que un dispositivo móvil Android actúe como lector seguro y transceptor criptográfico para el dispositivo móvil y para computadoras personales conectadas.
 

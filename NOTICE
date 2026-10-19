@@ -1,0 +1,123 @@
+========================================================================
+DNIe Suite - Third-Party Notices & Acknowledgments
+========================================================================
+
+Este proyecto incorpora o hace uso de componentes y bibliotecas de código abierto 
+desarrolladas por terceros. A continuación se presentan las atribuciones y licencias 
+correspondientes, en cumplimiento con sus términos de distribución:
+
+------------------------------------------------------------------------
+1. Apache Software Foundation Components (Apache License 2.0)
+------------------------------------------------------------------------
+- Apache PDFBox, FontBox, PDFBox-IO (v3.0.8)
+  Copyright (c) 2002-2024 The Apache Software Foundation.
+  Sitio web: https://pdfbox.apache.org/
+  Licencia: Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+
+- Apache Santuario - XML Security for Java (v2.3.5)
+  Copyright (c) 1999-2024 The Apache Software Foundation.
+  Sitio web: https://santuario.apache.org/
+  Licencia: Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+
+- Apache Commons Codec (v1.17.1)
+  Copyright (c) 2002-2024 The Apache Software Foundation.
+  Sitio web: https://commons.apache.org/proper/commons-codec/
+  Licencia: Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+
+- Apache Commons Logging (v1.4.0)
+  Copyright (c) 2003-2024 The Apache Software Foundation.
+  Sitio web: https://commons.apache.org/proper/commons-logging/
+  Licencia: Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+
+------------------------------------------------------------------------
+2. PDFBox-Android (Apache License 2.0)
+------------------------------------------------------------------------
+- PDFBox-Android (v2.0.27.0)
+  Copyright (c) 2015-2024 Tom Roush.
+  Basado en Apache PDFBox, Copyright (c) The Apache Software Foundation.
+  Sitio web: https://github.com/TomRoush/PdfBox-Android
+  Licencia: Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+
+------------------------------------------------------------------------
+3. Google Tink (Apache License 2.0)
+------------------------------------------------------------------------
+- Tink Cryptography Library (v1.23.0)
+  Copyright (c) Google LLC.
+  Sitio web: https://github.com/tink-crypto/tink-java
+  Licencia: Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+
+------------------------------------------------------------------------
+4. Bouncy Castle Cryptography APIs (Bouncy Castle License / MIT-style)
+------------------------------------------------------------------------
+- Bouncy Castle Provider, PKIX & ASN.1 Utilities (v1.78.1)
+  Copyright (c) 2000-2024 The Legion of the Bouncy Castle Inc. (https://www.bouncycastle.org)
+  Licencia: Bouncy Castle License (Permisiva compatible con MIT).
+  Permission is hereby granted, free of charge, to any person obtaining a copy of this 
+  software and associated documentation files (the "Software"), to deal in the Software 
+  without restriction, including without limitation the rights to use, copy, modify, 
+  merge, publish, distribute, sublicense, and/or sell copies of the Software...
+
+------------------------------------------------------------------------
+5. JP2ForAndroid & OpenJPEG (BSD 2-Clause License)
+------------------------------------------------------------------------
+- JP2ForAndroid (v1.0.4)
+  Copyright (c) 2018 Gemalto s.r.o. / Thales Group / Tgo1014.
+  Sitio web: https://github.com/Tgo1014/JP2ForAndroid
+  Licencia: BSD 2-Clause License.
+
+- OpenJPEG (v2.4.0)
+  Copyright (c) 2002-2024 Université catholique de Louvain (UCLouvain).
+  Sitio web: https://github.com/uclouvain/openjpeg
+  Licencia: BSD 2-Clause License.
+
+------------------------------------------------------------------------
+6. QR Code Generators (MIT License)
+------------------------------------------------------------------------
+- QR Code Generator (v1.8.0)
+  Copyright (c) Project Nayuki.
+  Sitio web: https://www.nayuki.io/page/qr-code-generator-library
+  Licencia: MIT License.
+
+- QRCoder (v1.7.0)
+  Copyright (c) 2013-2024 Raffael Herrmann, Shane32 and contributors.
+  Sitio web: https://github.com/Shane32/QRCoder
+  Licencia: MIT License.
+
+------------------------------------------------------------------------
+7. Logging APIs (MIT License)
+------------------------------------------------------------------------
+- SLF4J API & NOP (v1.7.36)
+  Copyright (c) 2004-2024 QOS.ch.
+  Sitio web: https://www.slf4j.org/
+  Licencia: MIT License.
+
+------------------------------------------------------------------------
+8. Liberation Fonts (SIL Open Font License 1.1)
+------------------------------------------------------------------------
+- Liberation Sans (Regular, Bold - v2.1.5)
+  Digitized data copyright (c) 2010 Google Corporation (Arimo, Tinos, Cousine).
+  Copyright (c) 2012 Red Hat, Inc. (Liberation).
+  Sitio web: https://github.com/liberationfonts/liberation-fonts
+  Licencia: SIL Open Font License, Version 1.1 (http://scripts.sil.org/OFL).
+  Las fuentes tipográficas se distribuyen y renderizan embebidas con el software, 
+  sin comercializarse de forma aislada.
+
+------------------------------------------------------------------------
+9. Microsoft .NET Runtime & Libraries (MIT License)
+------------------------------------------------------------------------
+- System.Drawing.Common (v8.0.31) & Microsoft.Win32.SystemEvents (v8.0.0)
+  Copyright (c) .NET Foundation and Contributors.
+  Licencia: MIT License.
+
+------------------------------------------------------------------------
+10. UsbDk (Apache License 2.0)
+------------------------------------------------------------------------
+- UsbDk - USB Development Kit
+  Copyright (c) 2014-2024 Daynix Computing LTD / Red Hat, Inc.
+  Licencia: Apache License, Version 2.0.
+
+========================================================================
+Los textos completos de las licencias indicadas se encuentran conservados en 
+`app/src/main/assets/third-party/`, `dnie-pdf-desktop/third-party/` y 
+`tools/windows-desktop/licenses/`.
+========================================================================
