@@ -16,7 +16,7 @@ public interface IPcscDevice : IDisposable
 
 public static class PcscAbi
 {
-    public const uint Attach = 0x22E000, Detach = 0x22E004, GetRequest = 0x22E008, Complete = 0x22E00C;
+    public const uint Attach = 0x22E000, Detach = 0x22E004, GetRequest = 0x22E008, Complete = 0x22E00C, Republish = 0x22E010;
     public const uint Transmit = 1, Reset = 2, PowerOff = 3;
     public const uint DeviceDisconnected = 0xC000009D;
     public const uint NotSupported = 0xC00000BB;

@@ -45,12 +45,12 @@ class ReniecSelector:
                 session = self.device.attach(pid)
                 self.sessions[pid] = (session, None)
                 session.on('detached', lambda *args: self._detached(pid))
-                if role == 'java':
+                if role in ('java', 'reniec'):
                     script = session.create_script(self.source)
                     script.on('message', self._message)
                     script.load()
                     self.sessions[pid] = (session, script)
-                else:
+                if role != 'java':
                     session.enable_child_gating()
                 self.event('attached', pid=pid, role=role)
                 return True

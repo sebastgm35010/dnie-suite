@@ -3,7 +3,7 @@ Signature="$WINDOWS NT$"
 Class=SmartCardReader
 ClassGuid={50DD5230-BA8A-11D1-BF5D-0000F805F530}
 Provider=%Provider%
-DriverVer=10/13/2026,2.0.0.4
+DriverVer=10/18/2026,2.0.0.5
 CatalogFile=DniBridgeReader.cat
 PnpLockdown=1
 

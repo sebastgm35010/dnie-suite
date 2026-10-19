@@ -3,6 +3,7 @@
 // Process-local reader filter. Attach only to the RENIEC Java child.
 // Preserve API failures and card responses; never read APDU or process arguments.
 const bridge = 'DNIe Bridge Android NFC Private Reader 0';
+const bridgePrefix = 'DNIe Bridge Android NFC Private Reader ';
 const hooks = new Set();
 function install(module) {
   if (module.name.toLowerCase() !== 'winscard.dll') return;
@@ -23,17 +24,18 @@ function install(module) {
         if (count < 2 || count > 65536) return;
         const pointer = this.auto ? this.output.readPointer() : this.output;
         if (pointer.isNull()) return;
-        let word = ''; let found = false;
+        let word = ''; let matchedReader = null;
         for (let i = 0; i < count; i++) {
           const c = wide ? pointer.add(i * 2).readU16() : pointer.add(i).readU8();
           if (c === 0) {
             if (!word) break;
-            if (word === bridge) found = true;
+            if (word === bridge || word.startsWith(bridgePrefix)) matchedReader = word;
             word = '';
           } else word += String.fromCharCode(c);
         }
         // Shorten in the existing caller/PCSC allocation, keeping ownership intact.
-        const value = found ? bridge + '\0\0' : '\0\0';
+        const found = matchedReader !== null;
+        const value = found ? matchedReader + '\0\0' : '\0\0';
         if (value.length > count) throw new Error('Reader filter capacity mismatch');
         for (let i = 0; i < value.length; i++) {
           if (wide) pointer.add(i * 2).writeU16(value.charCodeAt(i));

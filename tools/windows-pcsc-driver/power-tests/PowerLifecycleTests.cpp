@@ -52,10 +52,54 @@ static void QueueLifecycle() {
     Check(f.device->defaultQueue->config.PowerManaged==WdfTrue&&f.device->defaultQueue->config.EvtIoStop==IoStop,"power queue registers IoStop");
     Check(f.context()->presentWaiters->config.PowerManaged==WdfFalse&&f.context()->absentWaiters->config.PowerManaged==WdfFalse,"manual notification queues not power managed");
     auto wait=f.request(); f.ioctl(wait,IOCTL_SMARTCARD_IS_PRESENT); Check(!wait.completed,"queued presence waiter");
-    D0Exit(f.device.get(),0); Check(wait.completed&&wait.status==STATUS_CANCELLED,"D0Exit purges waiter to completion");
-    Check(f.context()->presentWaiters->stopped&&f.context()->absentWaiters->stopped,"both queues purged");
-    auto suspended=f.request(); f.ioctl(suspended,IOCTL_SMARTCARD_GET_STATE); Check(suspended.status==STATUS_DEVICE_NOT_READY,"no access outside D0");
-    D0Entry(f.device.get(),0); auto next=f.request(); f.ioctl(next,IOCTL_SMARTCARD_IS_PRESENT); f.attach(); Check(next.completed&&next.status==STATUS_SUCCESS,"resume notification restored");
+    D0Exit(f.device.get(),0);
+    Check(!wait.completed,"present waiter survives D0Exit without cancellation");
+    auto suspended=f.request(sizeof(ULONG)); f.ioctl(suspended,IOCTL_SMARTCARD_GET_STATE);
+    ULONG suspendedState=0; memcpy(&suspendedState,suspended.output.data(),sizeof(suspendedState));
+    Check(suspended.completed&&suspended.status==STATUS_SUCCESS&&suspendedState==SCARD_ABSENT,"get_state succeeds during suspension without dropping SCardSvr");
+    auto nonPassive=f.request(); nonPassive.file=&f.backend; f.ioctl(nonPassive,BRIDGE_ATTACH);
+    Check(nonPassive.status==STATUS_DEVICE_NOT_READY,"active operation rejected outside D0");
+    D0Entry(f.device.get(),0);
+    Check(!wait.completed,"present waiter still waiting after D0Entry");
+    f.attach();
+    Check(wait.completed&&wait.status==STATUS_SUCCESS,"resume notification restored");
+
+    auto republishBusy=f.request(); republishBusy.file=&f.backend; f.ioctl(republishBusy,BRIDGE_REPUBLISH);
+    Check(republishBusy.status==STATUS_DEVICE_BUSY,"republish rejected while card attached");
+    auto detach=f.request(); detach.file=&f.backend; f.ioctl(detach,BRIDGE_DETACH);
+    int initialToggles=f.device->interfaceToggles;
+    auto republishOk=f.request(); republishOk.file=&f.backend; f.ioctl(republishOk,BRIDGE_REPUBLISH);
+    Check(republishOk.completed&&republishOk.status==STATUS_SUCCESS&&f.device->interfaceToggles==initialToggles+2,"BRIDGE_REPUBLISH toggles interface state");
+
+    auto waitFlush=f.request(); f.ioctl(waitFlush,IOCTL_SMARTCARD_IS_PRESENT); Check(!waitFlush.completed,"queued presence waiter for flush");
+    SelfManagedIoFlush(f.device.get());
+    Check(waitFlush.completed&&waitFlush.status==STATUS_CANCELLED,"SelfManagedIoFlush purges present waiter");
+    Check(f.context()->presentWaiters->stopped&&f.context()->absentWaiters->stopped,"both queues stopped after flush");
+    D0Entry(f.device.get(),0);
+
+    f.attach();
+    ULONG power=SCARD_WARM_RESET; auto resetZero=f.request(0); resetZero.input.resize(sizeof(power)); memcpy(resetZero.input.data(),&power,sizeof(power));
+    f.ioctl(resetZero,IOCTL_SMARTCARD_POWER);
+    Check(!resetZero.completed&&f.context()->pending==&resetZero,"power reset with 0 output accepted");
+    f.deliver();
+    auto replyReset=f.request(); replyReset.file=&f.backend;
+    const BYTE atrBytes[]={0x3b,0x00};
+    CompleteHeader replyHdr{f.context()->pendingId,0,sizeof(atrBytes)};
+    replyReset.input.resize(sizeof(replyHdr)+sizeof(atrBytes));
+    memcpy(replyReset.input.data(),&replyHdr,sizeof(replyHdr));
+    memcpy(replyReset.input.data()+sizeof(replyHdr),atrBytes,sizeof(atrBytes));
+    f.ioctl(replyReset,BRIDGE_COMPLETE);
+    Check(replyReset.completed&&replyReset.status==STATUS_SUCCESS,"reset backend reply accepted");
+    Check(resetZero.completed&&resetZero.status==STATUS_SUCCESS&&resetZero.information==0,"power reset with 0 output completes with 0 bytes");
+
+    ULONG defaultProto=SCARD_PROTOCOL_DEFAULT; auto setProto=f.request(sizeof(defaultProto)); setProto.input.resize(sizeof(defaultProto)); memcpy(setProto.input.data(),&defaultProto,sizeof(defaultProto));
+    f.ioctl(setProto,IOCTL_SMARTCARD_SET_PROTOCOL);
+    Check(setProto.completed&&setProto.status==STATUS_SUCCESS&&f.context()->protocol==SCARD_PROTOCOL_T1,"SCARD_PROTOCOL_DEFAULT negotiated successfully");
+
+    ULONG optimalProto=SCARD_PROTOCOL_OPTIMAL; auto setOpt=f.request(sizeof(optimalProto)); setOpt.input.resize(sizeof(optimalProto)); memcpy(setOpt.input.data(),&optimalProto,sizeof(optimalProto));
+    f.ioctl(setOpt,IOCTL_SMARTCARD_SET_PROTOCOL);
+    Check(setOpt.completed&&setOpt.status==STATUS_SUCCESS&&f.context()->protocol==SCARD_PROTOCOL_T1,"SCARD_PROTOCOL_OPTIMAL negotiated successfully");
+
     auto absent=f.request(); f.ioctl(absent,IOCTL_SMARTCARD_IS_ABSENT); Check(!absent.completed,"absence waiter queued");
     auto transmit=f.transmit(); f.ioctl(transmit,IOCTL_SMARTCARD_TRANSMIT); f.deliver(); FileCleanup(&f.backend);
     Check(absent.completed&&absent.status==STATUS_SUCCESS&&transmit.status==STATUS_DEVICE_NOT_CONNECTED,"file close detaches, retires, notifies");

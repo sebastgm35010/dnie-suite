@@ -27,7 +27,14 @@ class IsoDepCardChannel(
         if (closed) throw CardDisconnectedException("La sesión NFC ya está cerrada")
         return try {
             if (!isoDep.isConnected) {
-                isoDep.connect()
+                try {
+                    isoDep.connect()
+                } catch (firstFailure: IOException) {
+                    if (closed) throw firstFailure
+                    try { Thread.sleep(40) } catch (_: InterruptedException) { Thread.currentThread().interrupt(); throw firstFailure }
+                    if (closed) throw firstFailure
+                    isoDep.connect()
+                }
                 timeoutConfigured = false
             }
             if (closed) {

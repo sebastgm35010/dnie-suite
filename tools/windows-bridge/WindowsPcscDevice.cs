@@ -74,6 +74,24 @@ public sealed class WindowsPcscDevice : IPcscDevice
     }
 
     public void Detach() => Call(PcscAbi.Detach, [], []);
+    public void Republish() => Call(PcscAbi.Republish, [], []);
+
+    public static bool TryRepublish()
+    {
+        try
+        {
+            string[] devices = Enumerate();
+            if (devices.Length != 1) return false;
+            using var device = new WindowsPcscDevice(devices[0]);
+            device.Republish();
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private void Call(uint code, byte[] input, byte[] output)
     {
         if (!DeviceIoControl(handle, code, input, input.Length, output, output.Length, out _, IntPtr.Zero))

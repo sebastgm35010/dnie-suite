@@ -5,9 +5,12 @@
 #include <ntstatus.h>
 #include <wdf.h>
 #include <winscard.h>
-#include <winsmcrd.h>
 #include "BridgeAbi.h"
 #include <initguid.h>
+
+#ifndef SCARD_ATTR_CURRENT_DATA_RATE
+#define SCARD_ATTR_CURRENT_DATA_RATE SCARD_ATTR_VALUE(SCARD_CLASS_IFD_PROTOCOL, 0x020c)
+#endif
 
 DEFINE_GUID(GUID_DEVINTERFACE_SMARTCARD_READER, 0x50dd5230, 0xba8a, 0x11d1, 0xbf, 0x5d, 0x00, 0x00, 0xf8, 0x05, 0xf5, 0x30);
 DEFINE_GUID(GUID_DNI_BRIDGE_BACKEND, 0x6d735823, 0x37a5, 0x4df8, 0x98, 0xc4, 0x0e, 0x51, 0x2b, 0x45, 0xd8, 0xf1);
@@ -15,6 +18,7 @@ DEFINE_GUID(GUID_DNI_BRIDGE_BACKEND, 0x6d735823, 0x37a5, 0x4df8, 0x98, 0xc4, 0x0
 struct ReaderContext {
     bool attached;
     bool powered;
+    bool returnAtrOnReset;
     BYTE atr[33];
     ULONG atrLength;
     ULONG supported;
@@ -45,7 +49,9 @@ EVT_WDF_TIMER TimerTick;
 EVT_WDF_FILE_CLEANUP FileCleanup;
 EVT_WDF_DEVICE_D0_EXIT D0Exit;
 EVT_WDF_DEVICE_D0_ENTRY D0Entry;
+EVT_WDF_DEVICE_SELF_MANAGED_IO_FLUSH SelfManagedIoFlush;
 EVT_WDF_OBJECT_CONTEXT_CLEANUP DeviceCleanup;
+
 struct Guard {
     WDFWAITLOCK lock;
     explicit Guard(WDFWAITLOCK value) : lock(value) { WdfWaitLockAcquire(lock, nullptr); }
@@ -64,6 +70,7 @@ static WDFREQUEST TakePending(ReaderContext* context) {
     if (WdfRequestUnmarkCancelable(pending) == STATUS_CANCELLED) return nullptr;
     context->pending = nullptr;
     context->delivered = false;
+    context->returnAtrOnReset = false;
     SecureZeroMemory(context->payload, context->payloadLength);
     context->payloadLength = 0;
     return pending;
@@ -95,6 +102,7 @@ void CancelPending(WDFREQUEST request) {
             bool delivered = context->delivered;
             context->pending = nullptr;
             context->delivered = false;
+            context->returnAtrOnReset = false;
             SecureZeroMemory(context->payload, context->payloadLength);
             context->payloadLength = 0;
             // Only GET_REQUEST transfers the command to the backend, under this
@@ -135,17 +143,14 @@ void FileCleanup(WDFFILEOBJECT file) {
 
 NTSTATUS D0Exit(WDFDEVICE device, WDF_POWER_DEVICE_STATE) {
     auto context = Reader(device);
-    {
-        Guard guard(context->lock);
-        context->powered = false;
-        WdfTimerStop(context->timer, FALSE);
-        Detach(context);
-    }
-    // These are non-power-managed manual queues containing only framework-owned
-    // presence waits. Purge to completion outside our lock; D0Entry may then
-    // safely restart them, without an asynchronous purge racing the new session.
-    WdfIoQueuePurgeSynchronously(context->presentWaiters);
-    WdfIoQueuePurgeSynchronously(context->absentWaiters);
+    Guard guard(context->lock);
+    context->powered = false;
+    WdfTimerStop(context->timer, FALSE);
+    // Detach retires any active card session and completes absentWaiters with STATUS_SUCCESS.
+    // Do NOT purge presentWaiters here: SCardSvr keeps a long-lived IOCTL_SMARTCARD_IS_PRESENT
+    // IRP parked across sleep/resume, and cancelling it with STATUS_CANCELLED causes SCardSvr
+    // to permanently drop the reader from SCardListReaders until reboot.
+    Detach(context);
     return STATUS_SUCCESS;
 }
 
@@ -159,10 +164,23 @@ NTSTATUS D0Entry(WDFDEVICE device, WDF_POWER_DEVICE_STATE) {
     return STATUS_SUCCESS;
 }
 
+void SelfManagedIoFlush(WDFDEVICE device) {
+    auto context = Reader(device);
+    {
+        Guard guard(context->lock);
+        context->powered = false;
+        WdfTimerStop(context->timer, FALSE);
+        Detach(context);
+    }
+    // Only purge notification queues when the PnP device is actually being removed.
+    WdfIoQueuePurgeSynchronously(context->presentWaiters);
+    WdfIoQueuePurgeSynchronously(context->absentWaiters);
+}
+
 void DeviceCleanup(WDFOBJECT object) {
     auto context = Reader(reinterpret_cast<WDFDEVICE>(object));
-    // D0Exit owns request retirement; WDF cancels remaining queues and removes child
-    // objects during teardown. Do not reference queues/locks during final cleanup.
+    // D0Exit / SelfManagedIoFlush own request retirement; WDF cancels remaining queues
+    // and removes child objects during teardown. Do not reference queues/locks during final cleanup.
     SecureZeroMemory(context->atr, sizeof(context->atr));
     SecureZeroMemory(context->payload, sizeof(context->payload));
 }
@@ -182,7 +200,7 @@ static bool RequestLocalTransmitError(ULONG opcode, NTSTATUS status) {
 }
 
 static NTSTATUS QueueBackend(ReaderContext* context, WDFREQUEST request, ULONG opcode,
-    const BYTE* bytes, ULONG length, ULONG capacity, ULONG pciLength = 0) {
+    const BYTE* bytes, ULONG length, ULONG capacity, ULONG pciLength = 0, bool returnAtrOnReset = true) {
     if (!context->attached) return STATUS_DEVICE_NOT_CONNECTED;
     if (context->pending) return STATUS_DEVICE_BUSY;
     if (length > BRIDGE_MAX_APDU || capacity > BRIDGE_MAX_APDU) return STATUS_INVALID_BUFFER_SIZE;
@@ -192,18 +210,31 @@ static NTSTATUS QueueBackend(ReaderContext* context, WDFREQUEST request, ULONG o
     context->payloadLength = length;
     context->outputCapacity = capacity;
     context->pciLength = pciLength;
+    context->returnAtrOnReset = returnAtrOnReset;
     context->delivered = false;
     context->deadline = GetTickCount64() + 30000;
     if (length) memcpy(context->payload, bytes, length);
     NTSTATUS status = WdfRequestMarkCancelableEx(request, CancelPending);
-    if (!NT_SUCCESS(status)) { context->pending = nullptr; SecureZeroMemory(context->payload, length); context->payloadLength = 0; }
+    if (!NT_SUCCESS(status)) {
+        context->pending = nullptr;
+        context->returnAtrOnReset = false;
+        SecureZeroMemory(context->payload, length);
+        context->payloadLength = 0;
+    }
     return status;
 }
 
 void DeviceControl(WDFQUEUE queue, WDFREQUEST request, size_t outputLength, size_t inputLength, ULONG code) {
-    auto context = Reader(WdfIoQueueGetDevice(queue));
+    WDFDEVICE device = WdfIoQueueGetDevice(queue);
+    auto context = Reader(device);
     Guard guard(context->lock);
-    if (!context->powered) { WdfRequestComplete(request, STATUS_DEVICE_NOT_READY); return; }
+    // Passive state/attribute/presence queries do not touch physical power and must remain
+    // available to SCardSvr across power transitions so the reader is never dropped.
+    bool requiresPower = !(code == IOCTL_SMARTCARD_GET_STATE ||
+                           code == IOCTL_SMARTCARD_GET_ATTRIBUTE ||
+                           code == IOCTL_SMARTCARD_IS_PRESENT ||
+                           code == IOCTL_SMARTCARD_IS_ABSENT);
+    if (requiresPower && !context->powered) { WdfRequestComplete(request, STATUS_DEVICE_NOT_READY); return; }
     NTSTATUS status = STATUS_NOT_SUPPORTED;
     void* input = nullptr;
     if (inputLength) {
@@ -211,9 +242,23 @@ void DeviceControl(WDFQUEUE queue, WDFREQUEST request, size_t outputLength, size
         if (!NT_SUCCESS(status)) { WdfRequestComplete(request, status); return; }
     }
     status = STATUS_NOT_SUPPORTED;
-    if (code >= BRIDGE_ATTACH && code <= BRIDGE_COMPLETE) {
+    if (code >= BRIDGE_ATTACH && code <= BRIDGE_REPUBLISH) {
         auto owner = WdfRequestGetFileObject(request);
-        if (!owner || (code != BRIDGE_ATTACH && owner != context->backendOwner)) { WdfRequestComplete(request, STATUS_ACCESS_DENIED); return; }
+        if (!owner) { WdfRequestComplete(request, STATUS_ACCESS_DENIED); return; }
+        if (code == BRIDGE_REPUBLISH) {
+            if (inputLength || outputLength) status = STATUS_INVALID_PARAMETER;
+            else if (context->attached || context->pending) status = STATUS_DEVICE_BUSY;
+            else {
+                // Toggle the SmartCardReader PnP interface state so SCardSvr receives
+                // a fresh DBT_DEVICEARRIVAL and re-enumerates the reader without a reboot.
+                WdfDeviceSetDeviceInterfaceState(device, &GUID_DEVINTERFACE_SMARTCARD_READER, nullptr, FALSE);
+                WdfDeviceSetDeviceInterfaceState(device, &GUID_DEVINTERFACE_SMARTCARD_READER, nullptr, TRUE);
+                status = STATUS_SUCCESS;
+            }
+            WdfRequestComplete(request, status);
+            return;
+        }
+        if (code != BRIDGE_ATTACH && owner != context->backendOwner) { WdfRequestComplete(request, STATUS_ACCESS_DENIED); return; }
         if (code == BRIDGE_ATTACH) {
             if (context->attached || context->pending) status = STATUS_DEVICE_BUSY;
             else if (inputLength < sizeof(AttachHeader)) status = STATUS_INVALID_PARAMETER;
@@ -269,16 +314,18 @@ void DeviceControl(WDFQUEUE queue, WDFREQUEST request, size_t outputLength, size
                         // Snapshot metadata before TakePending clears the pending payload;
                         // unmark cancellation before retrieving or writing the output buffer.
                         ULONG opcode = context->opcode;
+                        bool copyResetAtr = context->returnAtrOnReset;
                         WDFREQUEST pending = TakePending(context);
                         if (!pending) { WdfRequestComplete(request, STATUS_CANCELLED); return; }
                         void* output = nullptr;
-                        status = prefix + header->length ? WdfRequestRetrieveOutputBuffer(pending, prefix + header->length, &output, nullptr) : STATUS_SUCCESS;
+                        size_t copyBytes = (opcode == OP_RESET && !copyResetAtr) ? 0 : (prefix + header->length);
+                        status = copyBytes ? WdfRequestRetrieveOutputBuffer(pending, copyBytes, &output, nullptr) : STATUS_SUCCESS;
                         if (NT_SUCCESS(status)) {
-                            if (prefix) { SCARD_IO_REQUEST pci{context->protocol, sizeof(SCARD_IO_REQUEST)}; memcpy(output, &pci, sizeof(pci)); }
-                            if (header->length) memcpy(static_cast<BYTE*>(output) + prefix, payload, header->length);
+                            if (prefix && copyBytes) { SCARD_IO_REQUEST pci{context->protocol, sizeof(SCARD_IO_REQUEST)}; memcpy(output, &pci, sizeof(pci)); }
+                            if (header->length && copyBytes) memcpy(static_cast<BYTE*>(output) + prefix, payload, header->length);
                             if (opcode == OP_RESET) { memcpy(context->atr, payload, header->length); context->atrLength = header->length; context->protocol = context->supported; context->state = SCARD_SPECIFIC; }
                             if (opcode == OP_POWER_OFF) { context->state = SCARD_PRESENT; context->protocol = 0; }
-                            WdfRequestCompleteWithInformation(pending, STATUS_SUCCESS, prefix + header->length);
+                            WdfRequestCompleteWithInformation(pending, STATUS_SUCCESS, copyBytes);
                         } else {
                             WdfRequestComplete(pending, status);
                             if (RequestLocalTransmitError(opcode, status)) {
@@ -300,27 +347,61 @@ void DeviceControl(WDFQUEUE queue, WDFREQUEST request, size_t outputLength, size
         else { status = WdfRequestForwardToIoQueue(request, code == IOCTL_SMARTCARD_IS_PRESENT ? context->presentWaiters : context->absentWaiters); if (NT_SUCCESS(status)) return; }
     } else if (code == IOCTL_SMARTCARD_GET_ATTRIBUTE && inputLength == sizeof(ULONG)) {
         ULONG attribute = *static_cast<ULONG*>(input); ULONG value = 0;
-        static const char vendor[] = "DNIe Bridge"; static const char type[] = "Android NFC Private Reader";
+        static const char vendor[] = "DNIe Bridge";
+        static const char type[] = "Android NFC Private Reader";
+        static const char serial[] = "DNIE-NFC-0";
+        static const char friendlyA[] = "DNIe Bridge Android NFC Private Reader 0";
+        static const wchar_t friendlyW[] = L"DNIe Bridge Android NFC Private Reader 0";
+        BYTE byteValue = 0;
         const void* bytes = &value; size_t size = sizeof(value);
         switch (attribute) {
         case SCARD_ATTR_VENDOR_NAME: bytes = vendor; size = sizeof(vendor); break;
         case SCARD_ATTR_VENDOR_IFD_TYPE: bytes = type; size = sizeof(type); break;
-        case SCARD_ATTR_VENDOR_IFD_VERSION: value = 0x00020000; break;
-        case SCARD_ATTR_CHANNEL_ID: value = 0xF0000000; break;
+        case SCARD_ATTR_VENDOR_IFD_VERSION: value = 0x00020005; break;
+        case SCARD_ATTR_VENDOR_IFD_SERIAL_NO: bytes = serial; size = sizeof(serial); break;
+        case SCARD_ATTR_CHANNEL_ID: value = 0x00200000; break; // Standard USB/Virtual channel 0
+        case SCARD_ATTR_CHARACTERISTICS: value = 0x00000000; break;
         case SCARD_ATTR_PROTOCOL_TYPES: value = SCARD_PROTOCOL_T0 | SCARD_PROTOCOL_T1; break;
-        case SCARD_ATTR_CURRENT_PROTOCOL_TYPE: value = context->protocol; break;
-        case SCARD_ATTR_ATR_STRING: if (!context->attached) { WdfRequestComplete(request, STATUS_DEVICE_NOT_CONNECTED); return; } bytes = context->atr; size = context->atrLength; break;
-        case SCARD_ATTR_ICC_PRESENCE: value = context->attached ? 2 : 0; bytes = &value; size = 1; break;
+        case SCARD_ATTR_DEFAULT_CLK:
+        case SCARD_ATTR_MAX_CLK:
+        case SCARD_ATTR_CURRENT_CLK: value = 4000; break;
+        case SCARD_ATTR_DEFAULT_DATA_RATE:
+        case SCARD_ATTR_CURRENT_DATA_RATE: value = 106000; break;
+        case SCARD_ATTR_MAX_DATA_RATE: value = 848000; break;
+        case SCARD_ATTR_MAX_IFSD:
+        case SCARD_ATTR_CURRENT_IFSC:
+        case SCARD_ATTR_CURRENT_IFSD: value = 254; break;
         case SCARD_ATTR_DEVICE_UNIT: value = 0; break;
+        case SCARD_ATTR_DEVICE_IN_USE: value = 0; break;
+        case SCARD_ATTR_DEVICE_FRIENDLY_NAME_A:
+        case SCARD_ATTR_DEVICE_SYSTEM_NAME_A: bytes = friendlyA; size = sizeof(friendlyA); break;
+        case SCARD_ATTR_DEVICE_FRIENDLY_NAME_W:
+        case SCARD_ATTR_DEVICE_SYSTEM_NAME_W: bytes = friendlyW; size = sizeof(friendlyW); break;
+        case SCARD_ATTR_CURRENT_PROTOCOL_TYPE:
+            if (!context->attached) { WdfRequestComplete(request, STATUS_DEVICE_NOT_CONNECTED); return; }
+            value = context->protocol; break;
+        case SCARD_ATTR_ATR_STRING:
+            if (!context->attached) { WdfRequestComplete(request, STATUS_DEVICE_NOT_CONNECTED); return; }
+            bytes = context->atr; size = context->atrLength; break;
+        case SCARD_ATTR_ICC_PRESENCE:
+            byteValue = context->attached ? (context->protocol ? 2 : 1) : 0;
+            bytes = &byteValue; size = sizeof(byteValue); break;
+        case SCARD_ATTR_ICC_INTERFACE_STATUS:
+            byteValue = (context->attached && context->protocol) ? 0xFF : 0x00;
+            bytes = &byteValue; size = sizeof(byteValue); break;
+        case SCARD_ATTR_ICC_TYPE_PER_ATR:
+            byteValue = context->attached ? 1 : 0;
+            bytes = &byteValue; size = sizeof(byteValue); break;
         default: WdfRequestComplete(request, STATUS_NOT_SUPPORTED); return;
         }
         status = CopyOutput(request, bytes, size); if (NT_SUCCESS(status)) return;
     } else if (code == IOCTL_SMARTCARD_SET_PROTOCOL && inputLength == sizeof(ULONG)) {
         ULONG protocols = *static_cast<ULONG*>(input);
+        bool defaultOrOptimal = (protocols == SCARD_PROTOCOL_DEFAULT || protocols == SCARD_PROTOCOL_OPTIMAL);
         if (!context->attached) status = STATUS_DEVICE_NOT_CONNECTED;
         else if (context->pending) status = STATUS_DEVICE_BUSY;
         else if (!context->protocol && context->state != SCARD_PRESENT) status = STATUS_INVALID_DEVICE_STATE;
-        else if (!(protocols & context->supported)) status = STATUS_NOT_SUPPORTED;
+        else if (!defaultOrOptimal && !(protocols & context->supported)) status = STATUS_NOT_SUPPORTED;
         else {
             void* output = nullptr;
             status = WdfRequestRetrieveOutputBuffer(request, sizeof(ULONG), &output, nullptr);
@@ -336,9 +417,15 @@ void DeviceControl(WDFQUEUE queue, WDFREQUEST request, size_t outputLength, size
     } else if (code == IOCTL_SMARTCARD_POWER && inputLength == sizeof(ULONG)) {
         ULONG power = *static_cast<ULONG*>(input);
         ULONG operation = power == SCARD_POWER_DOWN ? OP_POWER_OFF : power == SCARD_COLD_RESET || power == SCARD_WARM_RESET ? OP_RESET : 0;
-        // Reject a known undersized ATR buffer before sending a physical reset.
-        if (operation == OP_RESET && context->attached && outputLength < context->atrLength) status = STATUS_BUFFER_TOO_SMALL;
-        else status = operation ? QueueBackend(context, request, operation, static_cast<BYTE*>(input), sizeof(ULONG), operation == OP_RESET ? static_cast<ULONG>(min(outputLength, static_cast<size_t>(33))) : 0) : STATUS_NOT_SUPPORTED;
+        // Reject a known undersized non-empty ATR buffer before sending a physical reset;
+        // allow outputLength == 0 when SCardSvr resets first and queries SCARD_ATTR_ATR_STRING next.
+        if (operation == OP_RESET && context->attached && outputLength > 0 && outputLength < context->atrLength) status = STATUS_BUFFER_TOO_SMALL;
+        else {
+            ULONG capacity = operation == OP_RESET
+                ? static_cast<ULONG>(outputLength == 0 ? 33 : min(outputLength, static_cast<size_t>(33)))
+                : 0;
+            status = operation ? QueueBackend(context, request, operation, static_cast<BYTE*>(input), sizeof(ULONG), capacity, 0, outputLength > 0) : STATUS_NOT_SUPPORTED;
+        }
         if (NT_SUCCESS(status)) return;
     } else if (code == IOCTL_SMARTCARD_TRANSMIT && inputLength >= sizeof(SCARD_IO_REQUEST) && outputLength >= sizeof(SCARD_IO_REQUEST) + 2) {
         auto pci = static_cast<SCARD_IO_REQUEST*>(input);
@@ -354,10 +441,15 @@ NTSTATUS DeviceAdd(WDFDRIVER, PWDFDEVICE_INIT init) {
     WdfDeviceInitSetIoType(init, WdfDeviceIoBuffered);
     WDF_FILEOBJECT_CONFIG files; WDF_FILEOBJECT_CONFIG_INIT(&files, WDF_NO_EVENT_CALLBACK, WDF_NO_EVENT_CALLBACK, FileCleanup);
     WdfDeviceInitSetFileObjectConfig(init, &files, WDF_NO_OBJECT_ATTRIBUTES);
-    WDF_PNPPOWER_EVENT_CALLBACKS power; WDF_PNPPOWER_EVENT_CALLBACKS_INIT(&power); power.EvtDeviceD0Exit = D0Exit; power.EvtDeviceD0Entry = D0Entry;
+    WDF_PNPPOWER_EVENT_CALLBACKS power; WDF_PNPPOWER_EVENT_CALLBACKS_INIT(&power);
+    power.EvtDeviceD0Exit = D0Exit;
+    power.EvtDeviceD0Entry = D0Entry;
+    power.EvtDeviceSelfManagedIoFlush = SelfManagedIoFlush;
     WdfDeviceInitSetPnpPowerEventCallbacks(init, &power);
     WDF_OBJECT_ATTRIBUTES attributes; WDF_OBJECT_ATTRIBUTES_INIT_CONTEXT_TYPE(&attributes, ReaderContext);
-    attributes.SynchronizationScope = WdfSynchronizationScopeDevice;
+    // ReaderContext owns its explicit WdfWaitLock (context->lock). Using WdfSynchronizationScopeNone
+    // prevents AB-BA lock order inversions between WDF's internal device lock and context->lock.
+    attributes.SynchronizationScope = WdfSynchronizationScopeNone;
     attributes.ExecutionLevel = WdfExecutionLevelPassive;
     attributes.EvtCleanupCallback = DeviceCleanup;
     WDFDEVICE device;

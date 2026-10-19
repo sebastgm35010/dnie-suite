@@ -1,6 +1,6 @@
 # DNIe Suite
 
-Monorepo de Android, Suite de firma digital para Windows y puente de interoperabilidad NFC–PC/SC para el DNI electrónico peruano (DNIe v3). Versión funcional: **3.1.5**.
+Monorepo de Android, Suite de firma digital para Windows y puente de interoperabilidad NFC–PC/SC para el DNI electrónico peruano (DNIe v3). Versión funcional: **3.1.6**.
 
 El teléfono actúa como lector seguro de proximidad NFC/PACE y transceptor criptográfico del DNIe. La Suite procesa y estampa documentos PDF en la PC mediante un enlace TLS privado con el dispositivo móvil. El módulo Bridge proporciona emulación de lector PC/SC virtual en Windows para permitir firma en aplicaciones oficiales como ReFirma (RENIEC) y Firma Perú (PCM).
 

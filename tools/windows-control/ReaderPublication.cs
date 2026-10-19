@@ -4,10 +4,32 @@ namespace DniBridge.Control;
 /// <summary>WinSCard enumeration only. Never connects, resets or transmits to a card.</summary>
 public static class ReaderPublication {
     public const string ReaderName="DNIe Bridge Android NFC Private Reader 0";
+    public const string ReaderPrefix="DNIe Bridge Android NFC Private Reader ";
+    private static long lastRepublishTick = -60_000;
+
     public static bool IncludesOwnReader(IEnumerable<string> readers) =>
-        readers.Any(name=>string.Equals(name,ReaderName,StringComparison.OrdinalIgnoreCase));
+        readers.Any(name =>
+            string.Equals(name, ReaderName, StringComparison.OrdinalIgnoreCase) ||
+            (name != null && name.StartsWith(ReaderPrefix, StringComparison.OrdinalIgnoreCase) &&
+             name.Length > ReaderPrefix.Length && name[ReaderPrefix.Length..].All(char.IsAsciiDigit)));
+
     public static bool? Query() {
         if(!OperatingSystem.IsWindows())return null;
+        bool? initial = QueryOnce();
+        if (initial == false) {
+            long now = Environment.TickCount64;
+            if (now - Interlocked.Read(ref lastRepublishTick) >= 10_000) {
+                Interlocked.Exchange(ref lastRepublishTick, now);
+                if (DniBridge.WindowsPcscDevice.TryRepublish()) {
+                    Thread.Sleep(150);
+                    return QueryOnce();
+                }
+            }
+        }
+        return initial;
+    }
+
+    private static bool? QueryOnce() {
         if(SCardEstablishContext(2,IntPtr.Zero,IntPtr.Zero,out var context)!=0)return null;
         try {
             for(int attempt=0;attempt<3;attempt++) {
@@ -23,6 +45,7 @@ public static class ReaderPublication {
             return null;
         } finally {SCardReleaseContext(context);}
     }
+
     [DllImport("winscard.dll")]private static extern uint SCardEstablishContext(uint scope,IntPtr a,IntPtr b,out IntPtr context);
     [DllImport("winscard.dll")]private static extern uint SCardReleaseContext(IntPtr context);
     [DllImport("winscard.dll",CharSet=CharSet.Unicode)]private static extern uint SCardListReadersW(IntPtr context,string? groups,[Out]char[]? readers,ref uint size);

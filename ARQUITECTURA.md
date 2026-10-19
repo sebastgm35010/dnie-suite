@@ -1,6 +1,6 @@
 # Arquitectura de DNIe Suite
 
-Documento canónico y consolidado de arquitectura del sistema para el monorepo DNIe Suite (v3.1.5).
+Documento canónico y consolidado de arquitectura del sistema para el monorepo DNIe Suite (v3.1.6).
 
 ---
 

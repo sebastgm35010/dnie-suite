@@ -32,7 +32,11 @@ public sealed class HostController : IAsyncDisposable {
         // Production retains coarse state only; never APDU, PIN/CAN, payloads or tokens.
         string name=phase.Split(' ',2)[0];
         if(name.StartsWith("pcsc_apdu_"))return;
-        Update(s=>s with {Phase=name,CardPresent=name=="pcsc_card_present" || (s.CardPresent && name!="pcsc_card_removed" && !name.Contains("closed") && !name.Contains("failed"))});
+        bool resetCard = name is "pcsc_card_removed" or "bridge_ready_for_next_card" or
+            "tailnet_ready_for_next_session" or "transport_retry" or "usb_retry" or
+            "host_ready" or "tailnet_sync_listening" ||
+            name.Contains("closed") || name.Contains("failed");
+        Update(s=>s with {Phase=name,CardPresent=name=="pcsc_card_present" || (s.CardPresent && !resetCard)});
 #if DEBUG
         lock(stateLock){diagnostics.Enqueue($"{DateTimeOffset.UtcNow:O} {name}");while(diagnostics.Count>100)diagnostics.Dequeue();}
 #endif
@@ -122,6 +126,7 @@ public sealed class BridgeHostRuntime {
     public async Task RunLocalAsync(ConnectionProfile profile,Action<string> log,CancellationToken stop) {
         ControlRules.Validate(profile);
         if(WindowsPcscDevice.Enumerate().Length!=1)throw new IOException("No se encontro un unico lector DNIe Bridge instalado.");
+        _ = ReaderPublication.Query();
         if(profile.Method=="Tailscale") {
             await TailnetSyncServer.RunAsync(TailnetTransport.Resolve(profile.Pc),39443,profile.Phone,()=> {
                 var devices=WindowsPcscDevice.Enumerate();if(devices.Length!=1)throw new IOException("El lector dejo de estar disponible.");return new WindowsPcscDevice(devices[0]);

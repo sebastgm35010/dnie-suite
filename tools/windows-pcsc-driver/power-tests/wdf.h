@@ -21,10 +21,17 @@ using EVT_WDF_REQUEST_CANCEL = void(WDFREQUEST);
 using EVT_WDF_TIMER = void(WDFTIMER); using EVT_WDF_FILE_CLEANUP = void(WDFFILEOBJECT);
 using EVT_WDF_DEVICE_D0_EXIT = NTSTATUS(WDFDEVICE,WDF_POWER_DEVICE_STATE);
 using EVT_WDF_DEVICE_D0_ENTRY = NTSTATUS(WDFDEVICE,WDF_POWER_DEVICE_STATE);
+using EVT_WDF_DEVICE_SELF_MANAGED_IO_FLUSH = void(WDFDEVICE);
 using EVT_WDF_OBJECT_CONTEXT_CLEANUP = void(WDFOBJECT);
-constexpr int WdfFalse=0, WdfTrue=1, WdfSynchronizationScopeDevice=1,
+constexpr int WdfFalse=0, WdfTrue=1, WdfSynchronizationScopeNone=0, WdfSynchronizationScopeDevice=1,
  WdfExecutionLevelPassive=1,WdfIoQueueDispatchManual=1,WdfIoQueueDispatchParallel=2,WdfDeviceIoBuffered=1;
 constexpr ULONG WdfRequestStopActionSuspend=1, WdfRequestStopActionPurge=2, WdfRequestStopRequestCancelable=4;
+#ifndef SCARD_PROTOCOL_DEFAULT
+#define SCARD_PROTOCOL_DEFAULT 0x80000000
+#endif
+#ifndef SCARD_PROTOCOL_OPTIMAL
+#define SCARD_PROTOCOL_OPTIMAL 0x00000000
+#endif
 #define WDF_NO_EVENT_CALLBACK nullptr
 #define WDF_NO_CONTEXT nullptr
 #define WDF_NO_HANDLE nullptr
@@ -39,7 +46,7 @@ struct WDF_IO_QUEUE_CONFIG { int dispatch{},PowerManaged{WdfTrue}; bool isDefaul
 #define WDF_IO_QUEUE_CONFIG_INIT_DEFAULT_QUEUE(value,mode) do { WDF_IO_QUEUE_CONFIG_INIT(value,mode); (value)->isDefault=true; } while(0)
 struct WDF_FILEOBJECT_CONFIG {};
 #define WDF_FILEOBJECT_CONFIG_INIT(...) ((void)0)
-struct WDF_PNPPOWER_EVENT_CALLBACKS { EVT_WDF_DEVICE_D0_EXIT* EvtDeviceD0Exit{}; EVT_WDF_DEVICE_D0_ENTRY* EvtDeviceD0Entry{}; };
+struct WDF_PNPPOWER_EVENT_CALLBACKS { EVT_WDF_DEVICE_D0_EXIT* EvtDeviceD0Exit{}; EVT_WDF_DEVICE_D0_ENTRY* EvtDeviceD0Entry{}; EVT_WDF_DEVICE_SELF_MANAGED_IO_FLUSH* EvtDeviceSelfManagedIoFlush{}; };
 #define WDF_PNPPOWER_EVENT_CALLBACKS_INIT(value) (*(value)=WDF_PNPPOWER_EVENT_CALLBACKS{})
 struct WDF_TIMER_CONFIG { EVT_WDF_TIMER* callback{}; };
 #define WDF_TIMER_CONFIG_INIT(value,fn) ((value)->callback=(fn))
@@ -51,7 +58,7 @@ struct FakeQueue { FakeDevice* device{}; WDF_IO_QUEUE_CONFIG config; std::deque<
 struct FakeRequest { FakeQueue* queue{}; FakeFile* file{}; std::vector<BYTE> input,output; bool marked{},cancelQueued{},cancelRunning{},completed{}; int completions{}; NTSTATUS status{}; size_t information{}; EVT_WDF_REQUEST_CANCEL* cancel{}; };
 struct FakeTimer { FakeDevice* device{}; bool running{}; int starts{}; };
 struct FakeFile { FakeDevice* device{}; };
-struct FakeDevice { void* context{}; WDFQUEUE defaultQueue{}; std::vector<WDFQUEUE> queues; WDFWAITLOCK lock{}; WDFTIMER timer{}; ~FakeDevice() { for(auto q:queues) delete q; delete timer; delete lock; free(context); } };
+struct FakeDevice { void* context{}; WDFQUEUE defaultQueue{}; std::vector<WDFQUEUE> queues; WDFWAITLOCK lock{}; WDFTIMER timer{}; int interfaceToggles{}; ~FakeDevice() { for(auto q:queues) delete q; delete timer; delete lock; free(context); } };
 inline WDFDEVICE WdfIoQueueGetDevice(WDFQUEUE q) { return q->device; }
 inline WDFQUEUE WdfRequestGetIoQueue(WDFREQUEST r) { return r->queue; }
 inline WDFFILEOBJECT WdfRequestGetFileObject(WDFREQUEST r) { return r->file; }
@@ -74,6 +81,7 @@ inline BOOLEAN WdfTimerStop(WDFTIMER t,BOOLEAN) { t->running=false; return TRUE;
 inline WDFOBJECT WdfTimerGetParentObject(WDFTIMER t) { return t->device; }
 inline NTSTATUS WdfDeviceCreate(PWDFDEVICE_INIT* init,WDF_OBJECT_ATTRIBUTES* a,WDFDEVICE* d) { *d=new FakeDevice; (*d)->context=calloc(1,a->ContextSize); (*init)->device=*d; return STATUS_SUCCESS; }
 inline NTSTATUS WdfDeviceCreateDeviceInterface(WDFDEVICE,const GUID*,void*) { return STATUS_SUCCESS; }
+inline void WdfDeviceSetDeviceInterfaceState(WDFDEVICE d, const GUID*, void*, BOOLEAN) { ++d->interfaceToggles; }
 inline NTSTATUS WdfIoQueueCreate(WDFDEVICE d,WDF_IO_QUEUE_CONFIG* c,WDF_OBJECT_ATTRIBUTES*,WDFQUEUE* q) { auto created=new FakeQueue; created->device=d; created->config=*c; d->queues.push_back(created); if(c->isDefault)d->defaultQueue=created; if(q)*q=created; return STATUS_SUCCESS; }
 inline NTSTATUS WdfTimerCreate(WDF_TIMER_CONFIG*,WDF_OBJECT_ATTRIBUTES* a,WDFTIMER* t) { *t=new FakeTimer; (*t)->device=static_cast<FakeDevice*>(a->ParentObject); (*t)->device->timer=*t; return STATUS_SUCCESS; }
 inline void WdfDeviceInitSetIoType(PWDFDEVICE_INIT,int) {}

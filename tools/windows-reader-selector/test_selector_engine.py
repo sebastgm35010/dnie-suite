@@ -53,9 +53,12 @@ class SelectorTests(unittest.TestCase):
         engine = ReniecSelector(device,'fixture',self.role,lambda *a,**k:None)
         engine.instrument(10,'launcher')
         engine.instrument(11,'java')
+        engine.instrument(12,'reniec')
         self.assertTrue(device.attached[10].gated)
         self.assertFalse(device.attached[11].gated)
         self.assertTrue(device.attached[11].loaded)
+        self.assertTrue(device.attached[12].gated)
+        self.assertTrue(device.attached[12].loaded)
         device.pending = [types.SimpleNamespace(pid=20,parent_pid=10),types.SimpleNamespace(pid=21,parent_pid=99)]
         engine.close()
         engine.close()
